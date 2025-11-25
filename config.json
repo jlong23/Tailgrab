@@ -1,0 +1,30 @@
+{
+    "lineHandlers": [
+        {
+            "type": "VTKHandler",
+            "enabled": true,
+            "logPatternType": "*default",
+            "logPattern": ".*\\[VTK\\].*Right_Ear_Angle.*",
+            "logOutput": false,
+            "logOutputColor": "*default",
+            "actions": [
+                {
+                    "type": "OSCAction",
+                    "parameterName": "/avatar/parameters/Ear/Right_Angle",
+                    "oscType": "Float",
+                    "value": "20.0"
+                },
+                {
+                    "type": "DelayAction",
+                    "milliseconds": 500
+                },
+                {
+                    "type": "OSCAction",
+                    "parameterName": "/avatar/parameters/Ear/Right_Angle",
+                    "oscType": "Float",
+                    "value": "0.0"
+                }
+            ]
+        }
+    ]
+}
