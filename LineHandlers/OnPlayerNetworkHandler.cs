@@ -15,6 +15,7 @@ public class OnPlayerNetworkHandler : AbstractLineHandler
 
     public OnPlayerNetworkHandler(string matchPattern) : base(matchPattern)
     {
+        logger.Info($"** OnPlayer Network ID Handler:  Regular Expression: {Pattern}");        
     }
 
     public override bool HandleLine(string line)
@@ -28,7 +29,6 @@ public class OnPlayerNetworkHandler : AbstractLineHandler
             if( LogOutput )
             {
                 logger.Info($"{COLOR_PREFIX}Network_ID : {userName} ({networkId}){COLOR_RESET}");
-                //Console.WriteLine($"{timestamp} - Network_ID : {userName} ({networkId})");
             }
             ExecuteActions();
 

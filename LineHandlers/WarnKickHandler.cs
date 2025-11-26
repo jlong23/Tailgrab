@@ -15,6 +15,7 @@ public class WarnKickHandler : AbstractLineHandler
 
     public WarnKickHandler(string matchPattern) : base(matchPattern)
     {
+        logger.Info($"** Moderation Warn/Kick Handler:  Regular Expression: {Pattern}");        
     }
 
     public override bool HandleLine(string line)

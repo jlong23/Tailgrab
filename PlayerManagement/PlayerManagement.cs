@@ -1,4 +1,5 @@
 using NLog;
+using Tailgrab.LineHandler;
 
 namespace Tailgrab.PlayerManagement
 {
@@ -58,24 +59,30 @@ namespace Tailgrab.PlayerManagement
         public static readonly string COLOR_RESET = "\u001b[0m";
         public static Logger logger = LogManager.GetCurrentClassLogger();
 
-        public static void PlayerJoined(string userId, string displayName)
+        public static void PlayerJoined(string userId, string displayName, AbstractLineHandler handler)
         {
             if (!playersByUserId.ContainsKey(userId))
             {
                 Player newPlayer = new Player(userId, displayName);
                 playersByUserId[userId] = newPlayer;
                 playersByDisplayName[displayName] = newPlayer;
-                logger.Info($"{COLOR_PREFIX_GREEN}Player Joined: {displayName} (ID: {userId}){COLOR_RESET}");
+                if( handler.LogOutput )
+                {
+                    logger.Info($"{COLOR_PREFIX_GREEN}Player Joined: {displayName} (ID: {userId}){COLOR_RESET}");
+                }
 
                 if( avatarByDisplayName.TryGetValue(displayName, out string? avatarName))
                 {
                     AddPlayerEventByDisplayName(displayName, PlayerEvent.EventType.AvatarChange, $"Joined with Avatar: {avatarName}");
-                    logger.Info($"{COLOR_PREFIX_GREEN}\tAvatar on Join: {avatarName}{COLOR_RESET}");
+                    if( handler.LogOutput )
+                    {
+                        logger.Info($"{COLOR_PREFIX_GREEN}\tAvatar on Join: {avatarName}{COLOR_RESET}");
+                    }
                 }
             }
         }
 
-        public static void PlayerLeft(string displayName)
+        public static void PlayerLeft(string displayName, AbstractLineHandler handler )
         {
             if (playersByDisplayName.TryGetValue(displayName, out Player? player))
             {
@@ -83,7 +90,10 @@ namespace Tailgrab.PlayerManagement
                 playersByDisplayName.Remove(displayName);
                 playersByNetworkId.Remove(player.NetworkId);
                 playersByUserId.Remove(player.UserId);
-                PrintPlayerInfo(player);
+                if( handler.LogOutput )
+                {
+                    PrintPlayerInfo(player);
+                }
             }
         }
 
@@ -121,12 +131,16 @@ namespace Tailgrab.PlayerManagement
             return playersByUserId.Values;
         }
 
-        public static void ClearAllPlayers()
+        public static void ClearAllPlayers(AbstractLineHandler handler)
         {
+
             foreach( var player in playersByUserId.Values )
             {
                 player.InstanceEndTime = DateTime.Now;
-                PrintPlayerInfo(player);
+                if( handler.LogOutput )
+                {
+                    PrintPlayerInfo(player);
+                }
             }
 
             playersByNetworkId.Clear();
@@ -139,11 +153,14 @@ namespace Tailgrab.PlayerManagement
             return playersByUserId.Count;
         }   
 
-        public static void LogAllPlayers()
+        public static void LogAllPlayers(AbstractLineHandler handler)
         {
-            foreach( var player in playersByUserId.Values )
+            if( handler.LogOutput )
             {
-                PrintPlayerInfo(player);
+                foreach( var player in playersByUserId.Values )
+                {
+                    PrintPlayerInfo(player);
+                }                
             }
         }
 

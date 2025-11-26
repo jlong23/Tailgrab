@@ -10,7 +10,7 @@ namespace Tailgrab.LineHandler
        
         bool HandleLine(string line);
 
-        void LogColor( string color );
+        void LogOutputColor( string color );
     }
 
 
@@ -19,9 +19,9 @@ namespace Tailgrab.LineHandler
         protected string Pattern { get; }
         protected Regex regex;
         public List<IAction> Actions = new List<IAction>();
-        protected bool LogOutput { get; set; } = true;
-        protected string LogColor = "37m"; // Default to white
-        public string COLOR_PREFIX => $"\u001b[{LogColor}";
+        public bool LogOutput { get; set; } = true;
+        public string LogOutputColor { get; set; } = "37m"; // Default to white
+        public string COLOR_PREFIX => $"\u001b[{LogOutputColor}";
         public static readonly string COLOR_RESET = "\u001b[0m";
         public static Logger logger = LogManager.GetCurrentClassLogger();
 
@@ -30,8 +30,6 @@ namespace Tailgrab.LineHandler
         {
             Pattern = matchPattern;
             regex = new Regex(Pattern);
-            logger.Info($"Initialized Regular Expression: {Pattern}");
-
         }   
 
         public abstract bool HandleLine(string line);
@@ -49,9 +47,9 @@ namespace Tailgrab.LineHandler
             }
         }
 
-        void ILineHandler.LogColor(string color)
+        void ILineHandler.LogOutputColor(string color)
         {
-            LogColor = color;
+            LogOutputColor = color;
         }
     }
     

@@ -16,6 +16,7 @@ public class OnPlayerJoinHandler : AbstractLineHandler
 
     public OnPlayerJoinHandler(string matchPattern) : base(matchPattern)
     {
+        logger.Info($"** OnPlayer Join/Leave Handler:  Regular Expression: {Pattern}");        
     }
 
     public override bool HandleLine(string line)
@@ -31,11 +32,11 @@ public class OnPlayerJoinHandler : AbstractLineHandler
 
             if( action.Equals("Joined") )
             {
-                PlayerManager.PlayerJoined(userId, userName);
+                PlayerManager.PlayerJoined(userId, userName, this );
             }
             else if( action.Equals("Left") )
             {
-                PlayerManager.PlayerLeft(userName);
+                PlayerManager.PlayerLeft(userName, this);
             }
 
             return true;

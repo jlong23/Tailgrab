@@ -14,6 +14,7 @@ public class AvatarUnpackHandler : AbstractLineHandler
 
     public AvatarUnpackHandler(string matchPattern) : base(matchPattern)
     {
+        logger.Info($"** AvatarUnpack Handler:  Regular Expression: {Pattern}");        
     }
 
     public override bool HandleLine(string line)

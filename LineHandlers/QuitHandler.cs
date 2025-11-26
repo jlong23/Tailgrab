@@ -14,6 +14,7 @@ public class QuitHandler : AbstractLineHandler
 
     public QuitHandler(string matchPattern) : base(matchPattern)
     {
+        logger.Info($"** VRC Quit Handler:  Regular Expression: {Pattern}");        
     }
 
     public override bool HandleLine(string line)
@@ -28,7 +29,7 @@ public class QuitHandler : AbstractLineHandler
                 logger.Info($"{COLOR_PREFIX}Application Stop : {totalTime} seconds{COLOR_RESET}");
             }
 
-            PlayerManager.ClearAllPlayers();
+            PlayerManager.ClearAllPlayers(this);
 
             ExecuteActions();
             return true;
