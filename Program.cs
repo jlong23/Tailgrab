@@ -1,21 +1,20 @@
 ﻿using System.Reflection;
 using System.Text;
-using BuildSoft.VRChat.Osc;
-using Tailgrab.Actions;
 using Tailgrab.LineHandler;
 using NLog;
+using Tailgrab.Configuration;
 
 public class FileTailer
 {
     /// <summary>
     /// A list of the Regex Line Matchers that are used to process log lines.
     /// </summary>
-    static List<ILineHandler> handlers = new List<ILineHandler>{};
+    static List<ILineHandler> HandlerList = new List<ILineHandler>{};
 
     /// <summary>
     /// A List of opened file paths to avoid opening the same file multiple times.
     /// </summary>
-    static List<string> openedFiles = new List<string>{};
+    static List<string> OpenedFiles = new List<string>{};
 
     /// <summary>
     /// The path to the user's profile directory.
@@ -33,55 +32,15 @@ public class FileTailer
 
 
     /// <summary>
-    /// Load and Initialize all the Line Handlers from the regular-expressions.txt file.
-    /// </summary>
-    public static void InitializeMatchsets()
-    {
-        using (FileStream fs = new FileStream("./regular-expressions.txt", FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-        using (StreamReader sr = new StreamReader(fs, Encoding.UTF8))
-        {
-            while (true && sr != null)
-            {
-                string? line = sr.ReadLine();
-                if (line == null)
-                {
-                    break;
-                }
-
-                handlers.Add( new LoggingLineHandler(line));
-            }   
-
-            handlers.Add( new OnPlayerJoinHandler(OnPlayerJoinHandler.LOG_PATTERN) );
-            handlers.Add( new OnPlayerNetworkHandler(OnPlayerNetworkHandler.LOG_PATTERN) );
-            handlers.Add( new StickerHandler(StickerHandler.LOG_PATTERN) );
-            handlers.Add( new PrintHandler(PrintHandler.LOG_PATTERN) );
-            handlers.Add( new AvatarChangeHandler(AvatarChangeHandler.LOG_PATTERN) );
-            handlers.Add( new AvatarUnpackHandler(AvatarUnpackHandler.LOG_PATTERN) );
-            handlers.Add( new WarnKickHandler(WarnKickHandler.LOG_PATTERN) );
-            handlers.Add( new PenNetworkHandler(PenNetworkHandler.LOG_PATTERN) );
-            handlers.Add( new QuitHandler(QuitHandler.LOG_PATTERN) );
-
-            //handlers.Add( new VTKHandler(VTKHandler.LOG_PATTERN) );
-            ILineHandler handler = new VTKHandler(VTKHandler.LOG_PATTERN);
-            handler.AddAction( new OSCAction("/avatar/parameters/Ear/Right_Angle", OscType.Float, "20.0" ));
-            handler.AddAction( new DelayAction(500) );
-            handler.AddAction( new OSCAction("/avatar/parameters/Ear/Right_Angle", OscType.Float, "0.0" ));
-            handler.LogColor("31;1m"); // Bright Red
-            handlers.Add( handler );
-
-        }
-    }
-
-    /// <summary>
     /// Threaded tailing of a file, reading new lines as they are added.
     /// </summary>
     public static async Task TailFileAsync(string filePath)
     {
-        if( openedFiles.Contains(filePath) )
+        if( OpenedFiles.Contains(filePath) )
         {
             return;
         }
-        openedFiles.Add(filePath);
+        OpenedFiles.Add(filePath);
 
         Console.WriteLine($"Tailing file: {filePath}. Press Ctrl+C to stop.");
 
@@ -105,7 +64,7 @@ public class FileTailer
                 string? line;
                 while ((line = await sr.ReadLineAsync()) != null)
                 {
-                    foreach (ILineHandler handler in handlers)
+                    foreach (ILineHandler handler in HandlerList)
                     {
                         if (handler.HandleLine(line))
                         {                        
@@ -154,24 +113,24 @@ public class FileTailer
 
         logger.Info($"Tailgrab Version: {BuildInfo.GetInformationalVersion()}");
         
-        string filePath = VRChatAppDataPath + @"\\";
+        string filePath = VRChatAppDataPath + Path.DirectorySeparatorChar;
         if (args.Length == 0)
         {
-            logger.Warn("No path argument provided, defaulting to VRChat log directory.");
-            Console.WriteLine("Usage: dotnet run <filePath>");
-            Console.WriteLine($"Running without arguments will watch the VRChat log directory at '{filePath}'");
-        } else
+            logger.Warn("No path argument provided, defaulting to VRChat log directory: {filePath}");
+        } 
+        else
         {
             filePath = args[0];   
         }
         
         if (!Directory.Exists(filePath))
         {
-            logger.Info($"WatchZing VRChat log directory at '{filePath}'");
+            logger.Info($"Missing VRChat log directory at '{filePath}'");
             return;
         }
 
-        InitializeMatchsets();
+        ConfigurationManager.LoadLineHandlersFromConfig(HandlerList);
+        logger.Info($"Watching for log changes from: '{filePath}'");
         await WatchPath(filePath);
     }
 }

@@ -3,7 +3,6 @@ namespace Tailgrab.LineHandler;
 using System.Text;
 using System.Text.RegularExpressions;
 using Tailgrab.PlayerManagement;
-using NLog;
 
 public class PenNetworkHandler : AbstractLineHandler
 {

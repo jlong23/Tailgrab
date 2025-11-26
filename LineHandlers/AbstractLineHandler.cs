@@ -7,7 +7,7 @@ namespace Tailgrab.LineHandler
     public interface ILineHandler
     {
         void AddAction(IAction action);
-        
+       
         bool HandleLine(string line);
 
         void LogColor( string color );
@@ -18,7 +18,7 @@ namespace Tailgrab.LineHandler
     {
         protected string Pattern { get; }
         protected Regex regex;
-        protected List<IAction> Actions = new List<IAction>();
+        public List<IAction> Actions = new List<IAction>();
         protected bool LogOutput { get; set; } = true;
         protected string LogColor = "37m"; // Default to white
         public string COLOR_PREFIX => $"\u001b[{LogColor}";

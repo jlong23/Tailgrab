@@ -1,4 +1,3 @@
-using System.Threading;
 using System.Runtime.InteropServices;
 using BuildSoft.VRChat.Osc;
 using BuildSoft.VRChat.Osc.Avatar;
@@ -147,14 +146,14 @@ namespace Tailgrab.Actions
 
         public string ParameterName { get; set; }
 
-        public OscType Type { get; set; }
+        public OscType OscTypeValue { get; set; }
 
         public string Value { get; set; }
 
         public OSCAction(string parameterName, OscType type, string value)
         {
             ParameterName = parameterName;
-            Type = type;
+            OscTypeValue = type;
             Value = value;
         }  
 
@@ -167,7 +166,7 @@ namespace Tailgrab.Actions
                 return;
             }
 
-            switch (Type)
+            switch (OscTypeValue)
             {
                 case OscType.Bool:
                     if (bool.TryParse(value, out bool boolValue))
