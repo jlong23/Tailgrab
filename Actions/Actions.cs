@@ -1,4 +1,3 @@
-using System.Threading;
 using System.Runtime.InteropServices;
 using BuildSoft.VRChat.Osc;
 using BuildSoft.VRChat.Osc.Avatar;

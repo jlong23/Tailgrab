@@ -1,7 +1,5 @@
 ﻿using System.Reflection;
 using System.Text;
-using BuildSoft.VRChat.Osc;
-using Tailgrab.Actions;
 using Tailgrab.LineHandler;
 using NLog;
 using Tailgrab.Configuration;
@@ -115,24 +113,24 @@ public class FileTailer
 
         logger.Info($"Tailgrab Version: {BuildInfo.GetInformationalVersion()}");
         
-        string filePath = VRChatAppDataPath + @"\\";
+        string filePath = VRChatAppDataPath + Path.DirectorySeparatorChar;
         if (args.Length == 0)
         {
-            logger.Warn("No path argument provided, defaulting to VRChat log directory.");
-            Console.WriteLine("Usage: dotnet run <filePath>");
-            Console.WriteLine($"Running without arguments will watch the VRChat log directory at '{filePath}'");
-        } else
+            logger.Warn("No path argument provided, defaulting to VRChat log directory: {filePath}");
+        } 
+        else
         {
             filePath = args[0];   
         }
         
         if (!Directory.Exists(filePath))
         {
-            logger.Info($"WatchZing VRChat log directory at '{filePath}'");
+            logger.Info($"Missing VRChat log directory at '{filePath}'");
             return;
         }
 
         ConfigurationManager.LoadLineHandlersFromConfig(HandlerList);
+        logger.Info($"Watching for log changes from: '{filePath}'");
         await WatchPath(filePath);
     }
 }

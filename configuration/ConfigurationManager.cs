@@ -2,7 +2,6 @@ using Tailgrab.Actions;
 using Tailgrab.LineHandler;
 using BuildSoft.VRChat.Osc;
 using Microsoft.Extensions.Configuration;
-using System.Collections.Generic;
 using NLog;
 
 namespace Tailgrab.Configuration
