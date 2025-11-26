@@ -5,9 +5,9 @@
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <AssemblyVersion>1.0.2.1005</AssemblyVersion> <!-- Explicitly set the build number -->
-    <FileVersion>1.0.2.1005</FileVersion>
-    <InformationalVersion>1.0.2.1005-beta</InformationalVersion>    
+    <AssemblyVersion>1.0.3.1012</AssemblyVersion> <!-- Explicitly set the build number -->
+    <FileVersion>1.0.3.1012</FileVersion>
+    <InformationalVersion>1.0.3.1012-beta</InformationalVersion>    
   </PropertyGroup>
 
   <ItemGroup>
