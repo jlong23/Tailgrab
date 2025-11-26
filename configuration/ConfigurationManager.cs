@@ -38,6 +38,12 @@ namespace Tailgrab.Configuration
                     continue;
                 }
 
+                if( configItem.Enabled == false )
+                {
+                    logger.Warn($"Line handler of type {configItem.HandlerTypeValue} is disabled in configuration, skipping this handler.");
+                    continue;
+                }
+
                 string? pattern = null;
                 if (configItem.PatternTypeValue == PatternType.Default || configItem.Pattern == null)
                 {
@@ -46,6 +52,17 @@ namespace Tailgrab.Configuration
                 else
                 {
                     pattern = configItem.Pattern;
+                }
+
+
+                string? logOutputColor = null;
+                if (configItem.LogOutputColor == "Default" || configItem.LogOutputColor == null)
+                {
+                    logOutputColor = "37m";
+                }
+                else
+                {
+                    logOutputColor = configItem.LogOutputColor;
                 }
 
                 List<IAction> actions = ParseActionsFromConfig(configItem.Actions);
@@ -148,6 +165,8 @@ namespace Tailgrab.Configuration
                         logger.Warn($"Unsupported line handler type in configuration: {configItem.HandlerTypeValue}, skipping this handler.");
                         continue;
                 }
+                handler.LogOutputColor = logOutputColor!;
+                handler.LogOutput = configItem.LogOutput;
                 handler.Actions = actions;
                 handlers.Add(handler);
             }
@@ -220,6 +239,7 @@ namespace Tailgrab.Configuration
     public class LineHandlerConfig
     {
         public LineHandlerType HandlerTypeValue { get; set; }
+        public bool Enabled { get; set; } = true;
         public PatternType PatternTypeValue { get; set; }
         public string? Pattern { get; set; }
         public bool LogOutput { get; set; } = true;

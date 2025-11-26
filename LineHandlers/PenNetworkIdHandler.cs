@@ -18,6 +18,9 @@ public class PenNetworkHandler : AbstractLineHandler
 
     public PenNetworkHandler(string matchPattern) : base(matchPattern)
     {
+
+        logger.Info($"** Pen Network Id Handler:  Regular Expression: {Pattern}");        
+
         using (FileStream fs = new FileStream("./pen-network-id.csv", FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
         using (StreamReader sr = new StreamReader(fs, Encoding.UTF8))
         {
@@ -34,7 +37,7 @@ public class PenNetworkHandler : AbstractLineHandler
                 int networkId = int.Parse(parts[0]);
                 string penColor = parts[1]; 
                 penNetworkMap[networkId] = penColor;
-                logger.Debug($"Mapped Pen Color '{penColor}' to Network ID {networkId}");
+                logger.Debug($"Mapped Pen Color '{penColor}' to Network ID: {networkId}");
             }   
         }
     }

@@ -13,6 +13,7 @@ public class PrintHandler : AbstractLineHandler
 
     public PrintHandler(string matchPattern) : base(matchPattern)
     {
+        logger.Info($"** Print Handler:  Regular Expression: {Pattern}");        
     }
 
     public override bool HandleLine(string line)

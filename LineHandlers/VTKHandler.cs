@@ -14,6 +14,7 @@ public class VTKHandler : AbstractLineHandler
 
     public VTKHandler(string matchPattern) : base(matchPattern)
     {
+        logger.Info($"** Vote to Kick Handler:  Regular Expression: {Pattern}");
     }
 
     public override bool HandleLine(string line)

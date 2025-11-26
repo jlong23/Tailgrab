@@ -16,6 +16,7 @@ public class StickerHandler : AbstractLineHandler
 
     public StickerHandler(string matchPattern) : base(matchPattern)
     {
+        logger.Info($"** Sticker Handler:  Regular Expression: {Pattern}");        
     }
 
     public override bool HandleLine(string line)

@@ -5,7 +5,7 @@
             "enabled": true,
             "patternTypeValue": "Default",
             "pattern": "([\\d]{4}.[\\d]{2}.[\\d]{2}\\W[\\d]{2}:[\\d]{2}:[\\d]{2})\\W(Log[\\W]{8}|Debug[\\W]{6})-\\W\\W\\[Behaviour\\]\\WSwitching\\W([\\S\\W]+)\\Wto\\Wavatar\\W([\\S\\W]+)",
-            "logOutput": false,
+            "logOutput": true,
             "logOutputColor": "Default",
             "actions": [
             ]
@@ -15,7 +15,7 @@
             "enabled": true,
             "patternTypeValue": "Default",
             "pattern": "([\\d]{4}.[\\d]{2}.[\\d]{2}\\W[\\d]{2}:[\\d]{2}:[\\d]{2})\\W(Log[\\W]{8}|Debug[\\W]{6})-\\W\\W\\[AssetBundleDownloadManager\\]\\W\\[\\d+\\] Unpacking Avatar \\(([\\S\\W]+) by ([\\S\\W]+)\\)",
-            "logOutput": false,
+            "logOutput": true,
             "logOutputColor": "Default",
             "actions": [
             ]
@@ -25,7 +25,7 @@
             "enabled": true,
             "patternTypeValue": "Default",
             "pattern": "([\\d]{4}.[\\d]{2}.[\\d]{2}\\W[\\d]{2}:[\\d]{2}:[\\d]{2})\\W(Log[\\W]{8}|Debug[\\W]{6})-\\W\\W\\[Behaviour\\]\\WOnPlayer([\\d\\w]+)\\W([\\d\\w\\W]+)\\W\\((usr_[\\d\\w\\W]+)\\)",
-            "logOutput": false,
+            "logOutput": true,
             "logOutputColor": "Default",
             "actions": [
             ]
@@ -35,7 +35,7 @@
             "enabled": true,
             "patternTypeValue": "Default",
             "pattern": "([\\d]{4}.[\\d]{2}.[\\d]{2}\\W[\\d]{2}:[\\d]{2}:[\\d]{2})\\W(Log[\\W]{8}|Debug[\\W]{6})-\\W\\W\\[AP\\]\\WPlayer\\W\\W([\\d\\w\\W]+)\\W joined with ID ([\\d]+)",
-            "logOutput": false,
+            "logOutput": true,
             "logOutputColor": "Default",
             "actions": [
             ]
@@ -45,7 +45,7 @@
             "enabled": true,
             "patternTypeValue": "Default",
             "pattern": "([\\d]{4}.[\\d]{2}.[\\d]{2}\\W[\\d]{2}:[\\d]{2}:[\\d]{2})\\W(Log[\\W]{8}|Debug[\\W]{6})-\\W\\W\\[NetworkProcessing\\] Received ownership transfer of ([\\d]+) from ([\\d]+) to ([\\d]+)",
-            "logOutput": false,
+            "logOutput": true,
             "logOutputColor": "Default",
             "actions": [
             ]
@@ -55,7 +55,7 @@
             "enabled": true,
             "patternTypeValue": "Default",
             "pattern": "([\\d]{4}.[\\d]{2}.[\\d]{2}\\W[\\d]{2}:[\\d]{2}:[\\d]{2})\\W(Log[\\W]{8}|Debug[\\W]{6})-\\W\\W\\[API\\]\\WRequesting\\WGet\\Wprints/(prnt_[\\d\\w\\W]+)\\W\\{\\{\\}\\}",
-            "logOutput": false,
+            "logOutput": true,
             "logOutputColor": "Default",
             "actions": [
             ]
@@ -65,7 +65,7 @@
             "enabled": true,
             "patternTypeValue": "Default",
             "pattern": "([\\d]{4}.[\\d]{2}.[\\d]{2}\\W[\\d]{2}:[\\d]{2}:[\\d]{2})\\W(Log[\\W]{8}|Debug[\\W]{6})-\\W\\W(?:[\\[Always\\]\\W]*)\\[StickersManager\\]\\WUser\\W(usr_[\\d\\w\\W]+)\\W\\(([\\d\\w\\W]+)\\)\\Wspawned\\Wsticker\\W(file_[\\d\\w\\W]+)",
-            "logOutput": false,
+            "logOutput": true,
             "logOutputColor": "Default",
             "actions": [
             ]
@@ -75,7 +75,7 @@
             "enabled": true,
             "patternTypeValue": "Default",
             "pattern": "([\\d]{4}.[\\d]{2}.[\\d]{2}\\W[\\d]{2}:[\\d]{2}:[\\d]{2})\\W(Log[\\W]{8}|Debug[\\W]{6})-\\W\\W\\[ModerationManager\\] A vote kick has been initiated against ([\\S\\W]+), do you agree",
-            "logOutput": false,
+            "logOutput": true,
             "logOutputColor": "Default",
             "actions": [
                 {
@@ -101,7 +101,7 @@
             "enabled": true,
             "patternTypeValue": "Default",
             "pattern": "([\\d]{4}.[\\d]{2}.[\\d]{2}\\W[\\d]{2}:[\\d]{2}:[\\d]{2})\\W(Log[\\W]{8}|Debug[\\W]{6})-\\W\\W\\[ModerationManager\\]\\W([\\S\\W]+)\\Whas\\Wbeen\\W(warned|kicked)",
-            "logOutput": false,
+            "logOutput": true,
             "logOutputColor": "Default",
             "actions": [
             ]
@@ -111,7 +111,7 @@
             "enabled": true,
             "patternTypeValue": "Default",
             "pattern": "([\\d]{4}.[\\d]{2}.[\\d]{2}\\W[\\d]{2}:[\\d]{2}:[\\d]{2})\\W(Log[\\W]{8}|Debug[\\W]{6})-\\W\\WVRCApplication: HandleApplicationQuit at ([\\d\\W]+)",
-            "logOutput": false,
+            "logOutput": true,
             "logOutputColor": "Default",
             "actions": [
             ]

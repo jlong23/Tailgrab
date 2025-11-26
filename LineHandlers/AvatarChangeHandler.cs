@@ -15,6 +15,7 @@ public class AvatarChangeHandler : AbstractLineHandler
 
     public AvatarChangeHandler(string matchPattern) : base(matchPattern)
     {
+        logger.Info($"** AvatarChange Handler:  Regular Expression: {Pattern}");        
     }
 
     public override bool HandleLine(string line)

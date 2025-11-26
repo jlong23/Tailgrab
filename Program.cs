@@ -116,7 +116,7 @@ public class FileTailer
         string filePath = VRChatAppDataPath + Path.DirectorySeparatorChar;
         if (args.Length == 0)
         {
-            logger.Warn("No path argument provided, defaulting to VRChat log directory: {filePath}");
+            logger.Warn($"No path argument provided, defaulting to VRChat log directory: {filePath}");
         } 
         else
         {

@@ -12,7 +12,6 @@ public class LoggingLineHandler : AbstractLineHandler
             if( LogOutput )
             {
                 logger.Info($"{COLOR_PREFIX}{line}{COLOR_RESET}");
-                //Console.WriteLine(line);                
             }
             return true;
         }
