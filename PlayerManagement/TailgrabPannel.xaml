@@ -1,0 +1,182 @@
+<Window x:Class="Tailgrab.PlayerManagement.TailgrabPannel"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Tailgrab Player Panel"
+        Width="900" Height="520"
+        FontFamily="Segoe UI"
+        Language="en-US"
+        WindowStartupLocation="CenterOwner"
+        UseLayoutRounding="True"
+        TextOptions.TextFormattingMode="Display">
+    <Grid Margin="8">
+        <TabControl>
+            <TabItem Header="Active Players">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <TextBox Name="ActiveFilterBox" Width="300" Margin="0,0,8,0" />
+                        <Button Content="Apply Filter" Click="ActiveApplyFilter_Click" Margin="0,0,6,0"/>
+                        <Button Content="Clear Filter" Click="ActiveClearFilter_Click"/>
+                    </StackPanel>
+
+                    <ListView Name="ActiveListView" Grid.Row="1" ItemsSource="{Binding ActiveView}" SelectedItem="{Binding SelectedActive, Mode=TwoWay}">
+                        <ListView.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="Filter">
+                                    <MenuItem Header="Filter by selected DisplayName" Click="ActiveFilterBySelected_Click"/>
+                                </MenuItem>
+                            </ContextMenu>
+                        </ListView.ContextMenu>
+
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Width="200">
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader Content="Display Name" Tag="DisplayName" Click="GridViewColumnHeader_Click"/>
+                                    </GridViewColumn.Header>
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding DisplayName}" TextWrapping="NoWrap"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+
+                                <GridViewColumn Width="280">
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader Content="User ID" Tag="UserId" Click="GridViewColumnHeader_Click"/>
+                                    </GridViewColumn.Header>
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding UserId}" />
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+
+                                <GridViewColumn Width="90">
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader Content="Avatar Name" Tag="AvatarName" Click="GridViewColumnHeader_Click"/>
+                                    </GridViewColumn.Header>
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding AvatarName}" />
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+
+                                <GridViewColumn Width="160">
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader Content="Instance Start" Tag="InstanceStartTime" Click="GridViewColumnHeader_Click"/>
+                                    </GridViewColumn.Header>
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding InstanceStartTime}" />
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+
+                                <GridViewColumn Width="160">
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader Content="Instance End" Tag="InstanceEndTime" Click="GridViewColumnHeader_Click"/>
+                                    </GridViewColumn.Header>
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding InstanceEndTime}" />
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="Past Players">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <TextBox Name="PastFilterBox" Width="300" Margin="0,0,8,0" />
+                        <Button Content="Apply Filter" Click="PastApplyFilter_Click" Margin="0,0,6,0"/>
+                        <Button Content="Clear Filter" Click="PastClearFilter_Click"/>
+                    </StackPanel>
+
+                    <ListView Name="PastListView" Grid.Row="1" ItemsSource="{Binding PastView}" SelectedItem="{Binding SelectedPast, Mode=TwoWay}">
+                        <ListView.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="Filter">
+                                    <MenuItem Header="Filter by selected DisplayName" Click="PastFilterBySelected_Click"/>
+                                </MenuItem>
+                            </ContextMenu>
+                        </ListView.ContextMenu>
+
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Width="200">
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader Content="Display Name" Tag="DisplayName" Click="GridViewColumnHeader_Click"/>
+                                    </GridViewColumn.Header>
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding DisplayName}" TextWrapping="NoWrap"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+
+                                <GridViewColumn Width="280">
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader Content="User ID" Tag="UserId" Click="GridViewColumnHeader_Click"/>
+                                    </GridViewColumn.Header>
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding UserId}" />
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+
+                                <GridViewColumn Width="90">
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader Content="Avatar Name" Tag="AvatarName" Click="GridViewColumnHeader_Click"/>
+                                    </GridViewColumn.Header>
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding AvatarName}" />
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+
+                                <GridViewColumn Width="160">
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader Content="Instance Start" Tag="InstanceStartTime" Click="GridViewColumnHeader_Click"/>
+                                    </GridViewColumn.Header>
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding InstanceStartTime}" />
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+
+                                <GridViewColumn Width="160">
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader Content="Instance End" Tag="InstanceEndTime" Click="GridViewColumnHeader_Click"/>
+                                    </GridViewColumn.Header>
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding InstanceEndTime}" />
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+                </Grid>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</Window>

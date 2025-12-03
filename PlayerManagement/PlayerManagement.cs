@@ -30,6 +30,7 @@ namespace Tailgrab.PlayerManagement
     {
         public string UserId { get; set; }
         public string DisplayName { get; set; }
+        public string AvatarName { get; set; }
         public int NetworkId { get; set; }
         public DateTime InstanceStartTime { get; set; }
         public DateTime? InstanceEndTime { get; set; }
@@ -39,6 +40,7 @@ namespace Tailgrab.PlayerManagement
         {
             UserId = userId;
             DisplayName = displayName;
+            AvatarName = "";
             InstanceStartTime = DateTime.Now;
         }
 
@@ -48,6 +50,26 @@ namespace Tailgrab.PlayerManagement
         }
     }
     
+    public class PlayerChangedEventArgs : EventArgs
+    {
+        public enum ChangeType
+        {
+            Added,
+            Updated,
+            Removed,
+            Cleared
+        }
+
+        public ChangeType Type { get; }
+        public Player Player { get; }
+
+        public PlayerChangedEventArgs(ChangeType type, Player player)
+        {
+            Type = type;
+            Player = player;
+        }
+    }
+
     public static class PlayerManager
     {
         private static Dictionary<int, Player> playersByNetworkId = new Dictionary<int, Player>();
@@ -58,6 +80,21 @@ namespace Tailgrab.PlayerManagement
         public static readonly string COLOR_PREFIX_GREEN = $"\u001b[32;1m";
         public static readonly string COLOR_RESET = "\u001b[0m";
         public static Logger logger = LogManager.GetCurrentClassLogger();
+
+        // Event for UI and other listeners
+        public static event EventHandler<PlayerChangedEventArgs>? PlayerChanged;
+
+        private static void OnPlayerChanged(PlayerChangedEventArgs.ChangeType changeType, Player player)
+        {
+            try
+            {
+                PlayerChanged?.Invoke(null, new PlayerChangedEventArgs(changeType, player));
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error raising PlayerChanged event");
+            }
+        }
 
         public static void PlayerJoined(string userId, string displayName, AbstractLineHandler handler)
         {
@@ -73,11 +110,31 @@ namespace Tailgrab.PlayerManagement
 
                 if( avatarByDisplayName.TryGetValue(displayName, out string? avatarName))
                 {
+                    SetAvatarForPlayer(displayName, avatarName);
                     AddPlayerEventByDisplayName(displayName, PlayerEvent.EventType.AvatarChange, $"Joined with Avatar: {avatarName}");
                     if( handler.LogOutput )
                     {
                         logger.Info($"{COLOR_PREFIX_GREEN}\tAvatar on Join: {avatarName}{COLOR_RESET}");
                     }
+                }
+
+                OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Added, newPlayer);
+            }
+            else
+            {
+                // If existing, treat as update (display name may have changed etc.)
+                var existing = playersByUserId[userId];
+                if (existing.DisplayName != displayName)
+                {
+                    // remove old display-name mapping if present
+                    if (!string.IsNullOrEmpty(existing.DisplayName))
+                    {
+                        playersByDisplayName.Remove(existing.DisplayName);
+                    }
+
+                    existing.DisplayName = displayName;
+                    playersByDisplayName[displayName] = existing;
+                    OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Updated, existing);
                 }
             }
         }
@@ -87,6 +144,9 @@ namespace Tailgrab.PlayerManagement
             if (playersByDisplayName.TryGetValue(displayName, out Player? player))
             {
                 player.InstanceEndTime = DateTime.Now;
+                // Raise event with updated player before removing from internal dictionaries
+                OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Removed, player);
+
                 playersByDisplayName.Remove(displayName);
                 playersByNetworkId.Remove(player.NetworkId);
                 playersByUserId.Remove(player.UserId);
@@ -121,6 +181,7 @@ namespace Tailgrab.PlayerManagement
             {
                 player.NetworkId = networkId;
                 playersByNetworkId[networkId] = player;
+                OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Updated, player);
             }   
 
             return player;
@@ -141,11 +202,16 @@ namespace Tailgrab.PlayerManagement
                 {
                     PrintPlayerInfo(player);
                 }
+                // Notify removed for each player
+                OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Removed, player);
             }
 
             playersByNetworkId.Clear();
             playersByUserId.Clear();
             playersByDisplayName.Clear();
+
+            // Also a global cleared notification (consumers may want to reset)
+            OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Cleared, new Player("","") { InstanceStartTime = DateTime.MinValue });
         }
 
         public static int GetPlayerCount()
@@ -170,6 +236,7 @@ namespace Tailgrab.PlayerManagement
             {
                 PlayerEvent newEvent = new PlayerEvent(eventType, eventDescription);
                 player.AddEvent(newEvent);
+                OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Updated, player);
                 return player;
             } 
 
@@ -179,6 +246,11 @@ namespace Tailgrab.PlayerManagement
         public static void SetAvatarForPlayer(string displayName, string avatarId)
         {
             avatarByDisplayName[displayName] = avatarId;
+            if (playersByDisplayName.TryGetValue(displayName, out var p))
+            {
+                p.AvatarName = avatarId;
+                OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Updated, p);
+            }
         }
 
         private static void PrintPlayerInfo(Player player)
