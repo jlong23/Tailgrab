@@ -7,8 +7,7 @@
             "pattern": "([\\d]{4}.[\\d]{2}.[\\d]{2}\\W[\\d]{2}:[\\d]{2}:[\\d]{2})\\W(Log[\\W]{8}|Debug[\\W]{6})-\\W\\W\\[Behaviour\\]\\WSwitching\\W([\\S\\W]+)\\Wto\\Wavatar\\W([\\S\\W]+)",
             "logOutput": true,
             "logOutputColor": "Default",
-            "actions": [
-            ]
+            "actions": []
         },
         {
             "handlerTypeValue": "AvatarUnpack",
@@ -17,8 +16,7 @@
             "pattern": "([\\d]{4}.[\\d]{2}.[\\d]{2}\\W[\\d]{2}:[\\d]{2}:[\\d]{2})\\W(Log[\\W]{8}|Debug[\\W]{6})-\\W\\W\\[AssetBundleDownloadManager\\]\\W\\[\\d+\\] Unpacking Avatar \\(([\\S\\W]+) by ([\\S\\W]+)\\)",
             "logOutput": true,
             "logOutputColor": "Default",
-            "actions": [
-            ]
+            "actions": []
         },
         {
             "handlerTypeValue": "OnPlayerJoin",
@@ -27,8 +25,7 @@
             "pattern": "([\\d]{4}.[\\d]{2}.[\\d]{2}\\W[\\d]{2}:[\\d]{2}:[\\d]{2})\\W(Log[\\W]{8}|Debug[\\W]{6})-\\W\\W\\[Behaviour\\]\\WOnPlayer([\\d\\w]+)\\W([\\d\\w\\W]+)\\W\\((usr_[\\d\\w\\W]+)\\)",
             "logOutput": true,
             "logOutputColor": "Default",
-            "actions": [
-            ]
+            "actions": []
         },
         {
             "handlerTypeValue": "OnPlayerNetwork",
@@ -37,9 +34,8 @@
             "pattern": "([\\d]{4}.[\\d]{2}.[\\d]{2}\\W[\\d]{2}:[\\d]{2}:[\\d]{2})\\W(Log[\\W]{8}|Debug[\\W]{6})-\\W\\W\\[AP\\]\\WPlayer\\W\\W([\\d\\w\\W]+)\\W joined with ID ([\\d]+)",
             "logOutput": true,
             "logOutputColor": "Default",
-            "actions": [
-            ]
-        },        
+            "actions": []
+        },
         {
             "handlerTypeValue": "PenNetwork",
             "enabled": true,
@@ -47,8 +43,7 @@
             "pattern": "([\\d]{4}.[\\d]{2}.[\\d]{2}\\W[\\d]{2}:[\\d]{2}:[\\d]{2})\\W(Log[\\W]{8}|Debug[\\W]{6})-\\W\\W\\[NetworkProcessing\\] Received ownership transfer of ([\\d]+) from ([\\d]+) to ([\\d]+)",
             "logOutput": true,
             "logOutputColor": "Default",
-            "actions": [
-            ]
+            "actions": []
         },
         {
             "handlerTypeValue": "Print",
@@ -57,8 +52,7 @@
             "pattern": "([\\d]{4}.[\\d]{2}.[\\d]{2}\\W[\\d]{2}:[\\d]{2}:[\\d]{2})\\W(Log[\\W]{8}|Debug[\\W]{6})-\\W\\W\\[API\\]\\WRequesting\\WGet\\Wprints/(prnt_[\\d\\w\\W]+)\\W\\{\\{\\}\\}",
             "logOutput": true,
             "logOutputColor": "Default",
-            "actions": [
-            ]
+            "actions": []
         },
         {
             "handlerTypeValue": "Sticker",
@@ -67,8 +61,7 @@
             "pattern": "([\\d]{4}.[\\d]{2}.[\\d]{2}\\W[\\d]{2}:[\\d]{2}:[\\d]{2})\\W(Log[\\W]{8}|Debug[\\W]{6})-\\W\\W(?:[\\[Always\\]\\W]*)\\[StickersManager\\]\\WUser\\W(usr_[\\d\\w\\W]+)\\W\\(([\\d\\w\\W]+)\\)\\Wspawned\\Wsticker\\W(file_[\\d\\w\\W]+)",
             "logOutput": true,
             "logOutputColor": "Default",
-            "actions": [
-            ]
+            "actions": []
         },
         {
             "handlerTypeValue": "VTK",
@@ -78,6 +71,11 @@
             "logOutput": true,
             "logOutputColor": "Default",
             "actions": [
+                {
+                    "actionTypeValue": "KeyPressAction",
+                    "windowTitle": "Voicemod",
+                    "keys": "%{f}"
+                },
                 {
                     "actionTypeValue": "OSCAction",
                     "parameterName": "/avatar/parameters/Ear/Right_Angle",
@@ -93,6 +91,16 @@
                     "parameterName": "/avatar/parameters/Ear/Right_Angle",
                     "oscValueType": "Float",
                     "value": "0.0"
+                },
+                {
+                    "actionTypeValue": "KeyPressAction",
+                    "windowTitle": "OBS 64",
+                    "keys": "^{F8}"
+                },
+                {
+                    "actionTypeValue": "KeyPressAction",
+                    "windowTitle": "VRChat",
+                    "keys": "^{F12}"
                 }
             ]
         },
@@ -103,8 +111,7 @@
             "pattern": "([\\d]{4}.[\\d]{2}.[\\d]{2}\\W[\\d]{2}:[\\d]{2}:[\\d]{2})\\W(Log[\\W]{8}|Debug[\\W]{6})-\\W\\W\\[ModerationManager\\]\\W([\\S\\W]+)\\Whas\\Wbeen\\W(warned|kicked)",
             "logOutput": true,
             "logOutputColor": "Default",
-            "actions": [
-            ]
+            "actions": []
         },
         {
             "handlerTypeValue": "Quit",
@@ -113,8 +120,7 @@
             "pattern": "([\\d]{4}.[\\d]{2}.[\\d]{2}\\W[\\d]{2}:[\\d]{2}:[\\d]{2})\\W(Log[\\W]{8}|Debug[\\W]{6})-\\W\\WVRCApplication: HandleApplicationQuit at ([\\d\\W]+)",
             "logOutput": true,
             "logOutputColor": "Default",
-            "actions": [
-            ]
+            "actions": []
         }
     ]
 }

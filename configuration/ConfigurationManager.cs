@@ -1,8 +1,10 @@
+using System.IO;
 using Tailgrab.Actions;
 using Tailgrab.LineHandler;
 using BuildSoft.VRChat.Osc;
-using Microsoft.Extensions.Configuration;
 using NLog;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Tailgrab.Configuration
 {
@@ -22,23 +24,62 @@ namespace Tailgrab.Configuration
             return Path.Combine(configDirectory, "config.json");
         }
 
-        public static List<ILineHandler> LoadLineHandlersFromConfig( List<ILineHandler> handlers )
+        public static List<LineHandlerConfig> LoadConfig(string? configFilePath = null)
         {
-            var configuration = new ConfigurationBuilder()
-                .AddJsonFile("config.json")
-                .Build();
+            logger.Debug("** Loading Configuration file");
 
-            var myConfigurations = new List<LineHandlerConfig>();
-            configuration.GetSection("lineHandlers").Bind(myConfigurations);
+            // Resolve path: prefer explicit, then local repo config.json, then user config path
+            string path = configFilePath
+                ?? (File.Exists("config.json") ? Path.GetFullPath("config.json") : GetConfigFilePath());
 
-            foreach (var configItem in myConfigurations)
+            if (!File.Exists(path))
+            {
+                logger.Warn($"Configuration file not found at '{path}'. Returning empty configuration list.");
+                return new List<LineHandlerConfig>();
+            }
+
+            try
+            {
+                string jsonString = File.ReadAllText(path);
+
+                var options = new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true,
+                    ReadCommentHandling = System.Text.Json.JsonCommentHandling.Skip,
+                    AllowTrailingCommas = true
+                };
+                // ensure enums and polymorphic derived types deserialize from strings
+                options.Converters.Add(new JsonStringEnumConverter());
+
+                TailgrabConfig? config = JsonSerializer.Deserialize<TailgrabConfig>(jsonString, options);
+                if (config?.LineHandlers != null)
+                {
+                    return config.LineHandlers;
+                }
+
+                logger.Warn("Configuration file parsed but no 'lineHandlers' section found. Returning empty list.");
+                return new List<LineHandlerConfig>();
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, $"Failed to read or parse configuration file '{path}'.");
+                return new List<LineHandlerConfig>();
+            }
+        }
+
+        public static List<ILineHandler> LoadLineHandlersFromConfig(List<ILineHandler> handlers)
+        {
+
+            List<LineHandlerConfig> configs = LoadConfig();
+
+            foreach (var configItem in configs)
             {
                 if (configItem == null)
                 {
                     continue;
                 }
 
-                if( configItem.Enabled == false )
+                if (configItem.Enabled == false)
                 {
                     logger.Warn($"Line handler of type {configItem.HandlerTypeValue} is disabled in configuration, skipping this handler.");
                     continue;
@@ -65,9 +106,6 @@ namespace Tailgrab.Configuration
                     logOutputColor = configItem.LogOutputColor;
                 }
 
-                List<IAction> actions = ParseActionsFromConfig(configItem.Actions);
-
-
                 //
                 // Build the appropriate line handler based on the type
                 AbstractLineHandler? handler = null;
@@ -93,7 +131,7 @@ namespace Tailgrab.Configuration
                         if (pattern == null)
                         {
                             pattern = "";
-                        }   
+                        }
                         handler = new LoggingLineHandler(pattern);
                         break;
 
@@ -111,7 +149,7 @@ namespace Tailgrab.Configuration
                             pattern = OnPlayerNetworkHandler.LOG_PATTERN;
                         }
                         handler = new OnPlayerNetworkHandler(pattern);
-                        break;  
+                        break;
 
                     case LineHandlerType.PenNetwork:
                         if (pattern == null)
@@ -127,9 +165,9 @@ namespace Tailgrab.Configuration
                             pattern = PrintHandler.LOG_PATTERN;
                         }
                         handler = new PrintHandler(pattern);
-                        break;  
+                        break;
 
-                    case LineHandlerType.Quit:      
+                    case LineHandlerType.Quit:
                         if (pattern == null)
                         {
                             pattern = QuitHandler.LOG_PATTERN;
@@ -137,13 +175,13 @@ namespace Tailgrab.Configuration
                         handler = new QuitHandler(pattern);
                         break;
 
-                    case LineHandlerType.Sticker:   
+                    case LineHandlerType.Sticker:
                         if (pattern == null)
                         {
                             pattern = StickerHandler.LOG_PATTERN;
                         }
                         handler = new StickerHandler(pattern);
-                        break;                          
+                        break;
 
                     case LineHandlerType.VTK:
                         if (pattern == null)
@@ -152,7 +190,7 @@ namespace Tailgrab.Configuration
                         }
                         handler = new VTKHandler(pattern);
                         break;
-                    
+
                     case LineHandlerType.WarnKick:
                         if (pattern == null)
                         {
@@ -160,15 +198,19 @@ namespace Tailgrab.Configuration
                         }
                         handler = new WarnKickHandler(pattern);
                         break;
-            
+
                     default:
                         logger.Warn($"Unsupported line handler type in configuration: {configItem.HandlerTypeValue}, skipping this handler.");
                         continue;
                 }
-                handler.LogOutputColor = logOutputColor!;
-                handler.LogOutput = configItem.LogOutput;
-                handler.Actions = actions;
-                handlers.Add(handler);
+
+                if (handler != null)
+                {
+                    handler.LogOutputColor = logOutputColor!;
+                    handler.LogOutput = configItem.LogOutput;
+                    handler.Actions = ParseActionsFromConfig(configItem.Actions);
+                    handlers.Add(handler);
+                }
             }
 
             return handlers;
@@ -179,11 +221,7 @@ namespace Tailgrab.Configuration
             List<IAction> actions = new List<IAction>();
             foreach (var actionConfig in actionConfigs)
             {
-                if (actionConfig == null)
-                {
-                    continue;
-                }
-                if (actionConfig.ActionTypeValue == ActionType.OSCAction)
+                if (actionConfig.GetType() == typeof(OSCActionConfig))
                 {
                     var oscActionConfig = (OSCActionConfig)actionConfig;
                     if (oscActionConfig.ParameterName == null)
@@ -198,19 +236,39 @@ namespace Tailgrab.Configuration
                     }
 
                     actions.Add(new OSCAction(oscActionConfig.ParameterName, oscActionConfig.OscValueType, oscActionConfig.Value));
-                    continue;
                 }
 
-                if (actionConfig.ActionTypeValue == ActionType.DelayAction)
+                if (actionConfig.GetType() == typeof(DelayActionConfig))
                 {
                     var delayActionConfig = (DelayActionConfig)actionConfig;
                     actions.Add(new DelayAction(delayActionConfig.Milliseconds));
-                    continue;
+                }
+
+                if (actionConfig.GetType() == typeof(KeyStrokeConfig))
+                {
+                    var keyStrokeConfig = (KeyStrokeConfig)actionConfig;
+                    if (keyStrokeConfig.WindowTitle == null)
+                    {
+                        logger.Warn("Keystrokes Action configuration is missing required field; 'windowTitle', skipping this action.");
+                        continue;
+                    }
+                    if (keyStrokeConfig.Keys == null)
+                    {
+                        logger.Warn("Keystrokes Action configuration is missing required field; 'keys', skipping this action.");
+                        continue;
+                    }
+
+                    actions.Add(new KeystrokesAction(keyStrokeConfig.WindowTitle, keyStrokeConfig.Keys));
                 }
             }
 
             return actions;
         }
+    }
+
+    public class TailgrabConfig
+    {
+        public List<LineHandlerConfig> LineHandlers { get; set; } = new List<LineHandlerConfig>();
     }
 
 
@@ -255,6 +313,10 @@ namespace Tailgrab.Configuration
         KeyPressAction
     }
 
+    [JsonPolymorphic(TypeDiscriminatorPropertyName = "actionTypeValue")]
+    [JsonDerivedType(typeof(OSCActionConfig), "OSCAction")]
+    [JsonDerivedType(typeof(DelayActionConfig), "DelayAction")]
+    [JsonDerivedType(typeof(KeyStrokeConfig), "KeyPressAction")]
     public abstract class ActionBase
     {
         public ActionType ActionTypeValue { get; set; }
@@ -281,6 +343,17 @@ namespace Tailgrab.Configuration
         public DelayActionConfig()
         {
             ActionTypeValue = ActionType.DelayAction;
+        }
+    }
+
+    public class KeyStrokeConfig : ActionBase
+    {
+        public string? WindowTitle { get; set; }
+        public string? Keys { get; set; }
+
+        public KeyStrokeConfig()
+        {
+            ActionTypeValue = ActionType.KeyPressAction;
         }
     }
 }
