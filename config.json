@@ -70,39 +70,7 @@
             "pattern": "([\\d]{4}.[\\d]{2}.[\\d]{2}\\W[\\d]{2}:[\\d]{2}:[\\d]{2})\\W(Log[\\W]{8}|Debug[\\W]{6})-\\W\\W\\[ModerationManager\\] A vote kick has been initiated against ([\\S\\W]+), do you agree",
             "logOutput": true,
             "logOutputColor": "Default",
-            "actions": [
-                {
-                    "actionTypeValue": "KeyPressAction",
-                    "windowTitle": "Voicemod",
-                    "keys": "%{f}"
-                },
-                {
-                    "actionTypeValue": "OSCAction",
-                    "parameterName": "/avatar/parameters/Ear/Right_Angle",
-                    "oscValueType": "Float",
-                    "value": "20.0"
-                },
-                {
-                    "actionTypeValue": "DelayAction",
-                    "milliseconds": 500
-                },
-                {
-                    "actionTypeValue": "OSCAction",
-                    "parameterName": "/avatar/parameters/Ear/Right_Angle",
-                    "oscValueType": "Float",
-                    "value": "0.0"
-                },
-                {
-                    "actionTypeValue": "KeyPressAction",
-                    "windowTitle": "OBS 64",
-                    "keys": "^{F8}"
-                },
-                {
-                    "actionTypeValue": "KeyPressAction",
-                    "windowTitle": "VRChat",
-                    "keys": "^{F12}"
-                }
-            ]
+            "actions": []
         },
         {
             "handlerTypeValue": "WarnKick",

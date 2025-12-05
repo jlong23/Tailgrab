@@ -7,9 +7,9 @@
     <UseWindowsForms>true</UseWindowsForms>
     <UseWPF>true</UseWPF>
     <Nullable>enable</Nullable>
-    <AssemblyVersion>1.0.4.1041</AssemblyVersion> <!-- Explicitly set the build number -->
-    <FileVersion>1.0.4.1041</FileVersion>
-    <InformationalVersion>1.0.4.1041-beta</InformationalVersion>    
+    <AssemblyVersion>1.0.5.1059</AssemblyVersion> <!-- Explicitly set the build number -->
+    <FileVersion>1.0.5.1059</FileVersion>
+    <InformationalVersion>1.0.5.1059-beta</InformationalVersion>    
   </PropertyGroup>
 
   <ItemGroup>

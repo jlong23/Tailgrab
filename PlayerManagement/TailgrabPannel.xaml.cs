@@ -181,6 +181,49 @@ namespace Tailgrab.PlayerManagement
             UpdateHeaderSortIndicator(header, view, property);
         }
 
+        private void CopyPlayer_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not System.Windows.Controls.Button btn) return;
+
+            // Find the DataContext for the row (should be PlayerViewModel)
+            if (btn.DataContext is PlayerViewModel pvm)
+            {
+                // Try to find the underlying Player by UserId
+                var player = PlayerManager.GetPlayerByUserId(pvm.UserId);
+                if (player == null)
+                {
+                    // Build formatted string from the viewmodel alone
+                    var sb = new System.Text.StringBuilder();
+                    sb.AppendLine($"DisplayName: {pvm.DisplayName}");
+                    sb.AppendLine($"UserId: {pvm.UserId}");
+                    sb.AppendLine($"AvatarName: {pvm.AvatarName}");
+                    sb.AppendLine($"InstanceStart: {pvm.InstanceStartTime}");
+                    sb.AppendLine($"InstanceEnd: {pvm.InstanceEndTime}");
+                    var text = sb.ToString();
+                    System.Windows.Clipboard.SetText(text);
+                    return;
+                }
+
+                var sb2 = new System.Text.StringBuilder();
+                sb2.AppendLine($"DisplayName: {player.DisplayName}");
+                sb2.AppendLine($"UserId: {player.UserId}");
+                sb2.AppendLine($"AvatarName: { (string.IsNullOrEmpty(player.AvatarName) ? string.Empty : player.AvatarName) }");
+                sb2.AppendLine($"InstanceStart: {player.InstanceStartTime:u}");
+                sb2.AppendLine($"InstanceEnd: { (player.InstanceEndTime.HasValue ? player.InstanceEndTime.Value.ToString("u") : string.Empty) }");
+
+                if (player.Events != null && player.Events.Count > 0)
+                {
+                    sb2.AppendLine("Events:");
+                    foreach (var ev in player.Events)
+                    {
+                        sb2.AppendLine($"  - {ev.EventTime:u} {ev.Type} {ev.EventDescription}");
+                    }
+                }
+
+                System.Windows.Clipboard.SetText(sb2.ToString());
+            }
+        }
+
         private static T? FindAncestor<T>(DependencyObject? child) where T : DependencyObject
         {
             if (child == null) return null;
