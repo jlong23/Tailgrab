@@ -382,6 +382,11 @@ public class FileTailer
         tabControlStyle.Setters.Add(new Setter(System.Windows.Controls.Control.ForegroundProperty, lightText));
         app.Resources[typeof(System.Windows.Controls.TabControl)] = tabControlStyle;
 
+        var groupBoxStyle = new Style(typeof(System.Windows.Controls.GroupBox));
+        groupBoxStyle.Setters.Add(new Setter(System.Windows.Window.BackgroundProperty, darkWindow));
+        groupBoxStyle.Setters.Add(new Setter(System.Windows.Window.ForegroundProperty, lightText));
+        app.Resources[typeof(System.Windows.Controls.GroupBox)] = groupBoxStyle;
+
         var windowStyle = new Style(typeof(System.Windows.Window));
         windowStyle.Setters.Add(new Setter(System.Windows.Window.BackgroundProperty, darkWindow));
         windowStyle.Setters.Add(new Setter(System.Windows.Window.ForegroundProperty, lightText));

@@ -1,12 +1,12 @@
 using NLog;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
 using System.Windows.Threading;
+using Tailgrab.Config;
 
 namespace Tailgrab.PlayerManagement
 {
@@ -64,6 +64,24 @@ namespace Tailgrab.PlayerManagement
             // Initial load of avatars
             RefreshAvatarDb();
 
+            // Load saved secrets into UI fields if desired (not displayed in this view directly)
+            var vrUser = ConfigStore.LoadSecret(Tailgrab.Common.Common.Registry_VRChat_Web_UserName);
+            var vrPass = ConfigStore.LoadSecret(Tailgrab.Common.Common.Registry_VRChat_Web_Password);
+            var vr2fa = ConfigStore.LoadSecret(Tailgrab.Common.Common.Registry_VRChat_Web_2FactorKey);
+            var ollamaKey = ConfigStore.LoadSecret(Tailgrab.Common.Common.Registry_Ollama_API_Key);
+            var ollamaEndpoint = ConfigStore.LoadSecret(Tailgrab.Common.Common.Registry_Ollama_API_Endpoint) ?? Tailgrab.Common.Common.Default_Ollama_API_Endpoint;
+            var ollamaPrompt = ConfigStore.LoadSecret(Tailgrab.Common.Common.Registry_Ollama_API_Prompt) ?? Tailgrab.Common.Common.Default_Ollama_API_Prompt;
+            var ollamaModel = ConfigStore.LoadSecret(Tailgrab.Common.Common.Registry_Ollama_API_Model) ?? Tailgrab.Common.Common.Default_Ollama_API_Model;
+
+            // Populate UI boxes but do not reveal secrets
+            if (!string.IsNullOrEmpty(vrUser)) VrUserBox.Text = vrUser;
+            if (!string.IsNullOrEmpty(vrPass)) VrPassBox.ToolTip = "Stored (hidden)";
+            if (!string.IsNullOrEmpty(vr2fa)) Vr2FaBox.ToolTip = "Stored (hidden)";
+            if (!string.IsNullOrEmpty(ollamaKey)) VrOllamaBox.ToolTip = "Stored (hidden)";
+            if (!string.IsNullOrEmpty(ollamaEndpoint)) VrOllamaEndpointBox.Text = ollamaEndpoint;
+            if (!string.IsNullOrEmpty(ollamaModel)) VrOllamaModelBox.Text = ollamaModel;
+            if (!string.IsNullOrEmpty(ollamaPrompt)) VrOllamaPromptBox.Text = ollamaPrompt;
+
             // Initial load of Groups
             RefreshGroupDb();
 
@@ -81,6 +99,27 @@ namespace Tailgrab.PlayerManagement
             this.Closed += (s, e) => Dispose();
 
 
+        }
+
+        private void SaveConfig_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // Save to registry protected store
+                ConfigStore.SaveSecret(Tailgrab.Common.Common.Registry_VRChat_Web_UserName, VrUserBox.Text ?? string.Empty);
+                if (!string.IsNullOrEmpty(VrPassBox.Password)) ConfigStore.SaveSecret(Tailgrab.Common.Common.Registry_VRChat_Web_Password, VrPassBox.Password);
+                if (!string.IsNullOrEmpty(Vr2FaBox.Password)) ConfigStore.SaveSecret(Tailgrab.Common.Common.Registry_VRChat_Web_2FactorKey, Vr2FaBox.Password);
+                if (!string.IsNullOrEmpty(VrOllamaBox.Password)) ConfigStore.SaveSecret(Tailgrab.Common.Common.Registry_Ollama_API_Key, VrOllamaBox.Password);
+                ConfigStore.SaveSecret(Tailgrab.Common.Common.Registry_Ollama_API_Endpoint, VrOllamaEndpointBox.Text ?? Tailgrab.Common.Common.Default_Ollama_API_Endpoint);
+                ConfigStore.SaveSecret(Tailgrab.Common.Common.Registry_Ollama_API_Prompt, VrOllamaPromptBox.Text ?? Tailgrab.Common.Common.Default_Ollama_API_Prompt);
+                ConfigStore.SaveSecret(Tailgrab.Common.Common.Registry_Ollama_API_Model, VrOllamaModelBox.Text ?? Tailgrab.Common.Common.Default_Ollama_API_Model);
+
+                System.Windows.MessageBox.Show("Configuration saved. Restart the Applicaton for all changes to take affect.", "Config", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"Failed to save configuration: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private void FallbackTimer_Tick(object? sender, EventArgs e)

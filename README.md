@@ -1,8 +1,19 @@
 # TailGrab
-VRChat Log Parser and Automation tool to help moderators manage trouble makers in VRChat since VRChat will not take moderation seriously.
+VRChat Log Parser and Automation tool to help moderators manage trouble makers in VRChat since VRChat Management Team is not taking moderation seriously; ever.
+
+# Capabilities
+
+The core concept of the TailGrab was to create a Windows friendly ```grep``` of VR Chat log events that would allow a group moderation team to review, get insights of bad actors and with the action framework to perform a scripted reaction to a VR Chat game log event.
+
+EG:
+A ```Vote To Kick``` is received from a patreon, the action sequence could:
+- Send a OSC Avatar Parameter(s) that change the avatar's ear position
+- Delay for a quarter of a second
+- Send a keystroke to your soundboard application
+- Send a keystroke to OBS to start recording
 
 # Usage
-Open a Powershell or Command Line prompt in your windows host, change directory to where ```tailgrab``` has been extracted to and start it with:
+Click the windows application or open a Powershell or Command Line prompt in your windows host, change directory to where ```tailgrab.exe``` has been extracted to and start it with:
 
 ```.\tailgrab.exe```
 
@@ -10,28 +21,42 @@ Or if you have moved where the VR Chat ```output_log_*.txt``` are located; then:
 
 ```.\tailgrab.exe {full path to VR Chat logs ending with a \}```
 
+## VRChat Source Log Files
+
+By default TailGrab will look for VRChat log files in the default location of:
+
+```YourUserHome\AppData\LocalLow\VRChat\VRChat\```
+
+This can be overridden by passing the full path to the VRChat log files as the first argument to the application.
+
+```.\\tailgrab.exe D:\MyVRChatLogs\```
+
+## Watching TailGrab Application Logs
+
+The TailGrab application will log it's internal operations to the ```./logs``` folder in the same directory as the application executable.  Each run of the application will create a new log file with a timestamp in the filename.
+
+If you want to watch the application logs in real time, you can use a tool like ```tail``` from Git Bash or ```Get-Content``` from Powershell session with the log filename.
+
+```Get-Content -Path .\logs\tailgrab-2026-01-26.log -wait```
+
 # Configuration
 
-## Environment Variables
-The TailGrab application will look for the following environment variables to connect to your VRChat API and OLLama AI services.
+## VR Chat and OLLama API Credentials
 
 Tailgrab uses VR Chat's public API to get information about avatars for the BlackListed Database (SQLite Local DB) and to get user profile infoformation for Profile Evaluation with the AI services.
 OLLama Cloud AI services are used to evaluate user profiles for potential bad actors based on your custom prompt criteria.  The OLLama API is called only once for a MD5 checksummed profile to reduce API usage and cost.
 
+The TailGrab application will look for the following credentials to connect to your VRChat API and OLLama AI services from the Windows Registry in a encyrpted format.  On the first Run you may receive a Popup Message to set the values on the Config -> Secrets Tab and restart the application to get the services running properly.
 
-|Environment Variable | Definition |
-|--------|--------|
-| VRCHAT_USERNAME | Your VRChat User Name (What you use to sign into the VR Chat Web Page). |
-| VRCHAT_PASSWORD | Your VRChat Password (What you use to sign into the VR Chat Web Page). |
-| VRCHAT_TWO_FACTOR_SECRET | Your VRChat Two Factor Authentication Secret (If you have 2FA enabled on your account; **RECOMENDED** ). See https://docs.vrchat.com/docs/using-2fa for more information. |
-| OLLAMA_API_KEY | Your OLLama API Key to access your AI services. See https://ollama.com/docs/api for more information. |
+## Getting your VR Chat 2 Factor Authentication key
 
-On Windows 11 you can set these environment variables by searching for "Environment Variables" in the Start Menu and selecting "Edit the User environment variables". Then click on the "Environment Variables" button and add the variables under "User variables" (Suggested) or "System variables".
-If launching from a Powershell or Command Line prompt, you will need to close the window for the values to be set for that session
+I certainly hope you are using LastPass Authenticator or Google Authenticator to manage your 2FA codes for VRChat.  If you are not, please stop reading this and go set that up now to protect your Online Accounts. 
+
+On LastPass Authenticator for the your VR Chat Entry, you can use the right Hamburger menu icon to get a dialog of options, one of which is to 'Edit Account', select that and you will see the 'Secret Key' field, copy the 'Secret Key' value to your clipboard and paste to something you can transfer to your PC (Or tediously type it in from the screen).
 
 ## "Config.json" File
 
-The confiuration for TailGrab uses a JSON formated payload of the base attribute "lineHandlers" that contains a array of LineHandler Objects, Those may have a attribute of "actions" that contain an array of Action Objects.
+The confiuration for TailGrab uses a JSON formated payload of the base attribute "lineHandlers" that contains a array of LineHandler Objects, Those may have a attribute of "actions" that contain an array of Action Objects.  This configuration is loaded on application start.
 
 ## LineHandler Definition
 
@@ -161,25 +186,3 @@ To specify keys combined with any combination of the SHIFT, CTRL, and ALT keys, 
 To specify that any combination of SHIFT, CTRL, and ALT should be held down while several other keys are pressed, enclose the code for those keys in parentheses. For example, to specify to hold down SHIFT while E and C are pressed, use ```"+(EC)"```. To specify to hold down SHIFT while E is pressed, followed by C without SHIFT, use ```"+EC"```.
 
 To specify repeating keys, use the form ```{key number}```. You must put a space between key and number. For example, ```{LEFT 42}``` means press the LEFT ARROW key 42 times; ```{h 10}``` means press H 10 times.
-
-
-
-# Capabilities
-
-The core concept of the TailGrab was to create a Windows friendly ```grep``` of VR Chat log events that would allow a group moderation team to review, get insights of bad actors and with the action framework to perform a scripted reaction to a log event.
-
-EG:
-A ```Vote To Kick``` is received from a patreon, the action sequence could:
-- Send a OSC Avatar Parameter(s) that change the avatar's ear position
-- Delay for a quarter of a second
-- Send a keystroke to your soundboard application
-- Send a keystroke to OBS to start recording
-
-
-## POC Version 
-- Parse VRChat log files 
-- World ```Furry Hideout``` will record User Pen Interaction
-- Record User's avatar usage while in the instance
-- Record User's moderation while in the instance (Warn and final Kick)
-- Partial work with OSC Triggered events to send to your avatar
-- Partial work with Keystroke events sent to a application of your choice

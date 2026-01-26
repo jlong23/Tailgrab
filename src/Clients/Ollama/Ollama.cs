@@ -1,13 +1,16 @@
 ﻿using ConcurrentPriorityQueue.Core;
+using Microsoft.EntityFrameworkCore;
 using NLog;
 using OllamaSharp;
 using OllamaSharp.Models;
 using System.Net.Http;
 using System.Text.RegularExpressions;
 using Tailgrab.Common;
+using Tailgrab.Config;
 using Tailgrab.Models;
 using Tailgrab.PlayerManagement;
 using VRChat.API.Model;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.StartPanel;
 
 namespace Tailgrab.Clients.Ollama
 {
@@ -77,15 +80,21 @@ namespace Tailgrab.Clients.Ollama
         }
         public static async Task ProfileCheckTask(ConcurrentPriorityQueue<IHavePriority<int>, int> priorityQueue, Dictionary<string, string> processData, ServiceRegistry serviceRegistry )
         {
-            string? ollamaCloudKey = Environment.GetEnvironmentVariable("OLLAMA_CLOUD_KEY");
-            if (ollamaCloudKey is null)
-                throw new InvalidOperationException("OLLAMA_CLOUD_KEY environment variable is not set.");
+            string? ollamaCloudKey = ConfigStore.LoadSecret(Tailgrab.Common.Common.Registry_Ollama_API_Key);
 
+            if (ollamaCloudKey is null)
+            {
+                System.Windows.MessageBox.Show("Ollama API Credentials are not set yet, use the Config / Secrets tab to update credenials and restart Tailgrab.", "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                return;
+            }
+
+            string ollamaEndpoint = ConfigStore.LoadSecret(Tailgrab.Common.Common.Registry_Ollama_API_Endpoint) ?? Tailgrab.Common.Common.Default_Ollama_API_Endpoint;
             HttpClient client = new HttpClient();
-            client.BaseAddress = new Uri("https://ollama.com");
+            client.BaseAddress = new Uri(ollamaEndpoint);
             client.DefaultRequestHeaders.Add("Authorization", "Bearer " + ollamaCloudKey);
-            OllamaApiClient ollamaApi = new OllamaApiClient(client);
-            ollamaApi.SelectedModel = "gemma3:27b";
+            OllamaApiClient? ollamaApi = new OllamaApiClient(client);
+            string ollamaModel = ConfigStore.LoadSecret(Tailgrab.Common.Common.Registry_Ollama_API_Model) ?? Tailgrab.Common.Common.Default_Ollama_API_Model;
+            ollamaApi.SelectedModel = ollamaModel;
 
             OllamaClient.logger.Info($"OLlama Queue Running");
             while (true)
@@ -104,60 +113,25 @@ namespace Tailgrab.Clients.Ollama
                             string fullProfile = $"DisplayName: {profile.DisplayName}\nStatusDesc: {profile.StatusDescription}\nPronowns: {profile.Pronouns}\nProfileBio: {profile.Bio}\n";
                             item.UserBio = fullProfile;
 
-                            logger.Debug($"Processing AI Evaluation Queued item for userId: {item.UserId}");
-                            // Process the dequeued item
-                            if (!string.IsNullOrEmpty(item.MD5Hash))
-                            {
-                                // Only when the Item has a valid hash
-                                // Check if already evaluated
-                                ProfileEvaluation? evaluated = serviceRegistry.GetDBContext().ProfileEvaluations.Find(item.MD5Hash);
-                                if (evaluated == null)
-                                {
-                                    GetEvaluationFromCloud(ollamaApi, serviceRegistry, item);
-                                }
-                                else
-                                {
-                                    GetEvaluationFromStore(serviceRegistry, evaluated, item);
-                                }
-                            }
+                            GetUserGroupInformation(serviceRegistry, dBContext, userGroups, item);
 
-                            bool isSuspectGroup = false;
-                            foreach ( LimitedUserGroups group in userGroups)
+                            if (ollamaApi != null)
                             {
-                                GroupInfo? groupInfo = dBContext.GroupInfos.Find(group.GroupId);
-                                if (groupInfo == null)
+                                logger.Debug($"Processing AI Evaluation Queued item for userId: {item.UserId}");
+                                // Process the dequeued item
+                                if (!string.IsNullOrEmpty(item.MD5Hash))
                                 {
-                                    groupInfo = new GroupInfo
+                                    // Only when the Item has a valid hash
+                                    // Check if already evaluated
+                                    ProfileEvaluation? evaluated = serviceRegistry.GetDBContext().ProfileEvaluations.Find(item.MD5Hash);
+                                    if (evaluated == null)
                                     {
-                                        GroupId = group.GroupId,
-                                        GroupName = group.Name,
-                                        IsBos = false,
-                                        CreatedAt = DateTime.UtcNow,
-                                        UpdatedAt = DateTime.UtcNow
-                                    };
-                                    dBContext.GroupInfos.Add(groupInfo);
-                                    dBContext.SaveChanges();
-                                } 
-                                else
-                                {
-                                    groupInfo.GroupName = group.Name;
-                                    dBContext.GroupInfos.Update(groupInfo);
-                                    dBContext.SaveChanges();
-
-                                    if( groupInfo.IsBos)
-                                    {
-                                        isSuspectGroup = true;
+                                        GetEvaluationFromCloud(ollamaApi, serviceRegistry, item);
                                     }
-                                }
-                            }
-
-                            if (isSuspectGroup)
-                            {
-                                Player? player = serviceRegistry.GetPlayerManager().GetPlayerByUserId(item.UserId ?? string.Empty);
-                                if (player != null)
-                                {
-                                    player.IsGroupWatch = true;
-                                    serviceRegistry.GetPlayerManager().OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Updated, player);
+                                    else
+                                    {
+                                        GetEvaluationFromStore(serviceRegistry, evaluated, item);
+                                    }
                                 }
                             }
                         }
@@ -181,12 +155,57 @@ namespace Tailgrab.Clients.Ollama
             }
         }
 
+        private async static void GetUserGroupInformation(ServiceRegistry serviceRegistry, TailgrabDBContext dBContext, List<LimitedUserGroups> userGroups, QueuedProcess item )
+        {
+            logger.Debug($"Processing User Group subscription for userId: {item.UserId}");
+            bool isSuspectGroup = false;
+            foreach (LimitedUserGroups group in userGroups)
+            {
+                GroupInfo? groupInfo = dBContext.GroupInfos.Find(group.GroupId);
+                if (groupInfo == null)
+                {
+                    groupInfo = new GroupInfo
+                    {
+                        GroupId = group.GroupId,
+                        GroupName = group.Name,
+                        IsBos = false,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    };
+                    dBContext.GroupInfos.Add(groupInfo);
+                    dBContext.SaveChanges();
+                }
+                else
+                {
+                    groupInfo.GroupName = group.Name;
+                    dBContext.GroupInfos.Update(groupInfo);
+                    dBContext.SaveChanges();
+
+                    if (groupInfo.IsBos)
+                    {
+                        isSuspectGroup = true;
+                    }
+                }
+            }
+
+            if (isSuspectGroup)
+            {
+                Player? player = serviceRegistry.GetPlayerManager().GetPlayerByUserId(item.UserId ?? string.Empty);
+                if (player != null)
+                {
+                    player.IsGroupWatch = true;
+                    serviceRegistry.GetPlayerManager().OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Updated, player);
+                }
+            }
+        }
+
         private async static void GetEvaluationFromCloud(OllamaApiClient ollamaApi, ServiceRegistry serviceRegistry, QueuedProcess item)
         {
+            string? ollamaPrompt = ConfigStore.LoadSecret(Tailgrab.Common.Common.Registry_Ollama_API_Prompt);
             GenerateRequest request = new GenerateRequest
             {
                 Model = ollamaApi.SelectedModel,
-                Prompt = "From the following block of text, classify the contents into a single class; 'OK', 'Explicit Sexual', 'Harrassment & Bullying', 'Self Harm' or 'Other'. When replying, give a single line for the Classification and then a new line for the resoning: \n" + item.UserBio ?? string.Empty,
+                Prompt = ollamaPrompt ?? Tailgrab.Common.Common.Default_Ollama_API_Prompt + item.UserBio ?? string.Empty,
                 Stream = false
             };
 

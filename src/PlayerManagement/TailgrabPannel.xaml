@@ -364,7 +364,7 @@
                                 <Button Content="Clear Filter" Click="AvatarDbClearFilter_Click"/>
                                 <Button Content="Refresh" Click="AvatarDbRefresh_Click" Margin="8,0,0,0"/>
                             </StackPanel>
-
+                                       
                             <DataGrid Name="AvatarDbGrid" Grid.Row="1" AutoGenerateColumns="False" CanUserSortColumns="True" IsReadOnly="False" ItemsSource="{Binding AvatarDbView}" CellEditEnding="AvatarDbGrid_CellEditEnding">
                                 <DataGrid.Columns>
                                     <DataGridTextColumn Header="Avatar Name" Binding="{Binding AvatarName}" SortMemberPath="AvatarName" Width="*" />
@@ -469,6 +469,71 @@
                     <TabItem Header="Line Matchers">
                         <Grid>
                             <TextBlock Margin="12" Text="Config view not implemented yet." />
+                        </Grid>
+                    </TabItem>
+                    <TabItem Header="Secrets">
+                        <Grid Margin="6">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+
+                            <GroupBox Header="VR Chat Credentials" Margin="0,0,0,6">
+                                <Grid Margin="6">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+
+                                    <Label Grid.Row="0" Grid.Column="0" Content="User:" VerticalAlignment="Center"/>
+                                    <TextBox Grid.Row="0" Grid.Column="1" Name="VrUserBox" Width="300" Margin="6,2" />
+
+                                    <Label Grid.Row="1" Grid.Column="0" Content="Password:" VerticalAlignment="Center"/>
+                                    <PasswordBox Grid.Row="1" Grid.Column="1" Name="VrPassBox" Width="300" Margin="6,2" />
+
+                                    <Label Grid.Row="2" Grid.Column="0" Content="2FA Key:" VerticalAlignment="Center"/>
+                                    <PasswordBox Grid.Row="2" Grid.Column="1" Name="Vr2FaBox" Width="300" Margin="6,2" />
+                                </Grid>
+                            </GroupBox>
+
+                            <GroupBox Header="Ollama Cloud Credentials" Grid.Row="1" Margin="0,0,0,6">
+                                <Grid Margin="6">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+
+                                    <Label Grid.Row="0" Grid.Column="0" Content="Ollama Endpoint:" VerticalAlignment="Center"/>
+                                    <TextBox Grid.Row="0" Grid.Column="1" Name="VrOllamaEndpointBox" Width="400" Margin="6,2" />
+
+                                    <Label Grid.Row="1" Grid.Column="0" Content="Ollama API Key:" VerticalAlignment="Center"/>
+                                    <PasswordBox Grid.Row="1" Grid.Column="1" Name="VrOllamaBox" Width="400" Margin="6,2" />
+
+                                    <Label Grid.Row="2" Grid.Column="0" Content="Ollama Model Name:" VerticalAlignment="Center"/>
+                                    <TextBox Grid.Row="2" Grid.Column="1" Name="VrOllamaModelBox" Width="400" Margin="6,2" />
+
+                                    <Label Grid.Row="3" Grid.Column="0" Content="AI Prompt:" VerticalAlignment="Center"/>
+                                    <TextBox Grid.Row="3" Grid.Column="1" Name="VrOllamaPromptBox" Width="800" Height="100" Margin="6,2" TextWrapping="Wrap"/>
+
+
+                                </Grid>
+                            </GroupBox>
+
+                            <StackPanel Orientation="Horizontal" Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,6,0,0">
+                                <Button Content="Save Config" Click="SaveConfig_Click" Width="120" />
+                            </StackPanel>
                         </Grid>
                     </TabItem>
                 </TabControl>

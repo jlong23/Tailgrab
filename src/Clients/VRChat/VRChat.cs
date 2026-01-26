@@ -3,6 +3,7 @@ using NLog;
 using OtpNet;
 using System.IO;
 using System.Net;
+using Tailgrab.Config;
 using VRChat.API.Client;
 using VRChat.API.Model;
 
@@ -17,17 +18,16 @@ namespace Tailgrab.Clients.VRChat
 
         public async void Initialize()
         {
-            string? username = Environment.GetEnvironmentVariable("VRCHAT_USERNAME");
-            string? password = Environment.GetEnvironmentVariable("VRCHAT_PASSWORD");
-            string? twoFactorSecret = Environment.GetEnvironmentVariable("VRCHAT_TWO_FACTOR_SECRET");
+            string? username = ConfigStore.LoadSecret(Tailgrab.Common.Common.Registry_VRChat_Web_UserName);
+            string? password = ConfigStore.LoadSecret(Tailgrab.Common.Common.Registry_VRChat_Web_Password);
+            string? twoFactorSecret = ConfigStore.LoadSecret(Tailgrab.Common.Common.Registry_VRChat_Web_2FactorKey);
 
-            if (username is null)
-                throw new InvalidOperationException("VRCHAT_USERNAME environment variable is not set.");
-            if (password is null)
-                throw new InvalidOperationException("VRCHAT_PASSWORD environment variable is not set.");
-            if (twoFactorSecret is null)
-                throw new InvalidOperationException("VRCHAT_TWO_FACTOR_SECRET environment variable is not set.");
-
+            if (username is null || password is null || twoFactorSecret is null)
+            {
+                System.Windows.MessageBox.Show("VR Chat Web API Credentials are not set yet, use the Config / Secrets tab to update credenials and restart Tailgrab.", "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                return;
+            }
+                
             string cookiePath = Path.Combine(Directory.GetCurrentDirectory(), "cookies.json");
 
             // Try to load cookies from disk and use them if they are present and not expired
