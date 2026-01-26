@@ -12,6 +12,23 @@ Or if you have moved where the VR Chat ```output_log_*.txt``` are located; then:
 
 # Configuration
 
+## Environment Variables
+The TailGrab application will look for the following environment variables to connect to your VRChat API and OLLama AI services.
+
+Tailgrab uses VR Chat's public API to get information about avatars for the BlackListed Database (SQLite Local DB) and to get user profile infoformation for Profile Evaluation with the AI services.
+OLLama Cloud AI services are used to evaluate user profiles for potential bad actors based on your custom prompt criteria.  The OLLama API is called only once for a MD5 checksummed profile to reduce API usage and cost.
+
+
+|Environment Variable | Definition |
+|--------|--------|
+| VRCHAT_USERNAME | Your VRChat User Name (What you use to sign into the VR Chat Web Page). |
+| VRCHAT_PASSWORD | Your VRChat Password (What you use to sign into the VR Chat Web Page). |
+| VRCHAT_TWO_FACTOR_SECRET | Your VRChat Two Factor Authentication Secret (If you have 2FA enabled on your account; **RECOMENDED** ). See https://docs.vrchat.com/docs/using-2fa for more information. |
+| OLLAMA_API_KEY | Your OLLama API Key to access your AI services. See https://ollama.com/docs/api for more information. |
+
+On Windows 11 you can set these environment variables by searching for "Environment Variables" in the Start Menu and selecting "Edit the User environment variables". Then click on the "Environment Variables" button and add the variables under "User variables" (Suggested) or "System variables".
+If launching from a Powershell or Command Line prompt, you will need to close the window for the values to be set for that session
+
 ## "Config.json" File
 
 The confiuration for TailGrab uses a JSON formated payload of the base attribute "lineHandlers" that contains a array of LineHandler Objects, Those may have a attribute of "actions" that contain an array of Action Objects.
@@ -59,7 +76,20 @@ The OSC Action will allow you to send values (```Float```/```Int```/```Bool```) 
 | oscValueType | OSC Value types associated with that Parameter Path; ```Float``` or ```Int``` or ```Bool``` |
 | value | The Value to send to your avatar; Floats expect a decimal place ```0.0```, Int expect no decimal place ```0```, and Bool expects either ```true``` or ```false```
 
+## Action: TTSAction Definition
+
+The TTS Action will allow you to say a phrase when triggered.
+
+|Attribute | Definition |
+|--------|--------|
+| actionTypeValue | ```TTSAction``` See ```actionTypeValue``` |
+| text | The phrase you wish to have spoken |
+| volume | Volume 0...100 |
+| rate | The speed of the speech -10...10 |
+
 ## Action : KeyPressAction Definition
+
+** Still Broken with Beta 3 release; Will be fixed in future release **
 
 The KeyPress action will let you send keystrokes to a targed application by it's HWND Window Title, if the application runs windowless/without a title bar, this may not work for you.
 
@@ -146,7 +176,7 @@ A ```Vote To Kick``` is received from a patreon, the action sequence could:
 - Send a keystroke to OBS to start recording
 
 
-## POC Version
+## POC Version 
 - Parse VRChat log files 
 - World ```Furry Hideout``` will record User Pen Interaction
 - Record User's avatar usage while in the instance
