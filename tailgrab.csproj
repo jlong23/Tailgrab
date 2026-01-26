@@ -1,40 +1,106 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>net9.0-windows</TargetFramework>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWindowsForms>true</UseWindowsForms>
     <UseWPF>true</UseWPF>
     <Nullable>enable</Nullable>
-    <AssemblyVersion>1.0.5.1059</AssemblyVersion> <!-- Explicitly set the build number -->
-    <FileVersion>1.0.5.1059</FileVersion>
-    <InformationalVersion>1.0.5.1059-beta</InformationalVersion>    
+    <AssemblyVersion>1.0.6.1421</AssemblyVersion> <!-- Explicitly set the build number -->
+    <FileVersion>1.0.6.1421</FileVersion>
+    <InformationalVersion>1.0.6.1421-beta</InformationalVersion>
+    <ApplicationIcon>src\Resources\tailgrab_large.ico</ApplicationIcon>    
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="Resources\tailgrab.ico" />
-    <None Remove="Resources\tailgrab.png" />
+    <Content Remove="C:\Users\jlong\.nuget\packages\microsoft.codeanalysis.workspaces.msbuild\4.14.0\contentFiles\any\any\BuildHost-net472\cs\System.CommandLine.resources.dll" />
+    <Content Remove="C:\Users\jlong\.nuget\packages\microsoft.codeanalysis.workspaces.msbuild\4.14.0\contentFiles\any\any\BuildHost-net472\de\System.CommandLine.resources.dll" />
+    <Content Remove="C:\Users\jlong\.nuget\packages\microsoft.codeanalysis.workspaces.msbuild\4.14.0\contentFiles\any\any\BuildHost-net472\es\System.CommandLine.resources.dll" />
+    <Content Remove="C:\Users\jlong\.nuget\packages\microsoft.codeanalysis.workspaces.msbuild\4.14.0\contentFiles\any\any\BuildHost-net472\fr\System.CommandLine.resources.dll" />
+    <Content Remove="C:\Users\jlong\.nuget\packages\microsoft.codeanalysis.workspaces.msbuild\4.14.0\contentFiles\any\any\BuildHost-net472\it\System.CommandLine.resources.dll" />
+    <Content Remove="C:\Users\jlong\.nuget\packages\microsoft.codeanalysis.workspaces.msbuild\4.14.0\contentFiles\any\any\BuildHost-net472\ja\System.CommandLine.resources.dll" />
+    <Content Remove="C:\Users\jlong\.nuget\packages\microsoft.codeanalysis.workspaces.msbuild\4.14.0\contentFiles\any\any\BuildHost-net472\ko\System.CommandLine.resources.dll" />
+    <Content Remove="C:\Users\jlong\.nuget\packages\microsoft.codeanalysis.workspaces.msbuild\4.14.0\contentFiles\any\any\BuildHost-net472\Microsoft.Build.Locator.dll" />
+    <Content Remove="C:\Users\jlong\.nuget\packages\microsoft.codeanalysis.workspaces.msbuild\4.14.0\contentFiles\any\any\BuildHost-net472\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.exe" />
+    <Content Remove="C:\Users\jlong\.nuget\packages\microsoft.codeanalysis.workspaces.msbuild\4.14.0\contentFiles\any\any\BuildHost-net472\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.exe.config" />
+    <Content Remove="C:\Users\jlong\.nuget\packages\microsoft.codeanalysis.workspaces.msbuild\4.14.0\contentFiles\any\any\BuildHost-net472\Microsoft.IO.Redist.dll" />
+    <Content Remove="C:\Users\jlong\.nuget\packages\microsoft.codeanalysis.workspaces.msbuild\4.14.0\contentFiles\any\any\BuildHost-net472\Newtonsoft.Json.dll" />
+    <Content Remove="C:\Users\jlong\.nuget\packages\microsoft.codeanalysis.workspaces.msbuild\4.14.0\contentFiles\any\any\BuildHost-net472\pl\System.CommandLine.resources.dll" />
+    <Content Remove="C:\Users\jlong\.nuget\packages\microsoft.codeanalysis.workspaces.msbuild\4.14.0\contentFiles\any\any\BuildHost-net472\pt-BR\System.CommandLine.resources.dll" />
+    <Content Remove="C:\Users\jlong\.nuget\packages\microsoft.codeanalysis.workspaces.msbuild\4.14.0\contentFiles\any\any\BuildHost-net472\ru\System.CommandLine.resources.dll" />
+    <Content Remove="C:\Users\jlong\.nuget\packages\microsoft.codeanalysis.workspaces.msbuild\4.14.0\contentFiles\any\any\BuildHost-net472\System.Buffers.dll" />
+    <Content Remove="C:\Users\jlong\.nuget\packages\microsoft.codeanalysis.workspaces.msbuild\4.14.0\contentFiles\any\any\BuildHost-net472\System.Collections.Immutable.dll" />
+    <Content Remove="C:\Users\jlong\.nuget\packages\microsoft.codeanalysis.workspaces.msbuild\4.14.0\contentFiles\any\any\BuildHost-net472\System.CommandLine.dll" />
+    <Content Remove="C:\Users\jlong\.nuget\packages\microsoft.codeanalysis.workspaces.msbuild\4.14.0\contentFiles\any\any\BuildHost-net472\System.Memory.dll" />
+    <Content Remove="C:\Users\jlong\.nuget\packages\microsoft.codeanalysis.workspaces.msbuild\4.14.0\contentFiles\any\any\BuildHost-net472\System.Numerics.Vectors.dll" />
+    <Content Remove="C:\Users\jlong\.nuget\packages\microsoft.codeanalysis.workspaces.msbuild\4.14.0\contentFiles\any\any\BuildHost-net472\System.Runtime.CompilerServices.Unsafe.dll" />
+    <Content Remove="C:\Users\jlong\.nuget\packages\microsoft.codeanalysis.workspaces.msbuild\4.14.0\contentFiles\any\any\BuildHost-net472\System.Threading.Tasks.Extensions.dll" />
+    <Content Remove="C:\Users\jlong\.nuget\packages\microsoft.codeanalysis.workspaces.msbuild\4.14.0\contentFiles\any\any\BuildHost-net472\tr\System.CommandLine.resources.dll" />
+    <Content Remove="C:\Users\jlong\.nuget\packages\microsoft.codeanalysis.workspaces.msbuild\4.14.0\contentFiles\any\any\BuildHost-net472\zh-Hans\System.CommandLine.resources.dll" />
+    <Content Remove="C:\Users\jlong\.nuget\packages\microsoft.codeanalysis.workspaces.msbuild\4.14.0\contentFiles\any\any\BuildHost-net472\zh-Hant\System.CommandLine.resources.dll" />
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Resources\tailgrab.png" />
+    <None Remove="src\Resources\tailgrab.ico" />
+    <None Remove="src\Resources\tailgrab.png" />
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="src\Resources\tailgrab.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="src\Resources\tailgrab.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ConcurrentPriorityQueue" Version="3.0.0" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.1" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.1">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.1" />
     <PackageReference Include="NLog.Web.AspNetCore" Version="6.1.0" />
-    <PackageReference Include="VRChat.API" Version="1.20.5" />
-    <PackageReference Include="VRCOscLib" Version="1.6.0" />
-    <MySourceFiles Include="config.json" />
-    <MySourceFiles Include="NLog.config" />
-    <MySourceFiles Include="pen-network-id.csv" />
+    <PackageReference Include="OllamaSharp" Version="5.4.12" />
+    <PackageReference Include="Otp.NET" Version="1.4.1" />
+	<PackageReference Include="JsonSubTypes" Version="2.0.1" />
+	<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+    <PackageReference Include="Polly" Version="8.6.5" />
+    <PackageReference Include="SQLite" Version="3.13.0" />
+	<PackageReference Include="VRCOscLib" Version="1.6.0" />
+    <MySourceFiles Include="src\config.json" />
+    <MySourceFiles Include="src\NLog.config" />
+    <MySourceFiles Include="src\pen-network-id.csv" />
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Resources\tailgrab.ico" />
+    <EmbeddedResource Include="src\Resources\tailgrab.ico" />
   </ItemGroup>
 
-  <Target Name="CopyCustomFiles" AfterTargets="Build">
+	<ItemGroup>
+		<Reference Include="VRChat.API">
+			<HintPath>libs/VRChat.API.dll</HintPath>
+		</Reference>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Compile Update="src\Properties\Resources.Designer.cs">
+	    <DesignTime>True</DesignTime>
+	    <AutoGen>True</AutoGen>
+	    <DependentUpon>Resources.resx</DependentUpon>
+	  </Compile>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <EmbeddedResource Update="src\Properties\Resources.resx">
+	    <Generator>ResXFileCodeGenerator</Generator>
+	    <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+	  </EmbeddedResource>
+	</ItemGroup>
+
+	<Target Name="CopyCustomFiles" AfterTargets="Build">
     <Copy SourceFiles="@(MySourceFiles)" DestinationFolder="$(TargetDir)publish" />
   </Target>
 
