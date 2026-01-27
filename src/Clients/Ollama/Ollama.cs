@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using NLog;
 using OllamaSharp;
 using OllamaSharp.Models;
+using System.Media;
 using System.Net.Http;
 using System.Text.RegularExpressions;
 using Tailgrab.Common;
@@ -188,13 +189,14 @@ namespace Tailgrab.Clients.Ollama
             }
 
             if (isSuspectGroup)
-            {
+            {                
                 Player? player = serviceRegistry.GetPlayerManager().GetPlayerByUserId(item.UserId ?? string.Empty);
                 if (player != null)
                 {
                     player.IsGroupWatch = true;
                     serviceRegistry.GetPlayerManager().OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Updated, player);
                 }
+                SystemSounds.Hand.Play();
             }
         }
 
