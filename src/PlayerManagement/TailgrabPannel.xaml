@@ -374,7 +374,7 @@
                                                         <TextBlock Grid.Column="1" Text="{Binding AuthorName}" />
                                                         <TextBlock Grid.Column="2" Text="{Binding Timestamp, StringFormat={}{0:u}}" />
                                                         <TextBlock Grid.Column="3">
-                                                            <Hyperlink NavigateUri="{Binding Url}" RequestNavigate="PrintHyperlink_RequestNavigate">Open</Hyperlink>
+                                                            <Hyperlink NavigateUri="{Binding PrintUrl}" RequestNavigate="PrintHyperlink_RequestNavigate">Open</Hyperlink>
                                                         </TextBlock>
                                                     </Grid>
                                                 </DataTemplate>

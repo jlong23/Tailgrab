@@ -84,7 +84,7 @@ namespace Tailgrab.Clients.Ollama
             OllamaApiClient? ollamaApi = null;
             if (ollamaCloudKey is null)
             {
-                System.Windows.MessageBox.Show("Ollama API Credentials are not set yet, use the Config / Secrets tab to update credenials and restart Tailgrab.", "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                System.Windows.MessageBox.Show("Ollama API Credentials are not set.\nThis is not nessasary for limited operation, the Profiles will not be evaluated.\nOtherwise use the Config / Secrets tab to update credenials and restart Tailgrab.", "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
             } 
             else
             {
