@@ -19,7 +19,13 @@ Click the windows application or open a Powershell or Command Line prompt in you
 
 Or if you have moved where the VR Chat ```output_log_*.txt``` are located; then:
 
-```.\tailgrab.exe {full path to VR Chat logs ending with a \}```
+```.\tailgrab.exe -l {full path to VR Chat logs ending with a \}```
+
+If you need to clear all registry settings stored for TailGrab, you can run:
+
+```.\tailgrab.exe -clear```
+
+This will remove all stored configuration and secret values from the Windows Registry for TailGrab, you can then reconfigure the application as needed, save them, restart and get back to watching the instance.
 
 ## VRChat Source Log Files
 
