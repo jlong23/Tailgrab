@@ -1,12 +1,16 @@
 using NLog;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
 using System.Windows.Threading;
+using Tailgrab.Clients.VRChat;
 using Tailgrab.Config;
+using Tailgrab.Models;
+using VRChat.API.Model;
 
 namespace Tailgrab.PlayerManagement
 {
@@ -17,14 +21,18 @@ namespace Tailgrab.PlayerManagement
         public ObservableCollection<PlayerViewModel> ActivePlayers { get; } = new ObservableCollection<PlayerViewModel>();
         public ObservableCollection<PlayerViewModel> PastPlayers { get; } = new ObservableCollection<PlayerViewModel>();
         public ObservableCollection<PlayerViewModel> StickerPlayers { get; } = new ObservableCollection<PlayerViewModel>();
-        public ObservableCollection<AvatarInfoViewModel> AvatarDbItems { get; } = new ObservableCollection<AvatarInfoViewModel>();
-        public ObservableCollection<GroupInfoViewModel> GroupDbItems { get; } = new ObservableCollection<GroupInfoViewModel>();
+        public ObservableCollection<PlayerViewModel> PrintPlayers { get; } = new ObservableCollection<PlayerViewModel>();
+        public AvatarVirtualizingCollection AvatarDbItems { get; private set; }
+        public GroupVirtualizingCollection GroupDbItems { get; private set; }
+        public UserVirtualizingCollection UserDbItems { get; private set; }
 
         public ICollectionView AvatarDbView { get; }
         public ICollectionView ActiveView { get; }
         public ICollectionView GroupDbView { get; }
+        public ICollectionView UserDbView { get; }
         public ICollectionView PastView { get; }
         public ICollectionView StickerView { get; }
+        public ICollectionView PrintView { get; }
 
         public PlayerViewModel? SelectedActive { get; set; }
         public PlayerViewModel? SelectedPast { get; set; }
@@ -48,11 +56,21 @@ namespace Tailgrab.PlayerManagement
 
             StickerView = CollectionViewSource.GetDefaultView(StickerPlayers);
 
-            AvatarDbView = CollectionViewSource.GetDefaultView(AvatarDbItems);
-            AvatarDbView.SortDescriptions.Add(new SortDescription("AvatarName", ListSortDirection.Ascending));
+            PrintView = CollectionViewSource.GetDefaultView(PrintPlayers);
 
+            AvatarDbItems = new AvatarVirtualizingCollection(_serviceRegistry);
+            AvatarDbView = CollectionViewSource.GetDefaultView(AvatarDbItems);
+            // The virtualizing collection returns items ordered by AvatarName already.
+
+            GroupDbItems = new GroupVirtualizingCollection(_serviceRegistry);
             GroupDbView = CollectionViewSource.GetDefaultView(GroupDbItems);
-            GroupDbView.SortDescriptions.Add(new SortDescription("GroupName", ListSortDirection.Ascending));
+
+            // Group collection is ordered by GroupName at source
+            UserDbItems = new UserVirtualizingCollection(_serviceRegistry);
+            UserDbView = CollectionViewSource.GetDefaultView(UserDbItems);
+
+            // User collection ordered by DisplayName at source
+            UserDbView.SortDescriptions.Add(new SortDescription("DisplayName", ListSortDirection.Ascending));
 
             // Options for the IsBOS combo column
             IsBosOptions = new List<KeyValuePair<string, bool>>
@@ -82,8 +100,28 @@ namespace Tailgrab.PlayerManagement
             if (!string.IsNullOrEmpty(ollamaModel)) VrOllamaModelBox.Text = ollamaModel;
             if (!string.IsNullOrEmpty(ollamaPrompt)) VrOllamaPromptBox.Text = ollamaPrompt;
 
-            // Initial load of Groups
+            // Initial load of Groups and Users
             RefreshGroupDb();
+            RefreshUserDb();
+
+            // Populate sound combo boxes
+            try
+            {
+                var sounds = Tailgrab.Common.SoundManager.GetAvailableSounds();
+                AvatarAlertCombo.ItemsSource = sounds;
+                GroupAlertCombo.ItemsSource = sounds;
+                ProfileAlertCombo.ItemsSource = sounds;
+
+                // Load saved registry values into selected items
+                var avatar = ConfigStore.LoadSecret(Tailgrab.Common.Common.Registry_Alert_Avatar);
+                var group = ConfigStore.LoadSecret(Tailgrab.Common.Common.Registry_Alert_Group);
+                var profile = ConfigStore.LoadSecret(Tailgrab.Common.Common.Registry_Alert_Profile);
+
+                if (!string.IsNullOrEmpty(avatar)) AvatarAlertCombo.SelectedItem = avatar;
+                if (!string.IsNullOrEmpty(group)) GroupAlertCombo.SelectedItem = group;
+                if (!string.IsNullOrEmpty(profile)) ProfileAlertCombo.SelectedItem = profile;
+            }
+            catch { }
 
             // Subscribe to PlayerManager events for reactive updates
             PlayerManager.PlayerChanged += PlayerManager_PlayerChanged;
@@ -97,8 +135,479 @@ namespace Tailgrab.PlayerManagement
             fallbackTimer.Start();
 
             this.Closed += (s, e) => Dispose();
+        }
+
+        public class PrintInfoViewModel : INotifyPropertyChanged
+        {
+            public string Id { get; set; }
+            public string AuthorName { get; set; }
+            public string OwnerId { get; set; }
+            public DateTime Timestamp { get; set; }
+            public string Url { get; set; }
+
+            public PrintInfoViewModel(VRChat.API.Model.Print p)
+            {
+                Id = p.Id ?? string.Empty;
+                AuthorName = p.AuthorName ?? string.Empty;
+                OwnerId = p.OwnerId ?? string.Empty;
+                Timestamp = p.Timestamp;
+                Url = p.Files.Image ?? string.Empty;
+            }
+
+            public event PropertyChangedEventHandler? PropertyChanged;
+            protected void OnPropertyChanged(string propertyName)
+            {
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            }
+        }
+
+        public class UserInfoViewModel : INotifyPropertyChanged
+        {
+            public string UserId { get; set; }
+            public string DisplayName { get; set; }
+            public double ElapsedMinutes { get; set; }
+            private int _isBos;
+            public int IsBos
+            {
+                get => _isBos;
+                set
+                {
+                    if (_isBos != value)
+                    {
+                        _isBos = value;
+                        OnPropertyChanged(nameof(IsBos));
+                    }
+                }
+            }
 
 
+            public DateTime UpdatedAt { get; set; }
+
+            public UserInfoViewModel(Tailgrab.Models.UserInfo u)
+            {
+                UserId = u.UserId;
+                DisplayName = u.DisplayName;
+                ElapsedMinutes = u.ElapsedMinutes;
+                IsBos = u.IsBos;
+                UpdatedAt = u.UpdatedAt;
+            }
+
+            public event PropertyChangedEventHandler? PropertyChanged;
+
+            protected void OnPropertyChanged(string propertyName)
+            {
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            }
+        }
+
+        private void UserHyperlink_RequestNavigate(object? sender, System.Windows.Navigation.RequestNavigateEventArgs e)
+        {
+            try
+            {
+                logger.Info($"Opening User URL: {e.Uri}");
+                var uri = new Uri($"https://vrchat.com/home/user/{e.Uri}");
+                var psi = new System.Diagnostics.ProcessStartInfo(uri.AbsoluteUri)
+                {
+                    UseShellExecute = true
+                };
+                System.Diagnostics.Process.Start(psi);
+            }
+            catch (Exception ex)
+            {
+                logger?.Error(ex, "Failed to open user URL");
+            }
+            e.Handled = true;
+        }
+
+        // User DB UI handlers
+        private void UserDbRefresh_Click(object sender, RoutedEventArgs e)
+        {
+            RefreshUserDb();
+        }
+
+        private void UserDbApplyFilter_Click(object sender, RoutedEventArgs e)
+        {
+            ApplyUserDbFilter(UserDbView, UserDbFilterBox.Text);
+        }
+
+        private void UserDbClearFilter_Click(object sender, RoutedEventArgs e)
+        {
+            UserDbFilterBox.Text = string.Empty;
+            ApplyUserDbFilter(UserDbView, string.Empty);
+        }
+
+        private void ApplyUserDbFilter(ICollectionView view, string filterText)
+        {
+            if (string.IsNullOrWhiteSpace(filterText))
+            {
+                view.Filter = null;
+                view.Refresh();
+                return;
+            }
+
+            string ft = filterText.Trim();
+            view.Filter = obj =>
+            {
+                if (obj is UserInfoViewModel vm)
+                {
+                    return vm.DisplayName?.IndexOf(ft, StringComparison.CurrentCultureIgnoreCase) >= 0;
+                }
+                return false;
+            };
+            view.Refresh();
+        }
+
+        private void UserDbGrid_CellEditEnding(object sender, System.Windows.Controls.DataGridCellEditEndingEventArgs e)
+        {
+            if (e.Row.Item is UserInfoViewModel vm)
+            {
+                try
+                {
+                    var db = _serviceRegistry.GetDBContext();
+                    var entity = db.UserInfos.Find(vm.UserId);
+                    if (entity != null)
+                    {
+                        entity.IsBos = vm.IsBos;
+                        entity.UpdatedAt = DateTime.UtcNow;
+                        db.UserInfos.Update(entity);
+                        db.SaveChanges();
+                        vm.UpdatedAt = entity.UpdatedAt;
+                    }
+                }
+                catch { }
+            }
+        }
+
+        // Virtualizing collection for Users
+        public class UserVirtualizingCollection : System.Collections.IList, System.Collections.IEnumerable, System.Collections.Specialized.INotifyCollectionChanged
+        {
+            private readonly ServiceRegistry _services;
+            private readonly int _pageSize = 100;
+            private readonly Dictionary<int, List<UserInfoViewModel>> _pages = new Dictionary<int, List<UserInfoViewModel>>();
+            private int _count = -1;
+
+            public UserVirtualizingCollection(ServiceRegistry services)
+            {
+                _services = services;
+            }
+
+            public void Refresh()
+            {
+                _pages.Clear();
+                _count = -1;
+                CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
+            }
+
+            private void EnsureCount()
+            {
+                if (_count >= 0) return;
+                try
+                {
+                    var db = _services.GetDBContext();
+                    _count = db.UserInfos.Count();
+                }
+                catch
+                {
+                    _count = 0;
+                }
+            }
+
+            private UserInfoViewModel? LoadAtIndex(int index)
+            {
+                if (index < 0) return null;
+                EnsureCount();
+                if (index >= _count) return null;
+                var page = index / _pageSize;
+                if (!_pages.TryGetValue(page, out var list))
+                {
+                    try
+                    {
+                        var db = _services.GetDBContext();
+                        var skip = page * _pageSize;
+                        var items = db.UserInfos.OrderBy(a => a.DisplayName).Skip(skip).Take(_pageSize).ToList();
+                        list = items.Select(a => new UserInfoViewModel(a)).ToList();
+                        _pages[page] = list;
+                        var keep = new HashSet<int> { page, page - 1, page + 1 };
+                        var keys = _pages.Keys.ToList();
+                        foreach (var k in keys)
+                        {
+                            if (!keep.Contains(k)) _pages.Remove(k);
+                        }
+                    }
+                    catch
+                    {
+                        list = new List<UserInfoViewModel>();
+                    }
+                }
+                var idxInPage = index % _pageSize;
+                if (idxInPage < list.Count) return list[idxInPage];
+                return null;
+            }
+
+            // IList implementation (read-only)
+            public int Add(object? value) => throw new NotSupportedException();
+            public void Clear() => throw new NotSupportedException();
+            public bool Contains(object? value)
+            {
+                EnsureCount();
+                if (value is UserInfoViewModel vm) return this.Cast<UserInfoViewModel>().Any(x => x.UserId == vm.UserId);
+                return false;
+            }
+            public int IndexOf(object? value) => -1;
+            public void Insert(int index, object? value) => throw new NotSupportedException();
+            public void Remove(object? value) => throw new NotSupportedException();
+            public void RemoveAt(int index) => throw new NotSupportedException();
+            public bool IsReadOnly => true;
+            public bool IsFixedSize => false;
+            public object? this[int index]
+            {
+                get { return LoadAtIndex(index); }
+                set => throw new NotSupportedException();
+            }
+
+            public void CopyTo(Array array, int index)
+            {
+                EnsureCount();
+                for (int i = 0; i < _count; i++) array.SetValue(LoadAtIndex(i), index + i);
+            }
+
+            public int Count
+            {
+                get { EnsureCount(); return _count; }
+            }
+
+            public bool IsSynchronized => false;
+            public object SyncRoot => this;
+            public System.Collections.IEnumerator GetEnumerator()
+            {
+                EnsureCount();
+                for (int i = 0; i < _count; i++) yield return LoadAtIndex(i)!;
+            }
+
+            public event NotifyCollectionChangedEventHandler? CollectionChanged;
+        }
+
+        // Virtualizing collection for Groups similar to AvatarVirtualizingCollection
+        public class GroupVirtualizingCollection : System.Collections.IList, System.Collections.IEnumerable, System.Collections.Specialized.INotifyCollectionChanged
+        {
+            private readonly ServiceRegistry _services;
+            private readonly int _pageSize = 100;
+            private readonly Dictionary<int, List<GroupInfoViewModel>> _pages = new Dictionary<int, List<GroupInfoViewModel>>();
+            private int _count = -1;
+
+            public GroupVirtualizingCollection(ServiceRegistry services)
+            {
+                _services = services;
+            }
+
+            public void Refresh()
+            {
+                _pages.Clear();
+                _count = -1;
+                CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
+            }
+
+            private void EnsureCount()
+            {
+                if (_count >= 0) return;
+                try
+                {
+                    var db = _services.GetDBContext();
+                    _count = db.GroupInfos.Count();
+                }
+                catch
+                {
+                    _count = 0;
+                }
+            }
+
+            private GroupInfoViewModel? LoadAtIndex(int index)
+            {
+                if (index < 0) return null;
+                EnsureCount();
+                if (index >= _count) return null;
+                var page = index / _pageSize;
+                if (!_pages.TryGetValue(page, out var list))
+                {
+                    try
+                    {
+                        var db = _services.GetDBContext();
+                        var skip = page * _pageSize;
+                        var items = db.GroupInfos.OrderBy(a => a.GroupName).Skip(skip).Take(_pageSize).ToList();
+                        list = items.Select(a => new GroupInfoViewModel(a)).ToList();
+                        _pages[page] = list;
+                        var keep = new HashSet<int> { page, page - 1, page + 1 };
+                        var keys = _pages.Keys.ToList();
+                        foreach (var k in keys)
+                        {
+                            if (!keep.Contains(k)) _pages.Remove(k);
+                        }
+                    }
+                    catch
+                    {
+                        list = new List<GroupInfoViewModel>();
+                    }
+                }
+                var idxInPage = index % _pageSize;
+                if (idxInPage < list.Count) return list[idxInPage];
+                return null;
+            }
+
+            // IList implementation (read-only)
+            public int Add(object? value) => throw new NotSupportedException();
+            public void Clear() => throw new NotSupportedException();
+            public bool Contains(object? value)
+            {
+                EnsureCount();
+                if (value is GroupInfoViewModel vm) return this.Cast<GroupInfoViewModel>().Any(x => x.GroupId == vm.GroupId);
+                return false;
+            }
+            public int IndexOf(object? value) => -1;
+            public void Insert(int index, object? value) => throw new NotSupportedException();
+            public void Remove(object? value) => throw new NotSupportedException();
+            public void RemoveAt(int index) => throw new NotSupportedException();
+            public bool IsReadOnly => true;
+            public bool IsFixedSize => false;
+            public object? this[int index]
+            {
+                get { return LoadAtIndex(index); }
+                set => throw new NotSupportedException();
+            }
+
+            public void CopyTo(Array array, int index)
+            {
+                EnsureCount();
+                for (int i = 0; i < _count; i++) array.SetValue(LoadAtIndex(i), index + i);
+            }
+
+            public int Count
+            {
+                get { EnsureCount(); return _count; }
+            }
+
+            public bool IsSynchronized => false;
+            public object SyncRoot => this;
+            public System.Collections.IEnumerator GetEnumerator()
+            {
+                EnsureCount();
+                for (int i = 0; i < _count; i++) yield return LoadAtIndex(i)!;
+            }
+
+            public event NotifyCollectionChangedEventHandler? CollectionChanged;
+        }
+
+        // Lightweight virtualizing collection for Avatar DB. It only fetches items on demand
+        // and holds a small cache to limit memory usage. It queries the EF DB context for
+        // counts and pages of avatars ordered by AvatarName.
+        public class AvatarVirtualizingCollection : System.Collections.IList, System.Collections.IEnumerable, System.Collections.Specialized.INotifyCollectionChanged
+        {
+            private readonly ServiceRegistry _services;
+            private readonly int _pageSize = 100;
+            private readonly Dictionary<int, List<AvatarInfoViewModel>> _pages = new Dictionary<int, List<AvatarInfoViewModel>>();
+            private int _count = -1;
+
+            public AvatarVirtualizingCollection(ServiceRegistry services)
+            {
+                _services = services;
+            }
+
+            public void Refresh()
+            {
+                _pages.Clear();
+                _count = -1;
+                CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
+            }
+
+            private void EnsureCount()
+            {
+                if (_count >= 0) return;
+                try
+                {
+                    var db = _services.GetDBContext();
+                    _count = db.AvatarInfos.Count();
+                }
+                catch
+                {
+                    _count = 0;
+                }
+            }
+
+            private AvatarInfoViewModel? LoadAtIndex(int index)
+            {
+                if (index < 0) return null;
+                EnsureCount();
+                if (index >= _count) return null;
+                var page = index / _pageSize;
+                if (!_pages.TryGetValue(page, out var list))
+                {
+                    // load this page
+                    try
+                    {
+                        var db = _services.GetDBContext();
+                        var skip = page * _pageSize;
+                        var items = db.AvatarInfos.OrderBy(a => a.AvatarName).Skip(skip).Take(_pageSize).ToList();
+                        list = items.Select(a => new AvatarInfoViewModel(a)).ToList();
+                        _pages[page] = list;
+                        // Keep only a couple pages in memory (current, prev, next)
+                        var keep = new HashSet<int> { page, page - 1, page + 1 };
+                        var keys = _pages.Keys.ToList();
+                        foreach (var k in keys)
+                        {
+                            if (!keep.Contains(k)) _pages.Remove(k);
+                        }
+                    }
+                    catch
+                    {
+                        list = new List<AvatarInfoViewModel>();
+                    }
+                }
+                var idxInPage = index % _pageSize;
+                if (idxInPage < list.Count) return list[idxInPage];
+                return null;
+            }
+
+            // IList implementation (read-only for UI)
+            public int Add(object? value) => throw new NotSupportedException();
+            public void Clear() => throw new NotSupportedException();
+            public bool Contains(object? value)
+            {
+                EnsureCount();
+                if (value is AvatarInfoViewModel vm) return this.Cast<AvatarInfoViewModel>().Any(x => x.AvatarId == vm.AvatarId);
+                return false;
+            }
+            public int IndexOf(object? value) => -1;
+            public void Insert(int index, object? value) => throw new NotSupportedException();
+            public void Remove(object? value) => throw new NotSupportedException();
+            public void RemoveAt(int index) => throw new NotSupportedException();
+            public bool IsReadOnly => true;
+            public bool IsFixedSize => false;
+            public object? this[int index]
+            {
+                get { return LoadAtIndex(index); }
+                set => throw new NotSupportedException();
+            }
+
+            public void CopyTo(Array array, int index)
+            {
+                EnsureCount();
+                for (int i = 0; i < _count; i++) array.SetValue(LoadAtIndex(i), index + i);
+            }
+
+            public int Count
+            {
+                get { EnsureCount(); return _count; }
+            }
+
+            public bool IsSynchronized => false;
+            public object SyncRoot => this;
+            public System.Collections.IEnumerator GetEnumerator()
+            {
+                EnsureCount();
+                for (int i = 0; i < _count; i++) yield return LoadAtIndex(i)!;
+            }
+
+            // Collection changed event for WPF to react to resets
+            public event NotifyCollectionChangedEventHandler? CollectionChanged;
         }
 
         private void SaveConfig_Click(object sender, RoutedEventArgs e)
@@ -113,6 +622,34 @@ namespace Tailgrab.PlayerManagement
                 ConfigStore.SaveSecret(Tailgrab.Common.Common.Registry_Ollama_API_Endpoint, VrOllamaEndpointBox.Text ?? Tailgrab.Common.Common.Default_Ollama_API_Endpoint);
                 ConfigStore.SaveSecret(Tailgrab.Common.Common.Registry_Ollama_API_Prompt, VrOllamaPromptBox.Text ?? Tailgrab.Common.Common.Default_Ollama_API_Prompt);
                 ConfigStore.SaveSecret(Tailgrab.Common.Common.Registry_Ollama_API_Model, VrOllamaModelBox.Text ?? Tailgrab.Common.Common.Default_Ollama_API_Model);
+
+                // Save alert sound selections (or delete if none)
+                if (AvatarAlertCombo.SelectedItem is string avatarSound && !string.IsNullOrEmpty(avatarSound))
+                {
+                    ConfigStore.SaveSecret(Tailgrab.Common.Common.Registry_Alert_Avatar, avatarSound);
+                }
+                else
+                {
+                    ConfigStore.DeleteSecret(Tailgrab.Common.Common.Registry_Alert_Avatar);
+                }
+
+                if (GroupAlertCombo.SelectedItem is string groupSound && !string.IsNullOrEmpty(groupSound))
+                {
+                    ConfigStore.SaveSecret(Tailgrab.Common.Common.Registry_Alert_Group, groupSound);
+                }
+                else
+                {
+                    ConfigStore.DeleteSecret(Tailgrab.Common.Common.Registry_Alert_Group);
+                }
+
+                if (ProfileAlertCombo.SelectedItem is string profileSound && !string.IsNullOrEmpty(profileSound))
+                {
+                    ConfigStore.SaveSecret(Tailgrab.Common.Common.Registry_Alert_Profile, profileSound);
+                }
+                else
+                {
+                    ConfigStore.DeleteSecret(Tailgrab.Common.Common.Registry_Alert_Profile);
+                }
 
                 System.Windows.MessageBox.Show("Configuration saved. Restart the Applicaton for all changes to take affect.", "Config", MessageBoxButton.OK, MessageBoxImage.Information);
             }
@@ -179,16 +716,11 @@ namespace Tailgrab.PlayerManagement
         }
 
         private void RefreshAvatarDb()
-        {            
+        {
             try
             {
-                var db = _serviceRegistry.GetDBContext();
-                var avatars = db.AvatarInfos.OrderBy(a => a.AvatarName).ToList();
-                AvatarDbItems.Clear();
-                foreach (var a in avatars)
-                {
-                    AvatarDbItems.Add(new AvatarInfoViewModel(a));
-                }
+                // Refresh virtualized collection which will clear caches and re-query counts
+                AvatarDbItems.Refresh();
             }
             catch { }
         }
@@ -211,6 +743,60 @@ namespace Tailgrab.PlayerManagement
                     }
                 }
                 catch { }
+            }
+        }
+
+        private void AvatarFetch_Click(object sender, RoutedEventArgs e)
+        {
+            string? id = AvatarIdBox.Text?.Trim();
+            if (string.IsNullOrEmpty(id)) return;
+
+            try
+            {
+                VRChatClient vrcClient = _serviceRegistry.GetVRChatAPIClient();
+                Avatar? avatar = vrcClient.GetAvatarById(id);
+                if (avatar != null)
+                {
+                    TailgrabDBContext dbContext = _serviceRegistry.GetDBContext();
+                    AvatarInfo? existing = dbContext.AvatarInfos.Find(avatar.Id);
+                    if (existing == null)
+                    {
+                        var newEntity = new Tailgrab.Models.AvatarInfo
+                        {
+                            AvatarId = avatar.Id,
+                            UserId = avatar.AuthorId ?? string.Empty,
+                            AvatarName = avatar.Name ?? string.Empty,
+                            ImageUrl = avatar.ImageUrl ?? string.Empty,
+                            CreatedAt = avatar.CreatedAt,
+                            UpdatedAt = DateTime.UtcNow,
+                            IsBos = false
+                        };
+                        dbContext.AvatarInfos.Add(newEntity);
+                        dbContext.SaveChanges();
+                    }
+                    else
+                    {
+                        existing.UserId = avatar.AuthorId ?? string.Empty;
+                        existing.AvatarName = avatar.Name ?? string.Empty;
+                        existing.ImageUrl = avatar.ImageUrl ?? string.Empty;
+                        existing.CreatedAt = avatar.CreatedAt;
+                        existing.UpdatedAt = DateTime.UtcNow;
+                        dbContext.AvatarInfos.Update(existing);
+                        dbContext.SaveChanges();
+                    }
+
+                    // Filter the view to the fetched avatar
+                    ApplyAvatarDbFilter(AvatarDbView, avatar.Name ?? string.Empty);
+                    AvatarIdBox.Text = string.Empty;
+                }
+                else
+                {
+                    System.Windows.MessageBox.Show($"Avatar {id} not found via VRChat API.", "Fetch Avatar", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"Failed to fetch avatar: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
         #endregion
@@ -259,13 +845,16 @@ namespace Tailgrab.PlayerManagement
         {
             try
             {
-                var db = _serviceRegistry.GetDBContext();
-                var groups = db.GroupInfos.OrderBy(a => a.GroupName).ToList();
-                GroupDbItems.Clear();
-                foreach (var g in groups)
-                {
-                    GroupDbItems.Add(new GroupInfoViewModel(g));
-                }
+                GroupDbItems.Refresh();
+            }
+            catch { }
+        }
+
+        private void RefreshUserDb()
+        {
+            try
+            {
+                UserDbItems?.Refresh();
             }
             catch { }
         }
@@ -288,6 +877,58 @@ namespace Tailgrab.PlayerManagement
                     }
                 }
                 catch { }
+            }
+        }
+
+        private void GroupFetch_Click(object sender, RoutedEventArgs e)
+        {
+            string? id = GroupIdBox.Text?.Trim();
+            if (string.IsNullOrEmpty(id)) return;
+
+            try
+            {
+                VRChatClient vrcClient = _serviceRegistry.GetVRChatAPIClient();
+                VRChat.API.Model.Group? group = vrcClient.getGroupById(id);
+                if (group != null)
+                {
+                    TailgrabDBContext dbContext = _serviceRegistry.GetDBContext();
+                    GroupInfo? existing = dbContext.GroupInfos.Find(group.Id);
+                    if (existing == null)
+                    {
+                        GroupInfo newEntity = new GroupInfo
+                        {
+                            GroupId = group.Id,
+                            GroupName = group.Name ?? string.Empty,
+                            CreatedAt = group.CreatedAt,
+                            UpdatedAt = DateTime.UtcNow,
+                            IsBos = false
+                        };
+                        
+                        dbContext.GroupInfos.Add(newEntity);
+                        dbContext.SaveChanges();
+                    }
+                    else
+                    {
+                        existing.GroupId = group.Id;
+                        existing.GroupName = group.Name ?? string.Empty;
+                        existing.CreatedAt = group.CreatedAt;
+                        existing.UpdatedAt = DateTime.UtcNow;
+                        dbContext.GroupInfos.Update(existing);
+                        dbContext.SaveChanges();
+                    }
+
+                    // Filter the view to the fetched Group
+                    ApplyGroupDbFilter(GroupDbView, group.Name ?? string.Empty);
+                    GroupIdBox.Text = string.Empty;
+                }
+                else
+                {
+                    System.Windows.MessageBox.Show($"Group {id} not found via VRChat API.", "Fetch Group", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"Failed to fetch Group: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
         #endregion
@@ -319,6 +960,7 @@ namespace Tailgrab.PlayerManagement
             var vm = ActivePlayers.FirstOrDefault(x => x.UserId == p.UserId);
             var vmPast = PastPlayers.FirstOrDefault(x => x.UserId == p.UserId);
             var vmSticker = StickerPlayers.FirstOrDefault(x => x.UserId == p.UserId);
+            var vmPrint = PrintPlayers.FirstOrDefault(x => x.UserId == p.UserId);
 
             if (p.InstanceEndTime == null)
             {
@@ -355,6 +997,19 @@ namespace Tailgrab.PlayerManagement
                         StickerPlayers.Add(new PlayerViewModel(p));
                     }
                 }
+
+                // If player has prints, add/update print list
+                if (p.PrintData != null && p.PrintData.Count > 0)
+                {
+                    if (vmPrint != null)
+                    {
+                        vmPrint.UpdateFrom(p);
+                    }
+                    else
+                    {
+                        PrintPlayers.Add(new PlayerViewModel(p));
+                    }
+                }
             }
             else
             {
@@ -372,6 +1027,11 @@ namespace Tailgrab.PlayerManagement
                 if (vm != null)
                 {
                     ActivePlayers.Remove(vm);
+                }
+                // move prints if present
+                if (vmPrint != null)
+                {
+                    PrintPlayers.Remove(vmPrint);
                 }
             }
         }
@@ -435,7 +1095,7 @@ namespace Tailgrab.PlayerManagement
 
             var toRemoveSticker = StickerPlayers.Where(x => !userIds.Contains(x.UserId)).ToList();
             foreach (var rm in toRemoveSticker) StickerPlayers.Remove(rm);
-            
+
             // Rebuild sticker list for players who have LastStickerUrl
             foreach (var player in players)
             {
@@ -510,7 +1170,7 @@ namespace Tailgrab.PlayerManagement
 
             // Find the DataContext for the row (should be PlayerViewModel)
             if (btn.DataContext is PlayerViewModel pvm)
-            {                
+            {
                 // Try to find the underlying Player by UserId
                 var player = _serviceRegistry.GetPlayerManager().GetPlayerByUserId(pvm.UserId);
                 if (player != null)
@@ -520,7 +1180,7 @@ namespace Tailgrab.PlayerManagement
 
                     sb.AppendLine($"DisplayName: {pvm.DisplayName}");
                     sb.AppendLine($"UserId: {pvm.UserId}");
-                    
+
                     sb.AppendLine($"Evaluation of Profile:\n");
                     sb.AppendLine($"{pvm.AIEval}");
                     var text = sb.ToString();
@@ -657,6 +1317,47 @@ namespace Tailgrab.PlayerManagement
 
         #endregion
 
+        #region Print handlers
+
+        private void PrintApplyFilter_Click(object sender, RoutedEventArgs e)
+        {
+            ApplyFilter(PrintView, PrintFilterBox.Text);
+        }
+
+        private void PrintClearFilter_Click(object sender, RoutedEventArgs e)
+        {
+            PrintFilterBox.Text = string.Empty;
+            ApplyFilter(PrintView, string.Empty);
+        }
+
+        private void PrintFilterBySelected_Click(object sender, RoutedEventArgs e)
+        {
+            if (SelectedPast != null)
+            {
+                PrintFilterBox.Text = SelectedPast.DisplayName;
+                ApplyFilter(PrintView, PastFilterBox.Text);
+            }
+        }
+
+        #endregion
+
+        private void PrintHyperlink_RequestNavigate(object? sender, System.Windows.Navigation.RequestNavigateEventArgs e)
+        {
+            try
+            {
+                logger.Info($"Opening print URL: {e.Uri}");
+                var psi = new System.Diagnostics.ProcessStartInfo(e.Uri.AbsoluteUri)
+                {
+                    UseShellExecute = true
+                };
+                System.Diagnostics.Process.Start(psi);
+            }
+            catch (Exception ex)
+            {
+                logger?.Error(ex, "Failed to open print URL");
+            }
+            e.Handled = true;
+        }
 
         private void ApplyFilter(ICollectionView view, string filterText)
         {
@@ -685,6 +1386,43 @@ namespace Tailgrab.PlayerManagement
             fallbackTimer.Tick -= FallbackTimer_Tick;
             PlayerManager.PlayerChanged -= PlayerManager_PlayerChanged;
         }
+
+        private void GroupHyperlink_RequestNavigate(object? sender, System.Windows.Navigation.RequestNavigateEventArgs e)
+        {
+            try
+            {
+                logger.Info($"Opening group URL: {e.Uri}");
+                var uri = new Uri($"https://vrchat.com/home/group/{e.Uri}");
+                var psi = new System.Diagnostics.ProcessStartInfo(uri.AbsoluteUri)
+                {
+                    UseShellExecute = true
+                };
+                System.Diagnostics.Process.Start(psi);
+            }
+            catch (Exception ex)
+            {
+                logger?.Error(ex, "Failed to open group URL");
+            }
+            e.Handled = true;
+        }
+        private void AvatarHyperlink_RequestNavigate(object? sender, System.Windows.Navigation.RequestNavigateEventArgs e)
+        {
+            try
+            {
+                logger.Info($"Opening Avatar URL: {e.Uri}");
+                var uri = new Uri($"https://vrchat.com/home/avatar/{e.Uri}");
+                var psi = new System.Diagnostics.ProcessStartInfo(uri.AbsoluteUri)
+                {
+                    UseShellExecute = true
+                };
+                System.Diagnostics.Process.Start(psi);
+            }
+            catch (Exception ex)
+            {
+                logger?.Error(ex, "Failed to open group URL");
+            }
+            e.Handled = true;
+        }
     }
 
     public class PlayerViewModel : INotifyPropertyChanged
@@ -701,12 +1439,13 @@ namespace Tailgrab.PlayerManagement
         public string AIEval { get; private set; }
         public bool IsWatched { get; set; } = false;
         public string WatchCode { get; private set; } = string.Empty;
+        public ObservableCollection<PrintInfoViewModel> Prints { get; private set; } = new ObservableCollection<PrintInfoViewModel>();
 
         public string HighlightClass
         {
             get
             {
-                if(IsWatched)
+                if (IsWatched)
                 {
                     return "Alert";
                 }
@@ -729,6 +1468,14 @@ namespace Tailgrab.PlayerManagement
             AIEval = p.AIEval ?? "Not Evaluated";
             IsWatched = p.IsWatched;
             WatchCode = p.WatchCode;
+            // populate prints
+            if (p.PrintData != null)
+            {
+                foreach (var pr in p.PrintData.Values)
+                {
+                    Prints.Add(new PrintInfoViewModel(pr));
+                }
+            }
         }
 
         public void UpdateFrom(Player p)
@@ -748,10 +1495,20 @@ namespace Tailgrab.PlayerManagement
             if (InstanceEndTime != end) { InstanceEndTime = end; changed = true; }
             if (Profile != (p.UserBio ?? string.Empty)) { Profile = p.UserBio ?? string.Empty; changed = true; }
             if (AIEval != (p.AIEval ?? "Not Evaluated")) { AIEval = p.AIEval ?? "Not Evaluated"; changed = true; }
-            if( IsWatched != p.IsWatched) { IsWatched = p.IsWatched; changed = true; }
-            if( WatchCode != p.WatchCode) { WatchCode = p.WatchCode; changed = true; }
+            if (IsWatched != p.IsWatched) { IsWatched = p.IsWatched; changed = true; }
+            if (WatchCode != p.WatchCode) { WatchCode = p.WatchCode; changed = true; }
 
             if (changed) OnPropertyChanged(string.Empty);
+            // update prints collection
+            if (p.PrintData != null)
+            {
+                // simple replace strategy
+                Prints.Clear();
+                foreach (var pr in p.PrintData.Values)
+                {
+                    Prints.Add(new PrintInfoViewModel(pr));
+                }
+            }
         }
 
         private System.Windows.Media.ImageSource? LoadImageFromUrl(string? url)
@@ -781,6 +1538,21 @@ namespace Tailgrab.PlayerManagement
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
+
+
+    public class PrintInfoViewModel
+    {
+        public string PrintId { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public string PrintUrl { get; set; }
+        public PrintInfoViewModel(VRChat.API.Model.Print p)
+        {
+            PrintId = p.Id;
+            CreatedAt = p.CreatedAt;
+            PrintUrl = p.Files.Image;
+        }
+    }
+
 
     public class AvatarInfoViewModel : INotifyPropertyChanged
     {
@@ -816,7 +1588,7 @@ namespace Tailgrab.PlayerManagement
 
         // Convert boolean to YES/NO string for display
         public static string BoolToYesNo(bool value) => value ? "YES" : "NO";
-        
+
 
         public event PropertyChangedEventHandler? PropertyChanged;
         protected void OnPropertyChanged(string propertyName)

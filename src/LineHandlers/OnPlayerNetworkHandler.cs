@@ -1,7 +1,6 @@
 namespace Tailgrab.LineHandler;
 
 using System.Text.RegularExpressions;
-using Tailgrab.PlayerManagement;
 
 public class OnPlayerNetworkHandler : AbstractLineHandler
 {
@@ -15,28 +14,28 @@ public class OnPlayerNetworkHandler : AbstractLineHandler
 
     public OnPlayerNetworkHandler(string matchPattern, ServiceRegistry serviceRegistry) : base(matchPattern, serviceRegistry)
     {
-        logger.Info($"** OnPlayer Network ID Handler:  Regular Expression: {Pattern}");        
+        logger.Info($"** OnPlayer Network ID Handler:  Regular Expression: {Pattern}");
     }
 
     public override bool HandleLine(string line)
     {
         Match m = regex.Match(line);
-        if( m.Success )
+        if (m.Success)
         {
             string timestamp = m.Groups[VRC_DATETIME].Value;
             string userName = m.Groups[VRC_DISPLAYNAME].Value;
-            int networkId = int.Parse( m.Groups[VRC_NETWORKID].Value);
-            if( LogOutput )
+            int networkId = int.Parse(m.Groups[VRC_NETWORKID].Value);
+            if (LogOutput)
             {
                 logger.Info($"{COLOR_PREFIX}Network_ID : {userName} ({networkId}){COLOR_RESET}");
             }
             ExecuteActions();
 
-            _serviceRegistry.GetPlayerManager().AssignPlayerNetworkId(userName, networkId );
+            _serviceRegistry.GetPlayerManager().AssignPlayerNetworkId(userName, networkId);
 
             return true;
         }
-        
+
         return false;
     }
 }

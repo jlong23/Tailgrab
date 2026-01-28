@@ -14,13 +14,13 @@ public class QuitHandler : AbstractLineHandler
 
     public QuitHandler(string matchPattern, ServiceRegistry serviceRegistry) : base(matchPattern, serviceRegistry)
     {
-        logger.Info($"** VRC Quit Handler:  Regular Expression: {Pattern}");        
+        logger.Info($"** VRC Quit Handler:  Regular Expression: {Pattern}");
     }
 
     public override bool HandleLine(string line)
     {
         Match m = regex.Match(line);
-        if( m.Success )
+        if (m.Success)
         {
             string timestamp = m.Groups[VRC_DATETIME].Value;
             string totalTime = m.Groups[VRC_TOTALSEC].Value;
@@ -33,7 +33,7 @@ public class QuitHandler : AbstractLineHandler
             //int minutes = time.Minutes;
             //int seconds = time.Seconds;
 
-            if ( LogOutput )
+            if (LogOutput)
             {
                 //string formattedTime = string.Format("{0:D2}:{1:D2}:{2:D2}", time.Hours, time.Minutes, time.Seconds);
                 logger.Info($"{COLOR_PREFIX}Application Stop :  {totalTime} seconds{COLOR_RESET.GetAnsiEscape()}");

@@ -1,12 +1,12 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using NLog;
-using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Media;
+using Microsoft.Win32;
 using Tailgrab;
 using Tailgrab.Configuration;
 using Tailgrab.LineHandler;
@@ -17,12 +17,12 @@ public class FileTailer
     /// <summary>
     /// A list of the Regex Line Matchers that are used to process log lines.
     /// </summary>
-    static List<ILineHandler> HandlerList = new List<ILineHandler>{};
+    static List<ILineHandler> HandlerList = new List<ILineHandler> { };
 
     /// <summary>
     /// A List of opened file paths to avoid opening the same file multiple times.
     /// </summary>
-    static List<string> OpenedFiles = new List<string>{};
+    static List<string> OpenedFiles = new List<string> { };
 
     /// <summary>
     /// The path to the user's profile directory.
@@ -46,7 +46,7 @@ public class FileTailer
     /// </summary>
     public static async Task TailFileAsync(string filePath)
     {
-        if( OpenedFiles.Contains(filePath) )
+        if (OpenedFiles.Contains(filePath))
         {
             return;
         }
@@ -77,9 +77,9 @@ public class FileTailer
                     foreach (ILineHandler handler in HandlerList)
                     {
                         if (handler.HandleLine(line))
-                        {                        
+                        {
                             break;
-                        }                        
+                        }
                     }
                 }
 
@@ -92,7 +92,7 @@ public class FileTailer
     /// <summary>
     /// Watch and dispatch File Tailing.
     /// </summary>
-    public static async Task WatchPath( string path )
+    public static async Task WatchPath(string path)
     {
         LogWatcher.Path = Path.GetDirectoryName(path)!;
         LogWatcher.Filter = Path.GetFileName("output_log*.txt");
@@ -120,9 +120,9 @@ public class FileTailer
                 _ = Task.Run(() => TailFileAsync(f));
             }
         }
-        catch 
-        { 
-            /* ignore errors */ 
+        catch
+        {
+            /* ignore errors */
         }
 
 
@@ -214,6 +214,57 @@ public class FileTailer
     public static void Main(string[] args)
     {
 
+        // Basic command line parsing:
+        // -l <FilePath>    : use explicit log folder/file path
+        // -clear           : remove application registry settings and exit
+        string? explicitPath = null;
+        bool clearRegistry = false;
+        for (int i = 0; i < args.Length; i++)
+        {
+            var a = args[i];
+            if (string.Equals(a, "-l", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+            {
+                explicitPath = args[i + 1];
+                i++;
+            }
+            else if (string.Equals(a, "-clear", StringComparison.OrdinalIgnoreCase))
+            {
+                clearRegistry = true;
+            }
+        }
+
+        if (clearRegistry)
+        {
+            try
+            {
+                // Remove the Tailgrab subtree from HKCU\Software\DeviousFox
+                using var baseKey = Registry.CurrentUser.OpenSubKey("Software\\DeviousFox", writable: true);
+                if (baseKey != null)
+                {
+                    try
+                    {
+                        baseKey.DeleteSubKeyTree("Tailgrab", false);
+                        logger.Info("Application registry settings cleared from HKCU\\Software\\DeviousFox\\Tailgrab");
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.Warn(ex, "Failed to delete Tailgrab registry subtree");
+                    }
+                }
+                else
+                {
+                    logger.Info("No registry settings found to clear.");
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Warn(ex, "Failed while attempting to clear registry settings");
+            }
+
+            // Exit application after clearing settings
+            return;
+        }
+
         // Ensure Resources/tailgrab.ico is present in the application folder. If missing, write a small embedded PNG as the icon file.
         try
         {
@@ -241,14 +292,21 @@ public class FileTailer
         _serviceRegistry = new ServiceRegistry();
         _serviceRegistry.StartAllServices();
 
-        string filePath = VRChatAppDataPath + Path.DirectorySeparatorChar;
-        if (args.Length == 0)
+        string filePath = explicitPath ?? (VRChatAppDataPath + Path.DirectorySeparatorChar);
+        if (explicitPath == null)
         {
-            logger.Warn($"No path argument provided, defaulting to VRChat log directory: {filePath}");
+            if (args.Length == 0)
+            {
+                logger.Warn($"No path argument provided, defaulting to VRChat log directory: {filePath}");
+            }
+            else
+            {
+                logger.Warn($"No '-l' argument provided; ignoring other command line arguments and defaulting to VRChat log directory: {filePath}");
+            }
         }
         else
         {
-            filePath = args[0];
+            logger.Info($"Using explicit path from -l: '{filePath}'");
         }
 
         if (!Directory.Exists(filePath))
@@ -386,6 +444,24 @@ public class FileTailer
         groupBoxStyle.Setters.Add(new Setter(System.Windows.Window.BackgroundProperty, darkWindow));
         groupBoxStyle.Setters.Add(new Setter(System.Windows.Window.ForegroundProperty, lightText));
         app.Resources[typeof(System.Windows.Controls.GroupBox)] = groupBoxStyle;
+
+        var comboBoxStyle = new Style(typeof(System.Windows.Controls.ComboBox));
+        comboBoxStyle.Setters.Add(new Setter(System.Windows.Controls.Control.BackgroundProperty, darkControl));
+        comboBoxStyle.Setters.Add(new Setter(System.Windows.Controls.Control.ForegroundProperty, lightText));
+        app.Resources[typeof(System.Windows.Controls.ComboBox)] = comboBoxStyle;
+
+        // Ensure ComboBox items and selected text use the dark theme when the control is not focused.
+        var comboBoxItemStyle = new Style(typeof(System.Windows.Controls.ComboBoxItem));
+        comboBoxItemStyle.Setters.Add(new Setter(System.Windows.Controls.Control.BackgroundProperty, darkWindow));
+        comboBoxItemStyle.Setters.Add(new Setter(System.Windows.Controls.Control.ForegroundProperty, lightText));
+        comboBoxItemStyle.Setters.Add(new Setter(System.Windows.Controls.Control.BorderBrushProperty, System.Windows.Media.Brushes.Transparent));
+
+        var comboSelectedTrigger = new Trigger { Property = System.Windows.Controls.ComboBoxItem.IsSelectedProperty, Value = true };
+        comboSelectedTrigger.Setters.Add(new Setter(System.Windows.Controls.Control.BackgroundProperty, darkWindow));
+        comboSelectedTrigger.Setters.Add(new Setter(System.Windows.Controls.Control.ForegroundProperty, lightText));
+
+        comboBoxItemStyle.Triggers.Add(comboSelectedTrigger);
+        app.Resources[typeof(System.Windows.Controls.ComboBoxItem)] = comboBoxItemStyle;
 
         var windowStyle = new Style(typeof(System.Windows.Window));
         windowStyle.Setters.Add(new Setter(System.Windows.Window.BackgroundProperty, darkWindow));

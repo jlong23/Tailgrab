@@ -4,8 +4,8 @@ using OtpNet;
 using System.IO;
 using System.Net;
 using Tailgrab.Config;
-using VRChat.API.Client;
 using VRChat.API.Model;
+using VRChat.API.Client;
 
 
 namespace Tailgrab.Clients.VRChat
@@ -27,7 +27,7 @@ namespace Tailgrab.Clients.VRChat
                 System.Windows.MessageBox.Show("VR Chat Web API Credentials are not set yet, use the Config / Secrets tab to update credenials and restart Tailgrab.", "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
                 return;
             }
-                
+
             string cookiePath = Path.Combine(Directory.GetCurrentDirectory(), "cookies.json");
 
             // Try to load cookies from disk and use them if they are present and not expired
@@ -157,7 +157,7 @@ namespace Tailgrab.Clients.VRChat
         {
             List<Avatar> avatars = new List<Avatar>();
             try
-            { 
+            {
                 if (_vrchat != null)
                 {
                     avatars = _vrchat.Avatars.SearchAvatars(sort: SortOption.Order, order: OrderOption.Descending, userId: userId, tag: "avatargallery");
@@ -213,12 +213,12 @@ namespace Tailgrab.Clients.VRChat
             Print? printInfo = null;
             try
             {
-                if( _vrchat != null)
+                if (_vrchat != null)
                 {
                     printInfo = _vrchat.Prints.GetPrint(fileURL);
                     logger.Info($"Fetched print info: {printInfo?.Id} by {printInfo?.AuthorName}");
                 }
-            } 
+            }
             catch (Exception ex)
             {
                 logger.Error($"Error fetching avatar: {ex.Message}");
@@ -251,6 +251,24 @@ namespace Tailgrab.Clients.VRChat
             var dtoList = cookies.Select(c => SerializableCookie.FromCookie(c)).ToList();
             var json = JsonConvert.SerializeObject(dtoList, Formatting.Indented);
             System.IO.File.WriteAllText(filePath, json);
+        }
+
+        internal Group? getGroupById(string id)
+        {
+            Group? group = null;
+            try
+            {
+                if (_vrchat != null)
+                {
+                    group = _vrchat.Groups.GetGroup(id);
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error($"Error fetching Group information: {ex.Message}");
+            }
+
+            return group;
         }
 
         private class SerializableCookie

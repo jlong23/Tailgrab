@@ -11,7 +11,7 @@ namespace Tailgrab.Actions
     public interface IAction
     {
         void PerformAction();
-    }   
+    }
 
 
     public class DelayAction : IAction
@@ -22,13 +22,13 @@ namespace Tailgrab.Actions
         public DelayAction(int delayMilliseconds)
         {
             DelayMilliseconds = delayMilliseconds;
-            logger.Warn($"Added DelayAction: Will delay for : '{DelayMilliseconds}' milliseconds."); 
+            logger.Warn($"Added DelayAction: Will delay for : '{DelayMilliseconds}' milliseconds.");
 
         }
 
         public void PerformAction()
         {
-            if( DelayMilliseconds <= 0 )
+            if (DelayMilliseconds <= 0)
             {
                 return;
             }
@@ -50,14 +50,14 @@ namespace Tailgrab.Actions
             WindowTitle = windowTitle;
             Keys = keys;
 
-            logger.Warn($"Added KeystrokesAction: Window Title: '{WindowTitle}' with Keys: {Keys}."); 
+            logger.Warn($"Added KeystrokesAction: Window Title: '{WindowTitle}' with Keys: {Keys}.");
         }
 
         public void PerformAction()
         {
-            if( WindowTitle == null || Keys == null )
+            if (WindowTitle == null || Keys == null)
             {
-                logger.Warn($"KeystrokesAction: Window Title: '{WindowTitle}' or Keys: {Keys} not supplied."); 
+                logger.Warn($"KeystrokesAction: Window Title: '{WindowTitle}' or Keys: {Keys} not supplied.");
                 return;
             }
 
@@ -252,9 +252,9 @@ namespace Tailgrab.Actions
             OscTypeValue = type;
             Value = value;
 
-            logger.Warn($"Added OSCAction: Parameter: '{ParameterName}'; Type: {OscTypeValue}; Value: {Value}."); 
+            logger.Warn($"Added OSCAction: Parameter: '{ParameterName}'; Type: {OscTypeValue}; Value: {Value}.");
 
-        }  
+        }
 
         public void PerformAction()
         {
@@ -269,7 +269,7 @@ namespace Tailgrab.Actions
             {
                 case OscType.Bool:
                     if (bool.TryParse(value, out bool boolValue))
-                    {                        
+                    {
                         OscParameter.SendValue(parameterName, boolValue);
                     }
                     break;
@@ -285,7 +285,7 @@ namespace Tailgrab.Actions
                         OscParameter.SendValue(parameterName, floatValue);
                     }
                     break;
-            }        
+            }
         }
     }
 
@@ -293,7 +293,7 @@ namespace Tailgrab.Actions
     {
         public Logger logger = LogManager.GetCurrentClassLogger();
 
-        public int Volume{ get; set; } = 100;
+        public int Volume { get; set; } = 100;
 
         public int Rate { get; set; } = 0;
 

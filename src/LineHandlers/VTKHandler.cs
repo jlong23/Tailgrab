@@ -21,16 +21,16 @@ public class VTKHandler : AbstractLineHandler
     public override bool HandleLine(string line)
     {
         Match m = regex.Match(line);
-        if( m.Success )
+        if (m.Success)
         {
             string timestamp = m.Groups[VRC_DATETIME].Value;
             string userName = m.Groups[VRC_DISPLAYNAME].Value;
-            if( LogOutput )
+            if (LogOutput)
             {
                 logger.Info($"{COLOR_PREFIX}VTK : {userName}{COLOR_RESET.GetAnsiEscape()}");
             }
 
-            _serviceRegistry.GetPlayerManager().AddPlayerEventByDisplayName(userName, PlayerEvent.EventType.Moderation, "Vote kick initiated against player.");   
+            _serviceRegistry.GetPlayerManager().AddPlayerEventByDisplayName(userName, PlayerEvent.EventType.Moderation, "Vote kick initiated against player.");
 
             ExecuteActions();
             return true;

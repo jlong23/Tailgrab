@@ -12,7 +12,7 @@ public partial class UserInfo
 
     public string DisplayName { get; set; }
 
-    public double ElapsedHours { get; set; }
+    public double ElapsedMinutes { get; set; }
 
     public DateTime CreatedAt { get; set; }
 
@@ -26,6 +26,6 @@ public partial class UserInfo
 
     public override string ToString()
     {
-        return $"UserInfo: {UserId}, DisplayName: {DisplayName}, ElapsedHours: {ElapsedHours}, CreatedAt: {CreatedAt}, UpdatedAt: {UpdatedAt}";
+        return $"UserInfo: {UserId}, DisplayName: {DisplayName}, ElapsedMinutes: {ElapsedMinutes}, CreatedAt: {CreatedAt}, UpdatedAt: {UpdatedAt}";
     }
 }

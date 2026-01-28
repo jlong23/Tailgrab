@@ -48,9 +48,11 @@ namespace Tailgrab.PlayerManagement
         public Dictionary<string, Print> PrintData = new Dictionary<string, Print>();
         public string? UserBio { get; set; }
         public string? AIEval { get; set; }
-        public bool IsWatched { get
-            { 
-                if( IsAvatarWatch || IsGroupWatch || IsProfileWatch)
+        public bool IsWatched
+        {
+            get
+            {
+                if (IsAvatarWatch || IsGroupWatch || IsProfileWatch)
                 {
                     return true;
                 }
@@ -61,19 +63,19 @@ namespace Tailgrab.PlayerManagement
 
         public string WatchCode
         {
-            get 
-            { 
+            get
+            {
                 string code = "";
 
-                if( IsAvatarWatch )
+                if (IsAvatarWatch)
                 {
                     code += "A";
-                }   
-                if( IsGroupWatch )
+                }
+                if (IsGroupWatch)
                 {
                     code += "G";
                 }
-                if( IsProfileWatch )
+                if (IsProfileWatch)
                 {
                     code += "P";
                 }
@@ -87,7 +89,7 @@ namespace Tailgrab.PlayerManagement
         public bool IsProfileWatch { get; set; } = false;
 
 
-        public Player(string userId, string displayName, SessionInfo session )
+        public Player(string userId, string displayName, SessionInfo session)
         {
             UserId = userId;
             DisplayName = displayName;
@@ -144,7 +146,7 @@ namespace Tailgrab.PlayerManagement
                 }
             }
 
-            if ( full && UserBio != null && UserBio.Length > 0) 
+            if (full && UserBio != null && UserBio.Length > 0)
             {
                 sb.AppendLine(new string('-', 50));
 
@@ -259,7 +261,7 @@ namespace Tailgrab.PlayerManagement
                 changeType = PlayerChangedEventArgs.ChangeType.Added;
             }
 
-            if ( player == null )
+            if (player == null)
             {
                 logger.Error("PlayerJoined: Failed to create or retrieve player instance.");
                 return;
@@ -285,7 +287,7 @@ namespace Tailgrab.PlayerManagement
             OnPlayerChanged(changeType, player);
         }
 
-        public void PlayerLeft(string displayName, AbstractLineHandler handler )
+        public void PlayerLeft(string displayName, AbstractLineHandler handler)
         {
             if (playersByDisplayName.TryGetValue(displayName, out Player? player))
             {
@@ -302,7 +304,7 @@ namespace Tailgrab.PlayerManagement
                     user.IsBos = 0;
                     user.CreatedAt = DateTime.Now;
                     user.UpdatedAt = DateTime.Now;
-                    user.ElapsedHours = timeDifference.TotalMinutes;
+                    user.ElapsedMinutes = timeDifference.TotalMinutes;
                     dBContext.Add(user);
                     dBContext.SaveChanges();
                 }
@@ -310,7 +312,7 @@ namespace Tailgrab.PlayerManagement
                 {
                     user.DisplayName = player.DisplayName;
                     user.UpdatedAt = DateTime.Now;
-                    user.ElapsedHours = user.ElapsedHours + timeDifference.TotalMinutes;
+                    user.ElapsedMinutes = user.ElapsedMinutes + timeDifference.TotalMinutes;
                     dBContext.Update(user);
                     dBContext.SaveChanges();
                 }
@@ -321,7 +323,7 @@ namespace Tailgrab.PlayerManagement
                 playersByDisplayName.Remove(displayName);
                 playersByNetworkId.Remove(player.NetworkId);
                 playersByUserId.Remove(player.UserId);
-                if( handler.LogOutput )
+                if (handler.LogOutput)
                 {
                     PrintPlayerInfo(player);
                 }
@@ -348,12 +350,12 @@ namespace Tailgrab.PlayerManagement
 
         public Player? AssignPlayerNetworkId(string displayName, int networkId)
         {
-            if( playersByDisplayName.TryGetValue(displayName, out Player? player))
+            if (playersByDisplayName.TryGetValue(displayName, out Player? player))
             {
                 player.NetworkId = networkId;
                 playersByNetworkId[networkId] = player;
                 OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Updated, player);
-            }   
+            }
 
             return player;
         }
@@ -365,15 +367,10 @@ namespace Tailgrab.PlayerManagement
 
         public void ClearAllPlayers(AbstractLineHandler handler)
         {
-            foreach (string avatarName in avatarsInSession)
-            {
-                serviceRegistry.GetAvatarManager().AddAvatarsInSession(avatarName);
-            }
-
-            foreach ( var player in playersByUserId.Values )
+            foreach (var player in playersByUserId.Values)
             {
                 player.InstanceEndTime = DateTime.Now;
-                if( handler.LogOutput )
+                if (handler.LogOutput)
                 {
                     PrintPlayerInfo(player);
                 }
@@ -387,34 +384,34 @@ namespace Tailgrab.PlayerManagement
             avatarsInSession.Clear();
 
             // Also a global cleared notification (consumers may want to reset)
-            OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Cleared, new Player("","", CurrentSession) { InstanceStartTime = DateTime.MinValue });
+            OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Cleared, new Player("", "", CurrentSession) { InstanceStartTime = DateTime.MinValue });
         }
 
         public int GetPlayerCount()
         {
             return playersByUserId.Count;
-        }   
+        }
 
         public void LogAllPlayers(AbstractLineHandler handler)
         {
-            if( handler.LogOutput )
+            if (handler.LogOutput)
             {
-                foreach( var player in playersByUserId.Values )
+                foreach (var player in playersByUserId.Values)
                 {
                     PrintPlayerInfo(player);
-                }                
+                }
             }
         }
 
         public Player? AddPlayerEventByDisplayName(string displayName, PlayerEvent.EventType eventType, string eventDescription)
         {
-            if( playersByDisplayName.TryGetValue(displayName, out Player? player))
+            if (playersByDisplayName.TryGetValue(displayName, out Player? player))
             {
                 PlayerEvent newEvent = new PlayerEvent(eventType, eventDescription);
                 player.AddEvent(newEvent);
                 OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Updated, player);
                 return player;
-            } 
+            }
 
             return null;
         }
@@ -435,7 +432,7 @@ namespace Tailgrab.PlayerManagement
         public void SetAvatarForPlayer(string displayName, string avatarName)
         {
             bool watchedAvatar = serviceRegistry.GetAvatarManager().CheckAvatarByName(avatarName);
-            if( watchedAvatar )
+            if (watchedAvatar)
             {
                 logger.Info($"{COLOR_PREFIX_LEAVE.GetAnsiEscape()}Watched Avatar Detected for Player {displayName}: {avatarName}{COLOR_RESET.GetAnsiEscape()}");
             }
@@ -448,7 +445,7 @@ namespace Tailgrab.PlayerManagement
                 OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Updated, p);
             }
 
-            if( !avatarsInSession.Contains(avatarName))
+            if (!avatarsInSession.Contains(avatarName))
             {
                 avatarsInSession.Add(avatarName);
             }
@@ -495,10 +492,10 @@ namespace Tailgrab.PlayerManagement
                 Print? printInfo = serviceRegistry.GetVRChatAPIClient().GetPrintInfo(printId);
                 if (printInfo != null)
                 {
-                    if( playersByUserId.TryGetValue(printInfo.OwnerId, out Player? player))
+                    if (playersByUserId.TryGetValue(printInfo.OwnerId, out Player? player))
                     {
                         player.PrintData[printId] = printInfo;
-                        logger.Info($"Added Print {printId} for Player {player.DisplayName} (ID: {printInfo.OwnerId})" );
+                        logger.Info($"Added Print {printId} for Player {player.DisplayName} (ID: {printInfo.OwnerId})");
                     }
                     AddPlayerEventByUserId(printInfo.OwnerId, PlayerEvent.EventType.Print, $"Dropped Print {printId}");
                 }

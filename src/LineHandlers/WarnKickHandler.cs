@@ -16,18 +16,18 @@ public class WarnKickHandler : AbstractLineHandler
 
     public WarnKickHandler(string matchPattern, ServiceRegistry serviceRegistry) : base(matchPattern, serviceRegistry)
     {
-        logger.Info($"** Moderation Warn/Kick Handler:  Regular Expression: {Pattern}");        
+        logger.Info($"** Moderation Warn/Kick Handler:  Regular Expression: {Pattern}");
     }
 
     public override bool HandleLine(string line)
     {
         Match m = regex.Match(line);
-        if( m.Success )
+        if (m.Success)
         {
             string timestamp = m.Groups[VRC_DATETIME].Value;
             string userName = m.Groups[VRC_DISPLAYNAME].Value;
             string action = m.Groups[VRC_ACTION].Value;
-            if( LogOutput )
+            if (LogOutput)
             {
                 logger.Info($"{COLOR_PREFIX}User Moderation : {userName} to {action}{COLOR_RESET.GetAnsiEscape()}");
             }

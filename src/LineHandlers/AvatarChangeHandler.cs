@@ -16,18 +16,18 @@ public class AvatarChangeHandler : AbstractLineHandler
 
     public AvatarChangeHandler(string matchPattern, ServiceRegistry serviceRegistry) : base(matchPattern, serviceRegistry)
     {
-        logger.Info($"** AvatarChange Handler:  Regular Expression: {Pattern}");        
+        logger.Info($"** AvatarChange Handler:  Regular Expression: {Pattern}");
     }
 
     public override bool HandleLine(string line)
     {
         Match m = regex.Match(line);
-        if( m.Success )
+        if (m.Success)
         {
             string timestamp = m.Groups[VRC_DATETIME].Value;
             string userName = m.Groups[VRC_DISPLAYNAME].Value;
             string avatarName = m.Groups[VRC_AVATARNAME].Value;
-            if( LogOutput )
+            if (LogOutput)
             {
                 logger.Info($"{COLOR_PREFIX}Avatar Change : {userName} to {avatarName}{COLOR_RESET.GetAnsiEscape()}");
             }

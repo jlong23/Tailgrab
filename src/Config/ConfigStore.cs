@@ -1,5 +1,4 @@
 using Microsoft.Win32;
-using System;
 using System.Security.Cryptography;
 using System.Text;
 

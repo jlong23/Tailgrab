@@ -15,13 +15,13 @@ public class OnPlayerJoinHandler : AbstractLineHandler
 
     public OnPlayerJoinHandler(string matchPattern, ServiceRegistry serviceRegistry) : base(matchPattern, serviceRegistry)
     {
-        logger.Info($"** OnPlayer Join/Leave Handler:  Regular Expression: {Pattern}");        
+        logger.Info($"** OnPlayer Join/Leave Handler:  Regular Expression: {Pattern}");
     }
 
     public override bool HandleLine(string line)
     {
         Match m = regex.Match(line);
-        if( m.Success )
+        if (m.Success)
         {
             string timestamp = m.Groups[VRC_DATETIME].Value;
             string action = m.Groups[VRC_ACTION].Value;
@@ -29,11 +29,11 @@ public class OnPlayerJoinHandler : AbstractLineHandler
             string userId = m.Groups[VRC_USERID].Value;
             ExecuteActions();
 
-            if( action.Equals("Joined") )
+            if (action.Equals("Joined"))
             {
-                _serviceRegistry.GetPlayerManager().PlayerJoined(userId, userName, this );
+                _serviceRegistry.GetPlayerManager().PlayerJoined(userId, userName, this);
             }
-            else if( action.Equals("Left") )
+            else if (action.Equals("Left"))
             {
                 _serviceRegistry.GetPlayerManager().PlayerLeft(userName, this);
             }

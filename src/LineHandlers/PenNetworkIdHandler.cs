@@ -20,12 +20,12 @@ public class PenNetworkHandler : AbstractLineHandler
     public PenNetworkHandler(string matchPattern, ServiceRegistry serviceRegistry) : base(matchPattern, serviceRegistry)
     {
 
-        logger.Info($"** Pen Network Id Handler:  Regular Expression: {Pattern}");        
+        logger.Info($"** Pen Network Id Handler:  Regular Expression: {Pattern}");
 
         using (FileStream fs = new FileStream("./pen-network-id.csv", FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
         using (StreamReader sr = new StreamReader(fs, Encoding.UTF8))
         {
-            Console.WriteLine($"Loading Pen Network ID mappings...");                
+            Console.WriteLine($"Loading Pen Network ID mappings...");
             while (true && sr != null)
             {
                 string? line = sr.ReadLine();
@@ -36,40 +36,40 @@ public class PenNetworkHandler : AbstractLineHandler
 
                 string[] parts = line.Split(',');
                 int networkId = int.Parse(parts[0]);
-                string penColor = parts[1]; 
+                string penColor = parts[1];
                 penNetworkMap[networkId] = penColor;
                 logger.Debug($"Mapped Pen Color '{penColor}' to Network ID: {networkId}");
-            }   
+            }
         }
     }
 
     public override bool HandleLine(string line)
     {
         Match m = regex.Match(line);
-        if( m.Success )
+        if (m.Success)
         {
             string timestamp = m.Groups[VRC_DATETIME].Value;
-            int objectId = int.Parse( m.Groups[VRC_OBJECT_NETWORK_ID].Value );
-            int fromUserId = int.Parse( m.Groups[VRC_FROM_NETWORK_ID].Value );
-            int toUserId = int.Parse( m.Groups[VRC_TO_NETWORK_ID].Value );
+            int objectId = int.Parse(m.Groups[VRC_OBJECT_NETWORK_ID].Value);
+            int fromUserId = int.Parse(m.Groups[VRC_FROM_NETWORK_ID].Value);
+            int toUserId = int.Parse(m.Groups[VRC_TO_NETWORK_ID].Value);
 
             if (penNetworkMap.TryGetValue(objectId, out string? penColor))
             {
                 string fromPlayerName = "Unknown";
                 string toPlayerName = "Unknown";
-                if( _serviceRegistry.GetPlayerManager().GetPlayerByNetworkId(fromUserId) is Player fromPlayer )
+                if (_serviceRegistry.GetPlayerManager().GetPlayerByNetworkId(fromUserId) is Player fromPlayer)
                 {
                     fromPlayerName = fromPlayer.DisplayName;
                     _serviceRegistry.GetPlayerManager().AddPenEventByDisplayName(fromPlayerName, $"-Pen '{penColor}'.");
                     _serviceRegistry.GetPlayerManager().AddPlayerEventByDisplayName(fromPlayerName, PlayerEvent.EventType.PenActivity, $"Lost ownership of pen '{penColor}'.");
                 }
-                if( _serviceRegistry.GetPlayerManager().GetPlayerByNetworkId(toUserId) is Player toPlayer )
+                if (_serviceRegistry.GetPlayerManager().GetPlayerByNetworkId(toUserId) is Player toPlayer)
                 {
                     toPlayerName = toPlayer.DisplayName;
                     _serviceRegistry.GetPlayerManager().AddPenEventByDisplayName(toPlayerName, $"+Pen '{penColor}'.");
                     _serviceRegistry.GetPlayerManager().AddPlayerEventByDisplayName(toPlayerName, PlayerEvent.EventType.PenActivity, $"Took ownership of pen '{penColor}'.");
                 }
-                if( LogOutput )
+                if (LogOutput)
                 {
                     logger.Info($"Pen '{penColor}' Ownership Change : {fromPlayerName} to {toPlayerName}");
                 }

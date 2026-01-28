@@ -1,7 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using NLog;
-using System;
 using Tailgrab.AvatarManagement;
 using Tailgrab.Clients.Ollama;
 using Tailgrab.Clients.VRChat;
@@ -20,7 +19,8 @@ namespace Tailgrab
         static Logger logger = LogManager.GetCurrentClassLogger();
         ServiceCollection services = new ServiceCollection();
 
-        public ServiceRegistry() {
+        public ServiceRegistry()
+        {
         }
 
         public void StartAllServices()
@@ -28,7 +28,7 @@ namespace Tailgrab
             logger.Info("Starting all services...");
 
             logger.Info("Starting dbContext...");
-          
+
             services.AddDbContext<TailgrabDBContext>(options => options.UseSqlite("Data Source=./data/avatars.sqlite"));
             IServiceProvider serviceProvider = services.BuildServiceProvider();
 
@@ -38,13 +38,13 @@ namespace Tailgrab
             vrcAPIClient.Initialize();
 
             logger.Info("Starting OLLama API Client...");
-            ollamaAPIClient = new OllamaClient( this );
+            ollamaAPIClient = new OllamaClient(this);
 
             logger.Info("Starting Avatar Manager...");
             avatarManager = new AvatarManagementService(this);
 
             logger.Info("Starting Player Manager...");
-            playerManager = new PlayerManager( this );
+            playerManager = new PlayerManager(this);
 
             logger.Info("All services started.");
         }
@@ -67,16 +67,16 @@ namespace Tailgrab
 
         public PlayerManager GetPlayerManager()
         {
-            if( playerManager == null)
-            {     
-                throw new InvalidOperationException("Player Manager has not been initialized. Call StartAllServices() first."); 
+            if (playerManager == null)
+            {
+                throw new InvalidOperationException("Player Manager has not been initialized. Call StartAllServices() first.");
             }
             return playerManager;
         }
 
         public OllamaClient GetOllamaAPIClient()
         {
-            if( ollamaAPIClient == null)
+            if (ollamaAPIClient == null)
             {
                 throw new InvalidOperationException("Ollama API Client has not been initialized. Call StartAllServices() first.");
             }
@@ -85,7 +85,7 @@ namespace Tailgrab
 
         public AvatarManagementService GetAvatarManager()
         {
-            if( avatarManager == null)
+            if (avatarManager == null)
             {
                 throw new InvalidOperationException("Avatar Manager has not been initialized. Call StartAllServices() first.");
             }

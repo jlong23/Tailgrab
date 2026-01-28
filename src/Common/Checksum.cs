@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Tailgrab.Common
+﻿namespace Tailgrab.Common
 {
     internal class Checksum
     {

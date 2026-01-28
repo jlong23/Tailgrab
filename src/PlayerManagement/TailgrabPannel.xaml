@@ -339,7 +339,52 @@
 
             <TabItem Header="Prints">
                 <Grid>
-                    <TextBlock Margin="12" Text="Prints view not implemented yet." />
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <TextBox Name="PrintFilterBox" Width="300" Margin="0,0,8,0" />
+                        <Button Content="Apply Filter" Click="PrintApplyFilter_Click" Margin="0,0,6,0"/>
+                        <Button Content="Clear Filter" Click="PrintClearFilter_Click"/>
+                    </StackPanel>
+
+                    <!-- Show each player and their prints -->
+                    <ListView Name="PrintListView" Grid.Row="1" ItemsSource="{Binding PrintView}">
+                        <ListView.ItemTemplate>
+                            <DataTemplate>
+                                <Border BorderBrush="Gray" BorderThickness="0,0,0,1" Padding="6">
+                                    <StackPanel Orientation="Vertical">
+                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                            <TextBlock FontWeight="Bold" Text="{Binding DisplayName}" />
+                                            <TextBlock Margin="8,0,0,0" FontStyle="Italic" Text="{Binding UserId}" />
+                                        </StackPanel>
+                                        <ItemsControl ItemsSource="{Binding Prints}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Grid Margin="0,2,0,2">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="300" />
+                                                            <ColumnDefinition Width="300" />
+                                                            <ColumnDefinition Width="200" />
+                                                            <ColumnDefinition Width="100" />
+                                                        </Grid.ColumnDefinitions>
+                                                        <TextBlock Grid.Column="0" Text="{Binding Id}" />
+                                                        <TextBlock Grid.Column="1" Text="{Binding AuthorName}" />
+                                                        <TextBlock Grid.Column="2" Text="{Binding Timestamp, StringFormat={}{0:u}}" />
+                                                        <TextBlock Grid.Column="3">
+                                                            <Hyperlink NavigateUri="{Binding PrintUrl}" RequestNavigate="PrintHyperlink_RequestNavigate">Open</Hyperlink>
+                                                        </TextBlock>
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
                 </Grid>
             </TabItem>
 
@@ -353,19 +398,32 @@
                 <TabControl>
                     <TabItem Header="Known Avatars">
                         <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="29*"/>
+                                <ColumnDefinition Width="89*"/>
+                                <ColumnDefinition Width="27*"/>
+                                <ColumnDefinition Width="44*"/>
+                                <ColumnDefinition Width="16*"/>
+                                <ColumnDefinition Width="172*"/>
+                                <ColumnDefinition Width="284*"/>
+                                <ColumnDefinition Width="392*"/>
+                            </Grid.ColumnDefinitions>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="*" />
                             </Grid.RowDefinitions>
 
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="8">
                                 <TextBox Name="AvatarDbFilterBox" Width="300" Margin="0,0,8,0" />
                                 <Button Content="Apply Filter" Click="AvatarDbApplyFilter_Click" Margin="0,0,6,0"/>
                                 <Button Content="Clear Filter" Click="AvatarDbClearFilter_Click"/>
                                 <Button Content="Refresh" Click="AvatarDbRefresh_Click" Margin="8,0,0,0"/>
+                                <!-- Fetch avatar by id -->
+                                <TextBox Name="AvatarIdBox" Width="360" Margin="12,0,8,0" ToolTip="Enter Avatar ID to fetch from VRChat" />
+                                <Button Content="Fetch Avatar by ID" Click="AvatarFetch_Click" Margin="0,0,0,0"/>
                             </StackPanel>
-                                       
-                            <DataGrid Name="AvatarDbGrid" Grid.Row="1" AutoGenerateColumns="False" CanUserSortColumns="True" IsReadOnly="False" ItemsSource="{Binding AvatarDbView}" CellEditEnding="AvatarDbGrid_CellEditEnding">
+
+                            <DataGrid Name="AvatarDbGrid" Grid.Row="1" AutoGenerateColumns="False" CanUserSortColumns="True" IsReadOnly="False" ItemsSource="{Binding AvatarDbView}" CellEditEnding="AvatarDbGrid_CellEditEnding" Grid.ColumnSpan="8">
                                 <DataGrid.Columns>
                                     <DataGridTextColumn Header="Avatar Name" Binding="{Binding AvatarName}" SortMemberPath="AvatarName" Width="*" />
                                     <DataGridTextColumn Header="Avatar ID" Binding="{Binding AvatarId}" SortMemberPath="AvatarId" Width="300" />
@@ -402,25 +460,44 @@
                                         </DataGridTemplateColumn.CellEditingTemplate>
                                     </DataGridTemplateColumn>
                                     <DataGridTextColumn Header="Last Updated" Binding="{Binding UpdatedAt, StringFormat={}{0:u}}" SortMemberPath="UpdatedAt" Width="200" IsReadOnly="True" />
+                                    <DataGridTemplateColumn Header="Browser" Width="80">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock>
+                                                    <Hyperlink NavigateUri="{Binding AvatarId, StringFormat=https://vrchat.com/home/avatar/{0}}"
+                                                               RequestNavigate="AvatarHyperlink_RequestNavigate">
+                                                        Open
+                                                    </Hyperlink>
+                                                </TextBlock>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
                                 </DataGrid.Columns>
                             </DataGrid>
                         </Grid>
                     </TabItem>
                     <TabItem Header="Known Groups">
                         <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="134*"/>
+                                <ColumnDefinition Width="919*"/>
+                            </Grid.ColumnDefinitions>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="*" />
                             </Grid.RowDefinitions>
 
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="2">
                                 <TextBox Name="GroupDbFilterBox" Width="300" Margin="0,0,8,0" />
                                 <Button Content="Apply Filter" Click="GroupDbApplyFilter_Click" Margin="0,0,6,0"/>
                                 <Button Content="Clear Filter" Click="GroupDbClearFilter_Click"/>
                                 <Button Content="Refresh" Click="GroupDbRefresh_Click" Margin="8,0,0,0"/>
+                                <!-- Fetch Group by id -->
+                                <TextBox Name="GroupIdBox" Width="360" Margin="12,0,8,0" ToolTip="Enter Group ID to fetch from VRChat" />
+                                <Button Content="Fetch Group by ID" Click="GroupFetch_Click" Margin="0,0,0,0"/>
                             </StackPanel>
 
-                            <DataGrid Name="GroupDbGrid" Grid.Row="1" AutoGenerateColumns="False" CanUserSortColumns="True" IsReadOnly="False" ItemsSource="{Binding GroupDbView}" CellEditEnding="GroupDbGrid_CellEditEnding">
+                            <DataGrid Name="GroupDbGrid" Grid.Row="1" AutoGenerateColumns="False" CanUserSortColumns="True" IsReadOnly="False" ItemsSource="{Binding GroupDbView}" CellEditEnding="GroupDbGrid_CellEditEnding" Grid.ColumnSpan="2">
                                 <DataGrid.Columns>
                                     <DataGridTextColumn Header="Group Name" Binding="{Binding GroupName}" SortMemberPath="GroupName" Width="*" />
                                     <DataGridTextColumn Header="Group ID" Binding="{Binding GroupId}" SortMemberPath="GroupId" Width="300" />
@@ -457,13 +534,68 @@
                                         </DataGridTemplateColumn.CellEditingTemplate>
                                     </DataGridTemplateColumn>
                                     <DataGridTextColumn Header="Last Updated" Binding="{Binding UpdatedAt, StringFormat={}{0:u}}" SortMemberPath="UpdatedAt" Width="200" IsReadOnly="True" />
+                                    <DataGridTemplateColumn Header="Browser" Width="80">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock>
+                                                    <Hyperlink NavigateUri="{Binding GroupId, StringFormat=https://vrchat.com/home/group/{0}}"
+                                                               RequestNavigate="GroupHyperlink_RequestNavigate">
+                                                        Open
+                                                    </Hyperlink>
+                                                </TextBlock>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
                                 </DataGrid.Columns>
                             </DataGrid>
                         </Grid>
                     </TabItem>
                     <TabItem Header="Known Users">
                         <Grid>
-                            <TextBlock Margin="12" Text="Config view not implemented yet." />
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                <TextBox Name="UserDbFilterBox" Width="300" Margin="0,0,8,0" />
+                                <Button Content="Apply Filter" Click="UserDbApplyFilter_Click" Margin="0,0,6,0"/>
+                                <Button Content="Clear Filter" Click="UserDbClearFilter_Click"/>
+                                <Button Content="Refresh" Click="UserDbRefresh_Click" Margin="8,0,0,0"/>
+                            </StackPanel>
+
+                            <DataGrid Name="UserDbGrid" Grid.Row="1" AutoGenerateColumns="False" CanUserSortColumns="True" IsReadOnly="False" ItemsSource="{Binding UserDbView}" CellEditEnding="UserDbGrid_CellEditEnding">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Display Name" Binding="{Binding DisplayName}" SortMemberPath="DisplayName" Width="*" />
+                                    <DataGridTextColumn Header="User ID" Binding="{Binding UserId}" SortMemberPath="UserId" Width="300" />
+                                    <DataGridTextColumn Header="Elapsed Minutes" Binding="{Binding ElapsedMinutes, StringFormat=N1}" SortMemberPath="ElapsedMinutes" Width="120">
+                                        <DataGridTextColumn.ElementStyle>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="HorizontalAlignment" Value="Right" />
+                                                <Setter Property="TextAlignment" Value="Right" />
+                                            </Style>
+                                        </DataGridTextColumn.ElementStyle>
+                                        <DataGridTextColumn.EditingElementStyle>
+                                            <Style TargetType="TextBox">
+                                                <Setter Property="HorizontalContentAlignment" Value="Right" />
+                                            </Style>
+                                        </DataGridTextColumn.EditingElementStyle>
+                                    </DataGridTextColumn>
+                                    <DataGridTextColumn Header="Last Updated" Binding="{Binding UpdatedAt, StringFormat={}{0:u}}" SortMemberPath="UpdatedAt" Width="200" IsReadOnly="True" />
+                                    <DataGridTemplateColumn Header="Browser" Width="80">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock>
+                                                    <Hyperlink NavigateUri="{Binding UserId, StringFormat=https://vrchat.com/home/user/{0}}"
+                                                               RequestNavigate="UserHyperlink_RequestNavigate">
+                                                        Open
+                                                    </Hyperlink>
+                                                </TextBlock>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                </DataGrid.Columns>
+                            </DataGrid>
                         </Grid>
                     </TabItem>
                     <TabItem Header="Line Matchers">
@@ -474,6 +606,7 @@
                     <TabItem Header="Secrets">
                         <Grid Margin="6">
                             <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="*" />
@@ -531,7 +664,74 @@
                                 </Grid>
                             </GroupBox>
 
-                            <StackPanel Orientation="Horizontal" Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,6,0,0">
+                            <GroupBox Header="Alert Sounds" Grid.Row="2" Margin="0,0,0,6">
+                                <Grid Margin="6">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="125*" />
+                                        <ColumnDefinition Width="890*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+                                    <Label Grid.Column="1" Content="Avatar Alert:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
+                                    <ComboBox Grid.Row="0" Grid.Column="1" Name="AvatarAlertCombo" Margin="108,2,107,2">
+                                        <ComboBox.ItemContainerStyle>
+                                            <Style TargetType="ComboBoxItem">
+                                                <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.WindowBrushKey}}" />
+                                                <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" />
+                                                <Setter Property="Padding" Value="4" />
+                                                <Style.Triggers>
+                                                    <Trigger Property="IsSelected" Value="True">
+                                                        <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}" />
+                                                        <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.HighlightTextBrushKey}}" />
+                                                    </Trigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </ComboBox.ItemContainerStyle>
+                                    </ComboBox>
+
+                                    <Label Grid.Row="1" Grid.Column="1" Content="Group Alert:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="25" Margin="34,0,0,0" Width="73"/>
+                                    <ComboBox Grid.Row="1" Grid.Column="1" Name="GroupAlertCombo" Margin="108,2,107,2">
+                                        <ComboBox.ItemContainerStyle>
+                                            <Style TargetType="ComboBoxItem">
+                                                <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.WindowBrushKey}}" />
+                                                <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" />
+                                                <Setter Property="Padding" Value="4" />
+                                                <Style.Triggers>
+                                                    <Trigger Property="IsSelected" Value="True">
+                                                        <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}" />
+                                                        <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.HighlightTextBrushKey}}" />
+                                                    </Trigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </ComboBox.ItemContainerStyle>
+                                    </ComboBox>
+
+
+                                    <Label Grid.Row="2" Grid.Column="1" Content="Profile Alert:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
+                                    <ComboBox Grid.Row="2" Grid.Column="1" Name="ProfileAlertCombo" Margin="108,2,107,2">
+                                        <ComboBox.ItemContainerStyle>
+                                            <Style TargetType="ComboBoxItem">
+                                                <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.WindowBrushKey}}" />
+                                                <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" />
+                                                <Setter Property="Padding" Value="4" />
+                                                <Style.Triggers>
+                                                    <Trigger Property="IsSelected" Value="True">
+                                                        <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}" />
+                                                        <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.HighlightTextBrushKey}}" />
+                                                    </Trigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </ComboBox.ItemContainerStyle>
+                                    </ComboBox>
+
+                                </Grid>
+                            </GroupBox>
+
+                            <StackPanel Orientation="Horizontal" Grid.Row="3" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,6,0,0">
                                 <Button Content="Save Config" Click="SaveConfig_Click" Width="120" />
                             </StackPanel>
                         </Grid>

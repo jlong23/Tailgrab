@@ -2,7 +2,6 @@ namespace Tailgrab.LineHandler;
 
 using System.Text.RegularExpressions;
 using Tailgrab.Common;
-using Tailgrab.PlayerManagement;
 
 public class StickerHandler : AbstractLineHandler
 {
@@ -17,23 +16,23 @@ public class StickerHandler : AbstractLineHandler
 
     public StickerHandler(string matchPattern, ServiceRegistry serviceRegistry) : base(matchPattern, serviceRegistry)
     {
-        logger.Info($"** Sticker Handler:  Regular Expression: {Pattern}");        
+        logger.Info($"** Sticker Handler:  Regular Expression: {Pattern}");
     }
 
     public override bool HandleLine(string line)
     {
         Match m = regex.Match(line);
-        if( m.Success )
+        if (m.Success)
         {
             string timestamp = m.Groups[VRC_DATETIME].Value;
             string fileURL = m.Groups[VRC_FILEURL].Value;
             string userName = m.Groups[VRC_DISPLAYNAME].Value;
             string userId = m.Groups[VRC_USERID].Value;
-            if( LogOutput )
+            if (LogOutput)
             {
                 logger.Info($"{COLOR_PREFIX}{userName} ({userId}) - {fileURL}{COLOR_RESET.GetAnsiEscape()}");
             }
-            _serviceRegistry.GetPlayerManager().AddStickerEvent( userName, userId, fileURL );
+            _serviceRegistry.GetPlayerManager().AddStickerEvent(userName, userId, fileURL);
 
             ExecuteActions();
             return true;

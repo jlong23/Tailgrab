@@ -7,9 +7,9 @@
     <UseWindowsForms>true</UseWindowsForms>
     <UseWPF>true</UseWPF>
     <Nullable>enable</Nullable>
-    <AssemblyVersion>1.0.7.1428</AssemblyVersion> <!-- Explicitly set the build number -->
-    <FileVersion>1.0.7.1428</FileVersion>
-    <InformationalVersion>1.0.7.1423-1428</InformationalVersion>
+    <AssemblyVersion>1.0.8.1475</AssemblyVersion> <!-- Explicitly set the build number -->
+    <FileVersion>1.0.8.1475</FileVersion>
+    <InformationalVersion>1.0.8.1475</InformationalVersion>
     <ApplicationIcon>src\Resources\tailgrab_large.ico</ApplicationIcon>    
   </PropertyGroup>
 
@@ -52,6 +52,7 @@
 
   <ItemGroup>
     <EmbeddedResource Include="src\Resources\tailgrab.png" />
+    <EmbeddedResource Include="src\Resources\tailgrab.ico" />
   </ItemGroup>
 
   <ItemGroup>
@@ -73,10 +74,6 @@
     <MySourceFiles Include="src\config.json" />
     <MySourceFiles Include="src\NLog.config" />
     <MySourceFiles Include="src\pen-network-id.csv" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Include="src\Resources\tailgrab.ico" />
   </ItemGroup>
 
 	<ItemGroup>
@@ -103,5 +100,14 @@
 	<Target Name="CopyCustomFiles" AfterTargets="Build">
     <Copy SourceFiles="@(MySourceFiles)" DestinationFolder="$(TargetDir)publish" />
   </Target>
+
+  <ItemGroup>
+    <!-- Include all sound files under src\sounds and publish them to the 'sounds' folder in the publish output -->
+    <Content Include="src\sounds\**\*.*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <TargetPath>sounds\%(RecursiveDir)%(Filename)%(Extension)</TargetPath>
+    </Content>
+  </ItemGroup>
 
 </Project>

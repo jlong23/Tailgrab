@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using NLog;
 using OllamaSharp;
 using OllamaSharp.Models;
+using System.Media;
 using System.Net.Http;
 using System.Text.RegularExpressions;
 using Tailgrab.Common;
@@ -10,7 +11,6 @@ using Tailgrab.Config;
 using Tailgrab.Models;
 using Tailgrab.PlayerManagement;
 using VRChat.API.Model;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.StartPanel;
 
 namespace Tailgrab.Clients.Ollama
 {
@@ -24,17 +24,17 @@ namespace Tailgrab.Clients.Ollama
         public string? UserId { get; set; }
         public string? UserBio { get; set; }
 
-        public string MD5Hash 
-        { 
+        public string MD5Hash
+        {
             get
             {
-                if( string.IsNullOrEmpty(UserBio))
+                if (string.IsNullOrEmpty(UserBio))
                 {
                     return string.Empty;
                 }
 
                 // Remove all whitespace for hashing
-                return Checksum.CreateMD5(sWhitespace.Replace(UserBio,""));
+                return Checksum.CreateMD5(sWhitespace.Replace(UserBio, ""));
             }
         }
     }
@@ -48,7 +48,7 @@ namespace Tailgrab.Clients.Ollama
 
         public OllamaClient(ServiceRegistry registry)
         {
-            if(registry == null)
+            if (registry == null)
             {
                 throw new ArgumentNullException(nameof(registry));
             }
@@ -63,14 +63,14 @@ namespace Tailgrab.Clients.Ollama
             logger.Debug($"Checking user profile with AI : {userId}");
 
             try
-            {                
+            {
                 QueuedProcess process = new QueuedProcess
                 {
                     UserId = userId,
                     Priority = 1
                 };
 
-                priorityQueue.Enqueue(process);                
+                priorityQueue.Enqueue(process);
             }
             catch (Exception ex)
             {
@@ -78,25 +78,26 @@ namespace Tailgrab.Clients.Ollama
 
             }
         }
-        public static async Task ProfileCheckTask(ConcurrentPriorityQueue<IHavePriority<int>, int> priorityQueue, Dictionary<string, string> processData, ServiceRegistry serviceRegistry )
+        public static async Task ProfileCheckTask(ConcurrentPriorityQueue<IHavePriority<int>, int> priorityQueue, Dictionary<string, string> processData, ServiceRegistry serviceRegistry)
         {
             string? ollamaCloudKey = ConfigStore.LoadSecret(Tailgrab.Common.Common.Registry_Ollama_API_Key);
-
+            OllamaApiClient? ollamaApi = null;
             if (ollamaCloudKey is null)
             {
-                System.Windows.MessageBox.Show("Ollama API Credentials are not set yet, use the Config / Secrets tab to update credenials and restart Tailgrab.", "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
-                return;
+                System.Windows.MessageBox.Show("Ollama API Credentials are not set.\nThis is not nessasary for limited operation, the Profiles will not be evaluated.\nOtherwise use the Config / Secrets tab to update credenials and restart Tailgrab.", "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+            } 
+            else
+            {
+                string ollamaEndpoint = ConfigStore.LoadSecret(Tailgrab.Common.Common.Registry_Ollama_API_Endpoint) ?? Tailgrab.Common.Common.Default_Ollama_API_Endpoint;
+                HttpClient client = new HttpClient();
+                client.BaseAddress = new Uri(ollamaEndpoint);
+                client.DefaultRequestHeaders.Add("Authorization", "Bearer " + ollamaCloudKey);
+                ollamaApi = new OllamaApiClient(client);
+                string? ollamaModel = ConfigStore.LoadSecret(Tailgrab.Common.Common.Registry_Ollama_API_Model) ?? Tailgrab.Common.Common.Default_Ollama_API_Model;
+                ollamaApi.SelectedModel = ollamaModel;
             }
 
-            string ollamaEndpoint = ConfigStore.LoadSecret(Tailgrab.Common.Common.Registry_Ollama_API_Endpoint) ?? Tailgrab.Common.Common.Default_Ollama_API_Endpoint;
-            HttpClient client = new HttpClient();
-            client.BaseAddress = new Uri(ollamaEndpoint);
-            client.DefaultRequestHeaders.Add("Authorization", "Bearer " + ollamaCloudKey);
-            OllamaApiClient? ollamaApi = new OllamaApiClient(client);
-            string ollamaModel = ConfigStore.LoadSecret(Tailgrab.Common.Common.Registry_Ollama_API_Model) ?? Tailgrab.Common.Common.Default_Ollama_API_Model;
-            ollamaApi.SelectedModel = ollamaModel;
-
-            OllamaClient.logger.Info($"OLlama Queue Running");
+            OllamaClient.logger.Info($"Profile/Group Queue Running");
             while (true)
             {
                 // Process items from the priority queue
@@ -114,6 +115,9 @@ namespace Tailgrab.Clients.Ollama
                             item.UserBio = fullProfile;
 
                             GetUserGroupInformation(serviceRegistry, dBContext, userGroups, item);
+
+                            // Wait for a short period before checking the queue again
+                            await Task.Delay(1000);
 
                             if (ollamaApi != null)
                             {
@@ -139,10 +143,6 @@ namespace Tailgrab.Clients.Ollama
                         {
                             logger.Error(ex, $"Error fetching user profile for userId: {item.UserId}");
                         }
-
-                        // Wait for a short period before checking the queue again
-                        await Task.Delay(1000);
-
                     }
                     else
                     {
@@ -151,11 +151,11 @@ namespace Tailgrab.Clients.Ollama
                     }
                 }
                 // Wait for a short period before checking the queue again
-                await Task.Delay(5000);
+                await Task.Delay(10000);
             }
         }
 
-        private async static void GetUserGroupInformation(ServiceRegistry serviceRegistry, TailgrabDBContext dBContext, List<LimitedUserGroups> userGroups, QueuedProcess item )
+        private async static void GetUserGroupInformation(ServiceRegistry serviceRegistry, TailgrabDBContext dBContext, List<LimitedUserGroups> userGroups, QueuedProcess item)
         {
             logger.Debug($"Processing User Group subscription for userId: {item.UserId}");
             bool isSuspectGroup = false;
@@ -189,13 +189,16 @@ namespace Tailgrab.Clients.Ollama
             }
 
             if (isSuspectGroup)
-            {
+            {                
                 Player? player = serviceRegistry.GetPlayerManager().GetPlayerByUserId(item.UserId ?? string.Empty);
                 if (player != null)
                 {
                     player.IsGroupWatch = true;
                     serviceRegistry.GetPlayerManager().OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Updated, player);
                 }
+
+                string? soundSetting = ConfigStore.LoadSecret(Common.Common.Registry_Alert_Group) ?? "Hand";
+                SoundManager.PlaySound(soundSetting);
             }
         }
 
@@ -273,9 +276,9 @@ namespace Tailgrab.Clients.Ollama
                 logger.Debug($"User profile lookup fails for a null userId");
             }
         }
-               
 
-        private static bool IsEvaluated( string? evaluated )
+
+        private static bool IsEvaluated(string? evaluated)
         {
             if (string.IsNullOrEmpty(evaluated))
             {
@@ -286,7 +289,11 @@ namespace Tailgrab.Clients.Ollama
                     CheckLines(evaluated, "Harrassment & Bullying") ||
                     CheckLines(evaluated, "Self Harm"))
             {
-                    return true;
+
+                string? soundSetting = ConfigStore.LoadSecret(Common.Common.Registry_Alert_Profile) ?? "Hand";
+                SoundManager.PlaySound(soundSetting);
+
+                return true;
             }
 
             return false;
