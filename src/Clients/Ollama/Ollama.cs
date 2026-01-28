@@ -97,7 +97,7 @@ namespace Tailgrab.Clients.Ollama
                 ollamaApi.SelectedModel = ollamaModel;
             }
 
-            OllamaClient.logger.Info($"OLlama Queue Running");
+            OllamaClient.logger.Info($"Profile/Group Queue Running");
             while (true)
             {
                 // Process items from the priority queue
@@ -115,6 +115,9 @@ namespace Tailgrab.Clients.Ollama
                             item.UserBio = fullProfile;
 
                             GetUserGroupInformation(serviceRegistry, dBContext, userGroups, item);
+
+                            // Wait for a short period before checking the queue again
+                            await Task.Delay(1000);
 
                             if (ollamaApi != null)
                             {
@@ -140,10 +143,6 @@ namespace Tailgrab.Clients.Ollama
                         {
                             logger.Error(ex, $"Error fetching user profile for userId: {item.UserId}");
                         }
-
-                        // Wait for a short period before checking the queue again
-                        await Task.Delay(1000);
-
                     }
                     else
                     {
@@ -152,7 +151,7 @@ namespace Tailgrab.Clients.Ollama
                     }
                 }
                 // Wait for a short period before checking the queue again
-                await Task.Delay(5000);
+                await Task.Delay(10000);
             }
         }
 
