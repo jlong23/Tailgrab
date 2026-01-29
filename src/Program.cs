@@ -1,15 +1,17 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Win32;
 using NLog;
+using Polly;
 using System.IO;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Media;
-using Microsoft.Win32;
 using Tailgrab;
 using Tailgrab.Configuration;
 using Tailgrab.LineHandler;
+using Tailgrab.Models;
 using Tailgrab.PlayerManagement;
 
 public class FileTailer
@@ -235,36 +237,94 @@ public class FileTailer
 
         if (clearRegistry)
         {
-            try
-            {
-                // Remove the Tailgrab subtree from HKCU\Software\DeviousFox
-                using var baseKey = Registry.CurrentUser.OpenSubKey("Software\\DeviousFox", writable: true);
-                if (baseKey != null)
-                {
-                    try
-                    {
-                        baseKey.DeleteSubKeyTree("Tailgrab", false);
-                        logger.Info("Application registry settings cleared from HKCU\\Software\\DeviousFox\\Tailgrab");
-                    }
-                    catch (Exception ex)
-                    {
-                        logger.Warn(ex, "Failed to delete Tailgrab registry subtree");
-                    }
-                }
-                else
-                {
-                    logger.Info("No registry settings found to clear.");
-                }
-            }
-            catch (Exception ex)
-            {
-                logger.Warn(ex, "Failed while attempting to clear registry settings");
-            }
+            DeleteTailgrabRegistrySettings();
 
             // Exit application after clearing settings
             return;
         }
 
+        CreateResourceDirectory();
+
+        _serviceRegistry = new ServiceRegistry();
+        _serviceRegistry.StartAllServices();
+
+        string filePath = GetLogsPath(args, explicitPath);
+        if (!Directory.Exists(filePath))
+        {
+            logger.Info($"Missing VRChat log directory at '{filePath}'");
+            return;
+        }
+
+        ConfigurationManager configurationManager = new ConfigurationManager(_serviceRegistry);
+        configurationManager.LoadLineHandlersFromConfig(HandlerList);
+
+        // Start the watcher task on a background thread so it doesn't block the STA UI thread
+        logger.Info($"Starting file watcher and showing UI for: '{filePath}'");
+        _ = Task.Run(() => WatchPath(filePath));
+
+        // Start the Amplitude Cache watcher task on a background thread
+        string ampPath = VRChatAmplitudePath + Path.DirectorySeparatorChar;
+        logger.Info($"Starting Amplitude Cache watcher for: '{ampPath}'");
+        _ = Task.Run(() => WatchAmpCache(ampPath, _serviceRegistry));
+
+        BuildAppWindow(_serviceRegistry);
+
+        // When the window closes, allow Main to complete. The watcher task will be abandoned; if desired add cancellation.
+    }
+
+    private static string GetLogsPath(string[] args, string? explicitPath)
+    {
+        string filePath = explicitPath ?? (VRChatAppDataPath + Path.DirectorySeparatorChar);
+        if (explicitPath == null)
+        {
+            if (args.Length == 0)
+            {
+                logger.Warn($"No path argument provided, defaulting to VRChat log directory: {filePath}");
+            }
+            else
+            {
+                logger.Warn($"No '-l' argument provided; ignoring other command line arguments and defaulting to VRChat log directory: {filePath}");
+            }
+        }
+        else
+        {
+            logger.Info($"Using explicit path from -l: '{filePath}'");
+        }
+
+        return filePath;
+    }
+
+    private static void DeleteTailgrabRegistrySettings()
+    {
+        try
+        {
+            // Remove the Tailgrab subtree from HKCU\Software\DeviousFox
+            using var baseKey = Registry.CurrentUser.OpenSubKey("Software\\DeviousFox", writable: true);
+            if (baseKey != null)
+            {
+                try
+                {
+                    baseKey.DeleteSubKeyTree("Tailgrab", false);
+                    logger.Info("Application registry settings cleared from HKCU\\Software\\DeviousFox\\Tailgrab");
+                }
+                catch (Exception ex)
+                {
+                    logger.Warn(ex, "Failed to delete Tailgrab registry subtree");
+                }
+            }
+            else
+            {
+                logger.Info("No registry settings found to clear.");
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.Warn(ex, "Failed while attempting to clear registry settings");
+        }
+    }
+
+    private static void CreateResourceDirectory()
+    {
         // Ensure Resources/tailgrab.ico is present in the application folder. If missing, write a small embedded PNG as the icon file.
         try
         {
@@ -288,48 +348,6 @@ public class FileTailer
         {
             logger.Warn(ex, "Failed to ensure Resources/tailgrab.ico exists");
         }
-
-        _serviceRegistry = new ServiceRegistry();
-        _serviceRegistry.StartAllServices();
-
-        string filePath = explicitPath ?? (VRChatAppDataPath + Path.DirectorySeparatorChar);
-        if (explicitPath == null)
-        {
-            if (args.Length == 0)
-            {
-                logger.Warn($"No path argument provided, defaulting to VRChat log directory: {filePath}");
-            }
-            else
-            {
-                logger.Warn($"No '-l' argument provided; ignoring other command line arguments and defaulting to VRChat log directory: {filePath}");
-            }
-        }
-        else
-        {
-            logger.Info($"Using explicit path from -l: '{filePath}'");
-        }
-
-        if (!Directory.Exists(filePath))
-        {
-            logger.Info($"Missing VRChat log directory at '{filePath}'");
-            return;
-        }
-
-        ConfigurationManager configurationManager = new ConfigurationManager(_serviceRegistry);
-        configurationManager.LoadLineHandlersFromConfig(HandlerList);
-
-        // Start the watcher task on a background thread so it doesn't block the STA UI thread
-        logger.Info($"Starting file watcher and showing UI for: '{filePath}'");
-        _ = Task.Run(() => WatchPath(filePath));
-
-        // Start the Amplitude Cache watcher task on a background thread
-        string ampPath = VRChatAmplitudePath + Path.DirectorySeparatorChar;
-        logger.Info($"Starting Amplitude Cache watcher for: '{ampPath}'");
-        _ = Task.Run(() => WatchAmpCache(ampPath, _serviceRegistry));
-
-        BuildAppWindow(_serviceRegistry);
-
-        // When the window closes, allow Main to complete. The watcher task will be abandoned; if desired add cancellation.
     }
 
     private static void BuildAppWindow(ServiceRegistry serviceRegistryInstance)

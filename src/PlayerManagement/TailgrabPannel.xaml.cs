@@ -79,9 +79,7 @@ namespace Tailgrab.PlayerManagement
                 new KeyValuePair<string,bool>("NO", false)
             };
 
-            // Initial load of avatars
-            RefreshAvatarDb();
-
+            #region Secret Config Load            
             // Load saved secrets into UI fields if desired (not displayed in this view directly)
             var vrUser = ConfigStore.LoadSecret(Tailgrab.Common.Common.Registry_VRChat_Web_UserName);
             var vrPass = ConfigStore.LoadSecret(Tailgrab.Common.Common.Registry_VRChat_Web_Password);
@@ -99,10 +97,6 @@ namespace Tailgrab.PlayerManagement
             if (!string.IsNullOrEmpty(ollamaEndpoint)) VrOllamaEndpointBox.Text = ollamaEndpoint;
             if (!string.IsNullOrEmpty(ollamaModel)) VrOllamaModelBox.Text = ollamaModel;
             if (!string.IsNullOrEmpty(ollamaPrompt)) VrOllamaPromptBox.Text = ollamaPrompt;
-
-            // Initial load of Groups and Users
-            RefreshGroupDb();
-            RefreshUserDb();
 
             // Populate sound combo boxes
             try
@@ -122,6 +116,12 @@ namespace Tailgrab.PlayerManagement
                 if (!string.IsNullOrEmpty(profile)) ProfileAlertCombo.SelectedItem = profile;
             }
             catch { }
+            #endregion
+
+            // Initial load of Avatars, Groups and Users
+            RefreshAvatarDb();
+            RefreshGroupDb();
+            RefreshUserDb();
 
             // Subscribe to PlayerManager events for reactive updates
             PlayerManager.PlayerChanged += PlayerManager_PlayerChanged;
@@ -155,45 +155,6 @@ namespace Tailgrab.PlayerManagement
             }
 
             public event PropertyChangedEventHandler? PropertyChanged;
-            protected void OnPropertyChanged(string propertyName)
-            {
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-            }
-        }
-
-        public class UserInfoViewModel : INotifyPropertyChanged
-        {
-            public string UserId { get; set; }
-            public string DisplayName { get; set; }
-            public double ElapsedMinutes { get; set; }
-            private int _isBos;
-            public int IsBos
-            {
-                get => _isBos;
-                set
-                {
-                    if (_isBos != value)
-                    {
-                        _isBos = value;
-                        OnPropertyChanged(nameof(IsBos));
-                    }
-                }
-            }
-
-
-            public DateTime UpdatedAt { get; set; }
-
-            public UserInfoViewModel(Tailgrab.Models.UserInfo u)
-            {
-                UserId = u.UserId;
-                DisplayName = u.DisplayName;
-                ElapsedMinutes = u.ElapsedMinutes;
-                IsBos = u.IsBos;
-                UpdatedAt = u.UpdatedAt;
-            }
-
-            public event PropertyChangedEventHandler? PropertyChanged;
-
             protected void OnPropertyChanged(string propertyName)
             {
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
@@ -276,338 +237,6 @@ namespace Tailgrab.PlayerManagement
                 }
                 catch { }
             }
-        }
-
-        // Virtualizing collection for Users
-        public class UserVirtualizingCollection : System.Collections.IList, System.Collections.IEnumerable, System.Collections.Specialized.INotifyCollectionChanged
-        {
-            private readonly ServiceRegistry _services;
-            private readonly int _pageSize = 100;
-            private readonly Dictionary<int, List<UserInfoViewModel>> _pages = new Dictionary<int, List<UserInfoViewModel>>();
-            private int _count = -1;
-
-            public UserVirtualizingCollection(ServiceRegistry services)
-            {
-                _services = services;
-            }
-
-            public void Refresh()
-            {
-                _pages.Clear();
-                _count = -1;
-                CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
-            }
-
-            private void EnsureCount()
-            {
-                if (_count >= 0) return;
-                try
-                {
-                    var db = _services.GetDBContext();
-                    _count = db.UserInfos.Count();
-                }
-                catch
-                {
-                    _count = 0;
-                }
-            }
-
-            private UserInfoViewModel? LoadAtIndex(int index)
-            {
-                if (index < 0) return null;
-                EnsureCount();
-                if (index >= _count) return null;
-                var page = index / _pageSize;
-                if (!_pages.TryGetValue(page, out var list))
-                {
-                    try
-                    {
-                        var db = _services.GetDBContext();
-                        var skip = page * _pageSize;
-                        var items = db.UserInfos.OrderBy(a => a.DisplayName).Skip(skip).Take(_pageSize).ToList();
-                        list = items.Select(a => new UserInfoViewModel(a)).ToList();
-                        _pages[page] = list;
-                        var keep = new HashSet<int> { page, page - 1, page + 1 };
-                        var keys = _pages.Keys.ToList();
-                        foreach (var k in keys)
-                        {
-                            if (!keep.Contains(k)) _pages.Remove(k);
-                        }
-                    }
-                    catch
-                    {
-                        list = new List<UserInfoViewModel>();
-                    }
-                }
-                var idxInPage = index % _pageSize;
-                if (idxInPage < list.Count) return list[idxInPage];
-                return null;
-            }
-
-            // IList implementation (read-only)
-            public int Add(object? value) => throw new NotSupportedException();
-            public void Clear() => throw new NotSupportedException();
-            public bool Contains(object? value)
-            {
-                EnsureCount();
-                if (value is UserInfoViewModel vm) return this.Cast<UserInfoViewModel>().Any(x => x.UserId == vm.UserId);
-                return false;
-            }
-            public int IndexOf(object? value) => -1;
-            public void Insert(int index, object? value) => throw new NotSupportedException();
-            public void Remove(object? value) => throw new NotSupportedException();
-            public void RemoveAt(int index) => throw new NotSupportedException();
-            public bool IsReadOnly => true;
-            public bool IsFixedSize => false;
-            public object? this[int index]
-            {
-                get { return LoadAtIndex(index); }
-                set => throw new NotSupportedException();
-            }
-
-            public void CopyTo(Array array, int index)
-            {
-                EnsureCount();
-                for (int i = 0; i < _count; i++) array.SetValue(LoadAtIndex(i), index + i);
-            }
-
-            public int Count
-            {
-                get { EnsureCount(); return _count; }
-            }
-
-            public bool IsSynchronized => false;
-            public object SyncRoot => this;
-            public System.Collections.IEnumerator GetEnumerator()
-            {
-                EnsureCount();
-                for (int i = 0; i < _count; i++) yield return LoadAtIndex(i)!;
-            }
-
-            public event NotifyCollectionChangedEventHandler? CollectionChanged;
-        }
-
-        // Virtualizing collection for Groups similar to AvatarVirtualizingCollection
-        public class GroupVirtualizingCollection : System.Collections.IList, System.Collections.IEnumerable, System.Collections.Specialized.INotifyCollectionChanged
-        {
-            private readonly ServiceRegistry _services;
-            private readonly int _pageSize = 100;
-            private readonly Dictionary<int, List<GroupInfoViewModel>> _pages = new Dictionary<int, List<GroupInfoViewModel>>();
-            private int _count = -1;
-
-            public GroupVirtualizingCollection(ServiceRegistry services)
-            {
-                _services = services;
-            }
-
-            public void Refresh()
-            {
-                _pages.Clear();
-                _count = -1;
-                CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
-            }
-
-            private void EnsureCount()
-            {
-                if (_count >= 0) return;
-                try
-                {
-                    var db = _services.GetDBContext();
-                    _count = db.GroupInfos.Count();
-                }
-                catch
-                {
-                    _count = 0;
-                }
-            }
-
-            private GroupInfoViewModel? LoadAtIndex(int index)
-            {
-                if (index < 0) return null;
-                EnsureCount();
-                if (index >= _count) return null;
-                var page = index / _pageSize;
-                if (!_pages.TryGetValue(page, out var list))
-                {
-                    try
-                    {
-                        var db = _services.GetDBContext();
-                        var skip = page * _pageSize;
-                        var items = db.GroupInfos.OrderBy(a => a.GroupName).Skip(skip).Take(_pageSize).ToList();
-                        list = items.Select(a => new GroupInfoViewModel(a)).ToList();
-                        _pages[page] = list;
-                        var keep = new HashSet<int> { page, page - 1, page + 1 };
-                        var keys = _pages.Keys.ToList();
-                        foreach (var k in keys)
-                        {
-                            if (!keep.Contains(k)) _pages.Remove(k);
-                        }
-                    }
-                    catch
-                    {
-                        list = new List<GroupInfoViewModel>();
-                    }
-                }
-                var idxInPage = index % _pageSize;
-                if (idxInPage < list.Count) return list[idxInPage];
-                return null;
-            }
-
-            // IList implementation (read-only)
-            public int Add(object? value) => throw new NotSupportedException();
-            public void Clear() => throw new NotSupportedException();
-            public bool Contains(object? value)
-            {
-                EnsureCount();
-                if (value is GroupInfoViewModel vm) return this.Cast<GroupInfoViewModel>().Any(x => x.GroupId == vm.GroupId);
-                return false;
-            }
-            public int IndexOf(object? value) => -1;
-            public void Insert(int index, object? value) => throw new NotSupportedException();
-            public void Remove(object? value) => throw new NotSupportedException();
-            public void RemoveAt(int index) => throw new NotSupportedException();
-            public bool IsReadOnly => true;
-            public bool IsFixedSize => false;
-            public object? this[int index]
-            {
-                get { return LoadAtIndex(index); }
-                set => throw new NotSupportedException();
-            }
-
-            public void CopyTo(Array array, int index)
-            {
-                EnsureCount();
-                for (int i = 0; i < _count; i++) array.SetValue(LoadAtIndex(i), index + i);
-            }
-
-            public int Count
-            {
-                get { EnsureCount(); return _count; }
-            }
-
-            public bool IsSynchronized => false;
-            public object SyncRoot => this;
-            public System.Collections.IEnumerator GetEnumerator()
-            {
-                EnsureCount();
-                for (int i = 0; i < _count; i++) yield return LoadAtIndex(i)!;
-            }
-
-            public event NotifyCollectionChangedEventHandler? CollectionChanged;
-        }
-
-        // Lightweight virtualizing collection for Avatar DB. It only fetches items on demand
-        // and holds a small cache to limit memory usage. It queries the EF DB context for
-        // counts and pages of avatars ordered by AvatarName.
-        public class AvatarVirtualizingCollection : System.Collections.IList, System.Collections.IEnumerable, System.Collections.Specialized.INotifyCollectionChanged
-        {
-            private readonly ServiceRegistry _services;
-            private readonly int _pageSize = 100;
-            private readonly Dictionary<int, List<AvatarInfoViewModel>> _pages = new Dictionary<int, List<AvatarInfoViewModel>>();
-            private int _count = -1;
-
-            public AvatarVirtualizingCollection(ServiceRegistry services)
-            {
-                _services = services;
-            }
-
-            public void Refresh()
-            {
-                _pages.Clear();
-                _count = -1;
-                CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
-            }
-
-            private void EnsureCount()
-            {
-                if (_count >= 0) return;
-                try
-                {
-                    var db = _services.GetDBContext();
-                    _count = db.AvatarInfos.Count();
-                }
-                catch
-                {
-                    _count = 0;
-                }
-            }
-
-            private AvatarInfoViewModel? LoadAtIndex(int index)
-            {
-                if (index < 0) return null;
-                EnsureCount();
-                if (index >= _count) return null;
-                var page = index / _pageSize;
-                if (!_pages.TryGetValue(page, out var list))
-                {
-                    // load this page
-                    try
-                    {
-                        var db = _services.GetDBContext();
-                        var skip = page * _pageSize;
-                        var items = db.AvatarInfos.OrderBy(a => a.AvatarName).Skip(skip).Take(_pageSize).ToList();
-                        list = items.Select(a => new AvatarInfoViewModel(a)).ToList();
-                        _pages[page] = list;
-                        // Keep only a couple pages in memory (current, prev, next)
-                        var keep = new HashSet<int> { page, page - 1, page + 1 };
-                        var keys = _pages.Keys.ToList();
-                        foreach (var k in keys)
-                        {
-                            if (!keep.Contains(k)) _pages.Remove(k);
-                        }
-                    }
-                    catch
-                    {
-                        list = new List<AvatarInfoViewModel>();
-                    }
-                }
-                var idxInPage = index % _pageSize;
-                if (idxInPage < list.Count) return list[idxInPage];
-                return null;
-            }
-
-            // IList implementation (read-only for UI)
-            public int Add(object? value) => throw new NotSupportedException();
-            public void Clear() => throw new NotSupportedException();
-            public bool Contains(object? value)
-            {
-                EnsureCount();
-                if (value is AvatarInfoViewModel vm) return this.Cast<AvatarInfoViewModel>().Any(x => x.AvatarId == vm.AvatarId);
-                return false;
-            }
-            public int IndexOf(object? value) => -1;
-            public void Insert(int index, object? value) => throw new NotSupportedException();
-            public void Remove(object? value) => throw new NotSupportedException();
-            public void RemoveAt(int index) => throw new NotSupportedException();
-            public bool IsReadOnly => true;
-            public bool IsFixedSize => false;
-            public object? this[int index]
-            {
-                get { return LoadAtIndex(index); }
-                set => throw new NotSupportedException();
-            }
-
-            public void CopyTo(Array array, int index)
-            {
-                EnsureCount();
-                for (int i = 0; i < _count; i++) array.SetValue(LoadAtIndex(i), index + i);
-            }
-
-            public int Count
-            {
-                get { EnsureCount(); return _count; }
-            }
-
-            public bool IsSynchronized => false;
-            public object SyncRoot => this;
-            public System.Collections.IEnumerator GetEnumerator()
-            {
-                EnsureCount();
-                for (int i = 0; i < _count; i++) yield return LoadAtIndex(i)!;
-            }
-
-            // Collection changed event for WPF to react to resets
-            public event NotifyCollectionChangedEventHandler? CollectionChanged;
         }
 
         private void SaveConfig_Click(object sender, RoutedEventArgs e)
@@ -745,7 +374,6 @@ namespace Tailgrab.PlayerManagement
                 catch { }
             }
         }
-
         private void AvatarFetch_Click(object sender, RoutedEventArgs e)
         {
             string? id = AvatarIdBox.Text?.Trim();
@@ -1550,94 +1178,6 @@ namespace Tailgrab.PlayerManagement
             PrintId = p.Id;
             CreatedAt = p.CreatedAt;
             PrintUrl = p.Files.Image;
-        }
-    }
-
-
-    public class AvatarInfoViewModel : INotifyPropertyChanged
-    {
-        public string AvatarId { get; set; }
-        public string AvatarName { get; set; }
-        private bool _isBos;
-        public bool IsBos
-        {
-            get => _isBos;
-            set
-            {
-                if (_isBos != value)
-                {
-                    _isBos = value;
-                    IsBosText = BoolToYesNo(_isBos);
-                    OnPropertyChanged(nameof(IsBos));
-                    OnPropertyChanged(nameof(IsBosText));
-                }
-            }
-        }
-
-        public string IsBosText { get; set; }
-        public DateTime? UpdatedAt { get; set; }
-
-        public AvatarInfoViewModel(Tailgrab.Models.AvatarInfo a)
-        {
-            AvatarId = a.AvatarId;
-            AvatarName = a.AvatarName;
-            IsBos = a.IsBos;
-            UpdatedAt = a.UpdatedAt;
-            IsBosText = BoolToYesNo(IsBos);
-        }
-
-        // Convert boolean to YES/NO string for display
-        public static string BoolToYesNo(bool value) => value ? "YES" : "NO";
-
-
-        public event PropertyChangedEventHandler? PropertyChanged;
-        protected void OnPropertyChanged(string propertyName)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
-    }
-
-
-    public class GroupInfoViewModel : INotifyPropertyChanged
-    {
-        public string GroupId { get; set; }
-        public string GroupName { get; set; }
-        private bool _isBos;
-        public bool IsBos
-        {
-            get => _isBos;
-            set
-            {
-                if (_isBos != value)
-                {
-                    _isBos = value;
-                    IsBosText = BoolToYesNo(_isBos);
-                    OnPropertyChanged(nameof(IsBos));
-                    OnPropertyChanged(nameof(IsBosText));
-                }
-            }
-        }
-
-        public string IsBosText { get; set; }
-        public DateTime? UpdatedAt { get; set; }
-
-        public GroupInfoViewModel(Tailgrab.Models.GroupInfo a)
-        {
-            GroupId = a.GroupId;
-            GroupName = a.GroupName;
-            IsBos = a.IsBos;
-            UpdatedAt = a.UpdatedAt;
-            IsBosText = BoolToYesNo(IsBos);
-        }
-
-        // Convert boolean to YES/NO string for display
-        public static string BoolToYesNo(bool value) => value ? "YES" : "NO";
-
-
-        public event PropertyChangedEventHandler? PropertyChanged;
-        protected void OnPropertyChanged(string propertyName)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
 }
