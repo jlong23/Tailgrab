@@ -84,7 +84,7 @@ namespace Tailgrab.Clients.Ollama
             OllamaApiClient? ollamaApi = null;
             if (ollamaCloudKey is null)
             {
-                System.Windows.MessageBox.Show("Ollama API Credentials are not set.\nThis is not nessasary for limited operation, the Profiles will not be evaluated.\nOtherwise use the Config / Secrets tab to update credenials and restart Tailgrab.", "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                System.Windows.MessageBox.Show("Ollama API Credentials are not set.\nThis is not nessasary for limited operation, the Profiles will not be profileText.\nOtherwise use the Config / Secrets tab to update credenials and restart Tailgrab.", "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
             } 
             else
             {
@@ -126,7 +126,7 @@ namespace Tailgrab.Clients.Ollama
                                 if (!string.IsNullOrEmpty(item.MD5Hash))
                                 {
                                     // Only when the Item has a valid hash
-                                    // Check if already evaluated
+                                    // Check if already profileText
                                     ProfileEvaluation? evaluated = serviceRegistry.GetDBContext().ProfileEvaluations.Find(item.MD5Hash);
                                     if (evaluated == null)
                                     {
@@ -237,9 +237,14 @@ namespace Tailgrab.Clients.Ollama
                     {
                         player.UserBio = item.UserBio;
                         player.AIEval = response;
-                        if (IsEvaluated(player.AIEval))
+
+                        string? profileWatch = EvaluateProfile(player.AIEval);
+                        if (profileWatch != null)
                         {
                             player.IsProfileWatch = true;
+                            player.PenActivity = profileWatch;
+                            serviceRegistry.GetPlayerManager().OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Updated, player);
+
                         }
                         serviceRegistry.GetPlayerManager().OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Updated, player);
                     }
@@ -261,9 +266,11 @@ namespace Tailgrab.Clients.Ollama
                 {
                     player.AIEval = System.Text.Encoding.UTF8.GetString(evaluated.Evaluation);
                     player.UserBio = System.Text.Encoding.UTF8.GetString(evaluated.ProfileText);
-                    if (IsEvaluated(player.AIEval))
+                    string? profileWatch = EvaluateProfile(player.AIEval);
+                    if (profileWatch != null)
                     {
                         player.IsProfileWatch = true;
+                        player.PenActivity = profileWatch;
                     }
                     serviceRegistry.GetPlayerManager().OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Updated, player);
                     logger.Debug($"User profile already processed for userId: {userId}");
@@ -281,26 +288,29 @@ namespace Tailgrab.Clients.Ollama
         }
 
 
-        private static bool IsEvaluated(string? evaluated)
+        private static string? EvaluateProfile(string? profileText)
         {
-            if (string.IsNullOrEmpty(evaluated))
+            if (string.IsNullOrEmpty(profileText))
             {
-                return false;
+                return null;
             }
 
-            if (CheckLines(evaluated, "Explicit Sexual") ||
-                    CheckLines(evaluated, "Harrassment & Bullying") ||
-                    CheckLines(evaluated, "Self Harm"))
+            if (CheckLines(profileText, "Explicit Sexual"))
             {
-
-                string? soundSetting = ConfigStore.LoadSecret(Common.Common.Registry_Alert_Profile) ?? "Hand";
-                SoundManager.PlaySound(soundSetting);
-
-                return true;
+                return "Explicit Sexual";
+            }
+            else if (CheckLines(profileText, "Harrassment & Bullying"))
+            {
+                return "Harrassment & Bullying";
+            }
+            else if (CheckLines(profileText, "Self Harm"))
+            {
+                return "Self Harm";
             }
 
-            return false;
+            return null;
         }
+
 
         private static bool CheckLines(string input, string knownString)
         {
