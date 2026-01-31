@@ -20,7 +20,10 @@ namespace Tailgrab.PlayerManagement
             Print,
             PenActivity,
             AvatarChange,
-            Moderation
+            Moderation,
+            GroupWatch,
+            ProfileWatch,
+            AvatarWatch
         }
 
         public DateTime EventTime { get; set; } = DateTime.Now;
@@ -448,6 +451,8 @@ namespace Tailgrab.PlayerManagement
                 if (watchedAvatar)
                 {
                     p.PenActivity = $"AV: {avatarName}";
+                    AddPlayerEventByDisplayName(displayName ?? string.Empty, PlayerEvent.EventType.AvatarWatch, $"User has used a watched Avatar : {avatarName}");
+
                 }
 
                 OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Updated, p);

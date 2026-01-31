@@ -197,6 +197,7 @@ namespace Tailgrab.Clients.Ollama
                 {
                     player.IsGroupWatch = true;
                     player.PenActivity = watchedGroups;
+                    serviceRegistry.GetPlayerManager().AddPlayerEventByUserId(item.UserId ?? string.Empty, PlayerEvent.EventType.GroupWatch, $"User is member of watched group(s): {watchedGroups}");
                     serviceRegistry.GetPlayerManager().OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Updated, player);
                 }
 
@@ -243,6 +244,7 @@ namespace Tailgrab.Clients.Ollama
                         {
                             player.IsProfileWatch = true;
                             player.PenActivity = profileWatch;
+                            serviceRegistry.GetPlayerManager().AddPlayerEventByUserId(item.UserId ?? string.Empty, PlayerEvent.EventType.ProfileWatch, $"User profile was flagged by the AI : {profileWatch}");
                             serviceRegistry.GetPlayerManager().OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Updated, player);
 
                         }
@@ -271,6 +273,7 @@ namespace Tailgrab.Clients.Ollama
                     {
                         player.IsProfileWatch = true;
                         player.PenActivity = profileWatch;
+                        serviceRegistry.GetPlayerManager().AddPlayerEventByUserId(userId ?? string.Empty, PlayerEvent.EventType.ProfileWatch, $"User profile was flagged by the AI : {profileWatch}");
                     }
                     serviceRegistry.GetPlayerManager().OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Updated, player);
                     logger.Debug($"User profile already processed for userId: {userId}");

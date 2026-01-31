@@ -15,7 +15,7 @@ using VRChat.API.Model;
 
 namespace Tailgrab.PlayerManagement
 {
-    public partial class TailgrabPannel : Window, IDisposable
+    public partial class TailgrabPannel : Window, IDisposable, INotifyPropertyChanged
     {
         private readonly DispatcherTimer fallbackTimer;
 
@@ -35,7 +35,20 @@ namespace Tailgrab.PlayerManagement
         public ICollectionView StickerView { get; }
         public ICollectionView PrintView { get; }
 
-        public PlayerViewModel? SelectedActive { get; set; }
+        private PlayerViewModel? _selectedActive;
+        public PlayerViewModel? SelectedActive 
+        { 
+            get => _selectedActive;
+            set
+            {
+                if (_selectedActive != value)
+                {
+                    _selectedActive = value;
+                    OnPropertyChanged(nameof(SelectedActive));
+                }
+            }
+        }
+
         public PlayerViewModel? SelectedPast { get; set; }
         public static Logger logger = LogManager.GetCurrentClassLogger();
 
@@ -600,6 +613,7 @@ namespace Tailgrab.PlayerManagement
                     ActivePlayers.Clear();
                     PastPlayers.Clear();
                     StickerPlayers.Clear();
+                    PrintPlayers.Clear();
                     break;
             }
         }
@@ -1072,6 +1086,12 @@ namespace Tailgrab.PlayerManagement
             }
             e.Handled = true;
         }
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+        protected void OnPropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
     }
 
     public class PlayerViewModel : INotifyPropertyChanged
@@ -1088,6 +1108,7 @@ namespace Tailgrab.PlayerManagement
         public string AIEval { get; private set; }
         public bool IsWatched { get; set; } = false;
         public string WatchCode { get; private set; } = string.Empty;
+        public string History { get; set; } = string.Empty;
         public ObservableCollection<PrintInfoViewModel> Prints { get; private set; } = new ObservableCollection<PrintInfoViewModel>();
 
         public string HighlightClass
@@ -1125,6 +1146,13 @@ namespace Tailgrab.PlayerManagement
                     Prints.Add(new PrintInfoViewModel(pr));
                 }
             }
+
+            string history = string.Empty;
+            foreach (var hist in p.Events)
+            {
+                history += $"({hist.EventTime:u} - {hist.EventDescription})\n";
+            }
+            History = history.TrimEnd();
         }
 
         public void UpdateFrom(Player p)
@@ -1158,6 +1186,13 @@ namespace Tailgrab.PlayerManagement
                     Prints.Add(new PrintInfoViewModel(pr));
                 }
             }
+
+            string history = string.Empty;
+            foreach (var hist in p.Events)
+            {
+                history += $"({hist.EventTime:u} - {hist.EventDescription})\n";
+            }
+            History = history.TrimEnd();
         }
 
         private System.Windows.Media.ImageSource? LoadImageFromUrl(string? url)
@@ -1194,11 +1229,13 @@ namespace Tailgrab.PlayerManagement
         public string PrintId { get; set; }
         public DateTime CreatedAt { get; set; }
         public string PrintUrl { get; set; }
+        public string AuthorName { get; set; }
         public PrintInfoViewModel(VRChat.API.Model.Print p)
         {
             PrintId = p.Id;
             CreatedAt = p.CreatedAt;
             PrintUrl = p.Files.Image;
+            AuthorName = p.AuthorName;
         }
     }
 }

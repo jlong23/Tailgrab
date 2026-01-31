@@ -18,8 +18,9 @@
                         <ColumnDefinition Width="108*"/>
                     </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="13*"/>
+                        <RowDefinition Height="267*"/>
+                        <RowDefinition Height="100"/>
                     </Grid.RowDefinitions>
 
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="2">
@@ -145,6 +146,19 @@
                             </GridView>
                         </ListView.View>
                     </ListView>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="2" Grid.Row="2">
+                        <TextBox Name="UserPofileBox" Width="520" Height="auto" Margin="0,0,8,0" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto">
+                            <TextBox.Text>
+                                <MultiBinding StringFormat="{}User Profile:&#x0a;{0}&#x0a;&#x0a;AI Evaluation:&#x0a;{1}" Mode="OneWay">
+                                    <Binding Path="SelectedActive.Profile" Mode="OneWay" FallbackValue="" TargetNullValue=""/>
+                                    <Binding Path="SelectedActive.AIEval" Mode="OneWay" FallbackValue="" TargetNullValue=""/>
+                                </MultiBinding>
+                            </TextBox.Text>
+                        </TextBox>
+                        <TextBox Name="UserAlertsBox" Width="520" Height="auto" Margin="0,0,8,0" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" Text="{Binding SelectedActive.History, Mode=OneWay, FallbackValue='', TargetNullValue=''}" />
+                    </StackPanel>
+
                 </Grid>
             </TabItem>
 
@@ -366,15 +380,17 @@
                                                     <Grid Margin="0,2,0,2">
                                                         <Grid.ColumnDefinitions>
                                                             <ColumnDefinition Width="300" />
-                                                            <ColumnDefinition Width="300" />
                                                             <ColumnDefinition Width="200" />
-                                                            <ColumnDefinition Width="100" />
+                                                            <ColumnDefinition Width="200" />
+                                                            <ColumnDefinition Width="300" />
                                                         </Grid.ColumnDefinitions>
-                                                        <TextBlock Grid.Column="0" Text="{Binding Id}" />
+                                                        <TextBlock Grid.Column="0" Text="{Binding PrintId}" />
                                                         <TextBlock Grid.Column="1" Text="{Binding AuthorName}" />
-                                                        <TextBlock Grid.Column="2" Text="{Binding Timestamp, StringFormat={}{0:u}}" />
+                                                        <TextBlock Grid.Column="2" Text="{Binding CreatedAt, StringFormat={}{0:u}}" />
                                                         <TextBlock Grid.Column="3">
-                                                            <Hyperlink NavigateUri="{Binding PrintUrl}" RequestNavigate="PrintHyperlink_RequestNavigate">Open</Hyperlink>
+                                                            <Hyperlink NavigateUri="{Binding PrintUrl}" RequestNavigate="PrintHyperlink_RequestNavigate">
+                                                                <Image Source="{Binding PrintUrl}" Width="200" Stretch="Uniform" />
+                                                            </Hyperlink>
                                                         </TextBlock>
                                                     </Grid>
                                                 </DataTemplate>
