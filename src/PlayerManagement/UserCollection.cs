@@ -10,10 +10,20 @@ namespace Tailgrab.PlayerManagement
         private readonly int _pageSize = 100;
         private readonly Dictionary<int, List<UserInfoViewModel>> _pages = new Dictionary<int, List<UserInfoViewModel>>();
         private int _count = -1;
+        private string? _filterText;
 
         public UserVirtualizingCollection(ServiceRegistry services)
         {
             _services = services;
+        }
+
+        public void SetFilter(string? filterText)
+        {
+            if (_filterText != filterText)
+            {
+                _filterText = filterText;
+                Refresh();
+            }
         }
 
         public void Refresh()
@@ -29,7 +39,15 @@ namespace Tailgrab.PlayerManagement
             try
             {
                 var db = _services.GetDBContext();
-                _count = db.UserInfos.Count();
+                var query = db.UserInfos.AsQueryable();
+                
+                if (!string.IsNullOrWhiteSpace(_filterText))
+                {
+                    var filterLower = _filterText.ToLower();
+                    query = query.Where(u => u.DisplayName.ToLower().Contains(filterLower));
+                }
+                
+                _count = query.Count();
             }
             catch
             {
@@ -49,7 +67,15 @@ namespace Tailgrab.PlayerManagement
                 {
                     var db = _services.GetDBContext();
                     var skip = page * _pageSize;
-                    var items = db.UserInfos.OrderBy(a => a.DisplayName).Skip(skip).Take(_pageSize).ToList();
+                    var query = db.UserInfos.AsQueryable();
+                    
+                    if (!string.IsNullOrWhiteSpace(_filterText))
+                    {
+                        var filterLower = _filterText.ToLower();
+                        query = query.Where(u => u.DisplayName.ToLower().Contains(filterLower));
+                    }
+                    
+                    var items = query.OrderBy(a => a.DisplayName).Skip(skip).Take(_pageSize).ToList();
                     list = items.Select(a => new UserInfoViewModel(a)).ToList();
                     _pages[page] = list;
                     var keep = new HashSet<int> { page, page - 1, page + 1 };

@@ -12,10 +12,20 @@ namespace Tailgrab.PlayerManagement
         private readonly int _pageSize = 100;
         private readonly Dictionary<int, List<AvatarInfoViewModel>> _pages = new Dictionary<int, List<AvatarInfoViewModel>>();
         private int _count = -1;
+        private string? _filterText;
 
         public AvatarVirtualizingCollection(ServiceRegistry services)
         {
             _services = services;
+        }
+
+        public void SetFilter(string? filterText)
+        {
+            if (_filterText != filterText)
+            {
+                _filterText = filterText;
+                Refresh();
+            }
         }
 
         public void Refresh()
@@ -31,7 +41,15 @@ namespace Tailgrab.PlayerManagement
             try
             {
                 var db = _services.GetDBContext();
-                _count = db.AvatarInfos.Count();
+                var query = db.AvatarInfos.AsQueryable();
+                
+                if (!string.IsNullOrWhiteSpace(_filterText))
+                {
+                    var filterLower = _filterText.ToLower();
+                    query = query.Where(a => a.AvatarName.ToLower().Contains(filterLower));
+                }
+                
+                _count = query.Count();
             }
             catch
             {
@@ -52,7 +70,15 @@ namespace Tailgrab.PlayerManagement
                 {
                     var db = _services.GetDBContext();
                     var skip = page * _pageSize;
-                    var items = db.AvatarInfos.OrderBy(a => a.AvatarName).Skip(skip).Take(_pageSize).ToList();
+                    var query = db.AvatarInfos.AsQueryable();
+                    
+                    if (!string.IsNullOrWhiteSpace(_filterText))
+                    {
+                        var filterLower = _filterText.ToLower();
+                        query = query.Where(a => a.AvatarName.ToLower().Contains(filterLower));
+                    }
+                    
+                    var items = query.OrderBy(a => a.AvatarName).Skip(skip).Take(_pageSize).ToList();
                     list = items.Select(a => new AvatarInfoViewModel(a)).ToList();
                     _pages[page] = list;
                     // Keep only a couple pages in memory (current, prev, next)

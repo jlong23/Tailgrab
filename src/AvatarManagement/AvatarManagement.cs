@@ -1,4 +1,5 @@
 ﻿using ConcurrentPriorityQueue.Core;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.EntityFrameworkCore;
 using NLog;
 using System.Media;
@@ -18,7 +19,7 @@ namespace Tailgrab.AvatarManagement
         private ServiceRegistry _serviceRegistry;
 
         private ConcurrentPriorityQueue<IHavePriority<int>, int> priorityQueue = new ConcurrentPriorityQueue<IHavePriority<int>, int>();
-
+        private Dictionary<String, DateTime> recentlyProcessedAvatars = new Dictionary<string, DateTime>();
 
         public int GetQueueCount()
         {
@@ -36,7 +37,7 @@ namespace Tailgrab.AvatarManagement
         public void AddAvatar(AvatarInfo avatar)
         {
             try
-            {
+            {                
                 _serviceRegistry.GetDBContext().AvatarInfos.Add(avatar);
                 _serviceRegistry.GetDBContext().SaveChanges();
             }
@@ -193,6 +194,16 @@ namespace Tailgrab.AvatarManagement
 
         private void EnqueueAvatarForCheck(string avatarId)
         {
+            if (recentlyProcessedAvatars.TryGetValue(avatarId, out DateTime dateTime))
+            {
+                if ((DateTime.UtcNow - dateTime).TotalMinutes < 60)
+                {
+                    logger.Debug($"Skipping adding avatar {avatarId} as it was recently processed.");
+                    return;
+                }
+            }
+            recentlyProcessedAvatars.Add(avatarId, DateTime.UtcNow);
+
             var queuedItem = new QueuedAvatarProcess
             {
                 AvatarId = avatarId,

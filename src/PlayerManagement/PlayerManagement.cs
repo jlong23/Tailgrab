@@ -253,7 +253,6 @@ namespace Tailgrab.PlayerManagement
         public void PlayerJoined(string userId, string displayName, AbstractLineHandler handler)
         {
             Player? player = null;
-            PlayerChangedEventArgs.ChangeType changeType = PlayerChangedEventArgs.ChangeType.Added;
             if (!playersByUserId.ContainsKey(userId))
             {
                 player = new Player(userId, displayName, CurrentSession);
@@ -261,8 +260,6 @@ namespace Tailgrab.PlayerManagement
                 {
                     logger.Info($"{COLOR_PREFIX_JOIN.GetAnsiEscape()}Player Joined: {displayName} (ID: {userId}){COLOR_RESET.GetAnsiEscape()}");
                 }
-
-                changeType = PlayerChangedEventArgs.ChangeType.Added;
             }
             else
             {
@@ -277,8 +274,6 @@ namespace Tailgrab.PlayerManagement
                     }
                     player.DisplayName = displayName;
                 }
-
-                changeType = PlayerChangedEventArgs.ChangeType.Added;
             }
 
             if (player == null)
@@ -304,7 +299,7 @@ namespace Tailgrab.PlayerManagement
             playersByUserId[userId] = player;
             playersByDisplayName[displayName] = player;
 
-            OnPlayerChanged(changeType, player);
+            OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Added, player);
         }
 
         public void PlayerLeft(string displayName, AbstractLineHandler handler)
@@ -503,6 +498,7 @@ namespace Tailgrab.PlayerManagement
             {
                 player.LastStickerUrl = fileURL;
                 AddPlayerEventByDisplayName(displayName, PlayerEvent.EventType.Sticker, $"Spawned sticker: {fileURL}");
+                OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Updated, player);
             }
         }
 

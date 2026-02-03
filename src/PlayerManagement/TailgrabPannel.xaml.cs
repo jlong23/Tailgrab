@@ -1,7 +1,6 @@
 using Microsoft.Win32;
 using NLog;
 using System.Collections.ObjectModel;
-using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
@@ -316,23 +315,15 @@ namespace Tailgrab.PlayerManagement
 
         private void ApplyUserDbFilter(ICollectionView view, string filterText)
         {
+            // Push filter to database for better performance
             if (string.IsNullOrWhiteSpace(filterText))
             {
-                view.Filter = null;
-                view.Refresh();
-                return;
+                UserDbItems.SetFilter(null);
             }
-
-            string ft = filterText.Trim();
-            view.Filter = obj =>
+            else
             {
-                if (obj is UserInfoViewModel vm)
-                {
-                    return vm.DisplayName?.IndexOf(ft, StringComparison.CurrentCultureIgnoreCase) >= 0;
-                }
-                return false;
-            };
-            view.Refresh();
+                UserDbItems.SetFilter(filterText.Trim());
+            }
         }
 
         private void UserDbGrid_CellEditEnding(object sender, System.Windows.Controls.DataGridCellEditEndingEventArgs e)
@@ -445,23 +436,15 @@ namespace Tailgrab.PlayerManagement
 
         private void ApplyAvatarDbFilter(ICollectionView view, string filterText)
         {
+            // Push filter to database for better performance
             if (string.IsNullOrWhiteSpace(filterText))
             {
-                view.Filter = null;
-                view.Refresh();
-                return;
+                AvatarDbItems.SetFilter(null);
             }
-
-            string ft = filterText.Trim();
-            view.Filter = obj =>
+            else
             {
-                if (obj is AvatarInfoViewModel vm)
-                {
-                    return vm.AvatarName?.IndexOf(ft, StringComparison.CurrentCultureIgnoreCase) >= 0;
-                }
-                return false;
-            };
-            view.Refresh();
+                AvatarDbItems.SetFilter(filterText.Trim());
+            }
         }
 
         private void RefreshAvatarDb()
@@ -570,23 +553,15 @@ namespace Tailgrab.PlayerManagement
 
         private void ApplyGroupDbFilter(ICollectionView view, string filterText)
         {
+            // Push filter to database for better performance
             if (string.IsNullOrWhiteSpace(filterText))
             {
-                view.Filter = null;
-                view.Refresh();
-                return;
+                GroupDbItems.SetFilter(null);
             }
-
-            string ft = filterText.Trim();
-            view.Filter = obj =>
+            else
             {
-                if (obj is GroupInfoViewModel vm)
-                {
-                    return vm.GroupName?.IndexOf(ft, StringComparison.CurrentCultureIgnoreCase) >= 0;
-                }
-                return false;
-            };
-            view.Refresh();
+                GroupDbItems.SetFilter(filterText.Trim());
+            }
         }
 
         private void RefreshGroupDb()
@@ -771,7 +746,7 @@ namespace Tailgrab.PlayerManagement
                 PastPlayers.Add(new PlayerViewModel(p));
             }
 
-            var olderThan = DateTime.UtcNow.AddMinutes(-10);
+            var olderThan = DateTime.Now.AddMinutes(-15);
             var toRemove = new List<PlayerViewModel>();
             foreach (var oldPlayer in PastPlayers)
             {
@@ -779,9 +754,9 @@ namespace Tailgrab.PlayerManagement
                 {
                     if (DateTime.TryParseExact(oldPlayer.InstanceEndTime, "u", null, System.Globalization.DateTimeStyles.None, out var endTime))
                     {
-                        if (olderThan < endTime)
+                        if (endTime < olderThan)
                         {
-                            logger.Debug($"Removing old past player {oldPlayer.DisplayName} as {olderThan} < {endTime}");
+                            logger.Debug($"Removing old past player {oldPlayer.DisplayName} as {endTime} is older than cutoff {olderThan}");
                             toRemove.Add(oldPlayer);
                         }
                     }
