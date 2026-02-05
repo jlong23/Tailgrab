@@ -484,213 +484,6 @@ namespace Tailgrab.PlayerManagement
             Dispatcher.Invoke(() => HandlePlayerChange(e));
         }
 
-        // Avatar DB UI handlers
-        #region Avatar DB handlers
-        private void AvatarDbRefresh_Click(object sender, RoutedEventArgs e)
-        {
-            RefreshAvatarDb();
-        }
-
-        private void AvatarDbApplyFilter_Click(object sender, RoutedEventArgs e)
-        {
-            ApplyAvatarDbFilter(AvatarDbView, AvatarDbFilterBox.Text);
-        }
-
-        private void AvatarDbClearFilter_Click(object sender, RoutedEventArgs e)
-        {
-            AvatarDbFilterBox.Text = string.Empty;
-            ApplyAvatarDbFilter(AvatarDbView, string.Empty);
-        }
-
-        private void ApplyAvatarDbFilter(ICollectionView view, string filterText)
-        {
-            // Push filter to database for better performance
-            if (string.IsNullOrWhiteSpace(filterText))
-            {
-                AvatarDbItems.SetFilter(null);
-            }
-            else
-            {
-                AvatarDbItems.SetFilter(filterText.Trim());
-            }
-        }
-
-        private void RefreshAvatarDb()
-        {
-            try
-            {
-                // Refresh virtualized collection which will clear caches and re-query counts
-                AvatarDbItems.Refresh();
-            }
-            catch { }
-        }
-
-        private void AvatarDbGrid_CellEditEnding(object sender, System.Windows.Controls.DataGridCellEditEndingEventArgs e)
-        {
-            if (e.Row.Item is AvatarInfoViewModel vm)
-            {
-                try
-                {
-                    var db = _serviceRegistry.GetDBContext();
-                    var entity = db.AvatarInfos.Find(vm.AvatarId);
-                    if (entity != null)
-                    {
-                        entity.IsBos = vm.IsBos;
-                        entity.UpdatedAt = DateTime.UtcNow;
-                        db.AvatarInfos.Update(entity);
-                        db.SaveChanges();
-                        vm.UpdatedAt = entity.UpdatedAt;
-                    }
-                }
-                catch { }
-            }
-        }
-        private void AvatarFetch_Click(object sender, RoutedEventArgs e)
-        {
-            string? id = AvatarIdBox.Text?.Trim();
-            if (string.IsNullOrEmpty(id)) return;
-
-            try
-            {
-                VRChatClient vrcClient = _serviceRegistry.GetVRChatAPIClient();
-                Avatar? avatar = vrcClient.GetAvatarById(id);
-                if (avatar != null)
-                {
-                    TailgrabDBContext dbContext = _serviceRegistry.GetDBContext();
-                    AvatarInfo? existing = dbContext.AvatarInfos.Find(avatar.Id);
-                    if (existing == null)
-                    {
-                        var newEntity = new Tailgrab.Models.AvatarInfo
-                        {
-                            AvatarId = avatar.Id,
-                            UserId = avatar.AuthorId ?? string.Empty,
-                            AvatarName = avatar.Name ?? string.Empty,
-                            ImageUrl = avatar.ImageUrl ?? string.Empty,
-                            CreatedAt = avatar.CreatedAt,
-                            UpdatedAt = DateTime.UtcNow,
-                            IsBos = false
-                        };
-                        dbContext.AvatarInfos.Add(newEntity);
-                        dbContext.SaveChanges();
-                    }
-                    else
-                    {
-                        existing.UserId = avatar.AuthorId ?? string.Empty;
-                        existing.AvatarName = avatar.Name ?? string.Empty;
-                        existing.ImageUrl = avatar.ImageUrl ?? string.Empty;
-                        existing.CreatedAt = avatar.CreatedAt;
-                        existing.UpdatedAt = DateTime.UtcNow;
-                        dbContext.AvatarInfos.Update(existing);
-                        dbContext.SaveChanges();
-                    }
-
-                    // Filter the view to the fetched avatar
-                    ApplyAvatarDbFilter(AvatarDbView, avatar.Name ?? string.Empty);
-                    AvatarIdBox.Text = string.Empty;
-                }
-                else
-                {
-                    System.Windows.MessageBox.Show($"Avatar {id} not found via VRChat API.", "Fetch Avatar", MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Windows.MessageBox.Show($"Failed to fetch avatar: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-        #endregion
-
-
-        // Group DB UI handlers
-        #region Group DB handlers
-        private void GroupDbRefresh_Click(object sender, RoutedEventArgs e)
-        {
-            RefreshGroupDb();
-        }
-
-        private void GroupDbApplyFilter_Click(object sender, RoutedEventArgs e)
-        {
-            ApplyGroupDbFilter(GroupDbView, GroupDbFilterBox.Text);
-        }
-
-        private void GroupDbClearFilter_Click(object sender, RoutedEventArgs e)
-        {
-            GroupDbFilterBox.Text = string.Empty;
-            ApplyGroupDbFilter(GroupDbView, string.Empty);
-        }
-
-        private void ApplyGroupDbFilter(ICollectionView view, string filterText)
-        {
-            // Push filter to database for better performance
-            if (string.IsNullOrWhiteSpace(filterText))
-            {
-                GroupDbItems.SetFilter(null);
-            }
-            else
-            {
-                GroupDbItems.SetFilter(filterText.Trim());
-            }
-        }
-
-        private void RefreshGroupDb()
-        {
-            try
-            {
-                GroupDbItems.Refresh();
-            }
-            catch { }
-        }
-
-        private void RefreshUserDb()
-        {
-            try
-            {
-                UserDbItems?.Refresh();
-            }
-            catch { }
-        }
-
-        private void GroupDbGrid_CellEditEnding(object sender, System.Windows.Controls.DataGridCellEditEndingEventArgs e)
-        {
-            if (e.Row.Item is GroupInfoViewModel vm)
-            {
-                try
-                {
-                    var db = _serviceRegistry.GetDBContext();
-                    var entity = db.GroupInfos.Find(vm.GroupId);
-                    if (entity != null)
-                    {
-                        entity.IsBos = vm.IsBos;
-                        entity.UpdatedAt = DateTime.UtcNow;
-                        db.GroupInfos.Update(entity);
-                        db.SaveChanges();
-                        vm.UpdatedAt = entity.UpdatedAt;
-                    }
-                }
-                catch { }
-            }
-        }
-
-        private void GroupFetch_Click(object sender, RoutedEventArgs e)
-        {
-            string? id = GroupIdBox.Text?.Trim();
-            if (string.IsNullOrEmpty(id)) return;
-
-            GroupInfo? existing = _serviceRegistry.GetPlayerManager().AddUpdateGroupFromVRC(id);
-
-            if (existing == null)
-            {
-                System.Windows.MessageBox.Show($"Group {id} not found via VRChat API.", "Fetch Group", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            else
-            {
-                // Filter the view to the fetched Group
-                ApplyGroupDbFilter(GroupDbView, existing.GroupName ?? string.Empty);
-                GroupIdBox.Text = string.Empty;
-            }
-        }
-        #endregion
-
         private void HandlePlayerChange(PlayerChangedEventArgs e)
         {
             switch (e.Type)
@@ -898,34 +691,6 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
-        private void EvalPlayer_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is not System.Windows.Controls.Button btn) return;
-
-            // Find the DataContext for the row (should be PlayerViewModel)
-            if (btn.DataContext is PlayerViewModel pvm)
-            {
-                // Try to find the underlying Player by UserId
-                var player = _serviceRegistry.GetPlayerManager().GetPlayerByUserId(pvm.UserId);
-                if (player != null)
-                {
-                    // Build formatted string from the viewmodel alone
-                    var sb = new System.Text.StringBuilder();
-
-                    sb.AppendLine($"DisplayName: {pvm.DisplayName}");
-                    sb.AppendLine($"UserId: {pvm.UserId}");
-
-                    sb.AppendLine($"Evaluation of Profile:\n");
-                    sb.AppendLine($"{pvm.AIEval}");
-                    var text = sb.ToString();
-                    System.Windows.Clipboard.SetText(text);
-                    return;
-                }
-
-                System.Windows.Clipboard.SetText("");
-            }
-        }
-
         private static T? FindAncestor<T>(DependencyObject? child) where T : DependencyObject
         {
             if (child == null) return null;
@@ -977,8 +742,8 @@ namespace Tailgrab.PlayerManagement
             clickedHeader.Cursor = System.Windows.Input.Cursors.Hand;
         }
 
-        // Filters and existing handlers ------------------------------------------------
-
+        //
+        // Active Handlers
         #region Active handlers
 
         private void ActiveApplyFilter_Click(object sender, RoutedEventArgs e)
@@ -1001,6 +766,33 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
+        private void EvalPlayer_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not System.Windows.Controls.Button btn) return;
+
+            // Find the DataContext for the row (should be PlayerViewModel)
+            if (btn.DataContext is PlayerViewModel pvm)
+            {
+                // Try to find the underlying Player by UserId
+                var player = _serviceRegistry.GetPlayerManager().GetPlayerByUserId(pvm.UserId);
+                if (player != null)
+                {
+                    // Build formatted string from the viewmodel alone
+                    var sb = new System.Text.StringBuilder();
+
+                    sb.AppendLine($"DisplayName: {pvm.DisplayName}");
+                    sb.AppendLine($"UserId: {pvm.UserId}");
+
+                    sb.AppendLine($"Evaluation of Profile:\n");
+                    sb.AppendLine($"{pvm.AIEval}");
+                    var text = sb.ToString();
+                    System.Windows.Clipboard.SetText(text);
+                    return;
+                }
+
+                System.Windows.Clipboard.SetText("");
+            }
+        }
         #endregion
 
         #region Past handlers
@@ -1090,6 +882,41 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
+        private void ReportInventory_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                ReportInventoryWindow reportWindow = new ReportInventoryWindow(_serviceRegistry);
+                reportWindow.Owner = this;
+                reportWindow.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to open Report Inventory window");
+                System.Windows.MessageBox.Show($"Failed to open Report Inventory window: {ex.Message}", 
+                    "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+            }
+        }
+
+        private void ReportInventoryItem_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (sender is System.Windows.Controls.Button button && button.Tag is EmojiInfoViewModel emoji)
+                {
+                    ReportInventoryWindow reportWindow = new ReportInventoryWindow(_serviceRegistry, emoji.UserId, emoji.InventoryId);
+                    reportWindow.Owner = this;
+                    reportWindow.ShowDialog();
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to open Report Inventory Item window");
+                System.Windows.MessageBox.Show($"Failed to open Report Inventory Item window: {ex.Message}", 
+                    "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+            }
+        }
+
         private void EmojiHyperlink_RequestNavigate(object? sender, System.Windows.Navigation.RequestNavigateEventArgs e)
         {
             try
@@ -1106,6 +933,214 @@ namespace Tailgrab.PlayerManagement
                 logger?.Error(ex, "Failed to open emoji URL");
             }
             e.Handled = true;
+        }
+        #endregion
+
+        //
+        // Avatar DB UI handlers
+        #region Avatar DB handlers
+        private void AvatarDbRefresh_Click(object sender, RoutedEventArgs e)
+        {
+            RefreshAvatarDb();
+        }
+
+        private void AvatarDbApplyFilter_Click(object sender, RoutedEventArgs e)
+        {
+            ApplyAvatarDbFilter(AvatarDbView, AvatarDbFilterBox.Text);
+        }
+
+        private void AvatarDbClearFilter_Click(object sender, RoutedEventArgs e)
+        {
+            AvatarDbFilterBox.Text = string.Empty;
+            ApplyAvatarDbFilter(AvatarDbView, string.Empty);
+        }
+
+        private void ApplyAvatarDbFilter(ICollectionView view, string filterText)
+        {
+            // Push filter to database for better performance
+            if (string.IsNullOrWhiteSpace(filterText))
+            {
+                AvatarDbItems.SetFilter(null);
+            }
+            else
+            {
+                AvatarDbItems.SetFilter(filterText.Trim());
+            }
+        }
+
+        private void RefreshAvatarDb()
+        {
+            try
+            {
+                // Refresh virtualized collection which will clear caches and re-query counts
+                AvatarDbItems.Refresh();
+            }
+            catch { }
+        }
+
+        private void AvatarDbGrid_CellEditEnding(object sender, System.Windows.Controls.DataGridCellEditEndingEventArgs e)
+        {
+            if (e.Row.Item is AvatarInfoViewModel vm)
+            {
+                try
+                {
+                    var db = _serviceRegistry.GetDBContext();
+                    var entity = db.AvatarInfos.Find(vm.AvatarId);
+                    if (entity != null)
+                    {
+                        entity.IsBos = vm.IsBos;
+                        entity.UpdatedAt = DateTime.UtcNow;
+                        db.AvatarInfos.Update(entity);
+                        db.SaveChanges();
+                        vm.UpdatedAt = entity.UpdatedAt;
+                    }
+                }
+                catch { }
+            }
+        }
+        private void AvatarFetch_Click(object sender, RoutedEventArgs e)
+        {
+            string? id = AvatarIdBox.Text?.Trim();
+            if (string.IsNullOrEmpty(id)) return;
+
+            try
+            {
+                VRChatClient vrcClient = _serviceRegistry.GetVRChatAPIClient();
+                Avatar? avatar = vrcClient.GetAvatarById(id);
+                if (avatar != null)
+                {
+                    TailgrabDBContext dbContext = _serviceRegistry.GetDBContext();
+                    AvatarInfo? existing = dbContext.AvatarInfos.Find(avatar.Id);
+                    if (existing == null)
+                    {
+                        var newEntity = new Tailgrab.Models.AvatarInfo
+                        {
+                            AvatarId = avatar.Id,
+                            UserId = avatar.AuthorId ?? string.Empty,
+                            AvatarName = avatar.Name ?? string.Empty,
+                            ImageUrl = avatar.ImageUrl ?? string.Empty,
+                            CreatedAt = avatar.CreatedAt,
+                            UpdatedAt = DateTime.UtcNow,
+                            IsBos = false
+                        };
+                        dbContext.AvatarInfos.Add(newEntity);
+                        dbContext.SaveChanges();
+                    }
+                    else
+                    {
+                        existing.UserId = avatar.AuthorId ?? string.Empty;
+                        existing.AvatarName = avatar.Name ?? string.Empty;
+                        existing.ImageUrl = avatar.ImageUrl ?? string.Empty;
+                        existing.CreatedAt = avatar.CreatedAt;
+                        existing.UpdatedAt = DateTime.UtcNow;
+                        dbContext.AvatarInfos.Update(existing);
+                        dbContext.SaveChanges();
+                    }
+
+                    // Filter the view to the fetched avatar
+                    ApplyAvatarDbFilter(AvatarDbView, avatar.Name ?? string.Empty);
+                    AvatarIdBox.Text = string.Empty;
+                }
+                else
+                {
+                    System.Windows.MessageBox.Show($"Avatar {id} not found via VRChat API.", "Fetch Avatar", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"Failed to fetch avatar: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+        #endregion
+
+        //
+        // Group DB UI handlers
+        #region Group DB handlers
+        private void GroupDbRefresh_Click(object sender, RoutedEventArgs e)
+        {
+            RefreshGroupDb();
+        }
+
+        private void GroupDbApplyFilter_Click(object sender, RoutedEventArgs e)
+        {
+            ApplyGroupDbFilter(GroupDbView, GroupDbFilterBox.Text);
+        }
+
+        private void GroupDbClearFilter_Click(object sender, RoutedEventArgs e)
+        {
+            GroupDbFilterBox.Text = string.Empty;
+            ApplyGroupDbFilter(GroupDbView, string.Empty);
+        }
+
+        private void ApplyGroupDbFilter(ICollectionView view, string filterText)
+        {
+            // Push filter to database for better performance
+            if (string.IsNullOrWhiteSpace(filterText))
+            {
+                GroupDbItems.SetFilter(null);
+            }
+            else
+            {
+                GroupDbItems.SetFilter(filterText.Trim());
+            }
+        }
+
+        private void RefreshGroupDb()
+        {
+            try
+            {
+                GroupDbItems.Refresh();
+            }
+            catch { }
+        }
+
+        private void RefreshUserDb()
+        {
+            try
+            {
+                UserDbItems?.Refresh();
+            }
+            catch { }
+        }
+
+        private void GroupDbGrid_CellEditEnding(object sender, System.Windows.Controls.DataGridCellEditEndingEventArgs e)
+        {
+            if (e.Row.Item is GroupInfoViewModel vm)
+            {
+                try
+                {
+                    var db = _serviceRegistry.GetDBContext();
+                    var entity = db.GroupInfos.Find(vm.GroupId);
+                    if (entity != null)
+                    {
+                        entity.IsBos = vm.IsBos;
+                        entity.UpdatedAt = DateTime.UtcNow;
+                        db.GroupInfos.Update(entity);
+                        db.SaveChanges();
+                        vm.UpdatedAt = entity.UpdatedAt;
+                    }
+                }
+                catch { }
+            }
+        }
+
+        private void GroupFetch_Click(object sender, RoutedEventArgs e)
+        {
+            string? id = GroupIdBox.Text?.Trim();
+            if (string.IsNullOrEmpty(id)) return;
+
+            GroupInfo? existing = _serviceRegistry.GetPlayerManager().AddUpdateGroupFromVRC(id);
+
+            if (existing == null)
+            {
+                System.Windows.MessageBox.Show($"Group {id} not found via VRChat API.", "Fetch Group", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            else
+            {
+                // Filter the view to the fetched Group
+                ApplyGroupDbFilter(GroupDbView, existing.GroupName ?? string.Empty);
+                GroupIdBox.Text = string.Empty;
+            }
         }
         #endregion
 
@@ -1130,15 +1165,23 @@ namespace Tailgrab.PlayerManagement
             view.Refresh();
         }
 
-        public void Dispose()
+        private void AvatarHyperlink_RequestNavigate(object? sender, System.Windows.Navigation.RequestNavigateEventArgs e)
         {
-            fallbackTimer.Stop();
-            fallbackTimer.Tick -= FallbackTimer_Tick;
-            
-            statusBarTimer.Stop();
-            statusBarTimer.Tick -= StatusBarTimer_Tick;
-            
-            PlayerManager.PlayerChanged -= PlayerManager_PlayerChanged;
+            try
+            {
+                logger.Info($"Opening Avatar URL: {e.Uri}");
+                var uri = new Uri($"https://vrchat.com/home/avatar/{e.Uri}");
+                var psi = new System.Diagnostics.ProcessStartInfo(uri.AbsoluteUri)
+                {
+                    UseShellExecute = true
+                };
+                System.Diagnostics.Process.Start(psi);
+            }
+            catch (Exception ex)
+            {
+                logger?.Error(ex, "Failed to open group URL");
+            }
+            e.Handled = true;
         }
 
         private void GroupHyperlink_RequestNavigate(object? sender, System.Windows.Navigation.RequestNavigateEventArgs e)
@@ -1159,32 +1202,26 @@ namespace Tailgrab.PlayerManagement
             }
             e.Handled = true;
         }
-        private void AvatarHyperlink_RequestNavigate(object? sender, System.Windows.Navigation.RequestNavigateEventArgs e)
-        {
-            try
-            {
-                logger.Info($"Opening Avatar URL: {e.Uri}");
-                var uri = new Uri($"https://vrchat.com/home/avatar/{e.Uri}");
-                var psi = new System.Diagnostics.ProcessStartInfo(uri.AbsoluteUri)
-                {
-                    UseShellExecute = true
-                };
-                System.Diagnostics.Process.Start(psi);
-            }
-            catch (Exception ex)
-            {
-                logger?.Error(ex, "Failed to open group URL");
-            }
-            e.Handled = true;
-        }
 
         public event PropertyChangedEventHandler? PropertyChanged;
         protected void OnPropertyChanged(string propertyName)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
+
+        public void Dispose()
+        {
+            fallbackTimer.Stop();
+            fallbackTimer.Tick -= FallbackTimer_Tick;
+
+            statusBarTimer.Stop();
+            statusBarTimer.Tick -= StatusBarTimer_Tick;
+
+            PlayerManager.PlayerChanged -= PlayerManager_PlayerChanged;
+        }
     }
 
+    #region ViewModels
     public class PlayerViewModel : INotifyPropertyChanged
     {
         public string UserId { get; private set; }
@@ -1242,7 +1279,7 @@ namespace Tailgrab.PlayerManagement
             {
                 foreach (var inv in p.Inventory)
                 {
-                    Emojis.Add(new EmojiInfoViewModel(inv));
+                    Emojis.Add(new EmojiInfoViewModel(p.UserId, inv));
                 }
             }
 
@@ -1290,7 +1327,7 @@ namespace Tailgrab.PlayerManagement
                 Emojis.Clear();
                 foreach (var inv in p.Inventory)
                 {
-                    Emojis.Add(new EmojiInfoViewModel(inv));
+                    Emojis.Add(new EmojiInfoViewModel(p.UserId, inv));
                 }
             }
 
@@ -1331,7 +1368,6 @@ namespace Tailgrab.PlayerManagement
         }
     }
 
-
     public class PrintInfoViewModel
     {
         public string PrintId { get; set; }
@@ -1346,15 +1382,18 @@ namespace Tailgrab.PlayerManagement
             AuthorName = p.AuthorName;
         }
     }
+
     public class EmojiInfoViewModel
     {
+        public string UserId { get; set; }
         public string InventoryId { get; set; }
         public DateTime SpawnedAt { get; set; }
         public string ImageUrl { get; set; }       
         public string InventoryType { get; set; }
         public string AIEvalutation { get; set; }
-        public EmojiInfoViewModel(PlayerInventory i)
+        public EmojiInfoViewModel(string userId, PlayerInventory i)
         {
+            UserId = userId;
             InventoryId = i.InventoryId;
             SpawnedAt = i.SpawnedAt;
             ImageUrl = i.ItemUrl;
@@ -1362,4 +1401,6 @@ namespace Tailgrab.PlayerManagement
             AIEvalutation = i.AIEvaluation;
         }
     }
+    #endregion
+
 }

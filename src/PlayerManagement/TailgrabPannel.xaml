@@ -336,11 +336,12 @@
                             <RowDefinition Height="*" />
                         </Grid.RowDefinitions>
 
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                            <TextBox Name="EmojiFilterBox" Width="300" Margin="0,0,8,0" />
-                            <Button Content="Apply Filter" Click="EmojiApplyFilter_Click" Margin="0,0,6,0"/>
-                            <Button Content="Clear Filter" Click="EmojiClearFilter_Click"/>
-                        </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <TextBox Name="EmojiFilterBox" Width="300" Margin="0,0,8,0" />
+                        <Button Content="Apply Filter" Click="EmojiApplyFilter_Click" Margin="0,0,6,0"/>
+                        <Button Content="Clear Filter" Click="EmojiClearFilter_Click"/>
+                        <Button Content="Report Inventory" Click="ReportInventory_Click" HorizontalAlignment="Right" Margin="8,0,0,0"/>
+                    </StackPanel>
 
                         <!-- Show each player and their prints -->
                         <ListView Name="EmojiListView" Grid.Row="1" ItemsSource="{Binding EmojiView}">
@@ -357,22 +358,46 @@
                                                     <ItemsControl.ItemTemplate>
                                                         <DataTemplate>
                                                             <Grid Margin="0,2,0,2">
+                                                                <Grid.RowDefinitions>
+                                                                    <RowDefinition Height="Auto"/>
+                                                                    <RowDefinition Height="Auto"/>
+                                                                </Grid.RowDefinitions>
                                                                 <Grid.ColumnDefinitions>
                                                                     <ColumnDefinition Width="300" />
                                                                     <ColumnDefinition Width="200" />
                                                                     <ColumnDefinition Width="200" />
                                                                     <ColumnDefinition Width="100" />
-                                                                    <ColumnDefinition Width="200" />
+                                                                    <ColumnDefinition Width="100" />
                                                                 </Grid.ColumnDefinitions>
-                                                                <TextBlock Grid.Column="0" Text="{Binding InventoryId}" />
-                                                                <TextBlock Grid.Column="1" Text="{Binding InventoryType}" />
-                                                                <TextBlock Grid.Column="2" Text="{Binding SpawnedAt, StringFormat={}{0:u}}" />
-                                                                <TextBlock Grid.Column="3" Text="{Binding AIEvalutation}" />
-                                                                <TextBlock Grid.Column="4">
-                                                                <Hyperlink NavigateUri="{Binding ImageUrl}" RequestNavigate="EmojiHyperlink_RequestNavigate">
-                                                                    <Image Source="{Binding ImageUrl}" Width="100" Stretch="Uniform" />
-                                                                </Hyperlink>
-                                                                </TextBlock>
+                                                                
+                                                                <!-- First Row -->
+                                                                <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding InventoryId}" VerticalAlignment="Center"/>
+                                                                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding InventoryType}" VerticalAlignment="Center"/>
+                                                                <TextBlock Grid.Row="0" Grid.Column="2" Text="{Binding SpawnedAt, StringFormat={}{0:u}}" VerticalAlignment="Center"/>
+                                                                <TextBlock Grid.Row="0" Grid.Column="3" Text="{Binding AIEvalutation}" VerticalAlignment="Center"/>
+                                                                
+                                                                <!-- Second Row - Button -->
+                                                                <Button Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="4" 
+                                                                        Content="Report Inventory Item" 
+                                                                        Click="ReportInventoryItem_Click"
+                                                                        Tag="{Binding}"
+                                                                        Margin="0,4,0,0"
+                                                                        Padding="4,2"
+                                                                        HorizontalAlignment="Left"/>
+                                                                
+                                                                <!-- Image spanning both rows -->
+                                                                <Border Grid.Row="0" Grid.Column="4" Grid.RowSpan="2" 
+                                                                        BorderBrush="Gray" 
+                                                                        BorderThickness="1" 
+                                                                        Padding="2">
+                                                                    <TextBlock>
+                                                                        <Hyperlink NavigateUri="{Binding ImageUrl}" RequestNavigate="EmojiHyperlink_RequestNavigate">
+                                                                            <InlineUIContainer>
+                                                                                <Image Source="{Binding ImageUrl}" Width="100" Height="100" Stretch="Uniform" />
+                                                                            </InlineUIContainer>
+                                                                        </Hyperlink>
+                                                                    </TextBlock>
+                                                                </Border>
                                                             </Grid>
                                                         </DataTemplate>
                                                     </ItemsControl.ItemTemplate>

@@ -4,7 +4,7 @@ using OtpNet;
 using System.IO;
 using System.Net;
 using System.Net.Http;
-using System.Security.Policy;
+using System.Net.Http.Json;
 using Tailgrab.Clients.Ollama;
 using Tailgrab.Common;
 using Tailgrab.Config;
@@ -16,6 +16,8 @@ namespace Tailgrab.Clients.VRChat
 {
     public class VRChatClient
     {
+
+        public static string UserAgent = "Tailgrab/1.0.7";
         public static Logger logger = LogManager.GetCurrentClassLogger();
 
         private IVRChat? _vrchat;
@@ -238,7 +240,7 @@ namespace Tailgrab.Clients.VRChat
                 }
 
                 using var httpClient = new HttpClient(handler);
-                httpClient.DefaultRequestHeaders.Add("User-Agent", "Jarvis/1.0.0");
+                httpClient.DefaultRequestHeaders.Add("User-Agent", UserAgent);
 
                 var response = await httpClient.GetAsync(url);
                 response.EnsureSuccessStatusCode();
@@ -282,7 +284,7 @@ namespace Tailgrab.Clients.VRChat
                 }
 
                 using HttpClient httpClient = new HttpClient(handler);
-                httpClient.DefaultRequestHeaders.Add("User-Agent", "Jarvis/1.0.0");
+                httpClient.DefaultRequestHeaders.Add("User-Agent", UserAgent);
 
                 // Download the image
                 byte[] imageBytes = await httpClient.GetByteArrayAsync(imageUri);
@@ -306,9 +308,6 @@ namespace Tailgrab.Clients.VRChat
                 return null;
             }
         }
-
-
-
 
         public Print? GetPrintInfo(string fileURL)
         {
@@ -371,6 +370,47 @@ namespace Tailgrab.Clients.VRChat
             }
 
             return group;
+        }
+
+        internal async Task<bool> SubmitModerationReportAsync(ModerationReportPayload rpt)
+        {
+            try
+            {
+                if (_vrchat == null)
+                {
+                    logger.Error("VRChat client not initialized");
+                    return false;
+                }
+
+                // Create HTTP client with cookies
+                var handler = new HttpClientHandler
+                {
+                    CookieContainer = new CookieContainer()
+                };
+
+                var cookies = _vrchat.GetCookies();
+                foreach (var cookie in cookies)
+                {
+                    handler.CookieContainer.Add(new Uri("https://api.vrchat.cloud"), cookie);
+                }
+
+                using HttpClient httpClient = new HttpClient(handler);
+                httpClient.DefaultRequestHeaders.Add("User-Agent", UserAgent);
+
+                // Download the image
+                HttpResponseMessage response = await httpClient.PostAsJsonAsync("https://api.vrchat.cloud/api/1/moderationReports", rpt);
+                string responseContent = await response.Content.ReadAsStringAsync();
+                logger.Info($"Submitted moderation report for content {rpt.ContentId} with reason: {rpt.Reason}\n{responseContent}");
+                response.EnsureSuccessStatusCode();
+
+                return response.IsSuccessStatusCode;
+
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, $"Error Reporting image from URI: {rpt}");
+                return false;
+            }
         }
 
         public class VRChatInventoryItem
