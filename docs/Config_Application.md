@@ -12,6 +12,12 @@ Tailgrab uses VR Chat's public API to get information about avatars for the Blac
 
 The fields are your Web User Name and Password for VRChat, and the 2 Factor Authentication Key that is generation on account creation or enabling two factor authentication.
 
+**User** - This is your VRChat Username you use to log in to the VRChat website.
+
+**Password** - This is your VRChat Password you use to log in to the VRChat website.
+
+**2FA Key** - This is the 2 Factor Authentication Key that is generated when you set up 2 Factor Authentication on your VRChat account, this is used to generate the 2FA codes that are required to authenticate with the VRChat API.
+
 > [!IMPORTANT]
 > VRChat's API is not officially supported for third party applications, and may change/break at any time; User credentials are stored in an encrypted format in the Windows Registry and used only to gather needed information about users in the instance you are in.
 > This API is used to get Avatar Information, Profile Information and to Report User profiles and Stickers and Emojis to VRChat Moderation Team.  The application does not perform any actions on your account that you do not explicitly trigger with a user action in the application, such as clicking a button to report a user or an image.
@@ -39,19 +45,19 @@ OLLama Cloud AI services are used to evaluate user profiles for potential bad ac
 > [!IMPORTANT]
 > Ollama Cloud API is free at this time! (2026/02)  but may have usage limits any time; User credentials are stored in an encrypted format in the Windows Registry and used only to check on user content that has not been checked before for users in the instance you are in.  Sign up at https://signin.ollama.com/ and see current pricing models https://ollama.com/pricing
 
-Ollama Endpoint is the URL to your Ollama API instance, if you are using the cloud service, this should be ```https://ollama.com``` to use the cloud default, if you are using a local instance of Ollama, this should be ```http://localhost:11434``` or the URL of the host that Ollama is installed in.
+**Ollama Endpoint** - is the URL to your Ollama API instance, if you are using the cloud service, this should be ```https://ollama.com``` to use the cloud default, if you are using a local instance of Ollama, this should be ```http://localhost:11434``` or the URL of the host that Ollama is installed in.
 
 > [!NOTE]
 > You can use a Localy installed Ollama instance with a API Endpoint of ```http://localhost:11434``` or the URL of the host that Ollama is installed in. You will still need to key an API Key, but it's contents do not matter.
 
-Ollama API Key is the API Key generated from your Ollama Cloud account, this is used to authenticate your API calls to the Ollama Cloud service, if you are using a local instance of Ollama, this can be any value as the local instance does not require authentication.
+**Ollama API Key** - is the API Key generated from your Ollama Cloud account, this is used to authenticate your API calls to the Ollama Cloud service, if you are using a local instance of Ollama, this can be any value as the local instance does not require authentication.
 
 > [!NOTE]
 > If the Ollama API Key is not set, no profile evaluation will be done and the application will not attempt to call the API, so you can use the profile evaluation features without setting up the API credentials if you want to just use it as a local database of good and bad actors.
 
-Ollama Model Name: This is the name of the model you have set up in your Ollama Cloud account that you want to use for profile evaluation, ```gemma3:27b``` has been selected to give a good balance of performance and cost, but you can use any model you have set up in your account.
+**Ollama Model Name** - This is the name of the model you have set up in your Ollama Cloud account that you want to use for profile evaluation, ```gemma3:27b``` has been selected to give a good balance of performance and cost, but you can use any model you have set up in your account.
 
-Profile AI Prompt: This is the custom prompt that you want to use for profile evaluation, you can use any prompt you want, but it should be designed to elicit semi formated response of 
+**Profile AI Prompt** - This is the custom prompt that you want to use for profile evaluation, you can use any prompt you want, but it should be designed to elicit semi formated response of 
 
 ```
 <classification>
@@ -85,12 +91,18 @@ The default prompt is designed to look for potential sexual predators, but you c
 > The current prompt is defined as:
 > From the following block of text, classify the contents into a single class from the following classes;\r\n'OK' - Where as all text content can be considered PG13;\r\n'Explicit Sexual' - Where as any of the text contained describes sexual acts or intent. Flagged words Bussy, Fagot, Dih;\r\n'Harassment & Bullying' - Where the text is describing acts of trolling or bullying users on Religion, Sexual Orientation or Race. Flagged words of base nigg* and variations of that spelling to hide racism.\r\n'Self Harm' - Any part of the text where it explicitly describes destructive behaviours.\r\nIf there is not enough information to determine the class, use a default of OK. When replying, return a single line for the Classification and a carriage return, then place the reasoning on subsequent lines, translate any foreign language to English:
 
-Image AI Prompt: THis is the custom prompt that you want to evaluate images (Emoji & Stickers), you can use any prompt you want, but it should be designed to elicit semi formated response of 
+**Image AI Prompt** - This is the custom prompt that you want to evaluate images (Emoji & Stickers), you can use any prompt you want, but it should be designed to elicit semi formated response of 
 
 ```
 <classification>
 <Reasoning For you and VR Chat>
 ```
+
+> _**Example Response for a NSFW Image:**_
+> ```
+> Sexual Content
+> The image depicts anthropomorphic animals in a suggestive and sexually explicit situation with clear implications of sexual assault. This falls under the category of sexual content due to the nature of the depicted act and suggestive poses.
+> ```
 
 The default prompt is designed to look for potential PG13 violation, but you can customize it to look for any criteria you want as so long as the reponse contains the classification on the first line and anything else on the rest.  The Classifcations are based on VR Chat's Moderation Categories.
 
@@ -112,3 +124,9 @@ The default prompt is designed to look for potential PG13 violation, but you can
 ## Alert Sounds
 
 Based on the three areas of interest, you can customize the alert sounds that are player.  The first set are windows default alert sounds while the application will add any sound file (WAV, MP3 or OGG) that exist under the application installed directory under ```./sounds```
+
+**Avatar Alert** - This sound is played when an Avatar is detected in the instance that is on the Ban On Sight list.
+
+**Group Alert** - This sound is played when a user in the instance is detected to be in a Group that is on the Ban On Sight list.
+
+**Profile Alert** - This sound is played when a user in the instance has a profile that is evaluated by the AI services to be of concern based on your custom prompt criteria.
