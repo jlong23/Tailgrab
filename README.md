@@ -3,6 +3,7 @@ VRChat Log Parser and Automation tool to help moderators manage trouble makers i
 
 ## Configuration
 See [Application Config](./docs/Config_Application.md) for details on how to configure the application to connect to API services.
+
 See [Config Line Handlers](./docs/Config_LineHandlers.md) for details on how to configure the application to respond to VRChat local game log events.
 
 # Capabilities
