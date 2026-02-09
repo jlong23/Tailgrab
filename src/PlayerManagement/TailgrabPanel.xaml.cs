@@ -11,10 +11,11 @@ using Tailgrab.Clients.VRChat;
 using Tailgrab.Config;
 using Tailgrab.Models;
 using VRChat.API.Model;
+using static Tailgrab.Clients.VRChat.VRChatClient;
 
 namespace Tailgrab.PlayerManagement
 {
-    public partial class TailgrabPannel : Window, IDisposable, INotifyPropertyChanged
+    public partial class TailgrabPanel : Window, IDisposable, INotifyPropertyChanged
     {
         private readonly DispatcherTimer fallbackTimer;
         private readonly DispatcherTimer statusBarTimer;
@@ -127,7 +128,7 @@ namespace Tailgrab.PlayerManagement
 
         protected ServiceRegistry _serviceRegistry;
 
-        public TailgrabPannel(ServiceRegistry serviceRegistry)
+        public TailgrabPanel(ServiceRegistry serviceRegistry)
         {
             _serviceRegistry = serviceRegistry;
             InitializeComponent();
@@ -391,6 +392,7 @@ namespace Tailgrab.PlayerManagement
             }
 
             public event PropertyChangedEventHandler? PropertyChanged;
+
             protected void OnPropertyChanged(string propertyName)
             {
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
@@ -779,16 +781,178 @@ namespace Tailgrab.PlayerManagement
                 string userId = pvm.UserId;
                 try
                 {
-                    ReportProfileWindow reportWindow = new ReportProfileWindow(_serviceRegistry, userId);
-                    reportWindow.Owner = this;
-                    reportWindow.ShowDialog();
+                    ShowProfileReportOverlay(userId);
                 }
                 catch (Exception ex)
                 {
-                    logger.Error(ex, "Failed to open Report Inventory window");
-                    System.Windows.MessageBox.Show($"Failed to open Report Inventory window: {ex.Message}",
+                    logger.Error(ex, "Failed to open Report Profile overlay");
+                    System.Windows.MessageBox.Show($"Failed to open Report Profile overlay: {ex.Message}",
                         "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
                 }
+            }
+        }
+
+        private void ShowProfileReportOverlay(string userId)
+        {
+            // Populate the overlay fields
+            OverlayProfileReportUserIdTextBox.Text = userId.Trim();
+
+            // Setup report reasons for profile (includes Child Exploitation)
+            var profileReportReasons = new List<ReportReasonItem>
+            {
+                new ReportReasonItem("Sexual Content", "sexual"),
+                new ReportReasonItem("Hateful Content", "hateful"),
+                new ReportReasonItem("Gore and Violence", "gore"),
+                new ReportReasonItem("Child Exploitation", "child"),
+                new ReportReasonItem("Other", "other")
+            };
+
+            OverlayProfileReportReasonComboBox.ItemsSource = profileReportReasons;
+            OverlayProfileReportReasonComboBox.SelectedIndex = 0;
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                OverlayProfileReportDescriptionTextBox.Text = string.Empty;
+            }
+            else
+            {
+                try
+                {
+                    // Get the player from PlayerManager
+                    Player? player = _serviceRegistry.GetPlayerManager().GetPlayerByUserId(userId);
+
+                    if (player != null && !string.IsNullOrEmpty(player.AIEval))
+                    {
+                        OverlayProfileReportDescriptionTextBox.Text = player.AIEval;
+                        logger.Debug($"Loaded AI evaluation for user: {userId}");
+                    }
+                    else
+                    {
+                        OverlayProfileReportDescriptionTextBox.Text = "No AI evaluation available for this user.";
+                        logger.Debug($"No AI evaluation found for user: {userId}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.Error(ex, $"Error loading AI evaluation for user: {userId}");
+                    OverlayProfileReportDescriptionTextBox.Text = $"Error loading AI evaluation: {ex.Message}";
+                }
+            }
+
+            // Clear any validation errors
+            ClearProfileReportValidationErrors();
+
+            // Show the overlay
+            OverlayProfileReport.Visibility = Visibility.Visible;
+        }
+
+        private void ClearProfileReportValidationErrors()
+        {
+            // Reset UserID field
+            OverlayProfileReportUserIdTextBox.BorderBrush = System.Windows.SystemColors.ControlDarkBrush;
+            OverlayProfileReportUserIdTextBox.BorderThickness = new Thickness(1);
+            OverlayProfileReportUserIdError.Visibility = Visibility.Collapsed;
+        }
+
+        private bool ValidateProfileReportFields()
+        {
+            bool isValid = true;
+            
+            // Clear any previous validation errors first
+            ClearProfileReportValidationErrors();
+            
+            // Validate User ID
+            if (string.IsNullOrWhiteSpace(OverlayProfileReportUserIdTextBox.Text))
+            {
+                OverlayProfileReportUserIdTextBox.BorderBrush = new SolidColorBrush(Colors.Yellow);
+                OverlayProfileReportUserIdTextBox.BorderThickness = new Thickness(3);
+                OverlayProfileReportUserIdError.Visibility = Visibility.Visible;
+                isValid = false;
+            }
+            
+            return isValid;
+        }
+
+        private void OverlayProfileReportCancel_Click(object sender, RoutedEventArgs e)
+        {
+            // Hide the overlay
+            OverlayProfileReport.Visibility = Visibility.Collapsed;
+            
+            // Clear the fields
+            OverlayProfileReportUserIdTextBox.Text = string.Empty;
+            OverlayProfileReportDescriptionTextBox.Text = string.Empty;
+            
+            // Clear validation errors
+            ClearProfileReportValidationErrors();
+        }
+
+        private async void OverlayProfileReportSubmit_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // Validate required fields
+                if (!ValidateProfileReportFields())
+                {
+                    return;
+                }
+
+                string userId = OverlayProfileReportUserIdTextBox.Text.Trim();
+                string category = OverlayProfileReportCategoryTextBox.Text;
+                string reportReason = OverlayProfileReportReasonComboBox.SelectedValue?.ToString() ?? string.Empty;
+                string reportDescription = OverlayProfileReportDescriptionTextBox.Text;
+
+                // Disable the submit button to prevent double-submission
+                OverlayProfileReportSubmitButton.IsEnabled = false;
+
+                // Call the method that will handle the future web service call
+                bool success = await SubmitProfileReport(userId, category, reportReason, reportDescription);
+
+                // Show success message
+                if (!success)                
+                {
+                    System.Windows.MessageBox.Show("Failed to submit report. Please try again later.", "Error",
+                        System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                }
+
+                // Hide the overlay
+                OverlayProfileReport.Visibility = Visibility.Collapsed;
+
+                // Clear the fields
+                OverlayProfileReportUserIdTextBox.Text = string.Empty;
+                OverlayProfileReportDescriptionTextBox.Text = string.Empty;
+                
+                // Clear validation errors
+                ClearProfileReportValidationErrors();
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to submit profile report");
+                System.Windows.MessageBox.Show($"Failed to submit report: {ex.Message}", 
+                    "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+            }
+            finally
+            {
+                OverlayProfileReportSubmitButton.IsEnabled = true;
+            }
+        }
+
+        private async Task<bool> SubmitProfileReport(string userId, string category, string reportReason, string reportDescription)
+        {
+            try
+            {
+                logger.Info($"Submitting profile report for User ID: {userId}, Category: {category}, Reason: {reportReason}");
+                
+                // TODO: Implement actual web service call here
+                // For now, just log and return success
+                await Task.Delay(100); // Simulate async operation
+                
+                logger.Info($"Profile report submitted successfully for User ID: {userId}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, $"Failed to submit profile report for User ID: {userId}");
+                return false;
             }
         }
         #endregion
@@ -859,6 +1023,13 @@ namespace Tailgrab.PlayerManagement
         #endregion
 
         #region Emoji handlers
+        public List<ReportReasonItem> ReportReasons { get; } = new List<ReportReasonItem>
+        {
+            new ReportReasonItem("Sexual Content", "sexual"),
+            new ReportReasonItem("Hateful Content", "hateful"),
+            new ReportReasonItem("Gore and Violence", "gore"),
+            new ReportReasonItem("Other", "other")
+        };
 
         private void EmojiApplyFilter_Click(object sender, RoutedEventArgs e)
         {
@@ -882,18 +1053,17 @@ namespace Tailgrab.PlayerManagement
 
         private void ReportInventory_Click(object sender, RoutedEventArgs e)
         {
-            try
-            {
-                ReportInventoryWindow reportWindow = new ReportInventoryWindow(_serviceRegistry);
-                reportWindow.Owner = this;
-                reportWindow.ShowDialog();
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex, "Failed to open Report Inventory window");
-                System.Windows.MessageBox.Show($"Failed to open Report Inventory window: {ex.Message}", 
-                    "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
-            }
+            OverlayUserIdTextBox.Text = string.Empty;
+            OverlayInventoryIdTextBox.Text = string.Empty;
+            OverlayCategoryTextBox.Text = string.Empty;
+            OverlayReportDescriptionTextBox.Text = string.Empty;
+            OverlayReportReasonComboBox.ItemsSource = ReportReasons;
+
+            // Clear any validation errors
+            ClearOverlayValidationErrors();
+
+            // Show the overlay
+            ReportInventoryOverlay.Visibility = Visibility.Visible;
         }
 
         private void ReportInventoryItem_Click(object sender, RoutedEventArgs e)
@@ -902,36 +1072,277 @@ namespace Tailgrab.PlayerManagement
             {
                 if (sender is System.Windows.Controls.Button button && button.Tag is EmojiInfoViewModel emoji)
                 {
-                    ReportInventoryWindow reportWindow = new ReportInventoryWindow(_serviceRegistry, emoji.UserId, emoji.InventoryId);
-                    reportWindow.Owner = this;
-                    reportWindow.ShowDialog();
+                    ShowReportInventoryOverlay(emoji);
                 }
             }
             catch (Exception ex)
             {
-                logger.Error(ex, "Failed to open Report Inventory Item window");
-                System.Windows.MessageBox.Show($"Failed to open Report Inventory Item window: {ex.Message}", 
+                logger.Error(ex, "Failed to open Report Inventory Item overlay");
+                System.Windows.MessageBox.Show($"Failed to open Report Inventory Item overlay: {ex.Message}", 
                     "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
             }
         }
 
-        private void EmojiHyperlink_RequestNavigate(object? sender, System.Windows.Navigation.RequestNavigateEventArgs e)
+        private void ShowReportInventoryOverlay(EmojiInfoViewModel emoji)
+        {
+            // Populate the overlay fields
+            OverlayUserIdTextBox.Text = emoji.UserId;
+            OverlayInventoryIdTextBox.Text = emoji.InventoryId;
+            OverlayCategoryTextBox.Text = emoji.InventoryType;
+            OverlayReportDescriptionTextBox.Text = emoji.AIEvalutation ?? string.Empty;
+
+            OverlayReportReasonComboBox.ItemsSource = ReportReasons;
+            OverlayReportReasonComboBox.SelectedIndex = 0;
+
+            // Load the image
+            if (!string.IsNullOrEmpty(emoji.ImageUrl))
+            {
+                try
+                {
+                    var bitmap = new System.Windows.Media.Imaging.BitmapImage();
+                    bitmap.BeginInit();
+                    bitmap.UriSource = new Uri(emoji.ImageUrl);
+                    bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                    bitmap.EndInit();
+                    OverlayInventoryImagePreview.Source = bitmap;
+                }
+                catch (Exception ex)
+                {
+                    logger.Error(ex, "Failed to load inventory image");
+                }
+            }
+
+            // Clear any validation errors
+            ClearOverlayValidationErrors();
+
+            // Show the overlay
+            ReportInventoryOverlay.Visibility = Visibility.Visible;
+        }
+
+        private void OverlayCancel_Click(object sender, RoutedEventArgs e)
+        {
+            // Hide the overlay
+            ReportInventoryOverlay.Visibility = Visibility.Collapsed;
+            
+            // Clear the fields
+            OverlayUserIdTextBox.Text = string.Empty;
+            OverlayInventoryIdTextBox.Text = string.Empty;
+            OverlayCategoryTextBox.Text = string.Empty;
+            OverlayReportDescriptionTextBox.Text = string.Empty;
+            OverlayInventoryImagePreview.Source = null;
+            
+            // Clear validation errors
+            ClearOverlayValidationErrors();
+        }
+
+        private void ClearOverlayValidationErrors()
+        {
+            // Reset UserID field
+            OverlayUserIdTextBox.BorderBrush = System.Windows.SystemColors.ControlDarkBrush;
+            OverlayUserIdTextBox.BorderThickness = new Thickness(1);
+            OverlayUserIdError.Visibility = Visibility.Collapsed;
+            
+            // Reset InventoryID field
+            OverlayInventoryIdTextBox.BorderBrush = System.Windows.SystemColors.ControlDarkBrush;
+            OverlayInventoryIdTextBox.BorderThickness = new Thickness(1);
+            OverlayInventoryIdError.Visibility = Visibility.Collapsed;
+        }
+
+        private bool ValidateOverlayFields()
+        {
+            bool isValid = true;
+            
+            // Clear any previous validation errors first
+            ClearOverlayValidationErrors();
+            
+            // Validate User ID
+            if (string.IsNullOrWhiteSpace(OverlayUserIdTextBox.Text))
+            {
+                OverlayUserIdTextBox.BorderBrush = new SolidColorBrush(Colors.Yellow);
+                OverlayUserIdTextBox.BorderThickness = new Thickness(3);
+                OverlayUserIdError.Visibility = Visibility.Visible;
+                isValid = false;
+            }
+            
+            // Validate Inventory ID
+            if (string.IsNullOrWhiteSpace(OverlayInventoryIdTextBox.Text))
+            {
+                OverlayInventoryIdTextBox.BorderBrush = new SolidColorBrush(Colors.Yellow);
+                OverlayInventoryIdTextBox.BorderThickness = new Thickness(3);
+                OverlayInventoryIdError.Visibility = Visibility.Visible;
+                isValid = false;
+            }
+            
+            return isValid;
+        }
+
+        private async void OverlaySubmit_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                logger.Info($"Opening Emoji URL: {e.Uri}");
-                var psi = new System.Diagnostics.ProcessStartInfo(e.Uri.AbsoluteUri)
+                // Validate required fields
+                if (!ValidateOverlayFields())
                 {
-                    UseShellExecute = true
-                };
-                System.Diagnostics.Process.Start(psi);
+                    return;
+                }
+
+                var userId = OverlayUserIdTextBox.Text;
+                var inventoryId = OverlayInventoryIdTextBox.Text;
+                var reason = OverlayReportReasonComboBox.SelectedValue?.ToString();
+                var description = OverlayReportDescriptionTextBox.Text;
+
+                // Disable the submit button to prevent double-submission
+                OverlaySubmitButton.IsEnabled = false;
+
+                // Hide the overlay
+                ReportInventoryOverlay.Visibility = Visibility.Collapsed;
+
+                // Clear the fields
+                OverlayUserIdTextBox.Text = string.Empty;
+                OverlayInventoryIdTextBox.Text = string.Empty;
+                OverlayCategoryTextBox.Text = string.Empty;
+                OverlayReportDescriptionTextBox.Text = string.Empty;
+                OverlayInventoryImagePreview.Source = null;
+                
+                // Clear validation errors
+                ClearOverlayValidationErrors();
             }
             catch (Exception ex)
             {
-                logger?.Error(ex, "Failed to open emoji URL");
+                logger.Error(ex, "Failed to submit inventory report");
+                System.Windows.MessageBox.Show($"Failed to submit report: {ex.Message}", 
+                    "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
             }
-            e.Handled = true;
+            finally
+            {
+                OverlaySubmitButton.IsEnabled = true;
+            }
         }
+
+        private async void OverlayOnInputFieldChanged(object sender, TextChangedEventArgs e)
+        {
+            string userId = OverlayUserIdTextBox.Text.Trim();
+            string inventoryId = OverlayInventoryIdTextBox.Text.Trim();
+
+            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(inventoryId))
+            {
+                return;
+            }
+
+            try
+            {
+                VRChatInventoryItem? inventoryItem = await _serviceRegistry.GetVRChatAPIClient().GetUserInventoryItem(userId, inventoryId);
+                if (inventoryItem != null)
+                {
+                    if (inventoryItem.ItemTypeLabel.Equals("Emoji", StringComparison.OrdinalIgnoreCase))
+                    {
+                        OverlayCategoryTextBox.Text = "Emoji";
+                    }
+                    else if (inventoryItem.ItemTypeLabel.Equals("Sticker", StringComparison.OrdinalIgnoreCase))
+                    {
+                        OverlayCategoryTextBox.Text = "Sticker";
+                    }
+                    else
+                    {
+                        OverlayCategoryTextBox.Text = "Unknown";
+                    }
+
+                    List<string> imageUrls = new List<string>();
+
+                    if( !string.IsNullOrEmpty(inventoryItem.ImageUrl))
+                    {
+                        imageUrls.Add(inventoryItem.ImageUrl);
+                    }
+
+                    if( !string.IsNullOrEmpty(inventoryItem.Metadata?.ImageUrl))
+                    {
+                        imageUrls.Add(inventoryItem.Metadata.ImageUrl);
+                    }
+
+                    if( imageUrls.Count > 0)
+                    {
+                        // Load and display the image
+                        LoadImage(imageUrls.First());
+
+                        await LoadImageEvaluation(inventoryId, userId, imageUrls );
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, $"Error retrieving inventory item for User ID: {userId}, Inventory ID: {inventoryId}");
+            }
+        }
+
+        private async Task LoadImageEvaluation(string inventoryId, string userId, List<string> imageUrlList)
+        {
+            try
+            {
+                // Check if evaluation already exists in the database
+                TailgrabDBContext dbContext = _serviceRegistry.GetDBContext();
+                ImageEvaluation? imageEvaluation = dbContext.ImageEvaluations.Find(inventoryId);
+
+                if (imageEvaluation != null)
+                {
+                    // Load existing evaluation
+                    OverlayReportDescriptionTextBox.Text = System.Text.Encoding.UTF8.GetString(imageEvaluation.Evaluation);
+                    logger.Debug($"Loaded existing image evaluation for inventory ID: {inventoryId}");
+                }
+                else
+                {
+                    // Call Ollama to classify the image
+                    OverlayReportDescriptionTextBox.Text = "Loading AI evaluation...";
+
+                    string? classification = await _serviceRegistry.GetOllamaAPIClient().ClassifyImage(inventoryId, userId, imageUrlList);
+
+                    if (!string.IsNullOrEmpty(classification))
+                    {
+                        OverlayReportDescriptionTextBox.Text = classification;
+                        logger.Debug($"Generated new image evaluation for inventory ID: {inventoryId}");
+                    }
+                    else
+                    {
+                        OverlayReportDescriptionTextBox.Text = "Failed to generate AI evaluation.";
+                        logger.Warn($"Failed to generate AI evaluation for inventory ID: {inventoryId}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, $"Error loading image evaluation for inventory ID: {inventoryId}");
+                OverlayReportDescriptionTextBox.Text = $"Error: {ex.Message}";
+            }
+        }
+
+        private void LoadImage(string imageUrl)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(imageUrl))
+                {
+                    OverlayInventoryImagePreview.Source = null;
+                    return;
+                }
+
+                var bitmap = new System.Windows.Media.Imaging.BitmapImage();
+                bitmap.BeginInit();
+                bitmap.UriSource = new Uri(imageUrl);
+                bitmap.DecodePixelWidth = 200;
+                bitmap.DecodePixelHeight = 200;
+                bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                bitmap.EndInit();
+                //bitmap.Freeze();
+
+                OverlayInventoryImagePreview.Source = bitmap;
+                logger.Debug($"Loaded image from URL: {imageUrl}");
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, $"Failed to load image from URL: {imageUrl}");
+                OverlayInventoryImagePreview.Source = null;
+            }
+        }
+
         #endregion
 
         //
@@ -1201,6 +1612,25 @@ namespace Tailgrab.PlayerManagement
             e.Handled = true;
         }
 
+        private void EmojiHyperlink_RequestNavigate(object? sender, System.Windows.Navigation.RequestNavigateEventArgs e)
+        {
+            try
+            {
+                logger.Info($"Opening group URL: {e.Uri}");
+                var uri = new Uri($"{e.Uri}");
+                var psi = new System.Diagnostics.ProcessStartInfo(uri.AbsoluteUri)
+                {
+                    UseShellExecute = true
+                };
+                System.Diagnostics.Process.Start(psi);
+            }
+            catch (Exception ex)
+            {
+                logger?.Error(ex, "Failed to open group URL");
+            }
+            e.Handled = true;
+        }
+
         public event PropertyChangedEventHandler? PropertyChanged;
         protected void OnPropertyChanged(string propertyName)
         {
@@ -1400,5 +1830,17 @@ namespace Tailgrab.PlayerManagement
         }
     }
     #endregion
+    public class ReportReasonItem
+    {
+        public string DisplayName { get; set; }
+        public string Value { get; set; }
+
+        public ReportReasonItem(string displayName, string value)
+        {
+            DisplayName = displayName;
+            Value = value;
+        }
+    }
+
 
 }

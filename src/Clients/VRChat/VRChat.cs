@@ -261,7 +261,7 @@ namespace Tailgrab.Clients.VRChat
             return item;
         }
 
-        public async Task<ImageReference?> GetImageReference(string inventoryId, string userId, string imageUri)
+        public async Task<ImageReference?> GetImageReference(string inventoryId, string userId, List<string> imageUrlList )
         {
             try
             {
@@ -287,13 +287,23 @@ namespace Tailgrab.Clients.VRChat
                 httpClient.DefaultRequestHeaders.Add("User-Agent", UserAgent);
 
                 // Download the image
-                byte[] imageBytes = await httpClient.GetByteArrayAsync(imageUri);
-                string md5Hash = Checksum.CreateMD5(imageBytes);
-                string base64Image = Convert.ToBase64String(imageBytes);
+                string md5Hash = string.Empty;
+                List<string> imageList = new List<string>();
+                int imageCount = 0;
+                foreach ( string imageUrl in imageUrlList)
+                {
+                    byte[] contentBytes = await httpClient.GetByteArrayAsync(imageUrl);
+                    if( imageCount == 0)
+                    {
+                        md5Hash = Checksum.CreateMD5(contentBytes);
+                    }
+                    string contentB64 = Convert.ToBase64String(contentBytes);
+                    imageList.Add(contentB64);
+                }
 
                 ImageReference iref = new ImageReference
                 {
-                    Base64Data = base64Image,
+                    Base64Data = imageList,
                     Md5Hash = md5Hash,
                     InventoryId = inventoryId,
                     UserId = userId
@@ -304,7 +314,7 @@ namespace Tailgrab.Clients.VRChat
             }
             catch (Exception ex)
             {
-                logger.Error(ex, $"Error Downloading image from URI: {imageUri}");
+                logger.Error(ex, $"Error Downloading image from URI: {imageUrlList}");
                 return null;
             }
         }

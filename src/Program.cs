@@ -208,7 +208,7 @@ public class FileTailer
 
     /// <summary>
     /// Watch the VRChat log directory by default and process logs.
-    /// Show the TailgrabPannel UI on the STA thread before continuing to watch files.
+    /// Show the TailgrabPanel UI on the STA thread before continuing to watch files.
     /// </summary>
     [STAThread]
     public static void Main(string[] args)
@@ -592,7 +592,7 @@ public class FileTailer
 
     private static void BuildAppWindow(ServiceRegistry serviceRegistryInstance)
     {
-        // Start WPF application and show the TailgrabPannel on this STA thread
+        // Start WPF application and show the TailgrabPanel on this STA thread
         var app = new System.Windows.Application();
 
         // Dark theme resources
@@ -726,7 +726,7 @@ public class FileTailer
         windowStyle.Setters.Add(new Setter(System.Windows.Window.ForegroundProperty, lightText));
         app.Resources[typeof(System.Windows.Window)] = windowStyle;
 
-        var panel = new TailgrabPannel(serviceRegistryInstance);
+        var panel = new TailgrabPanel(serviceRegistryInstance);
         app.Run(panel);
     }
 }

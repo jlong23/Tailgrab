@@ -1,8 +1,8 @@
-<Window x:Class="Tailgrab.PlayerManagement.TailgrabPannel"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:local="clr-namespace:Tailgrab.PlayerManagement"
-        Title="Tailgrab Player Panel"
+<Window x:Class="Tailgrab.PlayerManagement.TailgrabPanel"
+xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+xmlns:local="clr-namespace:Tailgrab.PlayerManagement"
+Title="Tailgrab Player Panel"
         Width="1080" Height="750"
         FontFamily="Segoe UI"
         Language="en-US"
@@ -164,6 +164,108 @@
                         </TextBox>
                         <TextBox Name="UserAlertsBox" Width="520" Height="auto" Margin="0,0,8,0" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" Text="{Binding SelectedActive.History, Mode=OneWay, FallbackValue='', TargetNullValue=''}" />
                     </StackPanel>
+
+                    <!-- Overlay Panel for Report Profile -->
+                    <Border Name="OverlayProfileReport" 
+                            Grid.Row="0" 
+                            Grid.RowSpan="3"
+                            Grid.ColumnSpan="2"
+                            Background="#CC000000" 
+                            Visibility="Collapsed"
+                            Panel.ZIndex="1000">
+                        <Border Background="#FF2D2D30" 
+                                MaxWidth="650" 
+                                MaxHeight="500" 
+                                CornerRadius="8"
+                                Padding="16"
+                                VerticalAlignment="Center"
+                                HorizontalAlignment="Center">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <!-- Title -->
+                                <TextBlock Grid.Row="0" 
+                                           Text="Report User Profile" 
+                                           FontSize="20" 
+                                           FontWeight="Bold" 
+                                           Foreground="#FFE6E6E6"
+                                           Margin="0,0,0,16"/>
+
+                                <!-- User ID -->
+                                <StackPanel Grid.Row="1" Margin="0,0,0,12">
+                                    <Label Content="User ID: *" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBox Name="OverlayProfileReportUserIdTextBox" Grid.Column="0" IsReadOnly="True"/>
+                                        <Label Name="OverlayProfileReportUserIdError" 
+                                               Grid.Column="1" 
+                                               Content="Required" 
+                                               Foreground="Red" 
+                                               FontWeight="Bold"
+                                               Margin="8,0,0,0"
+                                               VerticalAlignment="Center"
+                                               Visibility="Collapsed"/>
+                                    </Grid>
+                                </StackPanel>
+
+                                <!-- Category -->
+                                <StackPanel Grid.Row="2" Margin="0,0,0,12">
+                                    <Label Content="Category:" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                                    <TextBox Name="OverlayProfileReportCategoryTextBox" IsReadOnly="True" Text="Profile"/>
+                                </StackPanel>
+
+                                <!-- Report Reason -->
+                                <StackPanel Grid.Row="3" Margin="0,0,0,12">
+                                    <Label Content="Report Reason:" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                                    <ComboBox Name="OverlayProfileReportReasonComboBox" 
+                                              DisplayMemberPath="DisplayName"
+                                              SelectedValuePath="Value"
+                                              SelectedIndex="0">
+                                        <ComboBox.ItemContainerStyle>
+                                            <Style TargetType="ComboBoxItem">
+                                                <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.WindowBrushKey}}" />
+                                                <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" />
+                                                <Setter Property="Padding" Value="4" />
+                                                <Style.Triggers>
+                                                    <Trigger Property="IsSelected" Value="True">
+                                                        <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}" />
+                                                        <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.HighlightTextBrushKey}}" />
+                                                    </Trigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </ComboBox.ItemContainerStyle>
+                                    </ComboBox>
+                                </StackPanel>
+
+                                <!-- Report Description -->
+                                <StackPanel Grid.Row="4" Margin="0,0,0,12">
+                                    <Label Content="Report Description (AI Evaluation):" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                                    <TextBox Name="OverlayProfileReportDescriptionTextBox" 
+                                             TextWrapping="Wrap" 
+                                             AcceptsReturn="True" 
+                                             VerticalScrollBarVisibility="Auto"
+                                             IsReadOnly="True"
+                                             MinHeight="200"/>
+                                </StackPanel>
+
+                                <!-- Action Buttons -->
+                                <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right">
+                                    <Button Name="OverlayProfileReportCancelButton" Content="Cancel" Width="100" Margin="0,0,12,0" Click="OverlayProfileReportCancel_Click"/>
+                                    <Button Name="OverlayProfileReportSubmitButton" Content="Submit" Width="100" Click="OverlayProfileReportSubmit_Click"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </Border>
 
                 </Grid>
             </TabItem>
@@ -330,11 +432,11 @@
             </TabItem>
 
             <TabItem Header="Emoji and Stickers">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="*" />
-                        </Grid.RowDefinitions>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
 
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                         <TextBox Name="EmojiFilterBox" Width="300" Margin="0,0,8,0" />
@@ -343,73 +445,220 @@
                         <Button Content="Report Inventory" Click="ReportInventory_Click" HorizontalAlignment="Right" Margin="8,0,0,0"/>
                     </StackPanel>
 
-                        <!-- Show each player and their prints -->
-                        <ListView Name="EmojiListView" Grid.Row="1" ItemsSource="{Binding EmojiView}">
-                            <ListView.ItemTemplate>
-                                <DataTemplate>
-                                    <Border BorderBrush="Gray" BorderThickness="0,0,0,1" Padding="6">
-                                        <StackPanel Orientation="Vertical">
-                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                                                <TextBlock FontWeight="Bold" Text="{Binding DisplayName}" />
-                                                <TextBlock Margin="8,0,0,0" FontStyle="Italic" Text="{Binding UserId}" />
-                                            </StackPanel>
-                                            <ScrollViewer MaxHeight="300" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                                                <ItemsControl ItemsSource="{Binding Emojis}">
-                                                    <ItemsControl.ItemTemplate>
-                                                        <DataTemplate>
-                                                            <Grid Margin="0,2,0,2">
-                                                                <Grid.RowDefinitions>
-                                                                    <RowDefinition Height="Auto"/>
-                                                                    <RowDefinition Height="Auto"/>
-                                                                </Grid.RowDefinitions>
-                                                                <Grid.ColumnDefinitions>
-                                                                    <ColumnDefinition Width="300" />
-                                                                    <ColumnDefinition Width="200" />
-                                                                    <ColumnDefinition Width="200" />
-                                                                    <ColumnDefinition Width="100" />
-                                                                    <ColumnDefinition Width="100" />
-                                                                </Grid.ColumnDefinitions>
-                                                                
-                                                                <!-- First Row -->
-                                                                <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding InventoryId}" VerticalAlignment="Center"/>
-                                                                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding InventoryType}" VerticalAlignment="Center"/>
-                                                                <TextBlock Grid.Row="0" Grid.Column="2" Text="{Binding SpawnedAt, StringFormat={}{0:u}}" VerticalAlignment="Center"/>
-                                                                <TextBlock Grid.Row="0" Grid.Column="3" Text="{Binding AIEvalutation}" VerticalAlignment="Center"/>
-                                                                
-                                                                <!-- Second Row - Button -->
-                                                                <Button Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="4" 
-                                                                        Content="Report Inventory Item" 
-                                                                        Click="ReportInventoryItem_Click"
-                                                                        Tag="{Binding}"
-                                                                        Margin="0,4,0,0"
-                                                                        Padding="4,2"
-                                                                        HorizontalAlignment="Left"/>
-                                                                
-                                                                <!-- Image spanning both rows -->
-                                                                <Border Grid.Row="0" Grid.Column="4" Grid.RowSpan="2" 
-                                                                        BorderBrush="Gray" 
-                                                                        BorderThickness="1" 
-                                                                        Padding="2">
-                                                                    <TextBlock>
-                                                                        <Hyperlink NavigateUri="{Binding ImageUrl}" RequestNavigate="EmojiHyperlink_RequestNavigate">
-                                                                            <InlineUIContainer>
-                                                                                <Image Source="{Binding ImageUrl}" Width="100" Height="100" Stretch="Uniform" />
-                                                                            </InlineUIContainer>
-                                                                        </Hyperlink>
-                                                                    </TextBlock>
-                                                                </Border>
-                                                            </Grid>
-                                                        </DataTemplate>
-                                                    </ItemsControl.ItemTemplate>
-                                                </ItemsControl>
-                                            </ScrollViewer>
+                    <!-- Show each player and their emojis -->
+                    <ListView Name="EmojiListView" Grid.Row="1" ItemsSource="{Binding EmojiView}">
+                        <ListView.ItemTemplate>
+                            <DataTemplate>
+                                <Border BorderBrush="Gray" BorderThickness="0,0,0,1" Padding="6">
+                                    <StackPanel Orientation="Vertical">
+                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                            <TextBlock FontWeight="Bold" Text="{Binding DisplayName}" />
+                                            <TextBlock Margin="8,0,0,0" FontStyle="Italic" Text="{Binding UserId}" />
                                         </StackPanel>
-                                    </Border>
-                                </DataTemplate>
-                            </ListView.ItemTemplate>
-                        </ListView>
-                    </Grid>
-                </TabItem>
+                                        <ScrollViewer MaxHeight="300" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                            <ItemsControl ItemsSource="{Binding Emojis}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Grid Margin="0,2,0,2">
+                                                            <Grid.RowDefinitions>
+                                                                <RowDefinition Height="Auto"/>
+                                                                <RowDefinition Height="Auto"/>
+                                                            </Grid.RowDefinitions>
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="300" />
+                                                                <ColumnDefinition Width="200" />
+                                                                <ColumnDefinition Width="200" />
+                                                                <ColumnDefinition Width="100" />
+                                                                <ColumnDefinition Width="100" />
+                                                            </Grid.ColumnDefinitions>
+                                                            
+                                                            <!-- First Row -->
+                                                            <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding InventoryId}" VerticalAlignment="Center"/>
+                                                            <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding InventoryType}" VerticalAlignment="Center"/>
+                                                            <TextBlock Grid.Row="0" Grid.Column="2" Text="{Binding SpawnedAt, StringFormat={}{0:u}}" VerticalAlignment="Center"/>
+                                                            <TextBlock Grid.Row="0" Grid.Column="3" Text="{Binding AIEvalutation}" VerticalAlignment="Center"/>
+                                                            
+                                                            <!-- Second Row - Button -->
+                                                            <Button Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="4" 
+                                                                    Content="Report Inventory Item" 
+                                                                    Click="ReportInventoryItem_Click"
+                                                                    Tag="{Binding}"
+                                                                    Margin="0,4,0,0"
+                                                                    Padding="4,2"
+                                                                    HorizontalAlignment="Left"/>
+                                                
+                                                            <!-- Image spanning both rows -->
+                                                            <Border Grid.Row="0" Grid.Column="4" Grid.RowSpan="2" 
+                                                                    BorderBrush="Gray" 
+                                                                    BorderThickness="1" 
+                                                                    Padding="2">
+                                                                <TextBlock>
+                                                                    <Hyperlink NavigateUri="{Binding ImageUrl}" RequestNavigate="EmojiHyperlink_RequestNavigate">
+                                                                        <InlineUIContainer>
+                                                                            <Image Source="{Binding ImageUrl}" Width="100" Height="100" Stretch="Uniform" />
+                                                                        </InlineUIContainer>
+                                                                    </Hyperlink>
+                                                                </TextBlock>
+                                                            </Border>
+                                                        </Grid>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </ScrollViewer>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+
+                    <!-- Overlay Panel for Report Inventory -->
+                    <Border Name="ReportInventoryOverlay" 
+                            Grid.Row="0" 
+                            Grid.RowSpan="2" 
+                            Background="#CC000000" 
+                            Visibility="Collapsed"
+                            Panel.ZIndex="1000">
+                        <Border Background="#FF2D2D30" 
+                                MaxWidth="950" 
+                                MaxHeight="550" 
+                                CornerRadius="8"
+                                Padding="16"
+                                VerticalAlignment="Center"
+                                HorizontalAlignment="Center">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition Width="250"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Left side - Form fields -->
+                                <Grid Grid.Column="0" Margin="0,0,16,0">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+
+                                    <!-- Title -->
+                                    <TextBlock Grid.Row="0" 
+                                               Text="Report Inventory" 
+                                               FontSize="20" 
+                                               FontWeight="Bold" 
+                                               Foreground="#FFE6E6E6"
+                                               Margin="0,0,0,16"/>
+
+                                    <!-- User ID -->
+                                        <StackPanel Grid.Row="1" Margin="0,0,0,12">
+                                            <Label Content="User ID: *" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBox Name="OverlayUserIdTextBox" Grid.Column="0" TextChanged="OverlayOnInputFieldChanged"/>
+                                                <Label Name="OverlayUserIdError" 
+                                                       Grid.Column="1" 
+                                                       Content="Required" 
+                                                       Foreground="Yellow" 
+                                                       FontWeight="Bold"
+                                                       Margin="8,0,0,0"
+                                                       VerticalAlignment="Center"
+                                                       Visibility="Collapsed"/>
+                                            </Grid>
+                                    </StackPanel>
+
+                                    <!-- Inventory ID -->
+                                    <StackPanel Grid.Row="2" Margin="0,0,0,12">
+                                            <Label Content="Inventory ID: *" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBox Name="OverlayInventoryIdTextBox" Grid.Column="0" TextChanged="OverlayOnInputFieldChanged"/>
+                                                <Label Name="OverlayInventoryIdError" 
+                                                       Grid.Column="1" 
+                                                       Content="Required" 
+                                                       Foreground="Yellow" 
+                                                       FontWeight="Bold"
+                                                       Margin="8,0,0,0"
+                                                       VerticalAlignment="Center"
+                                                       Visibility="Collapsed"/>
+                                            </Grid>
+                                    </StackPanel>
+
+                                    <!-- Category -->
+                                    <StackPanel Grid.Row="3" Margin="0,0,0,12">
+                                        <Label Content="Category:" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                                        <TextBox Name="OverlayCategoryTextBox" IsReadOnly="True"/>
+                                    </StackPanel>
+
+                                    <!-- Report Type -->
+                                    <StackPanel Grid.Row="4" Margin="0,0,0,12">
+                                        <Label Content="Report Reason:" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                                        <ComboBox Name="OverlayReportReasonComboBox" 
+                                                  DisplayMemberPath="DisplayName"
+                                                  SelectedValuePath="Value"
+                                                  SelectedIndex="0">
+                                            <ComboBox.ItemContainerStyle>
+                                                <Style TargetType="ComboBoxItem">
+                                                    <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.WindowBrushKey}}" />
+                                                    <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" />
+                                                    <Setter Property="Padding" Value="4" />
+                                                    <Style.Triggers>
+                                                        <Trigger Property="IsSelected" Value="True">
+                                                            <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}" />
+                                                            <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.HighlightTextBrushKey}}" />
+                                                        </Trigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </ComboBox.ItemContainerStyle>
+                                        </ComboBox>
+                                    </StackPanel>
+
+                                    <!-- Report Description -->
+                                    <StackPanel Grid.Row="5" Margin="0,0,0,12">
+                                        <Label Content="Report Description (AI Evaluation):" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                                        <TextBox Name="OverlayReportDescriptionTextBox" 
+                                                 TextWrapping="Wrap" 
+                                                 AcceptsReturn="True" 
+                                                 VerticalScrollBarVisibility="Auto"
+                                                 IsReadOnly="False"
+                                                 MinHeight="150"/>
+                                    </StackPanel>
+
+                                    <!-- Action Buttons -->
+                                    <StackPanel Grid.Row="6" Orientation="Horizontal" HorizontalAlignment="Right">
+                                        <Button Name="OverlayCancelButton" Content="Cancel" Width="100" Margin="0,0,12,0" Click="OverlayCancel_Click"/>
+                                        <Button Name="OverlaySubmitButton" Content="Submit" Width="100" Click="OverlaySubmit_Click"/>
+                                    </StackPanel>
+                                </Grid>
+
+                                <!-- Right side - Image display -->
+                                <Border Grid.Column="1" 
+                                        BorderBrush="Gray" 
+                                        BorderThickness="2" 
+                                        VerticalAlignment="Top"
+                                        Padding="8" 
+                                        Height="250" 
+                                        Width="230">
+                                    <StackPanel>
+                                        <Label Content="Image Preview:" FontWeight="Bold" HorizontalAlignment="Center" Foreground="#FFE6E6E6"/>
+                                        <Image Name="OverlayInventoryImagePreview" 
+                                               Width="200"
+                                               Height="200"
+                                               Stretch="Uniform"/>
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+                        </Border>
+                    </Border>
+                </Grid>
+            </TabItem>
 
             <TabItem Header="Config">
                 <TabControl>
@@ -717,9 +966,17 @@
                                         <RowDefinition Height="Auto" />
                                     </Grid.RowDefinitions>
                                     <Label Grid.Column="1" Content="Avatar Alert:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
-                                    <ComboBox Grid.Row="0" Grid.Column="1" Name="AvatarAlertCombo" Margin="108,2,107,2">
-                                        <ComboBox.ItemContainerStyle>
-                                            <Style TargetType="ComboBoxItem">
+                                        <ComboBox Grid.Row="0" Grid.Column="1" Name="AvatarAlertCombo" Margin="108,2,107,2">
+                                            <ComboBox.Style>
+                                                <Style TargetType="ComboBox">
+                                                    <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.ControlBrushKey}}" />
+                                                    <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" />
+                                                    <Setter Property="BorderBrush" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" />
+                                                    <Setter Property="Padding" Value="4" />
+                                                </Style>
+                                            </ComboBox.Style>
+                                            <ComboBox.ItemContainerStyle>
+                                                <Style TargetType="ComboBoxItem">
                                                 <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.WindowBrushKey}}" />
                                                 <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" />
                                                 <Setter Property="Padding" Value="4" />

@@ -523,6 +523,7 @@ namespace Tailgrab.PlayerManagement
             {
                 string itemName = "Unknown Item";
                 string itemUrl = "";
+                string itemContent = "";
                 string inventoryType = "Unknown Type";
                 string aiEvaluation = "OK";
 
@@ -533,6 +534,7 @@ namespace Tailgrab.PlayerManagement
                     {
                         itemName = inventoryItem.Name ?? inventoryItem.ItemType ?? "Unknown Item";
                         itemUrl = inventoryItem.ImageUrl ?? "";
+                        itemContent = inventoryItem.Metadata?.ImageUrl ?? itemUrl;
                         inventoryType = inventoryItem.ItemTypeLabel ?? "Unknown Type";
 
                         logger.Info($"Fetched inventory item: {itemName} / ({inventoryItem.ItemTypeLabel}) for user {userId}");
@@ -548,7 +550,7 @@ namespace Tailgrab.PlayerManagement
                     var ollamaClient = serviceRegistry.GetOllamaAPIClient();
                     if (ollamaClient != null)
                     {
-                        string? evaluated = await ollamaClient.ClassifyImage(inventoryId, userId, itemUrl);
+                        string? evaluated = await ollamaClient.ClassifyImage(inventoryId, userId, new List<string>{ itemUrl, itemContent });
                         // Use 'evaluated' as needed, or remove if not used
                         if (evaluated != null)
                         {

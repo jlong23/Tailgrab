@@ -82,9 +82,9 @@ namespace Tailgrab.Clients.Ollama
             }
         }
 
-        public async Task<string?> ClassifyImage(string inventoryId, string userId, string imageUri)
+        public async Task<string?> ClassifyImage(string inventoryId, string userId, List<string> imageUrlList)
         {
-            logger.Debug($"Classifying image from URI: {imageUri}");
+            logger.Debug($"Classifying image from URI: {imageUrlList}");
 
             try
             {
@@ -97,7 +97,7 @@ namespace Tailgrab.Clients.Ollama
 
                 string ollamaEndpoint = ConfigStore.LoadSecret(Tailgrab.Common.Common.Registry_Ollama_API_Endpoint) ?? Tailgrab.Common.Common.Default_Ollama_API_Endpoint;
                 
-                ImageReference? imageReference = await _serviceRegistry.GetVRChatAPIClient().GetImageReference(inventoryId, userId, imageUri);
+                ImageReference? imageReference = await _serviceRegistry.GetVRChatAPIClient().GetImageReference(inventoryId, userId, imageUrlList);
                 if( imageReference != null ) 
                 {
                     ImageEvaluation? imageEvaluation = CheckImageReferenceReview(imageReference);
@@ -120,7 +120,7 @@ namespace Tailgrab.Clients.Ollama
                                 {
                                     Model = ollamaApi.SelectedModel,
                                     Prompt = ollamaPrompt ?? Tailgrab.Common.Common.Default_Ollama_API_Image_Prompt,
-                                    Images = new[] { imageReference.Base64Data },
+                                    Images = imageReference.Base64Data.ToArray(),
                                     Stream = false
                                 };
 
@@ -142,7 +142,7 @@ namespace Tailgrab.Clients.Ollama
             }
             catch (Exception ex)
             {
-                logger.Error(ex, $"Error classifying image from URI: {imageUri}");
+                logger.Error(ex, $"Error classifying image from URI: {imageUrlList}");
             }
 
             return null;
@@ -434,7 +434,7 @@ namespace Tailgrab.Clients.Ollama
 
     public class ImageReference
     {
-        public string Base64Data { get; set; } = string.Empty;
+        public List<string> Base64Data { get; set; } = new List<string>();
         public string Md5Hash { get; set; } = string.Empty;
         public string InventoryId { get; set; } = string.Empty;
         public string UserId { get; set; } = string.Empty;
