@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.VisualBasic.ApplicationServices;
 using NLog;
 using System.Text;
 using System.Windows;
@@ -57,6 +58,24 @@ namespace Tailgrab.PlayerManagement
         }
     }
 
+    public class PlayerPrint
+    {
+        public string PrintId { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public string PrintUrl { get; set; }
+        public string AIEvaluation { get; set; }
+        public string AuthorName { get; set; }
+
+        public PlayerPrint(VRChat.API.Model.Print p, string aiEvaluation)
+        {
+            PrintId = p.Id;
+            CreatedAt = p.CreatedAt;
+            PrintUrl = p.Files.Image;
+            AuthorName = p.AuthorName;
+            AIEvaluation = aiEvaluation;
+        }
+    }
+
     public class Player
     {
         public string UserId { get; set; }
@@ -71,14 +90,14 @@ namespace Tailgrab.PlayerManagement
         public SessionInfo Session { get; set; }
         public string? LastStickerUrl { get; set; } = string.Empty;
 
-        public Dictionary<string, Print> PrintData = new Dictionary<string, Print>();
+        public Dictionary<string, PlayerPrint> PrintData = new Dictionary<string, PlayerPrint>();
         public string? UserBio { get; set; }
         public string? AIEval { get; set; }
         public bool IsWatched
         {
             get
             {
-                if (IsAvatarWatch || IsGroupWatch || IsProfileWatch)
+                if (IsAvatarWatch || IsGroupWatch || IsProfileWatch || IsEmojiWatch || IsPrintWatch)
                 {
                     return true;
                 }
@@ -103,7 +122,15 @@ namespace Tailgrab.PlayerManagement
                 }
                 if (IsProfileWatch)
                 {
-                    code += "P";
+                    code += "B";
+                }
+                if (IsEmojiWatch)
+                {
+                    code += "E";
+                }
+                if (IsPrintWatch)
+                {
+                    code += "B";
                 }
 
                 return code;
@@ -113,6 +140,8 @@ namespace Tailgrab.PlayerManagement
         public bool IsAvatarWatch { get; set; } = false;
         public bool IsGroupWatch { get; set; } = false;
         public bool IsProfileWatch { get; set; } = false;
+        public bool IsEmojiWatch { get; set; } = false;
+        public bool IsPrintWatch { get; set; } = false;
 
 
         public Player(string userId, string displayName, SessionInfo session)
@@ -159,7 +188,7 @@ namespace Tailgrab.PlayerManagement
                 sb.AppendLine("Events:");
                 foreach (var ev in PrintData.Values)
                 {
-                    sb.AppendLine($"  - {ev.Timestamp:u} {ev.Id} {ev.AuthorName} {ev.OwnerId}");
+                    sb.AppendLine($"  - {ev.CreatedAt:u} {ev.PrintId} {ev.AuthorName} {ev.AIEvaluation}");
                 }
             }
 
@@ -550,12 +579,17 @@ namespace Tailgrab.PlayerManagement
                     var ollamaClient = serviceRegistry.GetOllamaAPIClient();
                     if (ollamaClient != null)
                     {
-                        string? evaluated = await ollamaClient.ClassifyImage(inventoryId, userId, new List<string>{ itemUrl, itemContent });
-                        // Use 'evaluated' as needed, or remove if not used
+                        string? evaluated = await ollamaClient.ClassifyImageList(userId, inventoryId, new List<string>{ itemUrl, itemContent });
                         if (evaluated != null)
                         {
                             aiEvaluation = EvaluatImage(evaluated) ?? "OK";
                             logger.Info($"Ollama classification for inventory item {inventoryId}: {aiEvaluation}: {evaluated}");
+                            if (!aiEvaluation.Equals("OK"))
+                            {
+                                AddPlayerEventByUserId(userId, PlayerEvent.EventType.Emoji, $"AI Evaluation: Spawned Item {itemName} ({inventoryId}) was classified {evaluated}");
+                                player.PenActivity = $"EM: {aiEvaluation}";
+                                player.IsEmojiWatch = true;
+                            }
                         }
                     }
 
@@ -620,7 +654,7 @@ namespace Tailgrab.PlayerManagement
             serviceRegistry.GetAvatarManager().CompactDatabase();
         }
 
-        internal void AddPrintData(string printId)
+        internal async void AddPrintData(string printId)
         {
             if (serviceRegistry.GetVRChatAPIClient() != null)
             {
@@ -629,7 +663,28 @@ namespace Tailgrab.PlayerManagement
                 {
                     if (playersByUserId.TryGetValue(printInfo.OwnerId, out Player? player))
                     {
-                        player.PrintData[printId] = printInfo;
+                        string? evaluated = string.Empty;
+                        var ollamaClient = serviceRegistry.GetOllamaAPIClient();
+                        if (ollamaClient != null)
+                        {
+                            string aiEvaluation = "OK";
+                            List<string> imageUrls = new List<string>();
+                            imageUrls.Add(printInfo.Files.Image);
+                            evaluated = await ollamaClient.ClassifyImageList(printInfo.OwnerId, printInfo.Id, imageUrls);
+                            if (evaluated != null)
+                            {
+                                aiEvaluation = EvaluatImage(evaluated) ?? "OK";
+                                logger.Info($"Ollama classification for inventory item {printInfo.Id}: {aiEvaluation}: {evaluated}");
+                                if( !aiEvaluation.Equals("OK"))
+                                {
+                                    AddPlayerEventByUserId(printInfo.OwnerId, PlayerEvent.EventType.Print, $"AI Evaluation: Print {printId} was classified {evaluated}");
+                                    player.PenActivity = "PR: " + aiEvaluation;
+                                    player.IsPrintWatch = true;
+                                }                               
+                            }
+                        }
+
+                        player.PrintData[printId] = new PlayerPrint( printInfo, evaluated ?? "Not Evaluated" );
                         logger.Info($"Added Print {printId} for Player {player.DisplayName} (ID: {printInfo.OwnerId})");
                     }
                     AddPlayerEventByUserId(printInfo.OwnerId, PlayerEvent.EventType.Print, $"Dropped Print {printId}");

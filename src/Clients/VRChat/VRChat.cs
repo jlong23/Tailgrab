@@ -16,7 +16,7 @@ namespace Tailgrab.Clients.VRChat
 {
     public class VRChatClient
     {
-
+        private const string URI_VRC_BASE_API = "https://api.vrchat.cloud";
         public static string UserAgent = "Tailgrab/1.0.7";
         public static Logger logger = LogManager.GetCurrentClassLogger();
 
@@ -225,7 +225,7 @@ namespace Tailgrab.Clients.VRChat
                     return null;
                 }
 
-                string url = $"https://api.vrchat.cloud/api/1/user/{userId}/inventory/{itemId}";
+                string url = $"{URI_VRC_BASE_API}/api/1/user/{userId}/inventory/{itemId}";
                 
                 // Create HTTP client with cookies
                 var handler = new HttpClientHandler
@@ -236,7 +236,7 @@ namespace Tailgrab.Clients.VRChat
                 var cookies = _vrchat.GetCookies();
                 foreach (var cookie in cookies)
                 {
-                    handler.CookieContainer.Add(new Uri("https://api.vrchat.cloud"), cookie);
+                    handler.CookieContainer.Add(new Uri(URI_VRC_BASE_API), cookie);
                 }
 
                 using var httpClient = new HttpClient(handler);
@@ -280,7 +280,7 @@ namespace Tailgrab.Clients.VRChat
                 var cookies = _vrchat.GetCookies();
                 foreach (var cookie in cookies)
                 {
-                    handler.CookieContainer.Add(new Uri("https://api.vrchat.cloud"), cookie);
+                    handler.CookieContainer.Add(new Uri(URI_VRC_BASE_API), cookie);
                 }
 
                 using HttpClient httpClient = new HttpClient(handler);
@@ -401,14 +401,14 @@ namespace Tailgrab.Clients.VRChat
                 var cookies = _vrchat.GetCookies();
                 foreach (var cookie in cookies)
                 {
-                    handler.CookieContainer.Add(new Uri("https://api.vrchat.cloud"), cookie);
+                    handler.CookieContainer.Add(new Uri(URI_VRC_BASE_API), cookie);
                 }
 
                 using HttpClient httpClient = new HttpClient(handler);
                 httpClient.DefaultRequestHeaders.Add("User-Agent", UserAgent);
 
                 // Download the image
-                HttpResponseMessage response = await httpClient.PostAsJsonAsync("https://api.vrchat.cloud/api/1/moderationReports", rpt);
+                HttpResponseMessage response = await httpClient.PostAsJsonAsync($"{URI_VRC_BASE_API}/api/1/moderationReports", rpt);
                 string responseContent = await response.Content.ReadAsStringAsync();
                 logger.Info($"Submitted moderation report for content {rpt.ContentId} with reason: {rpt.Reason}\n{responseContent}");
                 response.EnsureSuccessStatusCode();
@@ -567,7 +567,7 @@ namespace Tailgrab.Clients.VRChat
             public string HolderId { get; set; } = string.Empty;
         }
 
-            private class SerializableCookie
+        private class SerializableCookie
         {
             public string Name { get; set; } = string.Empty;
             public string Value { get; set; } = string.Empty;
@@ -606,6 +606,38 @@ namespace Tailgrab.Clients.VRChat
                     HttpOnly = c.HttpOnly
                 };
             }
+        }
+
+        public class PrintInfo
+        {
+            [JsonProperty("authorId")]
+            public string AuthorId { get; set; } = string.Empty;
+            [JsonProperty("authorName")]
+            public string AuthorName { get; set; } = string.Empty;
+            [JsonProperty("id")]
+            public string Id { get; set; } = string.Empty;
+            [JsonProperty("createdAt")]
+            public string CreatedAt { get; set; } = string.Empty;
+            [JsonProperty("note")]
+            public string Note { get; set; } = string.Empty;
+            [JsonProperty("ownerId")]
+            public string OwnerId { get; set; } = string.Empty;
+            [JsonProperty("timestamp")]
+            public string Timestamp { get; set; } = string.Empty;
+            [JsonProperty("worldId")]
+            public string WorldId { get; set; } =  string.Empty;
+            [JsonProperty("worldName")]
+            public string WorldName { get; set; }   = string.Empty;
+            [JsonProperty("files")]
+            public PrintFileInfo FileInfo { get; set; } = new PrintFileInfo();
+        }
+
+        public class PrintFileInfo
+        {
+            [JsonProperty("fileId")]
+            public string FileId { get; set; } = string.Empty;
+            [JsonProperty("image")]
+            public string ImageUrl { get; set; } = string.Empty;
         }
     }
 }

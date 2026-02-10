@@ -236,6 +236,7 @@ namespace Tailgrab.PlayerManagement
 
             this.Closed += (s, e) => Dispose();
         }
+
         private void SaveConfig_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -1293,7 +1294,7 @@ namespace Tailgrab.PlayerManagement
                     // Call Ollama to classify the image
                     OverlayReportDescriptionTextBox.Text = "Loading AI evaluation...";
 
-                    string? classification = await _serviceRegistry.GetOllamaAPIClient().ClassifyImage(inventoryId, userId, imageUrlList);
+                    string? classification = await _serviceRegistry.GetOllamaAPIClient().ClassifyImageList(userId, inventoryId, imageUrlList);
 
                     if (!string.IsNullOrEmpty(classification))
                     {
@@ -1801,13 +1802,15 @@ namespace Tailgrab.PlayerManagement
         public string PrintId { get; set; }
         public DateTime CreatedAt { get; set; }
         public string PrintUrl { get; set; }
+        public string AIEvaluation { get; set; }
         public string AuthorName { get; set; }
-        public PrintInfoViewModel(VRChat.API.Model.Print p)
+        public PrintInfoViewModel(PlayerPrint p )
         {
-            PrintId = p.Id;
+            PrintId = p.PrintId;
             CreatedAt = p.CreatedAt;
-            PrintUrl = p.Files.Image;
+            PrintUrl = p.PrintUrl;
             AuthorName = p.AuthorName;
+            AIEvaluation = p.AIEvaluation;
         }
     }
 
