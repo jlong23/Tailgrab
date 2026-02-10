@@ -61,6 +61,8 @@ namespace Tailgrab.PlayerManagement
     public class PlayerPrint
     {
         public string PrintId { get; set; }
+        public string OwnerId { get; set; }
+        public DateTime Timestamp { get; set; }
         public DateTime CreatedAt { get; set; }
         public string PrintUrl { get; set; }
         public string AIEvaluation { get; set; }
@@ -69,6 +71,8 @@ namespace Tailgrab.PlayerManagement
         public PlayerPrint(VRChat.API.Model.Print p, string aiEvaluation)
         {
             PrintId = p.Id;
+            OwnerId = p.OwnerId;
+            Timestamp = DateTime.Now;
             CreatedAt = p.CreatedAt;
             PrintUrl = p.Files.Image;
             AuthorName = p.AuthorName;

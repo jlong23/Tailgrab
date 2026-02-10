@@ -1,4 +1,4 @@
-using Microsoft.Win32;
+﻿using Microsoft.Win32;
 using NLog;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -7,8 +7,8 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
 using System.Windows.Threading;
+using Tailgrab.Common;
 using Tailgrab.Clients.VRChat;
-using Tailgrab.Config;
 using Tailgrab.Models;
 using VRChat.API.Model;
 using static Tailgrab.Clients.VRChat.VRChatClient;
@@ -136,9 +136,11 @@ namespace Tailgrab.PlayerManagement
 
             ActiveView = CollectionViewSource.GetDefaultView(ActivePlayers);
             ActiveView.SortDescriptions.Add(new SortDescription("InstanceStartTime", ListSortDirection.Descending));
+            UpdateHeaderSortIndicator(ActivePlayerInstanceStart, ActiveView, "InstanceStartTime");
 
             PastView = CollectionViewSource.GetDefaultView(PastPlayers);
             PastView.SortDescriptions.Add(new SortDescription("InstanceEndTime", ListSortDirection.Descending));
+            UpdateHeaderSortIndicator(PastPlayerInstanceEnd, PastView, "InstanceEndTime");
 
             PrintView = CollectionViewSource.GetDefaultView(PrintPlayers);
             EmojiView = CollectionViewSource.GetDefaultView(EmojiPlayers);
@@ -174,8 +176,8 @@ namespace Tailgrab.PlayerManagement
             var ollamaProfilePrompt = ConfigStore.LoadSecret(Tailgrab.Common.Common.Registry_Ollama_API_Prompt) ?? Tailgrab.Common.Common.Default_Ollama_API_Prompt;
             var ollamaImagePrompt = ConfigStore.LoadSecret(Tailgrab.Common.Common.Registry_Ollama_API_Image_Prompt) ?? Tailgrab.Common.Common.Default_Ollama_API_Image_Prompt;
             var ollamaModel = ConfigStore.LoadSecret(Tailgrab.Common.Common.Registry_Ollama_API_Model) ?? Tailgrab.Common.Common.Default_Ollama_API_Model;
-            var avatarGistUri = GetStoredUri(Tailgrab.Common.Common.Registry_Avatar_Gist);
-            var groupGistUri = GetStoredUri(Tailgrab.Common.Common.Registry_Group_Gist);
+            var avatarGistUri = ConfigStore.GetStoredUri(Tailgrab.Common.Common.Registry_Avatar_Gist);
+            var groupGistUri = ConfigStore.GetStoredUri(Tailgrab.Common.Common.Registry_Group_Gist);
 
             // Populate UI boxes but do not reveal secrets
             if (!string.IsNullOrEmpty(vrUser)) VrUserBox.Text = vrUser;
@@ -251,8 +253,8 @@ namespace Tailgrab.PlayerManagement
                 ConfigStore.SaveSecret(Tailgrab.Common.Common.Registry_Ollama_API_Image_Prompt, VrOllamaImagePromptBox.Text ?? Tailgrab.Common.Common.Default_Ollama_API_Image_Prompt);
                 ConfigStore.SaveSecret(Tailgrab.Common.Common.Registry_Ollama_API_Model, VrOllamaModelBox.Text ?? Tailgrab.Common.Common.Default_Ollama_API_Model);
 
-                PutStoredUri(Common.Common.Registry_Avatar_Gist, avatarGistUrl.Text);
-                PutStoredUri(Common.Common.Registry_Group_Gist, groupGistUrl.Text);
+                ConfigStore.PutStoredUri(Common.Common.Registry_Avatar_Gist, avatarGistUrl.Text);
+                ConfigStore.PutStoredUri(Common.Common.Registry_Group_Gist, groupGistUrl.Text);
 
                 // Save alert sound selections (or delete if none)
                 if (AvatarAlertCombo.SelectedItem is string avatarSound && !string.IsNullOrEmpty(avatarSound))
@@ -327,76 +329,6 @@ namespace Tailgrab.PlayerManagement
             catch (Exception ex)
             {
                 logger.Error(ex, "Error updating status bar");
-            }
-        }
-
-        private string? GetStoredUri(string keyName)
-        {
-            try
-            {
-                using (RegistryKey? key = Registry.CurrentUser.OpenSubKey(Common.Common.ConfigRegistryPath))
-                {
-                    if (key == null)
-                    {
-                        logger.Debug("Registry key does not exist");
-                        return null;
-                    }
-
-                    string? value = key.GetValue(keyName) as string;
-                    if (string.IsNullOrEmpty(value))
-                    {
-                        logger.Debug("No Value stored in registry.");
-                        return null;
-                    }
-
-                    return value;
-                }
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex, "Failed to read value from registry.");
-                return null;
-            }
-        }
-
-        private void PutStoredUri(string keyName, string keyValue)
-        {
-            try
-            {
-                using (RegistryKey key = Registry.CurrentUser.CreateSubKey(Common.Common.ConfigRegistryPath))
-                {
-                    key.SetValue(keyName, keyValue, RegistryValueKind.String);
-                }
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex, "Failed to save value to registry.");
-            }
-        }
-
-
-        public class PrintInfoViewModel : INotifyPropertyChanged
-        {
-            public string Id { get; set; }
-            public string AuthorName { get; set; }
-            public string OwnerId { get; set; }
-            public DateTime Timestamp { get; set; }
-            public string Url { get; set; }
-
-            public PrintInfoViewModel(VRChat.API.Model.Print p)
-            {
-                Id = p.Id ?? string.Empty;
-                AuthorName = p.AuthorName ?? string.Empty;
-                OwnerId = p.OwnerId ?? string.Empty;
-                Timestamp = p.Timestamp;
-                Url = p.Files.Image ?? string.Empty;
-            }
-
-            public event PropertyChangedEventHandler? PropertyChanged;
-
-            protected void OnPropertyChanged(string propertyName)
-            {
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
             }
         }
 
@@ -713,21 +645,61 @@ namespace Tailgrab.PlayerManagement
         {
             // If already sorted on property, flip direction. Otherwise set ascending.
             var existing = view.SortDescriptions.FirstOrDefault(sd => sd.PropertyName == property);
+            ListSortDirection newDir;
+
             if (!existing.Equals(default(SortDescription)))
             {
-                var newDir = existing.Direction == ListSortDirection.Ascending ? ListSortDirection.Descending : ListSortDirection.Ascending;
+                newDir = existing.Direction == ListSortDirection.Ascending ? ListSortDirection.Descending : ListSortDirection.Ascending;
                 view.SortDescriptions.Clear();
                 view.SortDescriptions.Add(new SortDescription(property, newDir));
             }
             else
             {
+                newDir = ListSortDirection.Ascending;
                 view.SortDescriptions.Clear();
-                view.SortDescriptions.Add(new SortDescription(property, ListSortDirection.Ascending));
+                view.SortDescriptions.Add(new SortDescription(property, newDir));
             }
             view.Refresh();
         }
 
         private void UpdateHeaderSortIndicator(GridViewColumnHeader clickedHeader, ICollectionView view, string property)
+        {
+            // Clear indicators on sibling headers in same ListView
+            var lv = FindAncestor<System.Windows.Controls.ListView>(clickedHeader);
+            if (lv == null) return;
+
+            var gridView = lv.View as GridView;
+            if (gridView == null) return;
+
+            // Get the current sort direction for the property
+            var sortDesc = view.SortDescriptions.FirstOrDefault(sd => sd.PropertyName == property);
+
+            // Clear all sort indicators first
+            foreach (var col in gridView.Columns)
+            {
+                if (col.Header is GridViewColumnHeader hdr)
+                {
+                    // Remove any existing sort indicator from the content
+                    string content = hdr.Content?.ToString() ?? string.Empty;
+                    content = content.Replace(" ▲", "").Replace(" ▼", "").Trim();
+                    hdr.Content = content;
+                    hdr.Cursor = null;
+                }
+            }
+
+            // Add sort indicator to the clicked header
+            if (!sortDesc.Equals(default(SortDescription)))
+            {
+                string headerText = clickedHeader.Content?.ToString() ?? string.Empty;
+                headerText = headerText.Replace(" ▲", "").Replace(" ▼", "").Trim();
+
+                string indicator = sortDesc.Direction == ListSortDirection.Ascending ? " ▲" : " ▼";
+                clickedHeader.Content = headerText + indicator;
+                clickedHeader.Cursor = System.Windows.Input.Cursors.Hand;        
+            }
+        }
+
+        private void UpdateHeaderSortIndicator2(GridViewColumnHeader clickedHeader, ICollectionView view, string property)
         {
             // Clear indicators on sibling headers in same ListView
             var lv = FindAncestor<System.Windows.Controls.ListView>(clickedHeader);
@@ -913,6 +885,8 @@ namespace Tailgrab.PlayerManagement
                 {
                     System.Windows.MessageBox.Show("Failed to submit report. Please try again later.", "Error",
                         System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                    OverlayProfileReportSubmitButton.IsEnabled = true;
+                    return;
                 }
 
                 // Hide the overlay
@@ -921,9 +895,10 @@ namespace Tailgrab.PlayerManagement
                 // Clear the fields
                 OverlayProfileReportUserIdTextBox.Text = string.Empty;
                 OverlayProfileReportDescriptionTextBox.Text = string.Empty;
-                
+
                 // Clear validation errors
                 ClearProfileReportValidationErrors();
+
             }
             catch (Exception ex)
             {
@@ -939,25 +914,33 @@ namespace Tailgrab.PlayerManagement
 
         private async Task<bool> SubmitProfileReport(string userId, string category, string reportReason, string reportDescription)
         {
-            try
+            ModerationReportPayload rpt = new ModerationReportPayload();
+            rpt.Type = "user";
+            rpt.Category = "profile";
+            rpt.Reason = reportReason;
+            rpt.ContentId = userId;
+            rpt.Description = reportDescription;
+
+            ModerationReportDetails rptDtls = new ModerationReportDetails();
+            rptDtls.InstanceType = "Group Public";
+            rptDtls.InstanceAgeGated = false;
+            rpt.Details = new List<ModerationReportDetails>() { rptDtls };
+
+            bool success = await _serviceRegistry.GetVRChatAPIClient().SubmitModerationReportAsync(rpt);
+            if (success)
             {
-                logger.Info($"Submitting profile report for User ID: {userId}, Category: {category}, Reason: {reportReason}");
-                
-                // TODO: Implement actual web service call here
-                // For now, just log and return success
-                await Task.Delay(100); // Simulate async operation
-                
-                logger.Info($"Profile report submitted successfully for User ID: {userId}");
-                return true;
+                logger.Info($"Profile Report submitted - UserId: {userId}, Category: {category}, ReportReason: {reportReason}, Description: {reportDescription}");
             }
-            catch (Exception ex)
+            else
             {
-                logger.Error(ex, $"Failed to submit profile report for User ID: {userId}");
-                return false;
+                logger.Warn($"Failed to submit profile report - UserId: {userId}, Category: {category}, ReportReason: {reportReason}, Description: {reportDescription}");
             }
+            return success;
         }
         #endregion
 
+        //
+        // Past Handlers
         #region Past handlers
 
         private void PastApplyFilter_Click(object sender, RoutedEventArgs e)
@@ -982,6 +965,8 @@ namespace Tailgrab.PlayerManagement
 
         #endregion
 
+        //
+        // Print Handlers
         #region Print handlers
 
         private void PrintApplyFilter_Click(object sender, RoutedEventArgs e)
@@ -1017,12 +1002,208 @@ namespace Tailgrab.PlayerManagement
             }
             catch (Exception ex)
             {
-                logger?.Error(ex, "Failed to open print URL");
+                logger.Error(ex, "Failed to open print URL");
             }
             e.Handled = true;
         }
+
+        private void ReportPrintInventoryItem_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (sender is System.Windows.Controls.Button button && button.Tag is PrintInfoViewModel print)
+                {
+                    ShowReportPrintOverlay(print);
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to open Report Print Item overlay");
+                System.Windows.MessageBox.Show($"Failed to open Report Print Item overlay: {ex.Message}",
+                    "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+            }
+        }
+
+        private void ShowReportPrintOverlay(PrintInfoViewModel print)
+        {
+            // Populate the overlay fields
+            PrintOverlayUserIdTextBox.Text = print.OwnerId;
+            PrintOverlayInventoryIdTextBox.Text = print.PrintId;
+            PrintOverlayCategoryTextBox.Text = "print";
+            PrintOverlayReportDescriptionTextBox.Text = print.AIEvaluation ?? string.Empty;
+
+            PrintOverlayReportReasonComboBox.ItemsSource = ReportReasons;
+            PrintOverlayReportReasonComboBox.SelectedIndex = 0;
+
+            // Load the image
+            if (!string.IsNullOrEmpty(print.PrintUrl))
+            {
+                try
+                {
+                    var bitmap = new System.Windows.Media.Imaging.BitmapImage();
+                    bitmap.BeginInit();
+                    bitmap.UriSource = new Uri(print.PrintUrl);
+                    bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                    bitmap.EndInit();
+                    PrintOverlayInventoryImagePreview.Source = bitmap;
+                }
+                catch (Exception ex)
+                {
+                    logger.Error(ex, "Failed to load Print image");
+                }
+            }
+
+            // Clear any validation errors
+            ClearPrintOverlayValidationErrors();
+
+            // Show the overlay
+            ReportPrintInventoryOverlay.Visibility = Visibility.Visible;
+        }
+
+        private void PrintOverlayCancel_Click(object sender, RoutedEventArgs e)
+        {
+            // Hide the overlay
+            ReportPrintInventoryOverlay.Visibility = Visibility.Collapsed;
+
+            // Clear the fields
+            PrintOverlayUserIdTextBox.Text = string.Empty;
+            PrintOverlayInventoryIdTextBox.Text = string.Empty;
+            PrintOverlayCategoryTextBox.Text = string.Empty;
+            PrintOverlayReportDescriptionTextBox.Text = string.Empty;
+            PrintOverlayInventoryImagePreview.Source = null;
+
+            // Clear validation errors
+            ClearPrintOverlayValidationErrors();
+        }
+
+        private void ClearPrintOverlayValidationErrors()
+        {
+            // Reset UserID field
+            PrintOverlayUserIdTextBox.BorderBrush = System.Windows.SystemColors.ControlDarkBrush;
+            PrintOverlayUserIdTextBox.BorderThickness = new Thickness(1);
+            PrintOverlayUserIdError.Visibility = Visibility.Collapsed;
+
+            // Reset InventoryID field
+            PrintOverlayInventoryIdTextBox.BorderBrush = System.Windows.SystemColors.ControlDarkBrush;
+            PrintOverlayInventoryIdTextBox.BorderThickness = new Thickness(1);
+            PrintOverlayInventoryIdError.Visibility = Visibility.Collapsed;
+        }
+
+        private bool ValidatePrintOverlayFields()
+        {
+            bool isValid = true;
+
+            // Clear any previous validation errors first
+            ClearPrintOverlayValidationErrors();
+
+            // Validate User ID
+            if (string.IsNullOrWhiteSpace(PrintOverlayUserIdTextBox.Text))
+            {
+                PrintOverlayUserIdTextBox.BorderBrush = new SolidColorBrush(Colors.Yellow);
+                PrintOverlayUserIdTextBox.BorderThickness = new Thickness(3);
+                PrintOverlayUserIdError.Visibility = Visibility.Visible;
+                isValid = false;
+            }
+
+            // Validate Inventory ID
+            if (string.IsNullOrWhiteSpace(PrintOverlayInventoryIdTextBox.Text))
+            {
+                PrintOverlayInventoryIdTextBox.BorderBrush = new SolidColorBrush(Colors.Yellow);
+                PrintOverlayInventoryIdTextBox.BorderThickness = new Thickness(3);
+                PrintOverlayInventoryIdError.Visibility = Visibility.Visible;
+                isValid = false;
+            }
+
+            return isValid;
+        }
+
+        private async void PrintOverlaySubmit_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // Validate required fields
+                if (!ValidatePrintOverlayFields())
+                {
+                    return;
+                }
+
+                var userId = PrintOverlayUserIdTextBox.Text;
+                var category = PrintOverlayCategoryTextBox.Text;
+                var inventoryId = PrintOverlayInventoryIdTextBox.Text;
+                var reason = PrintOverlayReportReasonComboBox.SelectedValue?.ToString() ?? string.Empty;
+                var description = PrintOverlayReportDescriptionTextBox.Text;
+
+                // Call the method that will handle the future web service call
+                bool success = await SubmitPrintReport(userId, inventoryId, category, reason, description);
+
+                // Show success message
+                if (!success)
+                {
+                    System.Windows.MessageBox.Show("Failed to submit report. Please try again later.", "Error",
+                        System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                    PrintOverlaySubmitButton.IsEnabled = true;
+                    return;
+                }
+
+                // Disable the submit button to prevent double-submission
+                PrintOverlaySubmitButton.IsEnabled = false;
+
+                // Hide the overlay
+                ReportPrintInventoryOverlay.Visibility = Visibility.Collapsed;
+
+                // Clear the fields
+                PrintOverlayUserIdTextBox.Text = string.Empty;
+                PrintOverlayInventoryIdTextBox.Text = string.Empty;
+                PrintOverlayCategoryTextBox.Text = string.Empty;
+                PrintOverlayReportDescriptionTextBox.Text = string.Empty;
+                PrintOverlayInventoryImagePreview.Source = null;
+
+                // Clear validation errors
+                ClearPrintOverlayValidationErrors();
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to submit print report");
+                System.Windows.MessageBox.Show($"Failed to submit report: {ex.Message}",
+                    "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+            }
+            finally
+            {
+                PrintOverlaySubmitButton.IsEnabled = true;
+            }
+        }
+
+        private async Task<bool> SubmitPrintReport(string userId, string printId, string category, string reportReason, string reportDescription)
+        {
+            ModerationReportPayload rpt = new ModerationReportPayload();
+            rpt.Type = category;
+            rpt.Category = category;
+            rpt.Reason = reportReason;
+            rpt.ContentId = printId;
+            rpt.Description = reportDescription;
+
+            ModerationReportDetails rptDtls = new ModerationReportDetails();
+            rptDtls.InstanceType = "Group Public";
+            rptDtls.InstanceAgeGated = false;
+            rptDtls.HolderId = userId;
+            rpt.Details = new List<ModerationReportDetails>() { rptDtls };
+
+            bool success = await _serviceRegistry.GetVRChatAPIClient().SubmitModerationReportAsync(rpt);
+            if (success)
+            {
+                logger.Info($"Print Report submitted - UserId: {userId}, Category: {category}, ReportReason: {reportReason}, Description: {reportDescription}");
+            }
+            else
+            {
+                logger.Warn($"Failed to submit Print Report - UserId: {userId}, Category: {category}, ReportReason: {reportReason}, Description: {reportDescription}");
+            }
+            return success;
+        }
+
         #endregion
 
+        //
+        // Emoji Handlers
         #region Emoji handlers
         public List<ReportReasonItem> ReportReasons { get; } = new List<ReportReasonItem>
         {
@@ -1188,9 +1369,22 @@ namespace Tailgrab.PlayerManagement
                 }
 
                 var userId = OverlayUserIdTextBox.Text;
+                var category = OverlayCategoryTextBox.Text;
                 var inventoryId = OverlayInventoryIdTextBox.Text;
-                var reason = OverlayReportReasonComboBox.SelectedValue?.ToString();
+                var reason = OverlayReportReasonComboBox.SelectedValue?.ToString() ?? string.Empty;
                 var description = OverlayReportDescriptionTextBox.Text;
+
+                // Call the method that will handle the future web service call
+                bool success = await SubmitInventoryReport(userId, inventoryId, category, reason, description);
+
+                // Show success message
+                if (!success)
+                {
+                    System.Windows.MessageBox.Show("Failed to submit report. Please try again later.", "Error",
+                        System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                    OverlaySubmitButton.IsEnabled = true;
+                    return;
+                }
 
                 // Disable the submit button to prevent double-submission
                 OverlaySubmitButton.IsEnabled = false;
@@ -1218,6 +1412,33 @@ namespace Tailgrab.PlayerManagement
             {
                 OverlaySubmitButton.IsEnabled = true;
             }
+        }
+
+        private async Task<bool> SubmitInventoryReport(string userId, string inventoryId, string category, string reportReason, string reportDescription)
+        {
+            ModerationReportPayload rpt = new ModerationReportPayload();
+            rpt.Type = category;
+            rpt.Category = category;
+            rpt.Reason = reportReason;
+            rpt.ContentId = inventoryId;
+            rpt.Description = reportDescription;
+
+            ModerationReportDetails rptDtls = new ModerationReportDetails();
+            rptDtls.InstanceType = "Group Public";
+            rptDtls.InstanceAgeGated = false;
+            rptDtls.HolderId = userId;
+            rpt.Details = new List<ModerationReportDetails>() { rptDtls };
+
+            bool success = await _serviceRegistry.GetVRChatAPIClient().SubmitModerationReportAsync(rpt);
+            if (success)
+            {
+                logger.Info($"Inventory Report submitted - UserId: {userId}, Category: {category}, ReportReason: {reportReason}, Description: {reportDescription}");
+            }
+            else
+            {
+                logger.Warn($"Failed to submit Inventory Report - UserId: {userId}, Category: {category}, ReportReason: {reportReason}, Description: {reportDescription}");
+            }
+            return success;
         }
 
         private async void OverlayOnInputFieldChanged(object sender, TextChangedEventArgs e)
@@ -1344,6 +1565,24 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
+        private void EmojiHyperlink_RequestNavigate(object? sender, System.Windows.Navigation.RequestNavigateEventArgs e)
+        {
+            try
+            {
+                logger.Info($"Opening group URL: {e.Uri}");
+                var uri = new Uri($"{e.Uri}");
+                var psi = new System.Diagnostics.ProcessStartInfo(uri.AbsoluteUri)
+                {
+                    UseShellExecute = true
+                };
+                System.Diagnostics.Process.Start(psi);
+            }
+            catch (Exception ex)
+            {
+                logger?.Error(ex, "Failed to open group URL");
+            }
+            e.Handled = true;
+        }
         #endregion
 
         //
@@ -1461,6 +1700,25 @@ namespace Tailgrab.PlayerManagement
                 System.Windows.MessageBox.Show($"Failed to fetch avatar: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+
+        private void AvatarHyperlink_RequestNavigate(object? sender, System.Windows.Navigation.RequestNavigateEventArgs e)
+        {
+            try
+            {
+                logger.Info($"Opening Avatar URL: {e.Uri}");
+                var uri = new Uri($"https://vrchat.com/home/avatar/{e.Uri}");
+                var psi = new System.Diagnostics.ProcessStartInfo(uri.AbsoluteUri)
+                {
+                    UseShellExecute = true
+                };
+                System.Diagnostics.Process.Start(psi);
+            }
+            catch (Exception ex)
+            {
+                logger?.Error(ex, "Failed to open group URL");
+            }
+            e.Handled = true;
+        }
         #endregion
 
         //
@@ -1552,6 +1810,25 @@ namespace Tailgrab.PlayerManagement
                 GroupIdBox.Text = string.Empty;
             }
         }
+
+        private void GroupHyperlink_RequestNavigate(object? sender, System.Windows.Navigation.RequestNavigateEventArgs e)
+        {
+            try
+            {
+                logger.Info($"Opening group URL: {e.Uri}");
+                var uri = new Uri($"https://vrchat.com/home/group/{e.Uri}");
+                var psi = new System.Diagnostics.ProcessStartInfo(uri.AbsoluteUri)
+                {
+                    UseShellExecute = true
+                };
+                System.Diagnostics.Process.Start(psi);
+            }
+            catch (Exception ex)
+            {
+                logger?.Error(ex, "Failed to open group URL");
+            }
+            e.Handled = true;
+        }
         #endregion
 
         private void ApplyFilter(ICollectionView view, string filterText)
@@ -1573,63 +1850,6 @@ namespace Tailgrab.PlayerManagement
                 return false;
             };
             view.Refresh();
-        }
-
-        private void AvatarHyperlink_RequestNavigate(object? sender, System.Windows.Navigation.RequestNavigateEventArgs e)
-        {
-            try
-            {
-                logger.Info($"Opening Avatar URL: {e.Uri}");
-                var uri = new Uri($"https://vrchat.com/home/avatar/{e.Uri}");
-                var psi = new System.Diagnostics.ProcessStartInfo(uri.AbsoluteUri)
-                {
-                    UseShellExecute = true
-                };
-                System.Diagnostics.Process.Start(psi);
-            }
-            catch (Exception ex)
-            {
-                logger?.Error(ex, "Failed to open group URL");
-            }
-            e.Handled = true;
-        }
-
-        private void GroupHyperlink_RequestNavigate(object? sender, System.Windows.Navigation.RequestNavigateEventArgs e)
-        {
-            try
-            {
-                logger.Info($"Opening group URL: {e.Uri}");
-                var uri = new Uri($"https://vrchat.com/home/group/{e.Uri}");
-                var psi = new System.Diagnostics.ProcessStartInfo(uri.AbsoluteUri)
-                {
-                    UseShellExecute = true
-                };
-                System.Diagnostics.Process.Start(psi);
-            }
-            catch (Exception ex)
-            {
-                logger?.Error(ex, "Failed to open group URL");
-            }
-            e.Handled = true;
-        }
-
-        private void EmojiHyperlink_RequestNavigate(object? sender, System.Windows.Navigation.RequestNavigateEventArgs e)
-        {
-            try
-            {
-                logger.Info($"Opening group URL: {e.Uri}");
-                var uri = new Uri($"{e.Uri}");
-                var psi = new System.Diagnostics.ProcessStartInfo(uri.AbsoluteUri)
-                {
-                    UseShellExecute = true
-                };
-                System.Diagnostics.Process.Start(psi);
-            }
-            catch (Exception ex)
-            {
-                logger?.Error(ex, "Failed to open group URL");
-            }
-            e.Handled = true;
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
@@ -1797,20 +2017,31 @@ namespace Tailgrab.PlayerManagement
         }
     }
 
-    public class PrintInfoViewModel
+    public class PrintInfoViewModel : INotifyPropertyChanged
     {
         public string PrintId { get; set; }
+        public string OwnerId { get; set; }
         public DateTime CreatedAt { get; set; }
+        public DateTime Timestamp { get; set; }
         public string PrintUrl { get; set; }
         public string AIEvaluation { get; set; }
         public string AuthorName { get; set; }
         public PrintInfoViewModel(PlayerPrint p )
         {
             PrintId = p.PrintId;
+            OwnerId = p.OwnerId;
             CreatedAt = p.CreatedAt;
+            Timestamp = p.Timestamp;
             PrintUrl = p.PrintUrl;
             AuthorName = p.AuthorName;
             AIEvaluation = p.AIEvaluation;
+        }
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+
+        protected void OnPropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
 
@@ -1832,7 +2063,7 @@ namespace Tailgrab.PlayerManagement
             AIEvalutation = i.AIEvaluation;
         }
     }
-    #endregion
+
     public class ReportReasonItem
     {
         public string DisplayName { get; set; }
@@ -1844,6 +2075,5 @@ namespace Tailgrab.PlayerManagement
             Value = value;
         }
     }
-
-
+    #endregion
 }

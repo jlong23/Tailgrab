@@ -7,7 +7,6 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using Tailgrab.Clients.Ollama;
 using Tailgrab.Common;
-using Tailgrab.Config;
 using VRChat.API.Client;
 using VRChat.API.Model;
 

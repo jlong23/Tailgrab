@@ -6,7 +6,6 @@ using OllamaSharp.Models;
 using System.Net.Http;
 using System.Text.RegularExpressions;
 using Tailgrab.Common;
-using Tailgrab.Config;
 using Tailgrab.Models;
 using Tailgrab.PlayerManagement;
 using VRChat.API.Model;
