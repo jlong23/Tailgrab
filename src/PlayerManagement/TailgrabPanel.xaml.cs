@@ -1007,6 +1007,21 @@ namespace Tailgrab.PlayerManagement
             e.Handled = true;
         }
 
+        private void ReportPrintInventory_Click(object sender, RoutedEventArgs e)
+        {
+            PrintOverlayUserIdTextBox.Text = string.Empty;
+            PrintOverlayInventoryIdTextBox.Text = string.Empty;
+            PrintOverlayCategoryTextBox.Text = string.Empty;
+            PrintOverlayReportDescriptionTextBox.Text = string.Empty;
+            PrintOverlayReportReasonComboBox.ItemsSource = ReportReasons;
+
+            // Clear any validation errors
+            ClearPrintOverlayValidationErrors();
+
+            // Show the overlay
+            ReportPrintInventoryOverlay.Visibility = Visibility.Visible;
+        }
+
         private void ReportPrintInventoryItem_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -1200,6 +1215,119 @@ namespace Tailgrab.PlayerManagement
             return success;
         }
 
+        private async void OverlayPrintOnInputFieldChanged(object sender, TextChangedEventArgs e)
+        {
+            string inventoryId = PrintOverlayInventoryIdTextBox.Text.Trim();
+
+            if (string.IsNullOrEmpty(inventoryId))
+            {
+                return;
+            }
+
+            try
+            {
+                // Clear the fields
+                PrintOverlayCategoryTextBox.Text = "Print";
+                PrintOverlayUserIdTextBox.Text = string.Empty;
+                PrintOverlayReportDescriptionTextBox.Text = "...Checking Print Record";
+                PrintOverlayInventoryImagePreview.Source = null;
+
+                Print? printInfo = _serviceRegistry.GetVRChatAPIClient().GetPrintInfo(inventoryId);
+                if (printInfo != null)
+                {
+                    PrintOverlayUserIdTextBox.Text = printInfo.OwnerId;
+                    PrintOverlayInventoryIdTextBox.Text = printInfo.Id;
+
+                    List<string> imageUrls = new List<string>();
+
+                    if (!string.IsNullOrEmpty(printInfo.Files.Image))
+                    {
+                        imageUrls.Add(printInfo.Files.Image);
+                    }
+
+                    if (imageUrls.Count > 0)
+                    {
+                        // Load and display the image
+                        LoadPrintImage(imageUrls.First());
+
+                        await LoadPrintEvaluation(printInfo.Id, printInfo.OwnerId, imageUrls);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, $"Error retrieving Print info for Print ID: {inventoryId}");
+            }
+        }
+
+        private async Task LoadPrintEvaluation(string inventoryId, string userId, List<string> imageUrlList)
+        {
+            try
+            {
+                // Check if evaluation already exists in the database
+                TailgrabDBContext dbContext = _serviceRegistry.GetDBContext();
+                ImageEvaluation? imageEvaluation = dbContext.ImageEvaluations.Find(inventoryId);
+
+                if (imageEvaluation != null)
+                {
+                    // Load existing evaluation
+                    PrintOverlayReportDescriptionTextBox.Text = System.Text.Encoding.UTF8.GetString(imageEvaluation.Evaluation);
+                    logger.Debug($"Loaded existing image evaluation for inventory ID: {inventoryId}");
+                }
+                else
+                {
+                    // Call Ollama to classify the image
+                    PrintOverlayReportDescriptionTextBox.Text = "Loading AI evaluation...";
+
+                    string? classification = await _serviceRegistry.GetOllamaAPIClient().ClassifyImageList(userId, inventoryId, imageUrlList);
+
+                    if (!string.IsNullOrEmpty(classification))
+                    {
+                        PrintOverlayReportDescriptionTextBox.Text = classification;
+                        logger.Debug($"Generated new image evaluation for inventory ID: {inventoryId}");
+                    }
+                    else
+                    {
+                        PrintOverlayReportDescriptionTextBox.Text = "Failed to generate AI evaluation.";
+                        logger.Warn($"Failed to generate AI evaluation for inventory ID: {inventoryId}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, $"Error loading image evaluation for inventory ID: {inventoryId}");
+                PrintOverlayReportDescriptionTextBox.Text = $"Error: {ex.Message}";
+            }
+        }
+
+        private void LoadPrintImage(string imageUrl)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(imageUrl))
+                {
+                    PrintOverlayInventoryImagePreview.Source = null;
+                    return;
+                }
+
+                var bitmap = new System.Windows.Media.Imaging.BitmapImage();
+                bitmap.BeginInit();
+                bitmap.UriSource = new Uri(imageUrl);
+                bitmap.DecodePixelWidth = 200;
+                bitmap.DecodePixelHeight = 200;
+                bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                bitmap.EndInit();
+                //bitmap.Freeze();
+
+                PrintOverlayInventoryImagePreview.Source = bitmap;
+                logger.Debug($"Loaded image from URL: {imageUrl}");
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, $"Failed to load image from URL: {imageUrl}");
+                PrintOverlayInventoryImagePreview.Source = null;
+            }
+        }
         #endregion
 
         //

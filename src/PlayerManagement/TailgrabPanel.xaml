@@ -382,21 +382,23 @@ Title="Tailgrab Player Panel"
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="229*"/>
-                            <ColumnDefinition Width="830*"/>
+                            <ColumnDefinition Width="46*"/>
+                            <ColumnDefinition Width="784*"/>
                         </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="*" />
                         </Grid.RowDefinitions>
 
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="2">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="3">
                             <TextBox Name="PrintFilterBox" Width="300" Margin="0,0,8,0" />
                             <Button Content="Apply Filter" Click="PrintApplyFilter_Click" Margin="0,0,6,0"/>
                             <Button Content="Clear Filter" Click="PrintClearFilter_Click"/>
+                            <Button Content="Report Inventory" Click="ReportPrintInventory_Click" HorizontalAlignment="Right" Margin="8,0,0,0"/>
                         </StackPanel>
 
                         <!-- Show each player and their prints -->
-                        <ListView Name="PrintListView" Grid.Row="1" ItemsSource="{Binding PrintView}" Grid.ColumnSpan="2">
+                        <ListView Name="PrintListView" Grid.Row="1" ItemsSource="{Binding PrintView}" Grid.ColumnSpan="3">
                             <ListView.ItemTemplate>
                                 <DataTemplate>
                                     <Border BorderBrush="Gray" BorderThickness="0,0,0,1" Padding="6">
@@ -466,7 +468,7 @@ Title="Tailgrab Player Panel"
                             Grid.RowSpan="2" 
                             Background="#CC000000" 
                             Visibility="Collapsed"
-                            Panel.ZIndex="1000" Grid.ColumnSpan="2">
+                            Panel.ZIndex="1000" Grid.ColumnSpan="3">
                             <Border Background="#FF2D2D30" 
                                 MaxWidth="950" 
                                 MaxHeight="550" 
@@ -500,16 +502,16 @@ Title="Tailgrab Player Panel"
                                                Foreground="#FFE6E6E6"
                                                Margin="0,0,0,16"/>
 
-                                        <!-- User ID -->
+                                        <!-- Print ID -->
                                         <StackPanel Grid.Row="1" Margin="0,0,0,12">
-                                            <Label Content="User ID: *" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                                            <Label Content="Print ID: *" FontWeight="Bold" Foreground="#FFE6E6E6"/>
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="*"/>
                                                     <ColumnDefinition Width="Auto"/>
                                                 </Grid.ColumnDefinitions>
-                                                <TextBox Name="PrintOverlayUserIdTextBox" Grid.Column="0" TextChanged="OverlayOnInputFieldChanged"/>
-                                                <Label Name="PrintOverlayUserIdError" 
+                                                <TextBox Name="PrintOverlayInventoryIdTextBox" Grid.Column="0" TextChanged="OverlayPrintOnInputFieldChanged"/>
+                                                <Label Name="PrintOverlayInventoryIdError" 
                                                        Grid.Column="1" 
                                                        Content="Required" 
                                                        Foreground="Yellow" 
@@ -520,16 +522,16 @@ Title="Tailgrab Player Panel"
                                             </Grid>
                                         </StackPanel>
 
-                                        <!-- Inventory ID -->
+                                        <!-- User ID -->
                                         <StackPanel Grid.Row="2" Margin="0,0,0,12">
-                                            <Label Content="Inventory ID: *" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                                            <Label Content="User ID: *" FontWeight="Bold" Foreground="#FFE6E6E6"/>
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="*"/>
                                                     <ColumnDefinition Width="Auto"/>
                                                 </Grid.ColumnDefinitions>
-                                                <TextBox Name="PrintOverlayInventoryIdTextBox" Grid.Column="0" TextChanged="OverlayOnInputFieldChanged"/>
-                                                <Label Name="PrintOverlayInventoryIdError" 
+                                                <TextBox Name="PrintOverlayUserIdTextBox" Grid.Column="0" IsReadOnly="True"/>
+                                                <Label Name="PrintOverlayUserIdError" 
                                                        Grid.Column="1" 
                                                        Content="Required" 
                                                        Foreground="Yellow" 
@@ -612,12 +614,17 @@ Title="Tailgrab Player Panel"
 
                 <TabItem Header="Emoji and Stickers">
                     <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="167*"/>
+                            <ColumnDefinition Width="14*"/>
+                            <ColumnDefinition Width="877*"/>
+                        </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="*" />
                         </Grid.RowDefinitions>
 
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="3">
                             <TextBox Name="EmojiFilterBox" Width="300" Margin="0,0,8,0" />
                             <Button Content="Apply Filter" Click="EmojiApplyFilter_Click" Margin="0,0,6,0"/>
                             <Button Content="Clear Filter" Click="EmojiClearFilter_Click"/>
@@ -625,7 +632,7 @@ Title="Tailgrab Player Panel"
                         </StackPanel>
 
                         <!-- Show each player and their emojis -->
-                        <ListView Name="EmojiListView" Grid.Row="1" ItemsSource="{Binding EmojiView}">
+                        <ListView Name="EmojiListView" Grid.Row="1" ItemsSource="{Binding EmojiView}" Grid.ColumnSpan="3">
                             <ListView.ItemTemplate>
                                 <DataTemplate>
                                     <Border BorderBrush="Gray" BorderThickness="0,0,0,1" Padding="6">
@@ -696,7 +703,7 @@ Title="Tailgrab Player Panel"
                             Grid.RowSpan="2" 
                             Background="#CC000000" 
                             Visibility="Collapsed"
-                            Panel.ZIndex="1000">
+                            Panel.ZIndex="1000" Grid.ColumnSpan="3">
                             <Border Background="#FF2D2D30" 
                                 MaxWidth="950" 
                                 MaxHeight="550" 

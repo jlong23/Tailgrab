@@ -339,7 +339,7 @@ namespace Tailgrab.Clients.Ollama
         #region Image Classification
         internal async Task<string?> ClassifyImageList(string userId, string assetId, List<string> imageUrlList)
         {
-            logger.Debug($"Classifying image from Asset: {assetId} URI: {imageUrlList}");
+            logger.Debug($"Classifying image from Asset: {assetId} URI: {imageUrlList.ToArray()}");
 
             try
             {
@@ -397,7 +397,7 @@ namespace Tailgrab.Clients.Ollama
             }
             catch (Exception ex)
             {
-                logger.Error(ex, $"Error classifying image from URI: {imageUrlList}");
+                logger.Error(ex, $"Error classifying image from URI: {imageUrlList.ToArray()}");
             }
 
             return null;
