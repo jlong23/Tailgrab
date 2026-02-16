@@ -21,7 +21,7 @@ namespace Tailgrab.Clients.VRChat
 
         private IVRChat? _vrchat;
 
-        public async void Initialize()
+        public async Task Initialize()
         {
             string? username = ConfigStore.LoadSecret(Tailgrab.Common.Common.Registry_VRChat_Web_UserName);
             string? password = ConfigStore.LoadSecret(Tailgrab.Common.Common.Registry_VRChat_Web_Password);
@@ -352,7 +352,113 @@ namespace Tailgrab.Clients.VRChat
                 logger.Error($"Error fetching avatar: {ex.Message}");
             }
 
-            return printInfo;
+            return printInfo;               
+        }
+
+        public List<AvatarModeration> GetAvatarModerations()
+        {
+            List<AvatarModeration> moderations = new List<AvatarModeration>();
+            try
+            {
+                if (_vrchat != null)
+                {
+                    moderations = _vrchat.Authentication.GetGlobalAvatarModerations();
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error($"Error fetching avatar moderations: {ex.Message}");
+            }
+            return moderations;
+        }
+
+        public async Task<bool> BlockAvatarGlobal(string avatarId)
+        {
+            try
+            {
+                if (_vrchat == null)
+                {
+                    logger.Info($"Failed Block avatar {avatarId} globally, not logged in.");
+                    return false;
+                }
+
+                // Create HTTP client with cookies
+                var handler = new HttpClientHandler
+                {
+                    CookieContainer = new CookieContainer()
+                };
+
+                var cookies = _vrchat.GetCookies();
+                foreach (var cookie in cookies)
+                {
+                    handler.CookieContainer.Add(new Uri(URI_VRC_BASE_API), cookie);
+                }
+
+                using HttpClient httpClient = new HttpClient(handler);
+                httpClient.DefaultRequestHeaders.Add("User-Agent", UserAgent);
+
+                AvatarModerationItem rpt = new AvatarModerationItem
+                {
+                    TargetAvatarId = avatarId,
+                    AvatarModerationType = "block"
+                };
+
+                HttpResponseMessage response = await httpClient.PostAsJsonAsync($"{URI_VRC_BASE_API}/api/1/auth/user/avatarmoderations?targetAvatarId={avatarId}&avatarModerationType=block", rpt);
+                string responseContent = await response.Content.ReadAsStringAsync();
+                logger.Debug($"Response from Block avatar {avatarId} globally: {responseContent}");
+                logger.Info($"Submitted Block avatar {avatarId} globally.");
+                response.EnsureSuccessStatusCode();
+
+                return response.IsSuccessStatusCode;
+            }
+            catch (Exception ex)
+            {
+                logger.Error($"Error setting avatar moderation status: {ex.Message}");
+            }
+
+            return false;
+        }
+
+
+        public async Task<bool> DeleteAvatarGlobal(string avatarId)
+        {
+            try
+            {
+                if (_vrchat == null)
+                {
+                    logger.Info($"Failed Unblock avatar {avatarId} globally, not logged in.");
+                    return false;
+                }
+
+                // Create HTTP client with cookies
+                var handler = new HttpClientHandler
+                {
+                    CookieContainer = new CookieContainer()
+                };
+
+                var cookies = _vrchat.GetCookies();
+                foreach (var cookie in cookies)
+                {
+                    handler.CookieContainer.Add(new Uri(URI_VRC_BASE_API), cookie);
+                }
+
+                using HttpClient httpClient = new HttpClient(handler);
+                httpClient.DefaultRequestHeaders.Add("User-Agent", UserAgent);
+
+                HttpResponseMessage response = await httpClient.DeleteAsync($"{URI_VRC_BASE_API}/api/1/auth/user/avatarmoderations?targetAvatarId={avatarId}&avatarModerationType=block");
+                string responseContent = await response.Content.ReadAsStringAsync();
+                logger.Debug($"Response from Block avatar {avatarId} globally: {responseContent}");
+                logger.Info($"Submitted Block avatar {avatarId} globally.");
+                response.EnsureSuccessStatusCode();
+
+                return response.IsSuccessStatusCode;
+            }
+            catch (Exception ex)
+            {
+                logger.Error($"Error setting avatar moderation status: {ex.Message}");
+            }
+
+            return false;
         }
 
 
@@ -409,6 +515,7 @@ namespace Tailgrab.Clients.VRChat
                 // Download the image
                 HttpResponseMessage response = await httpClient.PostAsJsonAsync($"{URI_VRC_BASE_API}/api/1/moderationReports", rpt);
                 string responseContent = await response.Content.ReadAsStringAsync();
+                logger.Debug($"Response from submitting moderation report for content {rpt.ContentId}: {responseContent}");
                 logger.Info($"Submitted moderation report for content {rpt.ContentId} with reason: {rpt.Reason}\n{responseContent}");
                 response.EnsureSuccessStatusCode();
 
@@ -420,6 +527,15 @@ namespace Tailgrab.Clients.VRChat
                 logger.Error(ex, $"Error Reporting image from URI: {rpt}");
                 return false;
             }
+        }
+
+        public class AvatarModerationItem
+        {
+            [JsonProperty("avatarModerationType")]
+            public string AvatarModerationType { get; set; } = "block";
+
+            [JsonProperty("targetAvatarId")]
+            public string TargetAvatarId { get; set; } = string.Empty;
         }
 
         public class VRChatInventoryItem

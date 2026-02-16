@@ -699,27 +699,6 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
-        private void UpdateHeaderSortIndicator2(GridViewColumnHeader clickedHeader, ICollectionView view, string property)
-        {
-            // Clear indicators on sibling headers in same ListView
-            var lv = FindAncestor<System.Windows.Controls.ListView>(clickedHeader);
-            if (lv == null) return;
-
-            var gridView = lv.View as GridView;
-            if (gridView == null) return;
-
-            foreach (var col in gridView.Columns)
-            {
-                if (col.Header is GridViewColumnHeader hdr && hdr != clickedHeader)
-                {
-                    hdr.ClearValue(GridViewColumnHeader.CursorProperty);
-                }
-            }
-
-            // Set cursor as simple visual indicator on clicked header
-            clickedHeader.Cursor = System.Windows.Input.Cursors.Hand;
-        }
-
         //
         // Active Handlers
         #region Active handlers
@@ -1545,8 +1524,8 @@ namespace Tailgrab.PlayerManagement
         private async Task<bool> SubmitInventoryReport(string userId, string inventoryId, string category, string reportReason, string reportDescription)
         {
             ModerationReportPayload rpt = new ModerationReportPayload();
-            rpt.Type = category;
-            rpt.Category = category;
+            rpt.Type = category.ToLower();
+            rpt.Category = category.ToLower();
             rpt.Reason = reportReason;
             rpt.ContentId = inventoryId;
             rpt.Description = reportDescription;
@@ -1599,14 +1578,14 @@ namespace Tailgrab.PlayerManagement
 
                     List<string> imageUrls = new List<string>();
 
-                    if( !string.IsNullOrEmpty(inventoryItem.ImageUrl))
-                    {
-                        imageUrls.Add(inventoryItem.ImageUrl);
-                    }
-
-                    if( !string.IsNullOrEmpty(inventoryItem.Metadata?.ImageUrl))
+                    if (!string.IsNullOrEmpty(inventoryItem.Metadata?.ImageUrl))
                     {
                         imageUrls.Add(inventoryItem.Metadata.ImageUrl);
+                    }
+
+                    if ( !string.IsNullOrEmpty(inventoryItem.ImageUrl))
+                    {
+                        imageUrls.Add(inventoryItem.ImageUrl);
                     }
 
                     if( imageUrls.Count > 0)
@@ -1755,7 +1734,7 @@ namespace Tailgrab.PlayerManagement
             catch { }
         }
 
-        private void AvatarDbGrid_CellEditEnding(object sender, System.Windows.Controls.DataGridCellEditEndingEventArgs e)
+        private async void AvatarDbGrid_CellEditEnding(object sender, System.Windows.Controls.DataGridCellEditEndingEventArgs e)
         {
             if (e.Row.Item is AvatarInfoViewModel vm)
             {
@@ -1770,6 +1749,14 @@ namespace Tailgrab.PlayerManagement
                         db.AvatarInfos.Update(entity);
                         db.SaveChanges();
                         vm.UpdatedAt = entity.UpdatedAt;
+
+                        if( vm.IsBos )
+                        {
+                            await _serviceRegistry.GetVRChatAPIClient().BlockAvatarGlobal(vm.AvatarId);
+                        } else
+                        {
+                            await _serviceRegistry.GetVRChatAPIClient().DeleteAvatarGlobal(vm.AvatarId);
+                        }
                     }
                 }
                 catch { }

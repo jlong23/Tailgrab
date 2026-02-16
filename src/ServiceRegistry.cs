@@ -23,7 +23,7 @@ namespace Tailgrab
         {
         }
 
-        public void StartAllServices()
+        public async void StartAllServices()
         {
             logger.Info("Starting all services...");
 
@@ -35,7 +35,7 @@ namespace Tailgrab
             dbContext = serviceProvider.GetService<TailgrabDBContext>();
 
             logger.Info("Starting VR Chat API Client...");
-            vrcAPIClient.Initialize();
+            await vrcAPIClient.Initialize();
 
             logger.Info("Starting OLLama API Client...");
             ollamaAPIClient = new OllamaClient(this);

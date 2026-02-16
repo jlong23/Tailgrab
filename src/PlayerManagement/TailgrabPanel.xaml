@@ -1227,24 +1227,24 @@ Title="Tailgrab Player Panel"
 
         <!-- Status Bar -->
         <StatusBar Grid.Row="1" Background="#FF2D2D30" Foreground="#FFE6E6E6">
-            <StatusBarItem>
+            <StatusBarItem HorizontalAlignment="Left">
+                <TextBlock>
+                    <Run Text="Instance: "/>
+                    <Run Text="{Binding InstanceId, Mode=OneWay}" FontWeight="Bold"/>
+                </TextBlock>
+            </StatusBarItem>
+            <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" />
+            <StatusBarItem HorizontalAlignment="Right">
                 <TextBlock>
                     <Run Text="Avatar Queue: "/>
                     <Run Text="{Binding AvatarQueueLength, Mode=OneWay}" FontWeight="Bold"/>
                 </TextBlock>
             </StatusBarItem>
             <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" />
-            <StatusBarItem>
+            <StatusBarItem HorizontalAlignment="Right">
                 <TextBlock>
-                    <Run Text="Ollama Queue: "/>
+                    <Run Text="AI Queue: "/>
                     <Run Text="{Binding OllamaQueueLength, Mode=OneWay}" FontWeight="Bold"/>
-                </TextBlock>
-            </StatusBarItem>
-            <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" />
-            <StatusBarItem HorizontalAlignment="Center">
-                <TextBlock>
-                    <Run Text="Instance: "/>
-                    <Run Text="{Binding InstanceId, Mode=OneWay}" FontWeight="Bold"/>
                 </TextBlock>
             </StatusBarItem>
             <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" />

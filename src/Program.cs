@@ -8,9 +8,12 @@ using System.Text.Json;
 using System.Windows;
 using System.Windows.Media;
 using Tailgrab;
+using Tailgrab.Clients.VRChat;
 using Tailgrab.Configuration;
 using Tailgrab.LineHandler;
+using Tailgrab.Models;
 using Tailgrab.PlayerManagement;
+
 
 public class FileTailer
 {
@@ -295,6 +298,8 @@ public class FileTailer
         logger.Info($"Starting Amplitude Cache watcher for: '{ampPath}'");
         _ = Task.Run(() => WatchAmpCache(ampPath, _serviceRegistry));
 
+        //SyncAvatarModerations(_serviceRegistry);
+
         BuildAppWindow(_serviceRegistry);
 
         // When the window closes, allow Main to complete. The watcher task will be abandoned; if desired add cancellation.
@@ -366,6 +371,55 @@ public class FileTailer
         catch (Exception ex)
         {
             logger.Warn(ex, "Failed to initialize missing registry items");
+        }
+    }
+
+    private static void SyncAvatarModerations(ServiceRegistry serviceRegistry)
+    {
+        try
+        {
+            TailgrabDBContext dBContext = serviceRegistry.GetDBContext();
+            VRChatClient vrcClient = serviceRegistry.GetVRChatAPIClient();
+            if( dBContext != null && vrcClient != null )
+            {
+                List<VRChat.API.Model.AvatarModeration> moderations = vrcClient.GetAvatarModerations();
+                foreach (VRChat.API.Model.AvatarModeration mod in moderations)
+                {
+                    AvatarInfo? existing = dBContext.AvatarInfos.FirstOrDefault(a => a.AvatarId == mod.TargetAvatarId);
+                    if (existing != null)
+                    {
+                        if (existing.IsBos)
+                        {
+                            logger.Debug($"Avatar {existing.AvatarId} is already marked as BOS in the database. Skipping update.");
+                            continue; // already marked as BOS, no update needed
+                        }
+
+                        logger.Debug($"Marking Avatar {existing.AvatarId} is as BOS in the database.");
+                        existing.IsBos = true;
+                        existing.UpdatedAt = mod.Created;
+                        dBContext.SaveChanges();
+
+                    }
+                    else
+                    {
+                        dBContext.AvatarInfos.Add(new AvatarInfo
+                        {
+                            AvatarName = "From Moderation API",
+                            AvatarId = mod.TargetAvatarId,
+                            IsBos = true,
+                            CreatedAt = mod.Created,
+                            UpdatedAt = mod.Created
+                        });
+                        dBContext.SaveChanges();
+
+                        logger.Debug($"Adding missing Avatar {mod.TargetAvatarId} is as BOS in the database.");
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.Error(ex, "Failed to clear the database");
         }
     }
 
