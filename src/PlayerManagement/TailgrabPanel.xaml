@@ -26,9 +26,10 @@ Title="Tailgrab Player Panel"
                         <Grid.RowDefinitions>
                             <RowDefinition Height="13*"/>
                             <RowDefinition Height="267*"/>
-                            <RowDefinition Height="100"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*" MinHeight="100"/>
                         </Grid.RowDefinitions>
-
+                        
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="2">
                             <TextBox Name="ActiveFilterBox" Width="300" Margin="0,0,8,0" />
                             <Button Content="Apply Filter" Click="ActiveApplyFilter_Click" Margin="0,0,6,0"/>
@@ -153,8 +154,16 @@ Title="Tailgrab Player Panel"
                             </ListView.View>
                         </ListView>
 
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="2" Grid.Row="2">
-                            <TextBox Name="UserPofileBox" Width="520" Height="auto" Margin="0,0,8,0" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto">
+                        <GridSplitter Grid.Row="2" Grid.ColumnSpan="2" Height="5" HorizontalAlignment="Stretch" VerticalAlignment="Center" Background="#FF3F3F46" ShowsPreview="False" ResizeDirection="Rows"/>
+
+                        <Grid Margin="0,0,0,6" Grid.ColumnSpan="2" Grid.Row="3">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBox Name="UserPofileBox" Grid.Column="0" Height="auto" Margin="0,0,4,0" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto">
                                 <TextBox.Text>
                                     <MultiBinding StringFormat="{}User Profile:&#x0a;{0}&#x0a;&#x0a;AI Evaluation:&#x0a;{1}" Mode="OneWay">
                                         <Binding Path="SelectedActive.Profile" Mode="OneWay" FallbackValue="" TargetNullValue=""/>
@@ -162,9 +171,12 @@ Title="Tailgrab Player Panel"
                                     </MultiBinding>
                                 </TextBox.Text>
                             </TextBox>
-                            <TextBox Name="UserAlertsBox" Width="520" Height="auto" Margin="0,0,8,0" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" Text="{Binding SelectedActive.History, Mode=OneWay, FallbackValue='', TargetNullValue=''}" />
-                        </StackPanel>
 
+                            <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="#FF3F3F46" ShowsPreview="False"/>
+
+                            <TextBox Name="UserAlertsBox" Grid.Column="2" Height="auto" Margin="4,0,8,0" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" Text="{Binding SelectedActive.History, Mode=OneWay, FallbackValue='', TargetNullValue=''}" />
+                        </Grid>
+                        
                         <!-- Overlay Panel for Report Profile -->
                         <Border Name="OverlayProfileReport" 
                             Grid.Row="0" 
