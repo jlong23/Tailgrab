@@ -1,5 +1,6 @@
 using System.Collections.Specialized;
 using System.ComponentModel;
+using Microsoft.EntityFrameworkCore;
 
 namespace Tailgrab.PlayerManagement
 {
@@ -45,8 +46,14 @@ namespace Tailgrab.PlayerManagement
                 
                 if (!string.IsNullOrWhiteSpace(_filterText))
                 {
-                    var filterLower = _filterText.ToLower();
-                    query = query.Where(a => a.AvatarName.ToLower().Contains(filterLower));
+                    if (_filterText.StartsWith("avtr_", StringComparison.OrdinalIgnoreCase))
+                    {
+                        query = query.Where(a => a.AvatarId == _filterText);
+                    }
+                    else
+                    {
+                        query = query.Where(a => EF.Functions.Like(a.AvatarName, $"%{_filterText}%"));
+                    }
                 }
                 
                 _count = query.Count();

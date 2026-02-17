@@ -1,5 +1,6 @@
 using System.Collections.Specialized;
 using System.ComponentModel;
+using Microsoft.EntityFrameworkCore;
 
 namespace Tailgrab.PlayerManagement
 {
@@ -43,8 +44,14 @@ namespace Tailgrab.PlayerManagement
                 
                 if (!string.IsNullOrWhiteSpace(_filterText))
                 {
-                    var filterLower = _filterText.ToLower();
-                    query = query.Where(g => g.GroupName.ToLower().Contains(filterLower));
+                    if (_filterText.StartsWith("grp_", StringComparison.OrdinalIgnoreCase))
+                    {
+                        query = query.Where(g => g.GroupId == _filterText);
+                    }
+                    else
+                    {
+                        query = query.Where(g => EF.Functions.Like(g.GroupName, $"%{_filterText}%"));
+                    }
                 }
                 
                 _count = query.Count();
@@ -71,8 +78,14 @@ namespace Tailgrab.PlayerManagement
                     
                     if (!string.IsNullOrWhiteSpace(_filterText))
                     {
-                        var filterLower = _filterText.ToLower();
-                        query = query.Where(g => g.GroupName.ToLower().Contains(filterLower));
+                        if (_filterText.StartsWith("grp_", StringComparison.OrdinalIgnoreCase))
+                        {
+                            query = query.Where(g => g.GroupId == _filterText);
+                        }
+                        else
+                        {
+                            query = query.Where(g => EF.Functions.Like(g.GroupName, $"%{_filterText}%"));
+                        }
                     }
                     
                     var items = query.OrderBy(a => a.GroupName).Skip(skip).Take(_pageSize).ToList();

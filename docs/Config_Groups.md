@@ -8,12 +8,9 @@ The groups panel lets you mark groups for alerting.  **At this time**, when you 
 > [!NOTE]
 > We will be changing the Group Flagging system in the future to be more flexible and allow for more user directed flagging options, such as "Warn Only", "Crasher" and "NONE".
 
-You will notice a simular search and filter elements as the Active Players panel, this is to help you find the group in the local database by name.  
+You will notice a simular search and filter elements as the Active Players panel, this is to help you find the group in the local database by name or GroupId.  
 
 Next to the filter input and buttons is a field that accepts an group id, **grp_1234...** and a button to "Add Group".  This is for adding groups that you have been alerted to by the Group Watch community, this will add the record then filter the list to the added group name.
-
-> [!NOTE]
-> Since the filtering is based on group name and not group id, if the group name is common you may have multiple group show up in the list, you can use the group ID field to help identify the correct group record in the list.
 
 The list of groups are shown below with the following columns:
 

@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using System.Collections.Specialized;
 using System.ComponentModel;
 
@@ -40,11 +41,17 @@ namespace Tailgrab.PlayerManagement
             {
                 var db = _services.GetDBContext();
                 var query = db.UserInfos.AsQueryable();
-                
+
                 if (!string.IsNullOrWhiteSpace(_filterText))
                 {
-                    var filterLower = _filterText.ToLower();
-                    query = query.Where(u => u.DisplayName.ToLower().Contains(filterLower));
+                    if (_filterText.StartsWith("usr_", StringComparison.OrdinalIgnoreCase))
+                    {
+                        query = query.Where(u => u.UserId == _filterText);
+                    }
+                    else
+                    {
+                        query = query.Where(u => EF.Functions.Like(u.DisplayName, $"%{_filterText}%"));
+                    }
                 }
                 
                 _count = query.Count();

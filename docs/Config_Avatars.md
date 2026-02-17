@@ -8,12 +8,9 @@ The avatars panel lets you mark avatars for alerting.  **At this time**, when yo
 > [!NOTE]
 > We will be changing the Avatar Flagging system in the future to be more flexible and allow for more user directed flagging options, such as "Warn Only", "Crasher" and "NONE".
 
-You will notice a simular search and filter elements as the Active Players panel, this is to help you find the avatar in the local database by name.  
+You will notice a simular search and filter elements as the Active Players panel, this is to help you find the avatar in the local database by name or AvatarId.  
 
 Next to the filter input and buttons is a field that accepts an avatar id, **avtr_1234...** and a button to "Add Avatar".  This is for adding avatars that you have been alerted to by the Avatar Watch community, this will add the record then filter the list to the added avatar name.
-
-> [!NOTE]
-> Since the filtering is based on avatar name and not avatar id, if the avatar name is common you may have multiple avatars show up in the list, you can use the Avatar ID field to help identify the correct avatar record in the list.
 
 The list of avatars are shown below with the following columns:
 

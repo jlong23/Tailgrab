@@ -5,10 +5,7 @@ The Users panel lets you search users you have encountered.
 
 [<img src="./tailgrab_tab_config_users.png" width="600" />](./tailgrab_tab_config_users.png)
 
-You will notice a simular search and filter elements as the Active Players panel, this is to help you find the user in the local database by name.  
-
-> [!NOTE]
-> Since the filtering is based on user name and not user id, if the user name is common you may have multiple users show up in the list, you can use the user ID and last updated field to help identify the correct user record in the list.
+You will notice a simular search and filter elements as the Active Players panel, this is to help you find the user in the local database by name or UserId.  
 
 The list of users are shown below with the following columns:
 
