@@ -508,7 +508,7 @@ Title="Tailgrab Player Panel"
 
                                         <!-- Title -->
                                         <TextBlock Grid.Row="0" 
-                                               Text="Report Inventory" 
+                                               Text="Report Print Content" 
                                                FontSize="20" 
                                                FontWeight="Bold" 
                                                Foreground="#FFE6E6E6"
@@ -743,7 +743,7 @@ Title="Tailgrab Player Panel"
 
                                         <!-- Title -->
                                         <TextBlock Grid.Row="0" 
-                                               Text="Report Inventory" 
+                                               Text="Report Emoji or Sticker" 
                                                FontSize="20" 
                                                FontWeight="Bold" 
                                                Foreground="#FFE6E6E6"
