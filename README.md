@@ -77,3 +77,25 @@ If you want to watch the application logs in real time, you can use a tool like 
 ## Usefull Tool Sets 
 
 DB Browser for SQLite - https://sqlitebrowser.org/
+
+
+## Detail Documentation
+
+[Active Players](./docs/Application_Tab_ActivePlayers.md) Current Players in the Instance.
+
+[Past Players](./docs/Application_Tab_PastPlayers.md) Players that have been in the instance since you started TailGrab for the last 15 minutes.
+
+[Prints](./docs/Application_Tab_Prints.md) Shows Prints that have been spawned into the instance by time/user id.
+
+[Emojis & Stickers](./docs/Application_Tab_Emojis_and_Stickers.md) Shows Emojis and Stickers that have been spawned into the instance by time/user id.
+
+[Config Tab, Avatars](./docs/Config_Avatars.md) Mark Avatars for Alerting and Blocking.
+
+[Config Tab, Groups](./docs/Config_Groups.md) Mark Groups for Alerting and Blocking.
+
+[Config Tab, Users](./docs/Config_Users.md) See user activity you have encountered.
+
+[Config Tab, Line Handlers](./docs/Config_LineHandlers.md) Configure Actions to Trigger based on VRChat Log Events.
+
+[Config Tab, Secrets](./docs/Config_Application.md) Configure API Keys and other application settings.
+
