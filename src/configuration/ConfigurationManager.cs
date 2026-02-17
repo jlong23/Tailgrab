@@ -140,6 +140,10 @@ namespace Tailgrab.Configuration
                         handler = new AvatarUnpackHandler(AvatarUnpackHandler.LOG_PATTERN, _serviceRegistry);
                         break;
 
+                    case LineHandlerType.Emoji:
+                        handler = new EmojiHandler(EmojiHandler.LOG_PATTERN, _serviceRegistry);
+                        break;
+
                     case LineHandlerType.Logging:
                         handler = new LoggingLineHandler("", _serviceRegistry);
                         break;
@@ -257,6 +261,7 @@ namespace Tailgrab.Configuration
     {
         AvatarChange,
         AvatarUnpack,
+        Emoji,
         Logging,
         OnPlayerJoin,
         OnPlayerNetwork,
@@ -277,6 +282,7 @@ namespace Tailgrab.Configuration
             {
                 LineHandlerType.AvatarChange => "Avatar Change Handler",
                 LineHandlerType.AvatarUnpack => "Avatar Unpack Handler",
+                LineHandlerType.Emoji => "Emoji Handler",
                 LineHandlerType.Logging => "Logging Handler",
                 LineHandlerType.OnPlayerJoin => "On Player Join Handler",
                 LineHandlerType.OnPlayerNetwork => "On Player Network Handler",

@@ -19,6 +19,15 @@
       "actions": []
     },
     {
+      "handlerTypeValue": "Emoji",
+      "enabled": true,
+      "patternTypeValue": "Default",
+      "pattern": "([\\d]{4}.[\\d]{2}.[\\d]{2}\\W[\\d]{2}:[\\d]{2}:[\\d]{2})\\W(Log[\\W]{8}|Debug[\\W]{6})-\\W\\W\\[API\\]\\W\\[\\d+\\]\\WSending\\WGet\\Wrequest\\Wto\\Whttps://api.vrchat.cloud/api/1/user/(usr_[\\d\\w\\W]+)/inventory/(inv_[\\d\\w\\W]+)",
+      "logOutput": true,
+      "logOutputColor": "Default",
+      "actions": []
+    },
+    {
       "handlerTypeValue": "OnPlayerJoin",
       "enabled": true,
       "patternTypeValue": "Default",

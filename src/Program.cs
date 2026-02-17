@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Win32;
 using NLog;
 using System.IO;
 using System.Reflection;
@@ -6,11 +7,13 @@ using System.Text;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Media;
-using Microsoft.Win32;
 using Tailgrab;
+using Tailgrab.Clients.VRChat;
 using Tailgrab.Configuration;
 using Tailgrab.LineHandler;
+using Tailgrab.Models;
 using Tailgrab.PlayerManagement;
+
 
 public class FileTailer
 {
@@ -208,7 +211,7 @@ public class FileTailer
 
     /// <summary>
     /// Watch the VRChat log directory by default and process logs.
-    /// Show the TailgrabPannel UI on the STA thread before continuing to watch files.
+    /// Show the TailgrabPanel UI on the STA thread before continuing to watch files.
     /// </summary>
     [STAThread]
     public static void Main(string[] args)
@@ -217,8 +220,11 @@ public class FileTailer
         // Basic command line parsing:
         // -l <FilePath>    : use explicit log folder/file path
         // -clear           : remove application registry settings and exit
+        // -backup          : create a backup of the database and exit
         string? explicitPath = null;
         bool clearRegistry = false;
+        bool upgrade = false;
+        bool backup = false;
         for (int i = 0; i < args.Length; i++)
         {
             var a = args[i];
@@ -231,40 +237,388 @@ public class FileTailer
             {
                 clearRegistry = true;
             }
+            else if (string.Equals(a, "-backup", StringComparison.OrdinalIgnoreCase))
+            {
+                backup = true;
+            }
+            else if (string.Equals(a, "-upgrade", StringComparison.OrdinalIgnoreCase))
+            {
+                upgrade = true;
+            }
         }
 
         if (clearRegistry)
         {
-            try
-            {
-                // Remove the Tailgrab subtree from HKCU\Software\DeviousFox
-                using var baseKey = Registry.CurrentUser.OpenSubKey("Software\\DeviousFox", writable: true);
-                if (baseKey != null)
-                {
-                    try
-                    {
-                        baseKey.DeleteSubKeyTree("Tailgrab", false);
-                        logger.Info("Application registry settings cleared from HKCU\\Software\\DeviousFox\\Tailgrab");
-                    }
-                    catch (Exception ex)
-                    {
-                        logger.Warn(ex, "Failed to delete Tailgrab registry subtree");
-                    }
-                }
-                else
-                {
-                    logger.Info("No registry settings found to clear.");
-                }
-            }
-            catch (Exception ex)
-            {
-                logger.Warn(ex, "Failed while attempting to clear registry settings");
-            }
+            DeleteTailgrabRegistrySettings();
 
             // Exit application after clearing settings
             return;
         }
 
+        CreateResourceDirectory();
+
+        _serviceRegistry = new ServiceRegistry();
+        _serviceRegistry.StartAllServices();
+
+        if ( upgrade )
+        {
+            UpgradeApplication(_serviceRegistry);
+        }
+
+        if (backup)
+        {
+            CreateDatabaseBackup();
+            
+            // Exit application after creating backup
+            return;
+        }
+
+        string filePath = GetLogsPath(args, explicitPath);
+        if (!Directory.Exists(filePath))
+        {
+            logger.Info($"Missing VRChat log directory at '{filePath}'");
+            return;
+        }
+
+        AvatarBosGistListManager avatarGistMgr = new AvatarBosGistListManager(_serviceRegistry);
+        _ = Task.Run(() => avatarGistMgr.ProcessAvatarGistList());
+
+        GroupBosGistListManager groupGistMgr = new GroupBosGistListManager(_serviceRegistry);
+        _ = Task.Run(() => groupGistMgr.ProcessGroupGistList());
+
+        ConfigurationManager configurationManager = new ConfigurationManager(_serviceRegistry);
+        configurationManager.LoadLineHandlersFromConfig(HandlerList);
+
+        // Start the watcher task on a background thread so it doesn't block the STA UI thread
+        logger.Info($"Starting file watcher and showing UI for: '{filePath}'");
+        _ = Task.Run(() => WatchPath(filePath));
+
+        // Start the Amplitude Cache watcher task on a background thread
+        string ampPath = VRChatAmplitudePath + Path.DirectorySeparatorChar;
+        logger.Info($"Starting Amplitude Cache watcher for: '{ampPath}'");
+        _ = Task.Run(() => WatchAmpCache(ampPath, _serviceRegistry));
+
+        //SyncAvatarModerations(_serviceRegistry);
+
+        BuildAppWindow(_serviceRegistry);
+
+        // When the window closes, allow Main to complete. The watcher task will be abandoned; if desired add cancellation.
+    }
+
+    private static void UpgradeApplication(ServiceRegistry serviceRegistry)
+    {
+        logger.Warn($"Starting application upgrade process...");
+        
+        // Migrate database schema while preserving data
+        serviceRegistry.GetDBContext().Database.Migrate();
+        
+        // Create missing registry items with default values
+        InitializeMissingRegistryItems();
+
+        logger.Warn($"Completed application upgrade process...");
+    }
+
+    /// <summary>
+    /// Initialize missing registry items with their default values.
+    /// This ensures all required configuration keys exist without overwriting existing values.
+    /// </summary>
+    private static void InitializeMissingRegistryItems()
+    {
+        try
+        {
+            using var key = Registry.CurrentUser.CreateSubKey(Tailgrab.Common.Common.ConfigRegistryPath);
+            if (key == null)
+            {
+                logger.Warn("Failed to create or open registry key for configuration.");
+                return;
+            }
+
+            // Helper function to set value only if it doesn't exist
+            void SetDefaultIfMissing(string name, string defaultValue)
+            {
+                if (key.GetValue(name) == null && !string.IsNullOrEmpty(defaultValue))
+                {
+                    key.SetValue(name, defaultValue, RegistryValueKind.String);
+                    logger.Info($"Initialized missing registry item: {name}");
+                }
+            }
+
+            // Initialize Ollama API registry keys with defaults
+            SetDefaultIfMissing(Tailgrab.Common.Common.Registry_Ollama_API_Endpoint, 
+                Tailgrab.Common.Common.Default_Ollama_API_Endpoint);
+            SetDefaultIfMissing(Tailgrab.Common.Common.Registry_Ollama_API_Model, 
+                Tailgrab.Common.Common.Default_Ollama_API_Model);
+            SetDefaultIfMissing(Tailgrab.Common.Common.Registry_Ollama_API_Prompt, 
+                Tailgrab.Common.Common.Default_Ollama_API_Prompt);
+            SetDefaultIfMissing(Tailgrab.Common.Common.Registry_Ollama_API_Image_Prompt, 
+                Tailgrab.Common.Common.Default_Ollama_API_Image_Prompt);
+
+            // Note: The following keys don't have default values and should be set by the user:
+            // - Registry_VRChat_Web_UserName
+            // - Registry_VRChat_Web_Password
+            // - Registry_VRChat_Web_2FactorKey
+            // - Registry_Ollama_API_Key
+            // - Registry_Alert_Avatar
+            // - Registry_Alert_Group
+            // - Registry_Alert_Profile
+            // - Registry_Group_Checksum
+            // - Registry_Group_Gist
+            // - Registry_Avatar_Checksum
+            // - Registry_Avatar_Gist
+
+            logger.Info("Registry initialization completed.");
+        }
+        catch (Exception ex)
+        {
+            logger.Warn(ex, "Failed to initialize missing registry items");
+        }
+    }
+
+    private static void SyncAvatarModerations(ServiceRegistry serviceRegistry)
+    {
+        try
+        {
+            TailgrabDBContext dBContext = serviceRegistry.GetDBContext();
+            VRChatClient vrcClient = serviceRegistry.GetVRChatAPIClient();
+            if( dBContext != null && vrcClient != null )
+            {
+                List<VRChat.API.Model.AvatarModeration> moderations = vrcClient.GetAvatarModerations();
+                foreach (VRChat.API.Model.AvatarModeration mod in moderations)
+                {
+                    AvatarInfo? existing = dBContext.AvatarInfos.FirstOrDefault(a => a.AvatarId == mod.TargetAvatarId);
+                    if (existing != null)
+                    {
+                        if (existing.IsBos)
+                        {
+                            logger.Debug($"Avatar {existing.AvatarId} is already marked as BOS in the database. Skipping update.");
+                            continue; // already marked as BOS, no update needed
+                        }
+
+                        logger.Debug($"Marking Avatar {existing.AvatarId} is as BOS in the database.");
+                        existing.IsBos = true;
+                        existing.UpdatedAt = mod.Created;
+                        dBContext.SaveChanges();
+
+                    }
+                    else
+                    {
+                        dBContext.AvatarInfos.Add(new AvatarInfo
+                        {
+                            AvatarName = "From Moderation API",
+                            AvatarId = mod.TargetAvatarId,
+                            IsBos = true,
+                            CreatedAt = mod.Created,
+                            UpdatedAt = mod.Created
+                        });
+                        dBContext.SaveChanges();
+
+                        logger.Debug($"Adding missing Avatar {mod.TargetAvatarId} is as BOS in the database.");
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.Error(ex, "Failed to clear the database");
+        }
+    }
+
+    private static string GetLogsPath(string[] args, string? explicitPath)
+    {
+        string filePath = explicitPath ?? (VRChatAppDataPath + Path.DirectorySeparatorChar);
+        if (explicitPath == null)
+        {
+            if (args.Length == 0)
+            {
+                logger.Warn($"No path argument provided, defaulting to VRChat log directory: {filePath}");
+            }
+            else
+            {
+                logger.Warn($"No '-l' argument provided; ignoring other command line arguments and defaulting to VRChat log directory: {filePath}");
+            }
+        }
+        else
+        {
+            logger.Info($"Using explicit path from -l: '{filePath}'");
+        }
+
+        return filePath;
+    }
+
+    private static void DeleteTailgrabRegistrySettings()
+    {
+        try
+        {
+            // Remove the Tailgrab subtree from HKCU\Software\DeviousFox
+            using var baseKey = Registry.CurrentUser.OpenSubKey("Software\\DeviousFox", writable: true);
+            if (baseKey != null)
+            {
+                try
+                {
+                    baseKey.DeleteSubKeyTree("Tailgrab", false);
+                    logger.Info("Application registry settings cleared from HKCU\\Software\\DeviousFox\\Tailgrab");
+                }
+                catch (Exception ex)
+                {
+                    logger.Warn(ex, "Failed to delete Tailgrab registry subtree");
+                }
+            }
+            else
+            {
+                logger.Info("No registry settings found to clear.");
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.Warn(ex, "Failed while attempting to clear registry settings");
+        }
+    }
+
+    /// <summary>
+    /// Create a timestamped backup of the SQLite database.
+    /// Exports all database tables to JSON files for easy recovery.
+    /// </summary>
+    private static void CreateDatabaseBackup()
+    {
+        try
+        {
+            var dataDir = Path.Combine(AppContext.BaseDirectory, "data");
+            var databasePath = Path.Combine(dataDir, "avatars.sqlite");
+
+            if (!File.Exists(databasePath))
+            {
+                logger.Warn($"Database file not found at '{databasePath}'. Nothing to backup.");
+                return;
+            }
+
+            // Create backup directory with timestamp
+            var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            var backupDirName = $"backup_{timestamp}";
+            var backupDir = Path.Combine(dataDir, backupDirName);
+            Directory.CreateDirectory(backupDir);
+
+            logger.Info($"Creating database backup in: '{backupDirName}'");
+
+            // Get database context
+            if (_serviceRegistry == null)
+            {
+                logger.Error("Service registry not initialized. Cannot create backup.");
+                return;
+            }
+
+            var context = _serviceRegistry.GetDBContext();
+
+            // Export each table to JSON
+            int totalRecords = 0;
+
+            // Export AvatarInfo table
+            logger.Info("Exporting AvatarInfo table...");
+            var avatars = context.AvatarInfos.ToList();
+            var avatarsJson = JsonSerializer.Serialize(avatars, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(Path.Combine(backupDir, "AvatarInfo.json"), avatarsJson);
+            logger.Info($"  Exported {avatars.Count} avatar records");
+            totalRecords += avatars.Count;
+
+            // Export GroupInfo table
+            logger.Info("Exporting GroupInfo table...");
+            var groups = context.GroupInfos.ToList();
+            var groupsJson = JsonSerializer.Serialize(groups, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(Path.Combine(backupDir, "GroupInfo.json"), groupsJson);
+            logger.Info($"  Exported {groups.Count} group records");
+            totalRecords += groups.Count;
+
+            // Export UserInfo table
+            logger.Info("Exporting UserInfo table...");
+            var users = context.UserInfos.ToList();
+            var usersJson = JsonSerializer.Serialize(users, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(Path.Combine(backupDir, "UserInfo.json"), usersJson);
+            logger.Info($"  Exported {users.Count} user records");
+            totalRecords += users.Count;
+
+            // Export ProfileEvaluation table
+            logger.Info("Exporting ProfileEvaluation table...");
+            var profiles = context.ProfileEvaluations.ToList();
+            var profilesJson = JsonSerializer.Serialize(profiles, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(Path.Combine(backupDir, "ProfileEvaluation.json"), profilesJson);
+            logger.Info($"  Exported {profiles.Count} profile evaluation records");
+            totalRecords += profiles.Count;
+
+            // Export ImageEvaluation table
+            logger.Info("Exporting ImageEvaluation table...");
+            var images = context.ImageEvaluations.ToList();
+            var imagesJson = JsonSerializer.Serialize(images, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(Path.Combine(backupDir, "ImageEvaluation.json"), imagesJson);
+            logger.Info($"  Exported {images.Count} image evaluation records");
+            totalRecords += images.Count;
+
+            // Create backup metadata file
+            var metadata = new
+            {
+                BackupTimestamp = timestamp,
+                BackupDate = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+                ApplicationVersion = BuildInfo.GetInformationalVersion(),
+                DatabasePath = databasePath,
+                TotalRecords = totalRecords,
+                Tables = new[]
+                {
+                    new { TableName = "AvatarInfo", RecordCount = avatars.Count },
+                    new { TableName = "GroupInfo", RecordCount = groups.Count },
+                    new { TableName = "UserInfo", RecordCount = users.Count },
+                    new { TableName = "ProfileEvaluation", RecordCount = profiles.Count },
+                    new { TableName = "ImageEvaluation", RecordCount = images.Count }
+                }
+            };
+            var metadataJson = JsonSerializer.Serialize(metadata, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(Path.Combine(backupDir, "_backup_metadata.json"), metadataJson);
+
+            // Calculate total backup size
+            var backupDirInfo = new DirectoryInfo(backupDir);
+            var totalSize = backupDirInfo.GetFiles().Sum(f => f.Length);
+
+            logger.Info($"Database backup completed successfully:");
+            logger.Info($"  Location: '{backupDir}'");
+            logger.Info($"  Total records: {totalRecords}");
+            logger.Info($"  Backup size: {totalSize / 1024.0:F2} KB");
+
+            // Clean up old backups (keep only last 10)
+            CleanupOldBackups(dataDir, 10);
+        }
+        catch (Exception ex)
+        {
+            logger.Error(ex, "Failed to create database backup");
+        }
+    }
+
+    /// <summary>
+    /// Clean up old backup directories, keeping only the specified number of most recent backups.
+    /// </summary>
+    private static void CleanupOldBackups(string dataDir, int keepCount)
+    {
+        try
+        {
+            var backupDirs = Directory.GetDirectories(dataDir, "backup_*")
+                .Select(d => new DirectoryInfo(d))
+                .OrderByDescending(d => d.CreationTime)
+                .ToList();
+
+            if (backupDirs.Count > keepCount)
+            {
+                var dirsToDelete = backupDirs.Skip(keepCount);
+                foreach (var dir in dirsToDelete)
+                {
+                    logger.Info($"Deleting old backup directory: '{dir.Name}'");
+                    dir.Delete(recursive: true);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.Warn(ex, "Failed to clean up old backup directories");
+        }
+    }
+
+    private static void CreateResourceDirectory()
+    {
         // Ensure Resources/tailgrab.ico is present in the application folder. If missing, write a small embedded PNG as the icon file.
         try
         {
@@ -288,53 +642,11 @@ public class FileTailer
         {
             logger.Warn(ex, "Failed to ensure Resources/tailgrab.ico exists");
         }
-
-        _serviceRegistry = new ServiceRegistry();
-        _serviceRegistry.StartAllServices();
-
-        string filePath = explicitPath ?? (VRChatAppDataPath + Path.DirectorySeparatorChar);
-        if (explicitPath == null)
-        {
-            if (args.Length == 0)
-            {
-                logger.Warn($"No path argument provided, defaulting to VRChat log directory: {filePath}");
-            }
-            else
-            {
-                logger.Warn($"No '-l' argument provided; ignoring other command line arguments and defaulting to VRChat log directory: {filePath}");
-            }
-        }
-        else
-        {
-            logger.Info($"Using explicit path from -l: '{filePath}'");
-        }
-
-        if (!Directory.Exists(filePath))
-        {
-            logger.Info($"Missing VRChat log directory at '{filePath}'");
-            return;
-        }
-
-        ConfigurationManager configurationManager = new ConfigurationManager(_serviceRegistry);
-        configurationManager.LoadLineHandlersFromConfig(HandlerList);
-
-        // Start the watcher task on a background thread so it doesn't block the STA UI thread
-        logger.Info($"Starting file watcher and showing UI for: '{filePath}'");
-        _ = Task.Run(() => WatchPath(filePath));
-
-        // Start the Amplitude Cache watcher task on a background thread
-        string ampPath = VRChatAmplitudePath + Path.DirectorySeparatorChar;
-        logger.Info($"Starting Amplitude Cache watcher for: '{ampPath}'");
-        _ = Task.Run(() => WatchAmpCache(ampPath, _serviceRegistry));
-
-        BuildAppWindow(_serviceRegistry);
-
-        // When the window closes, allow Main to complete. The watcher task will be abandoned; if desired add cancellation.
     }
 
     private static void BuildAppWindow(ServiceRegistry serviceRegistryInstance)
     {
-        // Start WPF application and show the TailgrabPannel on this STA thread
+        // Start WPF application and show the TailgrabPanel on this STA thread
         var app = new System.Windows.Application();
 
         // Dark theme resources
@@ -468,7 +780,7 @@ public class FileTailer
         windowStyle.Setters.Add(new Setter(System.Windows.Window.ForegroundProperty, lightText));
         app.Resources[typeof(System.Windows.Window)] = windowStyle;
 
-        var panel = new TailgrabPannel(serviceRegistryInstance);
+        var panel = new TailgrabPanel(serviceRegistryInstance);
         app.Run(panel);
     }
 }

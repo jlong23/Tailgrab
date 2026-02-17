@@ -1,10 +1,8 @@
 ﻿using ConcurrentPriorityQueue.Core;
 using Microsoft.EntityFrameworkCore;
 using NLog;
-using System.Media;
 using Tailgrab.Clients.Ollama;
 using Tailgrab.Common;
-using Tailgrab.Config;
 using Tailgrab.Models;
 using VRChat.API.Model;
 
@@ -17,7 +15,12 @@ namespace Tailgrab.AvatarManagement
         private ServiceRegistry _serviceRegistry;
 
         private ConcurrentPriorityQueue<IHavePriority<int>, int> priorityQueue = new ConcurrentPriorityQueue<IHavePriority<int>, int>();
+        private Dictionary<String, DateTime> recentlyProcessedAvatars = new Dictionary<string, DateTime>();
 
+        public int GetQueueCount()
+        {
+            return priorityQueue.Count;
+        }
 
         public AvatarManagementService(ServiceRegistry serviceRegistry)
         {
@@ -30,7 +33,7 @@ namespace Tailgrab.AvatarManagement
         public void AddAvatar(AvatarInfo avatar)
         {
             try
-            {
+            {                
                 _serviceRegistry.GetDBContext().AvatarInfos.Add(avatar);
                 _serviceRegistry.GetDBContext().SaveChanges();
             }
@@ -72,121 +75,24 @@ namespace Tailgrab.AvatarManagement
         public void CacheAvatars(List<string> avatarIdInCache)
         {
             TailgrabDBContext dbContext = _serviceRegistry.GetDBContext();
-
-            int postion = 0;
             foreach (var avatarId in avatarIdInCache)
             {
                 EnqueueAvatarForCheck(avatarId);
-                AvatarInfo? dbAvatarInfo = dbContext.AvatarInfos.Find(avatarId);
-                bool updateNeeded = false;
-                if (dbAvatarInfo == null)
-                {
-                    updateNeeded = true;
-                }
-                else if (!dbAvatarInfo.IsBos &&
-                    (!dbAvatarInfo.UpdatedAt.HasValue || dbAvatarInfo.UpdatedAt.Value >= DateTime.UtcNow.AddHours(-12)))
-                {
-                    updateNeeded = true;
-                }
-
-                if (updateNeeded)
-                {
-                    Avatar? avatarData = null;
-                    try
-                    {
-                        // Avatar already exists in the database and was updated within the last 12 hours
-                        System.Threading.Thread.Sleep(500);
-                        avatarData = _serviceRegistry.GetVRChatAPIClient().GetAvatarById(avatarId);
-                        if (avatarData != null)
-                        {
-                            if (dbAvatarInfo == null)
-                            {
-                                var avatarInfo = new AvatarInfo
-                                {
-                                    AvatarId = avatarData.Id,
-                                    UserId = avatarData.AuthorId,
-                                    AvatarName = avatarData.Name,
-                                    ImageUrl = avatarData.ImageUrl,
-                                    CreatedAt = avatarData.CreatedAt,
-                                    UpdatedAt = DateTime.UtcNow,
-                                    IsBos = false
-                                };
-
-                                try
-                                {
-                                    dbContext.Add(avatarInfo);
-                                    dbContext.SaveChanges();
-                                }
-                                catch (Exception ex)
-                                {
-                                    logger.Error($"Error adding avatar record for {avatarId}: {ex.Message}");
-                                }
-                            }
-                            else
-                            {
-                                // Ensure entity is attached to the dbContext before updating to avoid Detached state errors
-                                var entry = dbContext.Entry(dbAvatarInfo);
-                                if (entry.State == Microsoft.EntityFrameworkCore.EntityState.Detached)
-                                {
-                                    dbContext.Attach(dbAvatarInfo);
-                                    entry = _serviceRegistry.GetDBContext().Entry(dbAvatarInfo);
-                                }
-
-                                dbAvatarInfo.UserId = avatarData.AuthorId;
-                                dbAvatarInfo.AvatarName = avatarData.Name;
-                                dbAvatarInfo.ImageUrl = avatarData.ImageUrl;
-                                dbAvatarInfo.CreatedAt = avatarData.CreatedAt;
-                                dbAvatarInfo.UpdatedAt = DateTime.UtcNow;
-
-                                try
-                                {
-                                    entry.State = Microsoft.EntityFrameworkCore.EntityState.Modified;
-                                    dbContext.SaveChanges();
-                                }
-                                catch (Exception ex)
-                                {
-                                    logger.Error($"Error updating avatar record for {avatarId}: {ex.Message}");
-                                }
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        logger.Error($"Error fetching avatar: {ex.Message}");
-                    }
-
-                    if (avatarData == null && dbAvatarInfo == null)
-                    {
-                        var avatarInfo = new AvatarInfo
-                        {
-                            AvatarId = avatarId,
-                            UserId = "",
-                            AvatarName = $"Unknown Avatar {avatarId}",
-                            ImageUrl = "",
-                            CreatedAt = DateTime.UtcNow,
-                            UpdatedAt = DateTime.UtcNow,
-                            IsBos = false
-                        };
-
-                        try
-                        {
-                            dbContext.Add(avatarInfo);
-                            dbContext.SaveChanges();
-                            logger.Debug($"Adding fallback avatar record for {avatarInfo.ToString()}");
-                        }
-                        catch (Exception ex)
-                        {
-                            logger.Error($"Error adding fallback avatar record for {avatarId}: {ex.Message}");
-                        }
-                    }
-                }
-
-                postion++;
             }
         }
 
         private void EnqueueAvatarForCheck(string avatarId)
         {
+            if (recentlyProcessedAvatars.TryGetValue(avatarId, out DateTime dateTime))
+            {
+                if ((DateTime.UtcNow - dateTime).TotalMinutes < 60)
+                {
+                    logger.Debug($"Skipping adding avatar {avatarId} as it was recently processed.");
+                    return;
+                }
+            }
+            recentlyProcessedAvatars.Add(avatarId, DateTime.UtcNow);
+
             var queuedItem = new QueuedAvatarProcess
             {
                 AvatarId = avatarId,
@@ -261,6 +167,7 @@ namespace Tailgrab.AvatarManagement
             {
                 string? soundSetting = ConfigStore.LoadSecret(Common.Common.Registry_Alert_Avatar) ?? "Hand";
                 SoundManager.PlaySound(soundSetting);
+
                 return true;
             }
 
@@ -347,7 +254,7 @@ namespace Tailgrab.AvatarManagement
             }
         }
 
-        private static Avatar? FetchUpdateAvatarData(ServiceRegistry serviceRegistry, TailgrabDBContext dBContext, string AvatarId, AvatarInfo? dbAvatarInfo)
+        public static Avatar? FetchUpdateAvatarData(ServiceRegistry serviceRegistry, TailgrabDBContext dBContext, string AvatarId, AvatarInfo? dbAvatarInfo)
         {
             Avatar? avatarData = null;
             try

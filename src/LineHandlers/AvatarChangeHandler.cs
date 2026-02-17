@@ -33,7 +33,6 @@ public class AvatarChangeHandler : AbstractLineHandler
             }
 
             _serviceRegistry.GetPlayerManager().SetAvatarForPlayer(userName, avatarName);
-            _serviceRegistry.GetPlayerManager().AddPlayerEventByDisplayName(userName, PlayerEvent.EventType.AvatarChange, $"Changed avatar to: {avatarName}");
 
             ExecuteActions();
             return true;

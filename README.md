@@ -1,18 +1,47 @@
-# TailGrab
+# Tailgrab
 VRChat Log Parser and Automation tool to help moderators manage trouble makers in VRChat since VRChat Management Team is not taking moderation seriously; ever.
 
-# Capabilities
+Tailgrab will read the VRChat Local Game Log files in real time, parse them for events and then trigger actions based on the configuration of the application.  The application is designed to be flexible and allow for a wide range of actions to be triggered based on the events that are parsed from the VRChat logs and alert the user to elements that may be less than honest.
 
-The core concept of the TailGrab was to create a Windows friendly ```grep``` of VR Chat log events that would allow a group moderation team to review, get insights of bad actors and with the action framework to perform a scripted reaction to a VR Chat game log event.
+[<img src="./docs/tailgrab_application.png" width="400" />](./tailgrab_application.png)
 
-EG:
-A ```Vote To Kick``` is received from a patreon, the action sequence could:
-- Send a OSC Avatar Parameter(s) that change the avatar's ear position
-- Delay for a quarter of a second
-- Send a keystroke to your soundboard application
-- Send a keystroke to OBS to start recording
+## Features
+- Shows a live feed of user in the current instance with their VRChat Avatar and UserID
+- When in Furry Hideout, shows user's usage of Furry Hideout Pens
+- Quick view of the user's historical avatar, pen, print, emoji and sticker usage in the current instance.
+- AI powered insights on user Profile content.
+- Quick reporting of User's Profile to the in game moderation instance
+- AI powered insights on user Image Assets used.
+- Quick reporting of User's Images to the in game moderation instance
+- Copy Button that copies the user's VRChat User Id, Display name, Instance Stats and historical activity for pasting into your favorite moderation toolset.
+- Avatar Flagging based on user directed database.
+- Group Flagging based on user directed database.
+- Historical tracking of User elapsed time seen from your usage of the application.
+- Trigger actions based on VRChat log events of "Vote To Kick" or "Group Moderation Action (Kick/Warn)", such as sending OSC Avatar Parameters, sending keystrokes to other applications, etc.
 
-# Usage
+## Installation
+
+> [!NOTE]
+> I am learing how to build a Installer for the appliction, but for now you will need to download the latest release and extract the zip file to a location of your choice on your Windows machine.  Then you can run the ```tailgrab.exe``` application to start monitoring your VRChat instance.
+
+### New Install
+1. Download the latest release of TailGrab from the [Latest Release](https://github.com/jlong23/Tailgrab/releases/latest) page.
+1. Extract the downloaded zip file to a location of your choice on your Windows machine.
+1. Run the ```tailgrab.exe``` application to start monitoring your VRChat instance.
+
+### Updgrade from Previous Version
+1. Download the latest release of TailGrab from the [Latest Release](https://github.com/jlong23/Tailgrab/releases/latest) page.
+1. Extract the downloaded zip file to a location of your choice on your Windows machine, but avoid overwriting your existing configuration & data files. ./config.json ./pen-network-id.csv ./sounds/* ./data/* 
+1. Run the ```tailgrab.exe -upgrade``` application to start any database upgrades.
+1. Configure any new Secrets and other configuration values that may be needed for new features added since your last version.
+1. Restart the application with ```tailgrab.exe``` to start monitoring your VRChat instance with the new version of TailGrab.
+
+## Configuration
+[Application Config](./docs/Config_Application.md) for details on how to configure the application to connect to API services.
+
+[Config Line Handlers](./docs/Config_LineHandlers.md) for details on how to configure the application to respond to VRChat local game log events.
+
+## Quick Usage
 Click the windows application or open a Powershell or Command Line prompt in your windows host, change directory to where ```tailgrab.exe``` has been extracted to and start it with:
 
 ```.\tailgrab.exe```
@@ -27,7 +56,7 @@ If you need to clear all registry settings stored for TailGrab, you can run:
 
 This will remove all stored configuration and secret values from the Windows Registry for TailGrab, you can then reconfigure the application as needed, save them, restart and get back to watching the instance.
 
-## VRChat Source Log Files
+### VRChat Source Log Files
 
 By default TailGrab will look for VRChat log files in the default location of:
 
@@ -37,7 +66,7 @@ This can be overridden by passing the full path to the VRChat log files as the f
 
 ```.\\tailgrab.exe D:\MyVRChatLogs\```
 
-## Watching TailGrab Application Logs
+### Watching TailGrab Application Logs
 
 The TailGrab application will log it's internal operations to the ```./logs``` folder in the same directory as the application executable.  Each run of the application will create a new log file with a timestamp in the filename.
 
@@ -45,150 +74,28 @@ If you want to watch the application logs in real time, you can use a tool like 
 
 ```Get-Content -Path .\logs\tailgrab-2026-01-26.log -wait```
 
-# Configuration
+## Usefull Tool Sets 
 
-## VR Chat and OLLama API Credentials
-
-Tailgrab uses VR Chat's public API to get information about avatars for the BlackListed Database (SQLite Local DB) and to get user profile infoformation for Profile Evaluation with the AI services.
-OLLama Cloud AI services are used to evaluate user profiles for potential bad actors based on your custom prompt criteria.  The OLLama API is called only once for a MD5 checksummed profile to reduce API usage and cost.
-
-The TailGrab application will look for the following credentials to connect to your VRChat API and OLLama AI services from the Windows Registry in a encyrpted format.  On the first Run you may receive a Popup Message to set the values on the Config -> Secrets Tab and restart the application to get the services running properly.
-
-## Getting your VR Chat 2 Factor Authentication key
-
-I certainly hope you are using LastPass Authenticator or Google Authenticator to manage your 2FA codes for VRChat.  If you are not, please stop reading this and go set that up now to protect your Online Accounts. 
-
-On LastPass Authenticator for the your VR Chat Entry, you can use the right Hamburger menu icon to get a dialog of options, one of which is to 'Edit Account', select that and you will see the 'Secret Key' field, copy the 'Secret Key' value to your clipboard and paste to something you can transfer to your PC (Or tediously type it in from the screen).
-
-## "Config.json" File
-
-The confiuration for TailGrab uses a JSON formated payload of the base attribute "lineHandlers" that contains a array of LineHandler Objects, Those may have a attribute of "actions" that contain an array of Action Objects.  This configuration is loaded on application start.
-
-## LineHandler Definition
-
-The LineHandler defines what type of system action to perform, what regular expression to use to detect that type of log line and user actions to perform when detected.
-
-|Attribute | Definition |
-|--------|--------|
-| handlerTypeValue | An enumeration value of the internal LineHandler code segments. See ```handlerTypes``` |
-| enabled | Boolean ```true``` or ```false``` to direct the application to include or temporarly ignore the configuration. |
-| patternTypeValue | An enumeration value of ```default``` or ```override```; Default will use the programmer's defined default for the Regular Expression to match/extract and a Override will allow the user to fine tune or respond to VRChat application log changes with the attribute ```pattern``` |
-| pattern | The Regular expression for the Pattern to match/extract, does nothing unless patternTypeValue is set to override |
-| logOutput | Boolean ```true``` or ```false``` to direct the application to log the output of the Line Handler. |
-| logOutputColor | A value of ```Default``` will use the programmers ANSI codes for the log output, if you use the last digits of the ANSI codes here, they are used.  EG ```"37m"``` |
-| actions | A array of Action Configuration elements or do nothing by leaving it as an empty array ```[]``` |
-
-## actionTypeValue Enum Values
-
-|actionTypeValue | Definition |
-|--------|--------|
-| DelayAction | Delay a defined amount of time before next action. |
-| OSCAction | Send OSC Avatar Parameter values to your VRChat Avatar. |
-| KeyPressAction | Send Keystrokes to a named open window title on your system. |
+DB Browser for SQLite - https://sqlitebrowser.org/
 
 
-## Action: DelayAction Definition
+## Detail Documentation
 
-The Delay Action will allow you to pause other actions with millisecond precision.  If you need to pause for 1 second, use 1000 as the delay time.  This action is used when there is a need for a sound trigger to play or you want to send stacked keystrokes to an application that is running.
+[Active Players](./docs/Application_Tab_ActivePlayers.md) Current Players in the Instance.
 
-|Attribute | Definition |
-|--------|--------|
-| actionTypeValue | An enumeration value of the internal LineHandler code segments. See ```actionTypeValue``` |
-| milliseconds | integer value of milliseconds to wait for. |
+[Past Players](./docs/Application_Tab_PastPlayers.md) Players that have been in the instance since you started TailGrab for the last 15 minutes.
 
-## Action: OSCAction Definition
+[Prints](./docs/Application_Tab_Prints.md) Shows Prints that have been spawned into the instance by time/user id.
 
-The OSC Action will allow you to send values (```Float```/```Int```/```Bool```) to your VRChat avatar that could be used to trigger animations on it during a action set.
+[Emojis & Stickers](./docs/Application_Tab_Emojis_and_Stickers.md) Shows Emojis and Stickers that have been spawned into the instance by time/user id.
 
-|Attribute | Definition |
-|--------|--------|
-| actionTypeValue | ```OSCAction``` See ```actionTypeValue``` |
-| parameterName | The VRChat Avatar Parameter Path to send to; EG. ```/avatar/parameters/Ear/Right_Angle``` |
-| oscValueType | OSC Value types associated with that Parameter Path; ```Float``` or ```Int``` or ```Bool``` |
-| value | The Value to send to your avatar; Floats expect a decimal place ```0.0```, Int expect no decimal place ```0```, and Bool expects either ```true``` or ```false```
+[Config Tab, Avatars](./docs/Config_Avatars.md) Mark Avatars for Alerting and Blocking.
 
-## Action: TTSAction Definition
+[Config Tab, Groups](./docs/Config_Groups.md) Mark Groups for Alerting and Blocking.
 
-The TTS Action will allow you to say a phrase when triggered.
+[Config Tab, Users](./docs/Config_Users.md) See user activity you have encountered.
 
-|Attribute | Definition |
-|--------|--------|
-| actionTypeValue | ```TTSAction``` See ```actionTypeValue``` |
-| text | The phrase you wish to have spoken |
-| volume | Volume 0...100 |
-| rate | The speed of the speech -10...10 |
+[Config Tab, Line Handlers](./docs/Config_LineHandlers.md) Configure Actions to Trigger based on VRChat Log Events.
 
-## Action : KeyPressAction Definition
+[Config Tab, Secrets](./docs/Config_Application.md) Configure API Keys and other application settings.
 
-** Still Broken with Beta 3 release; Will be fixed in future release **
-
-The KeyPress action will let you send keystrokes to a targed application by it's HWND Window Title, if the application runs windowless/without a title bar, this may not work for you.
-
-|Attribute | Definition |
-|--------|--------|
-| actionTypeValue | ```KeyPressAction``` See ```actionTypeValue``` |
-| windowTitle | Windows application title; EG. ```VRChat``` |
-| keys | An encoded defintion of keys to send to the application; see below |
-
-
-From https://learn.microsoft.com/en-us/dotnet/api/system.windows.forms.sendkeys?view=windowsdesktop-10.0
-
-The plus sign (```+```), caret (```^```), percent sign (```%```), tilde (```~```), and parentheses ```()``` have special meanings to SendKeys. To specify one of these characters, enclose it within braces ```({})```. For example, to specify the plus sign, use "{+}". To specify brace characters, use ```"{{}"``` and ```"{}}"```. Brackets ```([ ])``` have no special meaning to SendKeys, but you must enclose them in braces. In other applications, brackets do have a special meaning that might be significant when dynamic data exchange (DDE) occurs.
-
-To specify characters that aren't displayed when you press a key, such as ```ENTER``` or ```TAB```, and keys that represent actions rather than characters, use the codes in the following table.
-
-### Key	Encoding
-|Key Desired | Key Encoding |
-|--------|--------|
-|BACKSPACE | {BACKSPACE}, {BS}, or {BKSP} |
-|BREAK | {BREAK} |
-|CAPS LOCK | {CAPSLOCK} |
-|DEL or DELETE | {DELETE} or {DEL} |
-|DOWN ARROW|{DOWN}|
-|END | {END}
-|ENTER | {ENTER} or ~
-|ESC | {ESC}
-|HELP | {HELP}
-|HOME | {HOME}
-|INS or INSERT | {INSERT} or {INS}
-|LEFT ARROW | {LEFT}
-|NUM LOCK | {NUMLOCK}
-|PAGE DOWN | {PGDN}
-|PAGE UP | {PGUP}
-|PRINT SCREEN | {PRTSC} (reserved for future use)
-|RIGHT ARROW | {RIGHT}
-|SCROLL LOCK | {SCROLLLOCK}
-|TAB | {TAB}
-|UP ARROW | {UP}
-|F1 | {F1}
-|F2 | {F2}
-|F3 | {F3}
-|F4 | {F4}
-|F5 | {F5}
-|F6 | {F6}
-|F7 | {F7}
-|F8 | {F8}
-|F9 | {F9}
-|F10 | {F10}
-|F11 | {F11}
-|F12 | {F12}
-|F13 | {F13}
-|F14 | {F14}
-|F15 | {F15}
-|F16 | {F16}
-|Keypad add | {ADD}
-|Keypad subtract | {SUBTRACT}
-|Keypad multiply | {MULTIPLY}
-|Keypad divide | {DIVIDE}
-
-To specify keys combined with any combination of the SHIFT, CTRL, and ALT keys, precede the key code with one or more of the following codes.
-
-|Key Desired | Key Encoding |
-|--------|--------|
-|SHIFT | + |
-|CTRL | ^ |
-|ALT | % |
-
-To specify that any combination of SHIFT, CTRL, and ALT should be held down while several other keys are pressed, enclose the code for those keys in parentheses. For example, to specify to hold down SHIFT while E and C are pressed, use ```"+(EC)"```. To specify to hold down SHIFT while E is pressed, followed by C without SHIFT, use ```"+EC"```.
-
-To specify repeating keys, use the form ```{key number}```. You must put a space between key and number. For example, ```{LEFT 42}``` means press the LEFT ARROW key 42 times; ```{h 10}``` means press H 10 times.
