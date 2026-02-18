@@ -166,8 +166,10 @@ namespace Tailgrab.AvatarManagement
 
             if (bannedAvatars.Count > 0)
             {
+                // Play alert sound based on the highest alert type found for the avatar
                 AlertTypeEnum maxAlertType = bannedAvatars[0].AlertType;
-                SoundManager.PlayAlertSound(CommonConst.Registry_Alert_Avatar, maxAlertType);
+
+                SoundManager.PlayAlertSound(CommonConst.Avatar_Alert_Key, maxAlertType);
 
                 return true;
             }

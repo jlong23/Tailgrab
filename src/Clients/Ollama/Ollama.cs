@@ -1,9 +1,12 @@
 ﻿using ConcurrentPriorityQueue.Core;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.VisualBasic.ApplicationServices;
 using NLog;
+using NLog.Filters;
 using OllamaSharp;
 using OllamaSharp.Models;
 using System.Net.Http;
+using System.Numerics;
 using System.Text.RegularExpressions;
 using Tailgrab.Common;
 using Tailgrab.Models;
@@ -81,11 +84,10 @@ namespace Tailgrab.Clients.Ollama
             }
         }
 
-
         
         public static async Task ProfileCheckTask(ConcurrentPriorityQueue<IHavePriority<int>, int> priorityQueue, ServiceRegistry serviceRegistry)
         {
-            string? ollamaCloudKey = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_Ollama_API_Key);
+            string? ollamaCloudKey = ConfigStore.LoadSecret(CommonConst.Registry_Ollama_API_Key);
             OllamaApiClient? ollamaApi = null;
             if (ollamaCloudKey is null)
             {
@@ -93,12 +95,12 @@ namespace Tailgrab.Clients.Ollama
             } 
             else
             {
-                string ollamaEndpoint = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_Ollama_API_Endpoint) ?? Tailgrab.Common.CommonConst.Default_Ollama_API_Endpoint;
+                string ollamaEndpoint = ConfigStore.LoadSecret(CommonConst.Registry_Ollama_API_Endpoint) ?? CommonConst.Default_Ollama_API_Endpoint;
                 HttpClient client = new HttpClient();
                 client.BaseAddress = new Uri(ollamaEndpoint);
                 client.DefaultRequestHeaders.Add("Authorization", "Bearer " + ollamaCloudKey);
                 ollamaApi = new OllamaApiClient(client);
-                string? ollamaModel = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_Ollama_API_Model) ?? Tailgrab.Common.CommonConst.Default_Ollama_API_Model;
+                string? ollamaModel = ConfigStore.LoadSecret(CommonConst.Registry_Ollama_API_Model) ?? CommonConst.Default_Ollama_API_Model;
                 ollamaApi.SelectedModel = ollamaModel;
             }
 
@@ -211,7 +213,7 @@ namespace Tailgrab.Clients.Ollama
                     serviceRegistry.GetPlayerManager().AddPlayerEventByUserId(item.UserId ?? string.Empty, PlayerEvent.EventType.GroupWatch, $"User is member of watched group(s): {watchedGroups}");
                 }
 
-                SoundManager.PlayAlertSound(CommonConst.Registry_Alert_Group, maxAlertType);
+                SoundManager.PlayAlertSound(CommonConst.Group_Alert_Key, maxAlertType);
                 return true;
             }
 
@@ -220,11 +222,11 @@ namespace Tailgrab.Clients.Ollama
 
         private async static void GetEvaluationFromCloud(OllamaApiClient ollamaApi, ServiceRegistry serviceRegistry, QueuedProcess item )
         {
-            string? ollamaPrompt = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_Ollama_API_Prompt);
+            string? ollamaPrompt = ConfigStore.LoadSecret(CommonConst.Registry_Ollama_API_Prompt);
             GenerateRequest request = new GenerateRequest
             {
                 Model = ollamaApi.SelectedModel,
-                Prompt = string.Concat( ollamaPrompt ?? Tailgrab.Common.CommonConst.Default_Ollama_API_Prompt, item.UserBio ?? string.Empty ),
+                Prompt = string.Concat( ollamaPrompt ?? CommonConst.Default_Ollama_API_Prompt, item.UserBio ?? string.Empty ),
                 Stream = false
             };
 
@@ -251,15 +253,7 @@ namespace Tailgrab.Clients.Ollama
                         player.UserBio = item.UserBio;
                         player.AIEval = response;
 
-                        string? profileWatch = EvaluateProfile(player.AIEval);
-                        if (profileWatch != null)
-                        {
-                            player.IsProfileWatch = true;
-                            player.PenActivity = $"Bio: {profileWatch}";
-                            serviceRegistry.GetPlayerManager().AddPlayerEventByUserId(item.UserId ?? string.Empty, PlayerEvent.EventType.ProfileWatch, $"User profile was flagged by the AI : {profileWatch}");
-                            serviceRegistry.GetPlayerManager().OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Updated, player);
-                        }
-                        serviceRegistry.GetPlayerManager().OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Updated, player);
+                        ProfileViewUpdate( serviceRegistry, player );
                     }
                 });
             }
@@ -279,14 +273,8 @@ namespace Tailgrab.Clients.Ollama
                 {
                     player.AIEval = System.Text.Encoding.UTF8.GetString(evaluated.Evaluation);
                     player.UserBio = System.Text.Encoding.UTF8.GetString(evaluated.ProfileText);
-                    string? profileWatch = EvaluateProfile(player.AIEval);
-                    if (profileWatch != null)
-                    {
-                        player.IsProfileWatch = true;
-                        player.PenActivity = profileWatch;
-                        serviceRegistry.GetPlayerManager().AddPlayerEventByUserId(userId ?? string.Empty, PlayerEvent.EventType.ProfileWatch, $"User profile was flagged by the AI : {profileWatch}");
-                    }
-                    serviceRegistry.GetPlayerManager().OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Updated, player);
+
+                    ProfileViewUpdate(serviceRegistry, player);
                     logger.Debug($"User profile already processed for userId: {userId}");
                 }
                 else
@@ -301,6 +289,29 @@ namespace Tailgrab.Clients.Ollama
             }
         }
 
+        private static void ProfileViewUpdate( ServiceRegistry serviceRegistry, Player player )
+        {
+            string? profileWatch = EvaluateProfile(player.AIEval);
+            if (profileWatch != null)
+            {
+                switch(profileWatch)
+                {
+                    case "Harrassment & Bullying":
+                    case "Explicit Sexual":
+                        SoundManager.PlayAlertSound(CommonConst.Profile_Alert_Key, AlertTypeEnum.Nuisance);
+                        break;
+                    case "Self Harm":
+                        SoundManager.PlayAlertSound(CommonConst.Profile_Alert_Key, AlertTypeEnum.Watch);
+                        break;
+                }
+
+                player.IsProfileWatch = true;
+                player.PenActivity = $"Bio: {profileWatch}";
+                serviceRegistry.GetPlayerManager().AddPlayerEventByUserId(player.UserId ?? string.Empty, 
+                    PlayerEvent.EventType.ProfileWatch, $"User profile was flagged by the AI : {profileWatch}");
+            }
+            serviceRegistry.GetPlayerManager().OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Updated, player);
+        }
 
         private static string? EvaluateProfile(string? profileText)
         {
@@ -346,14 +357,14 @@ namespace Tailgrab.Clients.Ollama
 
             try
             {
-                string? ollamaCloudKey = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_Ollama_API_Key);
+                string? ollamaCloudKey = ConfigStore.LoadSecret(CommonConst.Registry_Ollama_API_Key);
                 if (ollamaCloudKey == null)
                 {
                     logger.Warn("Ollama API credentials are not set");
                     return null;
                 }
 
-                string ollamaEndpoint = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_Ollama_API_Endpoint) ?? Tailgrab.Common.CommonConst.Default_Ollama_API_Endpoint;
+                string ollamaEndpoint = ConfigStore.LoadSecret(CommonConst.Registry_Ollama_API_Endpoint) ?? CommonConst.Default_Ollama_API_Endpoint;
 
                 ImageReference? imageReference = await _serviceRegistry.GetVRChatAPIClient().GetImageReference(assetId, userId, imageUrlList);
                 if (imageReference != null)
@@ -370,14 +381,14 @@ namespace Tailgrab.Clients.Ollama
 
                             using (OllamaApiClient ollamaApi = new OllamaApiClient(ollamaHttpClient))
                             {
-                                string? ollamaModel = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_Ollama_API_Model) ?? Tailgrab.Common.CommonConst.Default_Ollama_API_Model;
+                                string? ollamaModel = ConfigStore.LoadSecret(CommonConst.Registry_Ollama_API_Model) ?? CommonConst.Default_Ollama_API_Model;
                                 ollamaApi.SelectedModel = ollamaModel;
 
-                                string? ollamaPrompt = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_Ollama_API_Image_Prompt);
+                                string? ollamaPrompt = ConfigStore.LoadSecret(CommonConst.Registry_Ollama_API_Image_Prompt);
                                 GenerateRequest request = new GenerateRequest
                                 {
                                     Model = ollamaApi.SelectedModel,
-                                    Prompt = ollamaPrompt ?? Tailgrab.Common.CommonConst.Default_Ollama_API_Image_Prompt,
+                                    Prompt = ollamaPrompt ?? CommonConst.Default_Ollama_API_Image_Prompt,
                                     Images = imageReference.Base64Data.ToArray(),
                                     Stream = false
                                 };

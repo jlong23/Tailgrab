@@ -23,9 +23,9 @@ namespace Tailgrab.Clients.VRChat
 
         public async Task Initialize()
         {
-            string? username = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_VRChat_Web_UserName);
-            string? password = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_VRChat_Web_Password);
-            string? twoFactorSecret = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_VRChat_Web_2FactorKey);
+            string? username = ConfigStore.LoadSecret(CommonConst.Registry_VRChat_Web_UserName);
+            string? password = ConfigStore.LoadSecret(CommonConst.Registry_VRChat_Web_Password);
+            string? twoFactorSecret = ConfigStore.LoadSecret(CommonConst.Registry_VRChat_Web_2FactorKey);
 
             // Persist cookies to disk (cookies.json) for reuse
             try
@@ -43,7 +43,7 @@ namespace Tailgrab.Clients.VRChat
             List<Cookie>? loadedCookies = LoadValidCookiesFromFile(cookiePath);
 
             VRChatClientBuilder builder = new VRChatClientBuilder()
-                .WithApplication(name: "Jarvis", version: "1.0.0", contact: "jlong@rabbitearsvideoproduction.com");
+                .WithApplication(name: "Tailgrab", version: "1.1.0", contact: "jlong@rabbitearsvideoproduction.com");
 
             if (loadedCookies != null && loadedCookies.Count > 0)
             {
