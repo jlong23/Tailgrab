@@ -326,7 +326,7 @@ public class FileTailer
     {
         try
         {
-            using var key = Registry.CurrentUser.CreateSubKey(Tailgrab.Common.Common.ConfigRegistryPath);
+            using var key = Registry.CurrentUser.CreateSubKey(Tailgrab.Common.CommonConst.ConfigRegistryPath);
             if (key == null)
             {
                 logger.Warn("Failed to create or open registry key for configuration.");
@@ -344,14 +344,14 @@ public class FileTailer
             }
 
             // Initialize Ollama API registry keys with defaults
-            SetDefaultIfMissing(Tailgrab.Common.Common.Registry_Ollama_API_Endpoint, 
-                Tailgrab.Common.Common.Default_Ollama_API_Endpoint);
-            SetDefaultIfMissing(Tailgrab.Common.Common.Registry_Ollama_API_Model, 
-                Tailgrab.Common.Common.Default_Ollama_API_Model);
-            SetDefaultIfMissing(Tailgrab.Common.Common.Registry_Ollama_API_Prompt, 
-                Tailgrab.Common.Common.Default_Ollama_API_Prompt);
-            SetDefaultIfMissing(Tailgrab.Common.Common.Registry_Ollama_API_Image_Prompt, 
-                Tailgrab.Common.Common.Default_Ollama_API_Image_Prompt);
+            SetDefaultIfMissing(Tailgrab.Common.CommonConst.Registry_Ollama_API_Endpoint, 
+                Tailgrab.Common.CommonConst.Default_Ollama_API_Endpoint);
+            SetDefaultIfMissing(Tailgrab.Common.CommonConst.Registry_Ollama_API_Model, 
+                Tailgrab.Common.CommonConst.Default_Ollama_API_Model);
+            SetDefaultIfMissing(Tailgrab.Common.CommonConst.Registry_Ollama_API_Prompt, 
+                Tailgrab.Common.CommonConst.Default_Ollama_API_Prompt);
+            SetDefaultIfMissing(Tailgrab.Common.CommonConst.Registry_Ollama_API_Image_Prompt, 
+                Tailgrab.Common.CommonConst.Default_Ollama_API_Image_Prompt);
 
             // Note: The following keys don't have default values and should be set by the user:
             // - Registry_VRChat_Web_UserName

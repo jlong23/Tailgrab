@@ -891,18 +891,18 @@ Title="Tailgrab Player Panel"
                                     <DataGrid.Columns>
                                         <DataGridTextColumn Header="Avatar Name" Binding="{Binding AvatarName}" SortMemberPath="AvatarName" Width="*" />
                                         <DataGridTextColumn Header="Avatar ID" Binding="{Binding AvatarId}" SortMemberPath="AvatarId" Width="300" />
-                                        <!-- IsBOS as template column: display Yes/No, edit with ComboBox -->
-                                        <DataGridTemplateColumn Header="IsBOS" SortMemberPath="IsBos" Width="120">
+                                        <!-- AlertType as template column: display enum name, edit with ComboBox -->
+                                        <DataGridTemplateColumn Header="Alert" SortMemberPath="AlertType" Width="120">
                                             <DataGridTemplateColumn.CellTemplate>
                                                 <DataTemplate>
-                                                    <TextBlock Text="{Binding IsBosText}" Foreground="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" />
+                                                    <TextBlock Text="{Binding AlertType}" Foreground="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" />
                                                 </DataTemplate>
                                             </DataGridTemplateColumn.CellTemplate>
                                             <DataGridTemplateColumn.CellEditingTemplate>
                                                 <DataTemplate>
-                                                    <ComboBox ItemsSource="{Binding DataContext.IsBosOptions, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                    <ComboBox ItemsSource="{Binding DataContext.AlertTypeOptions, RelativeSource={RelativeSource AncestorType=Window}}"
                                                           SelectedValuePath="Value" DisplayMemberPath="Key"
-                                                          SelectedValue="{Binding IsBos, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                          SelectedValue="{Binding AlertType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                           Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
                                                           Foreground="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"
                                                           BorderBrush="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}">
@@ -966,17 +966,17 @@ Title="Tailgrab Player Panel"
                                         <DataGridTextColumn Header="Group Name" Binding="{Binding GroupName}" SortMemberPath="GroupName" Width="*" />
                                         <DataGridTextColumn Header="Group ID" Binding="{Binding GroupId}" SortMemberPath="GroupId" Width="300" />
                                         <!-- IsBOS as template column: display Yes/No, edit with ComboBox -->
-                                        <DataGridTemplateColumn Header="IsBOS" SortMemberPath="IsBos" Width="120">
+                                        <DataGridTemplateColumn Header="Alert" SortMemberPath="IsBos" Width="120">
                                             <DataGridTemplateColumn.CellTemplate>
                                                 <DataTemplate>
-                                                    <TextBlock Text="{Binding IsBosText}" Foreground="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" />
+                                                    <TextBlock Text="{Binding AlertType}" Foreground="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" />
                                                 </DataTemplate>
                                             </DataGridTemplateColumn.CellTemplate>
                                             <DataGridTemplateColumn.CellEditingTemplate>
                                                 <DataTemplate>
-                                                    <ComboBox ItemsSource="{Binding DataContext.IsBosOptions, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                    <ComboBox ItemsSource="{Binding DataContext.AlertTypeOptions, RelativeSource={RelativeSource AncestorType=Window}}"
                                                           SelectedValuePath="Value" DisplayMemberPath="Key"
-                                                          SelectedValue="{Binding IsBos, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                          SelectedValue="{Binding AlertType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                           Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
                                                           Foreground="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"
                                                           BorderBrush="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}">

@@ -18,7 +18,7 @@ namespace Tailgrab.Common
             var protectedBytes = ProtectedData.Protect(bytes, null, DataProtectionScope.CurrentUser);
             var base64 = Convert.ToBase64String(protectedBytes);
 
-            using (var key = Registry.CurrentUser.CreateSubKey(Common.ConfigRegistryPath))
+            using (var key = Registry.CurrentUser.CreateSubKey(CommonConst.ConfigRegistryPath))
             {
                 key.SetValue(name, base64, RegistryValueKind.String);
             }
@@ -28,7 +28,7 @@ namespace Tailgrab.Common
         {
             if (name == null) throw new ArgumentNullException(nameof(name));
 
-            using (var key = Registry.CurrentUser.OpenSubKey(Common.ConfigRegistryPath))
+            using (var key = Registry.CurrentUser.OpenSubKey(CommonConst.ConfigRegistryPath))
             {
                 if (key == null) return null;
                 var base64 = key.GetValue(name) as string;
@@ -48,7 +48,7 @@ namespace Tailgrab.Common
 
         public static void DeleteSecret(string name)
         {
-            using (var key = Registry.CurrentUser.OpenSubKey(Common.ConfigRegistryPath, writable: true))
+            using (var key = Registry.CurrentUser.OpenSubKey(CommonConst.ConfigRegistryPath, writable: true))
             {
                 if (key == null) return;
                 key.DeleteValue(name, throwOnMissingValue: false);
@@ -59,7 +59,7 @@ namespace Tailgrab.Common
         {
             try
             {
-                using (RegistryKey? key = Registry.CurrentUser.OpenSubKey(Common.ConfigRegistryPath))
+                using (RegistryKey? key = Registry.CurrentUser.OpenSubKey(CommonConst.ConfigRegistryPath))
                 {
                     if (key == null)
                     {
@@ -88,7 +88,7 @@ namespace Tailgrab.Common
         {
             try
             {
-                using (RegistryKey key = Registry.CurrentUser.CreateSubKey(Common.ConfigRegistryPath))
+                using (RegistryKey key = Registry.CurrentUser.CreateSubKey(CommonConst.ConfigRegistryPath))
                 {
                     key.SetValue(keyName, keyValue, RegistryValueKind.String);
                 }

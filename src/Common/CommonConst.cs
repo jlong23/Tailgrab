@@ -1,6 +1,6 @@
 ﻿namespace Tailgrab.Common
 {
-    public static class Common
+    public static class CommonConst
     {
         public const string ApplicationName = "Tailgrab";
         public const string CompanyName = "DeviousFox";

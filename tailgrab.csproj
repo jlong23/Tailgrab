@@ -7,9 +7,9 @@
     <UseWindowsForms>true</UseWindowsForms>
     <UseWPF>true</UseWPF>
     <Nullable>enable</Nullable>
-    <AssemblyVersion>1.0.9.1722</AssemblyVersion> <!-- Explicitly set the build number -->
-    <FileVersion>1.0.9.1722</FileVersion>
-    <InformationalVersion>1.0.9.1722</InformationalVersion>
+    <AssemblyVersion>1.1.0.1722</AssemblyVersion> <!-- Explicitly set the build number -->
+    <FileVersion>1.1.0.1722</FileVersion>
+    <InformationalVersion>1.1.0.1722</InformationalVersion>
     <ApplicationIcon>src\Resources\tailgrab_large.ico</ApplicationIcon>    
   </PropertyGroup>
 

@@ -3,6 +3,7 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 using System;
 using System.Collections.Generic;
+using Tailgrab.Common;
 using VRChat.API.Model;
 
 namespace Tailgrab.Models;
@@ -15,6 +16,8 @@ public partial class GroupInfo
 
     public bool IsBos{ get; set; }
 
+    public AlertTypeEnum AlertType { get; set; } = AlertTypeEnum.None;
+
     public DateTime CreatedAt { get; set; }
 
     public DateTime? UpdatedAt { get; set; }
@@ -26,6 +29,6 @@ public partial class GroupInfo
 
     public override string ToString()
     {
-        return $"GroupInfo - GroupId: {GroupId}, GroupName: {GroupName}, IsBOS: {IsBos}, CreatedAt: {CreatedAt}, UpdatedAt: {UpdatedAt}";
+        return $"GroupId: {GroupId}, GroupName: {GroupName}, IsBOS: {IsBos}, AlertType: {AlertType}, CreatedAt: {CreatedAt}, UpdatedAt: {UpdatedAt}";
     }
 }

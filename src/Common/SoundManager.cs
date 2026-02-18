@@ -56,6 +56,15 @@ namespace Tailgrab.Common
             }
         }
 
+        public static void PlayAlertSound(string entityType, AlertTypeEnum alertType )
+        {
+            string? soundSetting = ConfigStore.LoadSecret(entityType) ?? "Hand";
+            for (int i = 0; i < (int)alertType; i++)
+            {               
+                PlaySound(soundSetting);
+            }
+        }
+
         /// <summary>
         /// Play a system alert sound or a file under the local "sounds" directory.
         /// Recognised system names (case-insensitive): Asterisk, Beep, Exclamation, Hand, Question

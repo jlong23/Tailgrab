@@ -16,16 +16,16 @@ namespace Tailgrab.Clients.VRChat
     public class VRChatClient
     {
         private const string URI_VRC_BASE_API = "https://api.vrchat.cloud";
-        public static string UserAgent = "Tailgrab/1.0.7";
+        public static string UserAgent = "Tailgrab/1.1.0";
         public static Logger logger = LogManager.GetCurrentClassLogger();
 
         private IVRChat? _vrchat;
 
         public async Task Initialize()
         {
-            string? username = ConfigStore.LoadSecret(Tailgrab.Common.Common.Registry_VRChat_Web_UserName);
-            string? password = ConfigStore.LoadSecret(Tailgrab.Common.Common.Registry_VRChat_Web_Password);
-            string? twoFactorSecret = ConfigStore.LoadSecret(Tailgrab.Common.Common.Registry_VRChat_Web_2FactorKey);
+            string? username = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_VRChat_Web_UserName);
+            string? password = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_VRChat_Web_Password);
+            string? twoFactorSecret = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_VRChat_Web_2FactorKey);
 
             if (username is null || password is null || twoFactorSecret is null)
             {
@@ -529,6 +529,50 @@ namespace Tailgrab.Clients.VRChat
             }
         }
 
+        #region Non Public Helper Types
+        private class SerializableCookie
+        {
+            public string Name { get; set; } = string.Empty;
+            public string Value { get; set; } = string.Empty;
+            public string Domain { get; set; } = string.Empty;
+            public string Path { get; set; } = "/";
+            public DateTime Expires { get; set; } = DateTime.MinValue;
+            public bool Secure { get; set; }
+            public bool HttpOnly { get; set; }
+
+            public Cookie ToCookie()
+            {
+                var cookie = new Cookie(Name, Value, Path, Domain)
+                {
+                    Secure = Secure,
+                    HttpOnly = HttpOnly
+                };
+
+                if (Expires != DateTime.MinValue)
+                {
+                    cookie.Expires = Expires;
+                }
+
+                return cookie;
+            }
+
+            public static SerializableCookie FromCookie(Cookie c)
+            {
+                return new SerializableCookie
+                {
+                    Name = c.Name,
+                    Value = c.Value,
+                    Domain = c.Domain ?? string.Empty,
+                    Path = c.Path ?? "/",
+                    Expires = c.Expires,
+                    Secure = c.Secure,
+                    HttpOnly = c.HttpOnly
+                };
+            }
+        }
+        #endregion
+
+        #region Non Public JSON Serializable Types
         public class AvatarModerationItem
         {
             [JsonProperty("avatarModerationType")]
@@ -682,47 +726,6 @@ namespace Tailgrab.Clients.VRChat
             public string HolderId { get; set; } = string.Empty;
         }
 
-        private class SerializableCookie
-        {
-            public string Name { get; set; } = string.Empty;
-            public string Value { get; set; } = string.Empty;
-            public string Domain { get; set; } = string.Empty;
-            public string Path { get; set; } = "/";
-            public DateTime Expires { get; set; } = DateTime.MinValue;
-            public bool Secure { get; set; }
-            public bool HttpOnly { get; set; }
-
-            public Cookie ToCookie()
-            {
-                var cookie = new Cookie(Name, Value, Path, Domain)
-                {
-                    Secure = Secure,
-                    HttpOnly = HttpOnly
-                };
-
-                if (Expires != DateTime.MinValue)
-                {
-                    cookie.Expires = Expires;
-                }
-
-                return cookie;
-            }
-
-            public static SerializableCookie FromCookie(Cookie c)
-            {
-                return new SerializableCookie
-                {
-                    Name = c.Name,
-                    Value = c.Value,
-                    Domain = c.Domain ?? string.Empty,
-                    Path = c.Path ?? "/",
-                    Expires = c.Expires,
-                    Secure = c.Secure,
-                    HttpOnly = c.HttpOnly
-                };
-            }
-        }
-
         public class PrintInfo
         {
             [JsonProperty("authorId")]
@@ -754,5 +757,6 @@ namespace Tailgrab.Clients.VRChat
             [JsonProperty("image")]
             public string ImageUrl { get; set; } = string.Empty;
         }
+        #endregion
     }
 }

@@ -129,7 +129,8 @@ namespace Tailgrab.AvatarManagement
                                 ImageUrl = avatar.ImageUrl,
                                 CreatedAt = avatar.CreatedAt,
                                 UpdatedAt = DateTime.UtcNow,
-                                IsBos = false
+                                IsBos = false,
+                                AlertType = AlertTypeEnum.None
                             };
 
                             AddAvatar(avatarInfo);
@@ -159,14 +160,14 @@ namespace Tailgrab.AvatarManagement
         internal bool CheckAvatarByName(string avatarName)
         {
             var bannedAvatars = _serviceRegistry.GetDBContext().AvatarInfos
-                                         .Where(b => b.AvatarName != null && b.AvatarName.Equals(avatarName) && b.IsBos)
-                                         .OrderBy(b => b.CreatedAt)
+                                         .Where(b => b.AvatarName != null && b.AvatarName.Equals(avatarName) && b.AlertType > 0)
+                                         .OrderByDescending(b => b.AlertType)
                                          .ToList();
 
             if (bannedAvatars.Count > 0)
             {
-                string? soundSetting = ConfigStore.LoadSecret(Common.Common.Registry_Alert_Avatar) ?? "Hand";
-                SoundManager.PlaySound(soundSetting);
+                AlertTypeEnum maxAlertType = bannedAvatars[0].AlertType;
+                SoundManager.PlayAlertSound(CommonConst.Registry_Alert_Avatar, maxAlertType);
 
                 return true;
             }

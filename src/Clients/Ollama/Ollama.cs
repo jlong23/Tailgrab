@@ -85,7 +85,7 @@ namespace Tailgrab.Clients.Ollama
         
         public static async Task ProfileCheckTask(ConcurrentPriorityQueue<IHavePriority<int>, int> priorityQueue, ServiceRegistry serviceRegistry)
         {
-            string? ollamaCloudKey = ConfigStore.LoadSecret(Tailgrab.Common.Common.Registry_Ollama_API_Key);
+            string? ollamaCloudKey = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_Ollama_API_Key);
             OllamaApiClient? ollamaApi = null;
             if (ollamaCloudKey is null)
             {
@@ -93,12 +93,12 @@ namespace Tailgrab.Clients.Ollama
             } 
             else
             {
-                string ollamaEndpoint = ConfigStore.LoadSecret(Tailgrab.Common.Common.Registry_Ollama_API_Endpoint) ?? Tailgrab.Common.Common.Default_Ollama_API_Endpoint;
+                string ollamaEndpoint = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_Ollama_API_Endpoint) ?? Tailgrab.Common.CommonConst.Default_Ollama_API_Endpoint;
                 HttpClient client = new HttpClient();
                 client.BaseAddress = new Uri(ollamaEndpoint);
                 client.DefaultRequestHeaders.Add("Authorization", "Bearer " + ollamaCloudKey);
                 ollamaApi = new OllamaApiClient(client);
-                string? ollamaModel = ConfigStore.LoadSecret(Tailgrab.Common.Common.Registry_Ollama_API_Model) ?? Tailgrab.Common.Common.Default_Ollama_API_Model;
+                string? ollamaModel = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_Ollama_API_Model) ?? Tailgrab.Common.CommonConst.Default_Ollama_API_Model;
                 ollamaApi.SelectedModel = ollamaModel;
             }
 
@@ -166,8 +166,8 @@ namespace Tailgrab.Clients.Ollama
         private async static Task<bool> GetUserGroupInformation(ServiceRegistry serviceRegistry, TailgrabDBContext dBContext, List<LimitedUserGroups> userGroups, QueuedProcess item)
         {
             logger.Debug($"Processing User Group subscription for userId: {item.UserId}");
-            bool isSuspectGroup = false;
-            string? watchedGroups = string.Empty;
+            AlertTypeEnum maxAlertType = AlertTypeEnum.None;
+            string ? watchedGroups = string.Empty;
             foreach (LimitedUserGroups group in userGroups)
             {
                 GroupInfo? groupInfo = dBContext.GroupInfos.Find(group.GroupId);
@@ -177,7 +177,7 @@ namespace Tailgrab.Clients.Ollama
                     {
                         GroupId = group.GroupId,
                         GroupName = group.Name,
-                        IsBos = false,
+                        AlertType = AlertTypeEnum.None,
                         CreatedAt = DateTime.UtcNow,
                         UpdatedAt = DateTime.UtcNow
                     };
@@ -190,15 +190,18 @@ namespace Tailgrab.Clients.Ollama
                     dBContext.GroupInfos.Update(groupInfo);
                     dBContext.SaveChanges();
 
-                    if (groupInfo.IsBos)
+                    if (groupInfo.AlertType > AlertTypeEnum.None)
                     {
                         watchedGroups = string.Concat( watchedGroups,  " " + groupInfo.GroupName );
-                        isSuspectGroup = true;
+                        if( groupInfo.AlertType > maxAlertType)
+                        {
+                            maxAlertType = groupInfo.AlertType;
+                        }
                     }
                 }
             }
 
-            if (isSuspectGroup)
+            if (maxAlertType > AlertTypeEnum.None)
             {                
                 Player? player = serviceRegistry.GetPlayerManager().GetPlayerByUserId(item.UserId ?? string.Empty);
                 if (player != null)
@@ -208,20 +211,20 @@ namespace Tailgrab.Clients.Ollama
                     serviceRegistry.GetPlayerManager().AddPlayerEventByUserId(item.UserId ?? string.Empty, PlayerEvent.EventType.GroupWatch, $"User is member of watched group(s): {watchedGroups}");
                 }
 
-                string? soundSetting = ConfigStore.LoadSecret(Common.Common.Registry_Alert_Group) ?? "Hand";
-                SoundManager.PlaySound(soundSetting);
+                SoundManager.PlayAlertSound(CommonConst.Registry_Alert_Group, maxAlertType);
+                return true;
             }
 
-            return isSuspectGroup;
+            return false;
         }
 
         private async static void GetEvaluationFromCloud(OllamaApiClient ollamaApi, ServiceRegistry serviceRegistry, QueuedProcess item )
         {
-            string? ollamaPrompt = ConfigStore.LoadSecret(Tailgrab.Common.Common.Registry_Ollama_API_Prompt);
+            string? ollamaPrompt = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_Ollama_API_Prompt);
             GenerateRequest request = new GenerateRequest
             {
                 Model = ollamaApi.SelectedModel,
-                Prompt = string.Concat( ollamaPrompt ?? Tailgrab.Common.Common.Default_Ollama_API_Prompt, item.UserBio ?? string.Empty ),
+                Prompt = string.Concat( ollamaPrompt ?? Tailgrab.Common.CommonConst.Default_Ollama_API_Prompt, item.UserBio ?? string.Empty ),
                 Stream = false
             };
 
@@ -343,14 +346,14 @@ namespace Tailgrab.Clients.Ollama
 
             try
             {
-                string? ollamaCloudKey = ConfigStore.LoadSecret(Tailgrab.Common.Common.Registry_Ollama_API_Key);
+                string? ollamaCloudKey = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_Ollama_API_Key);
                 if (ollamaCloudKey == null)
                 {
                     logger.Warn("Ollama API credentials are not set");
                     return null;
                 }
 
-                string ollamaEndpoint = ConfigStore.LoadSecret(Tailgrab.Common.Common.Registry_Ollama_API_Endpoint) ?? Tailgrab.Common.Common.Default_Ollama_API_Endpoint;
+                string ollamaEndpoint = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_Ollama_API_Endpoint) ?? Tailgrab.Common.CommonConst.Default_Ollama_API_Endpoint;
 
                 ImageReference? imageReference = await _serviceRegistry.GetVRChatAPIClient().GetImageReference(assetId, userId, imageUrlList);
                 if (imageReference != null)
@@ -367,14 +370,14 @@ namespace Tailgrab.Clients.Ollama
 
                             using (OllamaApiClient ollamaApi = new OllamaApiClient(ollamaHttpClient))
                             {
-                                string? ollamaModel = ConfigStore.LoadSecret(Tailgrab.Common.Common.Registry_Ollama_API_Model) ?? Tailgrab.Common.Common.Default_Ollama_API_Model;
+                                string? ollamaModel = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_Ollama_API_Model) ?? Tailgrab.Common.CommonConst.Default_Ollama_API_Model;
                                 ollamaApi.SelectedModel = ollamaModel;
 
-                                string? ollamaPrompt = ConfigStore.LoadSecret(Tailgrab.Common.Common.Registry_Ollama_API_Image_Prompt);
+                                string? ollamaPrompt = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_Ollama_API_Image_Prompt);
                                 GenerateRequest request = new GenerateRequest
                                 {
                                     Model = ollamaApi.SelectedModel,
-                                    Prompt = ollamaPrompt ?? Tailgrab.Common.Common.Default_Ollama_API_Image_Prompt,
+                                    Prompt = ollamaPrompt ?? Tailgrab.Common.CommonConst.Default_Ollama_API_Image_Prompt,
                                     Images = imageReference.Base64Data.ToArray(),
                                     Stream = false
                                 };

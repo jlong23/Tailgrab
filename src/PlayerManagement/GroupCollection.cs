@@ -1,6 +1,7 @@
 using System.Collections.Specialized;
 using System.ComponentModel;
 using Microsoft.EntityFrameworkCore;
+using Tailgrab.Common;
 
 namespace Tailgrab.PlayerManagement
 {
@@ -154,37 +155,29 @@ namespace Tailgrab.PlayerManagement
     public class GroupInfoViewModel : INotifyPropertyChanged
     {
         public string GroupId { get; set; }
-        public string GroupName { get; set; }
-        private bool _isBos;
-        public bool IsBos
+        public string GroupName { get; set; }        
+        private AlertTypeEnum _AlertType;
+        public AlertTypeEnum AlertType
         {
-            get => _isBos;
+            get => _AlertType;
             set
             {
-                if (_isBos != value)
+                if (_AlertType != value)
                 {
-                    _isBos = value;
-                    IsBosText = BoolToYesNo(_isBos);
-                    OnPropertyChanged(nameof(IsBos));
-                    OnPropertyChanged(nameof(IsBosText));
+                    _AlertType = value;
+                    OnPropertyChanged(nameof(AlertType));
                 }
             }
         }
-
-        public string IsBosText { get; set; }
         public DateTime? UpdatedAt { get; set; }
 
         public GroupInfoViewModel(Tailgrab.Models.GroupInfo a)
         {
             GroupId = a.GroupId;
             GroupName = a.GroupName;
-            IsBos = a.IsBos;
+            AlertType = a.AlertType;
             UpdatedAt = a.UpdatedAt;
-            IsBosText = BoolToYesNo(IsBos);
         }
-
-        // Convert boolean to YES/NO string for display
-        public static string BoolToYesNo(bool value) => value ? "YES" : "NO";
 
         public event PropertyChangedEventHandler? PropertyChanged;
         protected void OnPropertyChanged(string propertyName)

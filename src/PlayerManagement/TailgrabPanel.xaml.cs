@@ -124,7 +124,19 @@ namespace Tailgrab.PlayerManagement
         public PlayerViewModel? SelectedPast { get; set; }
         public static Logger logger = LogManager.GetCurrentClassLogger();
 
-        public List<KeyValuePair<string, bool>> IsBosOptions { get; set; }
+        public List<KeyValuePair<string, bool>> IsBosOptions { get; } = new List<KeyValuePair<string, bool>>
+        {
+            new KeyValuePair<string,bool>("YES", true),
+            new KeyValuePair<string,bool>("NO", false)
+        };
+
+        public List<KeyValuePair<string, AlertTypeEnum>> AlertTypeOptions { get; }  = new List<KeyValuePair<string, AlertTypeEnum>>
+        {
+            new KeyValuePair<string, AlertTypeEnum>("None", AlertTypeEnum.None),
+            new KeyValuePair<string, AlertTypeEnum>("Watch", AlertTypeEnum.Watch),
+            new KeyValuePair<string, AlertTypeEnum>("Nuisance", AlertTypeEnum.Nuisance),
+            new KeyValuePair<string, AlertTypeEnum>("Crasher", AlertTypeEnum.Crasher)
+        };
 
         protected ServiceRegistry _serviceRegistry;
 
@@ -159,25 +171,18 @@ namespace Tailgrab.PlayerManagement
             // User collection ordered by DisplayName at source
             UserDbView.SortDescriptions.Add(new SortDescription("DisplayName", ListSortDirection.Ascending));
 
-            // Options for the IsBOS combo column
-            IsBosOptions = new List<KeyValuePair<string, bool>>
-            {
-                new KeyValuePair<string,bool>("YES", true),
-                new KeyValuePair<string,bool>("NO", false)
-            };
-
             #region Secret Config Load            
             // Load saved secrets into UI fields if desired (not displayed in this view directly)
-            var vrUser = ConfigStore.LoadSecret(Tailgrab.Common.Common.Registry_VRChat_Web_UserName);
-            var vrPass = ConfigStore.LoadSecret(Tailgrab.Common.Common.Registry_VRChat_Web_Password);
-            var vr2fa = ConfigStore.LoadSecret(Tailgrab.Common.Common.Registry_VRChat_Web_2FactorKey);
-            var ollamaKey = ConfigStore.LoadSecret(Tailgrab.Common.Common.Registry_Ollama_API_Key);
-            var ollamaEndpoint = ConfigStore.LoadSecret(Tailgrab.Common.Common.Registry_Ollama_API_Endpoint) ?? Tailgrab.Common.Common.Default_Ollama_API_Endpoint;
-            var ollamaProfilePrompt = ConfigStore.LoadSecret(Tailgrab.Common.Common.Registry_Ollama_API_Prompt) ?? Tailgrab.Common.Common.Default_Ollama_API_Prompt;
-            var ollamaImagePrompt = ConfigStore.LoadSecret(Tailgrab.Common.Common.Registry_Ollama_API_Image_Prompt) ?? Tailgrab.Common.Common.Default_Ollama_API_Image_Prompt;
-            var ollamaModel = ConfigStore.LoadSecret(Tailgrab.Common.Common.Registry_Ollama_API_Model) ?? Tailgrab.Common.Common.Default_Ollama_API_Model;
-            var avatarGistUri = ConfigStore.GetStoredUri(Tailgrab.Common.Common.Registry_Avatar_Gist);
-            var groupGistUri = ConfigStore.GetStoredUri(Tailgrab.Common.Common.Registry_Group_Gist);
+            var vrUser = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_VRChat_Web_UserName);
+            var vrPass = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_VRChat_Web_Password);
+            var vr2fa = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_VRChat_Web_2FactorKey);
+            var ollamaKey = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_Ollama_API_Key);
+            var ollamaEndpoint = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_Ollama_API_Endpoint) ?? Tailgrab.Common.CommonConst.Default_Ollama_API_Endpoint;
+            var ollamaProfilePrompt = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_Ollama_API_Prompt) ?? Tailgrab.Common.CommonConst.Default_Ollama_API_Prompt;
+            var ollamaImagePrompt = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_Ollama_API_Image_Prompt) ?? Tailgrab.Common.CommonConst.Default_Ollama_API_Image_Prompt;
+            var ollamaModel = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_Ollama_API_Model) ?? Tailgrab.Common.CommonConst.Default_Ollama_API_Model;
+            var avatarGistUri = ConfigStore.GetStoredUri(Tailgrab.Common.CommonConst.Registry_Avatar_Gist);
+            var groupGistUri = ConfigStore.GetStoredUri(Tailgrab.Common.CommonConst.Registry_Group_Gist);
 
             // Populate UI boxes but do not reveal secrets
             if (!string.IsNullOrEmpty(vrUser)) VrUserBox.Text = vrUser;
@@ -201,9 +206,9 @@ namespace Tailgrab.PlayerManagement
                 ProfileAlertCombo.ItemsSource = sounds;
 
                 // Load saved registry values into selected items
-                var avatar = ConfigStore.LoadSecret(Tailgrab.Common.Common.Registry_Alert_Avatar);
-                var group = ConfigStore.LoadSecret(Tailgrab.Common.Common.Registry_Alert_Group);
-                var profile = ConfigStore.LoadSecret(Tailgrab.Common.Common.Registry_Alert_Profile);
+                var avatar = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_Alert_Avatar);
+                var group = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_Alert_Group);
+                var profile = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_Alert_Profile);
 
                 if (!string.IsNullOrEmpty(avatar)) AvatarAlertCombo.SelectedItem = avatar;
                 if (!string.IsNullOrEmpty(group)) GroupAlertCombo.SelectedItem = group;
@@ -244,44 +249,44 @@ namespace Tailgrab.PlayerManagement
             try
             {
                 // Save to registry protected store
-                ConfigStore.SaveSecret(Tailgrab.Common.Common.Registry_VRChat_Web_UserName, VrUserBox.Text ?? string.Empty);
-                if (!string.IsNullOrEmpty(VrPassBox.Password)) ConfigStore.SaveSecret(Tailgrab.Common.Common.Registry_VRChat_Web_Password, VrPassBox.Password);
-                if (!string.IsNullOrEmpty(Vr2FaBox.Password)) ConfigStore.SaveSecret(Tailgrab.Common.Common.Registry_VRChat_Web_2FactorKey, Vr2FaBox.Password);
-                if (!string.IsNullOrEmpty(VrOllamaBox.Password)) ConfigStore.SaveSecret(Tailgrab.Common.Common.Registry_Ollama_API_Key, VrOllamaBox.Password);
-                ConfigStore.SaveSecret(Tailgrab.Common.Common.Registry_Ollama_API_Endpoint, VrOllamaEndpointBox.Text ?? Tailgrab.Common.Common.Default_Ollama_API_Endpoint);
-                ConfigStore.SaveSecret(Tailgrab.Common.Common.Registry_Ollama_API_Prompt, VrOllamaPromptBox.Text ?? Tailgrab.Common.Common.Default_Ollama_API_Prompt);
-                ConfigStore.SaveSecret(Tailgrab.Common.Common.Registry_Ollama_API_Image_Prompt, VrOllamaImagePromptBox.Text ?? Tailgrab.Common.Common.Default_Ollama_API_Image_Prompt);
-                ConfigStore.SaveSecret(Tailgrab.Common.Common.Registry_Ollama_API_Model, VrOllamaModelBox.Text ?? Tailgrab.Common.Common.Default_Ollama_API_Model);
+                ConfigStore.SaveSecret(Tailgrab.Common.CommonConst.Registry_VRChat_Web_UserName, VrUserBox.Text ?? string.Empty);
+                if (!string.IsNullOrEmpty(VrPassBox.Password)) ConfigStore.SaveSecret(Tailgrab.Common.CommonConst.Registry_VRChat_Web_Password, VrPassBox.Password);
+                if (!string.IsNullOrEmpty(Vr2FaBox.Password)) ConfigStore.SaveSecret(Tailgrab.Common.CommonConst.Registry_VRChat_Web_2FactorKey, Vr2FaBox.Password);
+                if (!string.IsNullOrEmpty(VrOllamaBox.Password)) ConfigStore.SaveSecret(Tailgrab.Common.CommonConst.Registry_Ollama_API_Key, VrOllamaBox.Password);
+                ConfigStore.SaveSecret(Tailgrab.Common.CommonConst.Registry_Ollama_API_Endpoint, VrOllamaEndpointBox.Text ?? Tailgrab.Common.CommonConst.Default_Ollama_API_Endpoint);
+                ConfigStore.SaveSecret(Tailgrab.Common.CommonConst.Registry_Ollama_API_Prompt, VrOllamaPromptBox.Text ?? Tailgrab.Common.CommonConst.Default_Ollama_API_Prompt);
+                ConfigStore.SaveSecret(Tailgrab.Common.CommonConst.Registry_Ollama_API_Image_Prompt, VrOllamaImagePromptBox.Text ?? Tailgrab.Common.CommonConst.Default_Ollama_API_Image_Prompt);
+                ConfigStore.SaveSecret(Tailgrab.Common.CommonConst.Registry_Ollama_API_Model, VrOllamaModelBox.Text ?? Tailgrab.Common.CommonConst.Default_Ollama_API_Model);
 
-                ConfigStore.PutStoredUri(Common.Common.Registry_Avatar_Gist, avatarGistUrl.Text);
-                ConfigStore.PutStoredUri(Common.Common.Registry_Group_Gist, groupGistUrl.Text);
+                ConfigStore.PutStoredUri(Common.CommonConst.Registry_Avatar_Gist, avatarGistUrl.Text);
+                ConfigStore.PutStoredUri(Common.CommonConst.Registry_Group_Gist, groupGistUrl.Text);
 
                 // Save alert sound selections (or delete if none)
                 if (AvatarAlertCombo.SelectedItem is string avatarSound && !string.IsNullOrEmpty(avatarSound))
                 {
-                    ConfigStore.SaveSecret(Tailgrab.Common.Common.Registry_Alert_Avatar, avatarSound);
+                    ConfigStore.SaveSecret(Tailgrab.Common.CommonConst.Registry_Alert_Avatar, avatarSound);
                 }
                 else
                 {
-                    ConfigStore.DeleteSecret(Tailgrab.Common.Common.Registry_Alert_Avatar);
+                    ConfigStore.DeleteSecret(Tailgrab.Common.CommonConst.Registry_Alert_Avatar);
                 }
 
                 if (GroupAlertCombo.SelectedItem is string groupSound && !string.IsNullOrEmpty(groupSound))
                 {
-                    ConfigStore.SaveSecret(Tailgrab.Common.Common.Registry_Alert_Group, groupSound);
+                    ConfigStore.SaveSecret(Tailgrab.Common.CommonConst.Registry_Alert_Group, groupSound);
                 }
                 else
                 {
-                    ConfigStore.DeleteSecret(Tailgrab.Common.Common.Registry_Alert_Group);
+                    ConfigStore.DeleteSecret(Tailgrab.Common.CommonConst.Registry_Alert_Group);
                 }
 
                 if (ProfileAlertCombo.SelectedItem is string profileSound && !string.IsNullOrEmpty(profileSound))
                 {
-                    ConfigStore.SaveSecret(Tailgrab.Common.Common.Registry_Alert_Profile, profileSound);
+                    ConfigStore.SaveSecret(Tailgrab.Common.CommonConst.Registry_Alert_Profile, profileSound);
                 }
                 else
                 {
-                    ConfigStore.DeleteSecret(Tailgrab.Common.Common.Registry_Alert_Profile);
+                    ConfigStore.DeleteSecret(Tailgrab.Common.CommonConst.Registry_Alert_Profile);
                 }
 
                 System.Windows.MessageBox.Show("Configuration saved. Restart the Applicaton for all changes to take affect.", "Config", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -329,76 +334,6 @@ namespace Tailgrab.PlayerManagement
             catch (Exception ex)
             {
                 logger.Error(ex, "Error updating status bar");
-            }
-        }
-
-        private void UserHyperlink_RequestNavigate(object? sender, System.Windows.Navigation.RequestNavigateEventArgs e)
-        {
-            try
-            {
-                logger.Info($"Opening User URL: {e.Uri}");
-                var uri = new Uri($"https://vrchat.com/home/user/{e.Uri}");
-                var psi = new System.Diagnostics.ProcessStartInfo(uri.AbsoluteUri)
-                {
-                    UseShellExecute = true
-                };
-                System.Diagnostics.Process.Start(psi);
-            }
-            catch (Exception ex)
-            {
-                logger?.Error(ex, "Failed to open user URL");
-            }
-            e.Handled = true;
-        }
-
-        // User DB UI handlers
-        private void UserDbRefresh_Click(object sender, RoutedEventArgs e)
-        {
-            RefreshUserDb();
-        }
-
-        private void UserDbApplyFilter_Click(object sender, RoutedEventArgs e)
-        {
-            ApplyUserDbFilter(UserDbView, UserDbFilterBox.Text);
-        }
-
-        private void UserDbClearFilter_Click(object sender, RoutedEventArgs e)
-        {
-            UserDbFilterBox.Text = string.Empty;
-            ApplyUserDbFilter(UserDbView, string.Empty);
-        }
-
-        private void ApplyUserDbFilter(ICollectionView view, string filterText)
-        {
-            // Push filter to database for better performance
-            if (string.IsNullOrWhiteSpace(filterText))
-            {
-                UserDbItems.SetFilter(null);
-            }
-            else
-            {
-                UserDbItems.SetFilter(filterText.Trim());
-            }
-        }
-
-        private void UserDbGrid_CellEditEnding(object sender, System.Windows.Controls.DataGridCellEditEndingEventArgs e)
-        {
-            if (e.Row.Item is UserInfoViewModel vm)
-            {
-                try
-                {
-                    var db = _serviceRegistry.GetDBContext();
-                    var entity = db.UserInfos.Find(vm.UserId);
-                    if (entity != null)
-                    {
-                        entity.IsBos = vm.IsBos;
-                        entity.UpdatedAt = DateTime.UtcNow;
-                        db.UserInfos.Update(entity);
-                        db.SaveChanges();
-                        vm.UpdatedAt = entity.UpdatedAt;
-                    }
-                }
-                catch { }
             }
         }
 
@@ -577,7 +512,6 @@ namespace Tailgrab.PlayerManagement
         }
 
         // Column header click sorting ------------------------------------------------
-
         private void GridViewColumnHeader_Click(object sender, RoutedEventArgs e)
         {
             if (sender is not GridViewColumnHeader header) return;
@@ -1744,13 +1678,13 @@ namespace Tailgrab.PlayerManagement
                     var entity = db.AvatarInfos.Find(vm.AvatarId);
                     if (entity != null)
                     {
-                        entity.IsBos = vm.IsBos;
+                        entity.AlertType = vm.AlertType;
                         entity.UpdatedAt = DateTime.UtcNow;
                         db.AvatarInfos.Update(entity);
                         db.SaveChanges();
                         vm.UpdatedAt = entity.UpdatedAt;
 
-                        if( vm.IsBos )
+                        if( vm.AlertType >= AlertTypeEnum.Nuisance )
                         {
                             await _serviceRegistry.GetVRChatAPIClient().BlockAvatarGlobal(vm.AvatarId);
                         } else
@@ -1785,7 +1719,8 @@ namespace Tailgrab.PlayerManagement
                             ImageUrl = avatar.ImageUrl ?? string.Empty,
                             CreatedAt = avatar.CreatedAt,
                             UpdatedAt = DateTime.UtcNow,
-                            IsBos = false
+                            IsBos = false,
+                            AlertType = AlertTypeEnum.None
                         };
                         dbContext.AvatarInfos.Add(newEntity);
                         dbContext.SaveChanges();
@@ -1877,15 +1812,6 @@ namespace Tailgrab.PlayerManagement
             catch { }
         }
 
-        private void RefreshUserDb()
-        {
-            try
-            {
-                UserDbItems?.Refresh();
-            }
-            catch { }
-        }
-
         private void GroupDbGrid_CellEditEnding(object sender, System.Windows.Controls.DataGridCellEditEndingEventArgs e)
         {
             if (e.Row.Item is GroupInfoViewModel vm)
@@ -1896,7 +1822,7 @@ namespace Tailgrab.PlayerManagement
                     var entity = db.GroupInfos.Find(vm.GroupId);
                     if (entity != null)
                     {
-                        entity.IsBos = vm.IsBos;
+                        entity.AlertType = vm.AlertType;
                         entity.UpdatedAt = DateTime.UtcNow;
                         db.GroupInfos.Update(entity);
                         db.SaveChanges();
@@ -1945,6 +1871,90 @@ namespace Tailgrab.PlayerManagement
             e.Handled = true;
         }
         #endregion
+
+        //
+        // User DB UI handlers
+        #region User DB handlers
+        private void UserDbRefresh_Click(object sender, RoutedEventArgs e)
+        {
+            RefreshUserDb();
+        }
+
+        private void RefreshUserDb()
+        {
+            try
+            {
+                UserDbItems?.Refresh();
+            }
+            catch { }
+        }
+
+        private void UserDbApplyFilter_Click(object sender, RoutedEventArgs e)
+        {
+            ApplyUserDbFilter(UserDbView, UserDbFilterBox.Text);
+        }
+
+        private void UserDbClearFilter_Click(object sender, RoutedEventArgs e)
+        {
+            UserDbFilterBox.Text = string.Empty;
+            ApplyUserDbFilter(UserDbView, string.Empty);
+        }
+
+        private void ApplyUserDbFilter(ICollectionView view, string filterText)
+        {
+            // Push filter to database for better performance
+            if (string.IsNullOrWhiteSpace(filterText))
+            {
+                UserDbItems.SetFilter(null);
+            }
+            else
+            {
+                UserDbItems.SetFilter(filterText.Trim());
+            }
+        }
+
+        private void UserDbGrid_CellEditEnding(object sender, System.Windows.Controls.DataGridCellEditEndingEventArgs e)
+        {
+            if (e.Row.Item is UserInfoViewModel vm)
+            {
+                try
+                {
+                    var db = _serviceRegistry.GetDBContext();
+                    var entity = db.UserInfos.Find(vm.UserId);
+                    if (entity != null)
+                    {
+                        entity.IsBos = vm.IsBos;
+                        entity.UpdatedAt = DateTime.UtcNow;
+                        db.UserInfos.Update(entity);
+                        db.SaveChanges();
+                        vm.UpdatedAt = entity.UpdatedAt;
+                    }
+                }
+                catch { }
+            }
+        }
+
+        private void UserHyperlink_RequestNavigate(object? sender, System.Windows.Navigation.RequestNavigateEventArgs e)
+        {
+            try
+            {
+                logger.Info($"Opening User URL: {e.Uri}");
+                var uri = new Uri($"https://vrchat.com/home/user/{e.Uri}");
+                var psi = new System.Diagnostics.ProcessStartInfo(uri.AbsoluteUri)
+                {
+                    UseShellExecute = true
+                };
+                System.Diagnostics.Process.Start(psi);
+            }
+            catch (Exception ex)
+            {
+                logger?.Error(ex, "Failed to open user URL");
+            }
+            e.Handled = true;
+        }
+
+        #endregion
+
 
         private void ApplyFilter(ICollectionView view, string filterText)
         {

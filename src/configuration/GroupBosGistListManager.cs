@@ -114,7 +114,7 @@ namespace Tailgrab.Configuration
         {
             try
             {
-                using (RegistryKey? key = Registry.CurrentUser.OpenSubKey(Common.Common.ConfigRegistryPath))
+                using (RegistryKey? key = Registry.CurrentUser.OpenSubKey(Common.CommonConst.ConfigRegistryPath))
                 {
                     if (key == null)
                     {
@@ -122,7 +122,7 @@ namespace Tailgrab.Configuration
                         return null;
                     }
 
-                    string? value = key.GetValue(Common.Common.Registry_Group_Checksum) as string;
+                    string? value = key.GetValue(Common.CommonConst.Registry_Group_Checksum) as string;
                     if (string.IsNullOrEmpty(value))
                     {
                         logger.Debug("No checksum stored in registry.");
@@ -143,7 +143,7 @@ namespace Tailgrab.Configuration
         {
             try
             {
-                using (RegistryKey? key = Registry.CurrentUser.OpenSubKey(Common.Common.ConfigRegistryPath))
+                using (RegistryKey? key = Registry.CurrentUser.OpenSubKey(Common.CommonConst.ConfigRegistryPath))
                 {
                     if (key == null)
                     {
@@ -151,7 +151,7 @@ namespace Tailgrab.Configuration
                         return null;
                     }
 
-                    string? value = key.GetValue(Common.Common.Registry_Group_Gist) as string;
+                    string? value = key.GetValue(Common.CommonConst.Registry_Group_Gist) as string;
                     if (string.IsNullOrEmpty(value))
                     {
                         logger.Debug("No Avatar GIST Uri stored in registry.");
@@ -172,9 +172,9 @@ namespace Tailgrab.Configuration
         {
             try
             {
-                using (RegistryKey key = Registry.CurrentUser.CreateSubKey(Common.Common.ConfigRegistryPath))
+                using (RegistryKey key = Registry.CurrentUser.CreateSubKey(Common.CommonConst.ConfigRegistryPath))
                 {
-                    key.SetValue(Common.Common.Registry_Group_Checksum, checksum, RegistryValueKind.String);
+                    key.SetValue(Common.CommonConst.Registry_Group_Checksum, checksum, RegistryValueKind.String);
                 }
             }
             catch (Exception ex)
