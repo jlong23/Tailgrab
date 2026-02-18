@@ -97,4 +97,60 @@ public partial class TailgrabDBContext : DbContext
     }
 
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
+
+    public void UpgradeDatabase()
+    {
+        ExecuteSqlTransaction(
+            "ALTER TABLE AvatarInfo ADD COLUMN alertType INTEGER NOT NULL DEFAULT 0",
+            "UPDATE AvatarInfo SET alertType = 1 WHERE IsBOS = 1",
+            "ALTER TABLE GroupInfo ADD COLUMN alertType INTEGER NOT NULL DEFAULT 0",
+            "UPDATE GroupInfo SET alertType = 1 WHERE IsBOS = 1"
+        );
+    }
+
+    private void ExecuteSql(string sql)
+    {
+        Database.ExecuteSqlRaw(sql);
+    }
+
+    private void ExecuteSqlTransaction(params string[] sqlStatements)
+    {
+        using var transaction = Database.BeginTransaction();
+        try
+        {
+            foreach (var sql in sqlStatements)
+            {
+                Database.ExecuteSqlRaw(sql);
+            }
+            transaction.Commit();
+        }
+        catch
+        {
+            transaction.Rollback();
+            throw;
+        }
+    }
+
+    private async Task ExecuteSqlAsync(string sql)
+    {
+        await Database.ExecuteSqlRawAsync(sql);
+    }
+
+    private async Task ExecuteSqlTransactionAsync(params string[] sqlStatements)
+    {
+        using var transaction = await Database.BeginTransactionAsync();
+        try
+        {
+            foreach (var sql in sqlStatements)
+            {
+                await Database.ExecuteSqlRawAsync(sql);
+            }
+            await transaction.CommitAsync();
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
+    }
 }

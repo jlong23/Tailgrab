@@ -7,10 +7,16 @@
     <UseWindowsForms>true</UseWindowsForms>
     <UseWPF>true</UseWPF>
     <Nullable>enable</Nullable>
-    <AssemblyVersion>1.1.0.1722</AssemblyVersion> <!-- Explicitly set the build number -->
-    <FileVersion>1.1.0.1722</FileVersion>
-    <InformationalVersion>1.1.0.1722</InformationalVersion>
-    <ApplicationIcon>src\Resources\tailgrab_large.ico</ApplicationIcon>    
+    <ApplicationIcon>src\Resources\tailgrab_large.ico</ApplicationIcon>
+    
+    <!-- Read build number from file -->
+    <BuildNumberFile>$(MSBuildProjectDirectory)\BuildNumber.txt</BuildNumberFile>
+    <BuildNumber>$([System.IO.File]::ReadAllText('$(BuildNumberFile)').Trim())</BuildNumber>
+    
+    <!-- Version properties using build number -->
+    <AssemblyVersion>1.1.0.$(BuildNumber)</AssemblyVersion>
+    <FileVersion>1.1.0.$(BuildNumber)</FileVersion>
+    <InformationalVersion>1.1.0.$(BuildNumber)</InformationalVersion>
   </PropertyGroup>
 
   <ItemGroup>

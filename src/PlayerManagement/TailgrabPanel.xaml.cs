@@ -146,6 +146,9 @@ namespace Tailgrab.PlayerManagement
             InitializeComponent();
             DataContext = this;
 
+            // Set window title with version
+            Title = $"Tailgrab {BuildInfo.GetInformationalVersion()}";
+
             ActiveView = CollectionViewSource.GetDefaultView(ActivePlayers);
             ActiveView.SortDescriptions.Add(new SortDescription("InstanceStartTime", ListSortDirection.Descending));
             UpdateHeaderSortIndicator(ActivePlayerInstanceStart, ActiveView, "InstanceStartTime");
