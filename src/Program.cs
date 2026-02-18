@@ -776,15 +776,72 @@ public class FileTailer
         groupBoxStyle.Setters.Add(new Setter(System.Windows.Window.ForegroundProperty, lightText));
         app.Resources[typeof(System.Windows.Controls.GroupBox)] = groupBoxStyle;
 
+        // ComboBox requires a custom template to properly theme all internal parts
+        var comboBoxTemplate = new System.Windows.Controls.ControlTemplate(typeof(System.Windows.Controls.ComboBox));
+        var templateContent = @"
+            <ControlTemplate xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'
+                           xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml'
+                           TargetType='{x:Type ComboBox}'>
+                <Grid>
+                    <ToggleButton x:Name='ToggleButton' 
+                                  Background='#FF2D2D30'
+                                  BorderBrush='#FF007ACC'
+                                  Foreground='#FFE6E6E6'
+                                  IsChecked='{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}'
+                                  ClickMode='Press'>
+                        <ToggleButton.Template>
+                            <ControlTemplate TargetType='ToggleButton'>
+                                <Border Background='{TemplateBinding Background}' 
+                                        BorderBrush='{TemplateBinding BorderBrush}' 
+                                        BorderThickness='1'>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition />
+                                            <ColumnDefinition Width='20' />
+                                        </Grid.ColumnDefinitions>
+                                        <Path Grid.Column='1' HorizontalAlignment='Center' VerticalAlignment='Center'
+                                              Data='M 0 0 L 4 4 L 8 0 Z' Fill='#FFE6E6E6' />
+                                    </Grid>
+                                </Border>
+                            </ControlTemplate>
+                        </ToggleButton.Template>
+                    </ToggleButton>
+                    <ContentPresenter x:Name='ContentSite' 
+                                      Content='{TemplateBinding SelectionBoxItem}'
+                                      ContentTemplate='{TemplateBinding SelectionBoxItemTemplate}'
+                                      ContentTemplateSelector='{TemplateBinding ItemTemplateSelector}'
+                                      Margin='6,3,23,3'
+                                      VerticalAlignment='Center'
+                                      HorizontalAlignment='Left'
+                                      IsHitTestVisible='False' />
+                    <Popup x:Name='Popup' 
+                           Placement='Bottom'
+                           IsOpen='{TemplateBinding IsDropDownOpen}'
+                           AllowsTransparency='True' 
+                           Focusable='False'
+                           PopupAnimation='Slide'>
+                        <Grid MinWidth='{TemplateBinding ActualWidth}' MaxHeight='{TemplateBinding MaxDropDownHeight}'>
+                            <Border Background='#FF2D2D30' BorderBrush='#FF007ACC' BorderThickness='1'>
+                                <ScrollViewer>
+                                    <StackPanel IsItemsHost='True' KeyboardNavigation.DirectionalNavigation='Contained' />
+                                </ScrollViewer>
+                            </Border>
+                        </Grid>
+                    </Popup>
+                </Grid>
+            </ControlTemplate>";
+
         var comboBoxStyle = new Style(typeof(System.Windows.Controls.ComboBox));
-        comboBoxStyle.Setters.Add(new Setter(System.Windows.Controls.Control.BackgroundProperty, darkWindow));
+        comboBoxStyle.Setters.Add(new Setter(System.Windows.Controls.Control.BackgroundProperty, darkControl));
         comboBoxStyle.Setters.Add(new Setter(System.Windows.Controls.Control.ForegroundProperty, lightText));
         comboBoxStyle.Setters.Add(new Setter(System.Windows.Controls.Control.BorderBrushProperty, accent));
+        comboBoxStyle.Setters.Add(new Setter(System.Windows.Controls.Control.TemplateProperty, 
+            (System.Windows.Controls.ControlTemplate)System.Windows.Markup.XamlReader.Parse(templateContent)));
         app.Resources[typeof(System.Windows.Controls.ComboBox)] = comboBoxStyle;
 
         // Ensure ComboBox items and selected text use the dark theme when the control is not focused.
         var comboBoxItemStyle = new Style(typeof(System.Windows.Controls.ComboBoxItem));
-        comboBoxItemStyle.Setters.Add(new Setter(System.Windows.Controls.Control.BackgroundProperty, darkWindow));
+        comboBoxItemStyle.Setters.Add(new Setter(System.Windows.Controls.Control.BackgroundProperty, darkControl));
         comboBoxItemStyle.Setters.Add(new Setter(System.Windows.Controls.Control.ForegroundProperty, lightText));
         comboBoxItemStyle.Setters.Add(new Setter(System.Windows.Controls.Control.BorderBrushProperty, System.Windows.Media.Brushes.Transparent));
         comboBoxItemStyle.Setters.Add(new Setter(System.Windows.Controls.Control.PaddingProperty, new Thickness(4)));
