@@ -117,4 +117,21 @@
     </Content>
   </ItemGroup>
 
+  <!-- Increment build number for Release builds and Publish -->
+  <Target Name="IncrementBuildNumber" BeforeTargets="BeforeBuild" Condition="'$(Configuration)' == 'Release' Or '$(PublishProtocol)' != ''">
+    <PropertyGroup>
+      <CurrentBuildNumber>$([System.IO.File]::ReadAllText('$(BuildNumberFile)').Trim())</CurrentBuildNumber>
+      <NewBuildNumber>$([MSBuild]::Add($(CurrentBuildNumber), 1))</NewBuildNumber>
+    </PropertyGroup>
+    <Message Text="Incrementing build number from $(CurrentBuildNumber) to $(NewBuildNumber)" Importance="high" />
+    <WriteLinesToFile File="$(BuildNumberFile)" Lines="$(NewBuildNumber)" Overwrite="true" />
+    <!-- Force re-evaluation of BuildNumber property -->
+    <PropertyGroup>
+      <BuildNumber>$(NewBuildNumber)</BuildNumber>
+      <AssemblyVersion>1.1.0.$(BuildNumber)</AssemblyVersion>
+      <FileVersion>1.1.0.$(BuildNumber)</FileVersion>
+      <InformationalVersion>1.1.0.$(BuildNumber)</InformationalVersion>
+    </PropertyGroup>
+  </Target>
+
 </Project>
