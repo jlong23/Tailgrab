@@ -47,8 +47,12 @@ Title="Tailgrab Player Panel"
                                             <Setter Property="Background" Value="#FF1E1E1E" />
                                             <Setter Property="Foreground" Value="#FFE6E6E6" />
                                         </DataTrigger>
-                                        <DataTrigger Binding="{Binding HighlightClass}" Value="Alert">
+                                        <DataTrigger Binding="{Binding HighlightClass}" Value="Yellow">
                                             <Setter Property="Background" Value="Yellow" />
+                                            <Setter Property="Foreground" Value="Black" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding HighlightClass}" Value="Red">
+                                            <Setter Property="Background" Value="Red" />
                                             <Setter Property="Foreground" Value="Black" />
                                         </DataTrigger>
                                     </Style.Triggers>
@@ -64,16 +68,6 @@ Title="Tailgrab Player Panel"
 
                             <ListView.View>
                                 <GridView>
-                                    <GridViewColumn Width="35">
-                                        <GridViewColumn.Header>
-                                            <GridViewColumnHeader Content="Code" Tag="WatchCode" Click="GridViewColumnHeader_Click"/>
-                                        </GridViewColumn.Header>
-                                        <GridViewColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <TextBlock Text="{Binding WatchCode}" TextWrapping="NoWrap"/>
-                                            </DataTemplate>
-                                        </GridViewColumn.CellTemplate>
-                                    </GridViewColumn>
                                     <GridViewColumn Width="180">
                                         <GridViewColumn.Header>
                                             <GridViewColumnHeader Content="Display Name" Tag="DisplayName" Click="GridViewColumnHeader_Click"/>
@@ -81,17 +75,6 @@ Title="Tailgrab Player Panel"
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate>
                                                 <TextBlock Text="{Binding DisplayName}" TextWrapping="NoWrap"/>
-                                            </DataTemplate>
-                                        </GridViewColumn.CellTemplate>
-                                    </GridViewColumn>
-
-                                    <GridViewColumn Width="280">
-                                        <GridViewColumn.Header>
-                                            <GridViewColumnHeader Content="User ID" Tag="UserId" Click="GridViewColumnHeader_Click"/>
-                                        </GridViewColumn.Header>
-                                        <GridViewColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <TextBlock Text="{Binding UserId}" />
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
@@ -125,6 +108,17 @@ Title="Tailgrab Player Panel"
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate>
                                                 <TextBlock Text="{Binding InstanceStartTime}" />
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+
+                                    <GridViewColumn Width="330">
+                                        <GridViewColumn.Header>
+                                            <GridViewColumnHeader Content="Alert Messages" Tag="UserId" Click="GridViewColumnHeader_Click"/>
+                                        </GridViewColumn.Header>
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding AlertMessages}" />
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
@@ -285,6 +279,25 @@ Title="Tailgrab Player Panel"
                         </StackPanel>
 
                         <ListView Name="PastListView" Grid.Row="1" ItemsSource="{Binding PastView}" SelectedItem="{Binding SelectedPast, Mode=TwoWay}">
+                            <ListView.Resources>
+                                <Style TargetType="{x:Type ListViewItem}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding HighlightClass}" Value="Normal">
+                                            <Setter Property="Background" Value="#FF1E1E1E" />
+                                            <Setter Property="Foreground" Value="#FFE6E6E6" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding HighlightClass}" Value="Yellow">
+                                            <Setter Property="Background" Value="Yellow" />
+                                            <Setter Property="Foreground" Value="Black" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding HighlightClass}" Value="Red">
+                                            <Setter Property="Background" Value="Red" />
+                                            <Setter Property="Foreground" Value="Black" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ListView.Resources>
+
                             <ListView.ContextMenu>
                                 <ContextMenu>
                                     <MenuItem Header="Filter">
@@ -302,17 +315,6 @@ Title="Tailgrab Player Panel"
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate>
                                                 <TextBlock Text="{Binding DisplayName}" TextWrapping="NoWrap"/>
-                                            </DataTemplate>
-                                        </GridViewColumn.CellTemplate>
-                                    </GridViewColumn>
-
-                                    <GridViewColumn Width="280">
-                                        <GridViewColumn.Header>
-                                            <GridViewColumnHeader Content="User ID" Tag="UserId" Click="GridViewColumnHeader_Click"/>
-                                        </GridViewColumn.Header>
-                                        <GridViewColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <TextBlock Text="{Binding UserId}" />
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
@@ -341,17 +343,6 @@ Title="Tailgrab Player Panel"
 
                                     <GridViewColumn Width="160">
                                         <GridViewColumn.Header>
-                                            <GridViewColumnHeader Content="Instance Start" Tag="InstanceStartTime" Click="GridViewColumnHeader_Click"/>
-                                        </GridViewColumn.Header>
-                                        <GridViewColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <TextBlock Text="{Binding InstanceStartTime}" />
-                                            </DataTemplate>
-                                        </GridViewColumn.CellTemplate>
-                                    </GridViewColumn>
-
-                                    <GridViewColumn Width="160">
-                                        <GridViewColumn.Header>
                                             <GridViewColumnHeader Name="PastPlayerInstanceEnd" Content="Instance End ▼" Tag="InstanceEndTime" Click="GridViewColumnHeader_Click"/>
                                         </GridViewColumn.Header>
                                         <GridViewColumn.CellTemplate>
@@ -361,14 +352,37 @@ Title="Tailgrab Player Panel"
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
 
+                                    <GridViewColumn Width="330">
+                                        <GridViewColumn.Header>
+                                            <GridViewColumnHeader Content="Alert Messages" Tag="UserId" Click="GridViewColumnHeader_Click"/>
+                                        </GridViewColumn.Header>
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding UserId}" />
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+
                                     <!-- Actions column -->
                                     <GridViewColumn Width="80">
                                         <GridViewColumn.Header>
-                                            <GridViewColumnHeader Content="Actions" />
+                                            <GridViewColumnHeader Content="Copy Profile" />
                                         </GridViewColumn.Header>
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate>
                                                 <Button Content="Copy" Click="CopyPlayer_Click" Padding="4,2"/>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+
+                                    <!-- Actions column -->
+                                    <GridViewColumn Width="80">
+                                        <GridViewColumn.Header>
+                                            <GridViewColumnHeader Content="Profile Rpt" />
+                                        </GridViewColumn.Header>
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Button Content="Report" Click="ReportPlayer_Click" Padding="4,2" ToolTip="{Binding AIEval}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
@@ -996,15 +1010,17 @@ Title="Tailgrab Player Panel"
                         </TabItem>
                         <TabItem Header="Secrets">
                             <Grid Margin="6">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
                                 <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto" />
                                     <RowDefinition Height="Auto" />
                                     <RowDefinition Height="Auto" />
                                     <RowDefinition Height="Auto" />
                                     <RowDefinition Height="*" />
                                 </Grid.RowDefinitions>
 
-                                <GroupBox Header="VR Chat Credentials" Margin="0,0,0,6">
+                                <GroupBox Header="VR Chat Credentials" Margin="0,0,0,6" Grid.Row="0">
                                     <Grid Margin="6">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto" />
@@ -1027,7 +1043,7 @@ Title="Tailgrab Player Panel"
                                     </Grid>
                                 </GroupBox>
 
-                                <GroupBox Header="Ban On Sight Management" Grid.Row="1" Margin="0,0,0,6">
+                                <GroupBox Header="Ban On Sight Management" Margin="0,6,0,6" Grid.Row="1">
                                     <Grid Margin="6">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto" />
@@ -1046,7 +1062,7 @@ Title="Tailgrab Player Panel"
                                     </Grid>
                                 </GroupBox>
 
-                                <GroupBox Header="Ollama Cloud Credentials" Grid.Row="2" Margin="0,0,0,6">
+                                <GroupBox Header="Ollama Cloud Credentials" Margin="0,6,0,6" Grid.Row="2">
                                     <Grid Margin="6">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto" />
@@ -1078,30 +1094,7 @@ Title="Tailgrab Player Panel"
                                     </Grid>
                                 </GroupBox>
 
-                                <GroupBox Header="Alert Sounds" Grid.Row="3" Margin="0,0,0,6">
-                                    <Grid Margin="6">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="125*" />
-                                            <ColumnDefinition Width="890*" />
-                                        </Grid.ColumnDefinitions>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto" />
-                                            <RowDefinition Height="Auto" />
-                                            <RowDefinition Height="Auto" />
-                                            <RowDefinition Height="Auto" />
-                                        </Grid.RowDefinitions>
-                                        <Label Grid.Column="1" Content="Avatar Alert:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
-                                        <ComboBox Grid.Row="0" Grid.Column="1" Name="AvatarAlertCombo" Margin="108,2,107,2"/>
-
-                                        <Label Grid.Row="1" Grid.Column="1" Content="Group Alert:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="25" Margin="34,0,0,0" Width="73"/>
-                                        <ComboBox Grid.Row="1" Grid.Column="1" Name="GroupAlertCombo" Margin="108,2,107,2"/>
-                                        
-                                        <Label Grid.Row="2" Grid.Column="1" Content="Profile Alert:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
-                                        <ComboBox Grid.Row="2" Grid.Column="1" Name="ProfileAlertCombo" Margin="108,2,107,2"/>
-                                    </Grid>
-                                </GroupBox>
-
-                                <StackPanel Orientation="Horizontal" Grid.Row="4" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,6,0,0">
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,12,0,0" Grid.Row="3">
                                     <Button Content="Save Config" Click="SaveConfig_Click" Width="120" />
                                 </StackPanel>
                             </Grid>

@@ -80,6 +80,23 @@ namespace Tailgrab.PlayerManagement
         }
     }
 
+    public class AlertMessage
+    {
+        public AlertClassEnum AlertClass { get; set; }
+        public AlertTypeEnum AlertType { get; set; }
+        public string Color { get; set; }
+        public string Message { get; set; }
+        public DateTime Timestamp { get; set; }
+        public AlertMessage(AlertClassEnum alertClass, AlertTypeEnum alertType, string color, string message)
+        {
+            AlertClass = alertClass;
+            AlertType = alertType;
+            Color = color;
+            Message = message;
+            Timestamp = DateTime.Now;
+        }
+    }
+
     public class Player
     {
         public string UserId { get; set; }
@@ -97,11 +114,14 @@ namespace Tailgrab.PlayerManagement
         public Dictionary<string, PlayerPrint> PrintData = new Dictionary<string, PlayerPrint>();
         public string? UserBio { get; set; }
         public string? AIEval { get; set; }
+        public List<AlertMessage> _AlertMessage = new List<AlertMessage>();
+
+        // This goes away with the new alert system, but for now it is used to track if any of the watch types are active for a player
         public bool IsWatched
         {
             get
             {
-                if (IsAvatarWatch || IsGroupWatch || IsProfileWatch || IsEmojiWatch || IsPrintWatch)
+                if ( _AlertMessage.Count() > 0)
                 {
                     return true;
                 }
@@ -110,43 +130,22 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
-        public string WatchCode
-        {
+        public string AlertColor { get; private set; } = "None";
+        public AlertTypeEnum MaxAlertType { get; private set; } = AlertTypeEnum.None;
+
+        public string AlertMessage { 
             get
             {
-                string code = "";
+                string message = "";
 
-                if (IsAvatarWatch)
+                foreach (AlertMessage alert in _AlertMessage)
                 {
-                    code += "A";
-                }
-                if (IsGroupWatch)
-                {
-                    code += "G";
-                }
-                if (IsProfileWatch)
-                {
-                    code += "B";
-                }
-                if (IsEmojiWatch)
-                {
-                    code += "E";
-                }
-                if (IsPrintWatch)
-                {
-                    code += "B";
+                    message += $"[{alert.AlertClass}/{alert.AlertType}] {alert.Message}; ";
                 }
 
-                return code;
+                return message;
             }
         }
-
-        public bool IsAvatarWatch { get; set; } = false;
-        public bool IsGroupWatch { get; set; } = false;
-        public bool IsProfileWatch { get; set; } = false;
-        public bool IsEmojiWatch { get; set; } = false;
-        public bool IsPrintWatch { get; set; } = false;
-
 
         public Player(string userId, string displayName, SessionInfo session)
         {
@@ -156,6 +155,22 @@ namespace Tailgrab.PlayerManagement
             PenActivity = "";
             InstanceStartTime = DateTime.Now;
             Session = session;
+        }
+
+
+        public void AddAlertMessage(AlertClassEnum alertClass, AlertTypeEnum alertType, string color, string message)
+        {
+            AlertMessage newAlert = new AlertMessage(alertClass, alertType, color, message);
+            _AlertMessage.Add(newAlert);
+
+            foreach (AlertMessage alert in _AlertMessage)
+            {
+                if (alert.AlertType > MaxAlertType)
+                {
+                    MaxAlertType = alert.AlertType;
+                    AlertColor = alert.Color;
+                }
+            }
         }
 
         public void AddEvent(PlayerEvent playerEvent)
@@ -510,27 +525,24 @@ namespace Tailgrab.PlayerManagement
         {
             avatarByDisplayName[displayName] = avatarName;
 
-            bool watchedAvatar = serviceRegistry.GetAvatarManager().CheckAvatarByName(avatarName);
-            if (watchedAvatar)
-            {
-                logger.Info($"{COLOR_PREFIX_LEAVE.GetAnsiEscape()}Watched Avatar Detected for Player {displayName}: {avatarName}{COLOR_RESET.GetAnsiEscape()}");
-            }
-
-            Player? player = GetPlayerByDisplayName(displayName);
+            Player? player = AddPlayerEventByDisplayName(displayName, PlayerEvent.EventType.AvatarWatch, $"User switched to Avatar : {avatarName}"); ;
             if (player != null)
             {
-                player.IsAvatarWatch = watchedAvatar;
-                player.AvatarName = avatarName;
-                AddPlayerEventByDisplayName(displayName ?? string.Empty, PlayerEvent.EventType.AvatarWatch, $"User switched to Avatar : {avatarName}");
-
-                if (watchedAvatar)
+                AvatarInfo? watchedAvatar = serviceRegistry.GetAvatarManager().CheckAvatarByName(avatarName);
+                if (watchedAvatar != null)
                 {
-                    player.PenActivity = $"AV: {avatarName}";
-                    AddPlayerEventByDisplayName(displayName ?? string.Empty, PlayerEvent.EventType.AvatarWatch, $"User has used a watched Avatar : {avatarName}");
-
+                    logger.Info($"{COLOR_PREFIX_LEAVE.GetAnsiEscape()}Watched Avatar Detected for Player {displayName}: {avatarName} with AlertType {watchedAvatar.AlertType.ToString()}{COLOR_RESET.GetAnsiEscape()}");
+                    if (watchedAvatar.AlertType > AlertTypeEnum.None)
+                    {
+                        player = AddPlayerEventByDisplayName(displayName, PlayerEvent.EventType.AvatarWatch, $"User has used a watched Avatar : {avatarName} alertType: {watchedAvatar.AlertType.ToString()}");
+                        player?.AddAlertMessage(AlertClassEnum.Avatar, watchedAvatar.AlertType, watchedAvatar.AlertType == AlertTypeEnum.Crasher ? "Red" : "Yellow", $"Avatar: {avatarName} / {watchedAvatar.AlertType.ToString()}");
+                    }
                 }
-
-                OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Updated, player);
+                if (player != null)
+                {
+                    player.AvatarName = avatarName;
+                    OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Updated, player);
+                }
             }
         }
 
@@ -591,8 +603,7 @@ namespace Tailgrab.PlayerManagement
                             if (!aiEvaluation.Equals("OK"))
                             {
                                 AddPlayerEventByUserId(userId, PlayerEvent.EventType.Emoji, $"AI Evaluation: Spawned Item {itemName} ({inventoryId}) was classified {evaluated}");
-                                player.PenActivity = $"EM: {aiEvaluation}";
-                                player.IsEmojiWatch = true;
+                                player.AddAlertMessage(AlertClassEnum.EmojiSticker, AlertTypeEnum.Nuisance, "Yellow", $"Emote/Sticker: {evaluated}");
                             }
                         }
                     }
@@ -665,8 +676,10 @@ namespace Tailgrab.PlayerManagement
                 Print? printInfo = serviceRegistry.GetVRChatAPIClient().GetPrintInfo(printId);
                 if (printInfo != null)
                 {
-                    if (playersByUserId.TryGetValue(printInfo.OwnerId, out Player? player))
+                    Player? player = AddPlayerEventByUserId(printInfo.OwnerId, PlayerEvent.EventType.Print, $"Dropped Print {printId}");
+                    if (player != null)
                     {
+                        logger.Info($"Fetched print info for print {printId} owned by {player.DisplayName} (ID: {printInfo.OwnerId})");
                         string? evaluated = string.Empty;
                         var ollamaClient = serviceRegistry.GetOllamaAPIClient();
                         if (ollamaClient != null)
@@ -679,19 +692,16 @@ namespace Tailgrab.PlayerManagement
                             {
                                 aiEvaluation = EvaluatImage(evaluated) ?? "OK";
                                 logger.Info($"Ollama classification for inventory item {printInfo.Id}: {aiEvaluation}: {evaluated}");
-                                if( !aiEvaluation.Equals("OK"))
+                                if (!aiEvaluation.Equals("OK"))
                                 {
-                                    AddPlayerEventByUserId(printInfo.OwnerId, PlayerEvent.EventType.Print, $"AI Evaluation: Print {printId} was classified {evaluated}");
-                                    player.PenActivity = "PR: " + aiEvaluation;
-                                    player.IsPrintWatch = true;
-                                }                               
+                                    player = AddPlayerEventByUserId(printInfo.OwnerId, PlayerEvent.EventType.Print, $"AI Evaluation: Print {printId} was classified {evaluated}");                                    
+                                    player?.AddAlertMessage(AlertClassEnum.Print, AlertTypeEnum.Nuisance, "Yellow", $"Print: {evaluated}");
+                                }
                             }
                         }
-
-                        player.PrintData[printId] = new PlayerPrint( printInfo, evaluated ?? "Not Evaluated" );
-                        logger.Info($"Added Print {printId} for Player {player.DisplayName} (ID: {printInfo.OwnerId})");
+                        player?.PrintData[printId] = new PlayerPrint(printInfo, evaluated ?? "Not Evaluated");
                     }
-                    AddPlayerEventByUserId(printInfo.OwnerId, PlayerEvent.EventType.Print, $"Dropped Print {printId}");
+                    
                 }
             }
         }

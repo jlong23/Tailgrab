@@ -157,7 +157,7 @@ namespace Tailgrab.AvatarManagement
             _serviceRegistry.GetDBContext().Database.ExecuteSqlRaw("VACUUM;");
         }
 
-        internal bool CheckAvatarByName(string avatarName)
+        internal AvatarInfo? CheckAvatarByName(string avatarName)
         {
             var bannedAvatars = _serviceRegistry.GetDBContext().AvatarInfos
                                          .Where(b => b.AvatarName != null && b.AvatarName.Equals(avatarName) && b.AlertType > 0)
@@ -168,13 +168,12 @@ namespace Tailgrab.AvatarManagement
             {
                 // Play alert sound based on the highest alert type found for the avatar
                 AlertTypeEnum maxAlertType = bannedAvatars[0].AlertType;
-
                 SoundManager.PlayAlertSound(CommonConst.Avatar_Alert_Key, maxAlertType);
 
-                return true;
+                return bannedAvatars[0];
             }
 
-            return false;
+            return null;
         }
 
         public static async Task AvatarCheckTask(ConcurrentPriorityQueue<IHavePriority<int>, int> priorityQueue, ServiceRegistry serviceRegistry)

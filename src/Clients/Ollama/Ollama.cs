@@ -1,8 +1,6 @@
 ﻿using ConcurrentPriorityQueue.Core;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.VisualBasic.ApplicationServices;
 using NLog;
-using NLog.Filters;
 using OllamaSharp;
 using OllamaSharp.Models;
 using System.Net.Http;
@@ -168,55 +166,47 @@ namespace Tailgrab.Clients.Ollama
         private async static Task<bool> GetUserGroupInformation(ServiceRegistry serviceRegistry, TailgrabDBContext dBContext, List<LimitedUserGroups> userGroups, QueuedProcess item)
         {
             logger.Debug($"Processing User Group subscription for userId: {item.UserId}");
-            AlertTypeEnum maxAlertType = AlertTypeEnum.None;
-            string ? watchedGroups = string.Empty;
-            foreach (LimitedUserGroups group in userGroups)
-            {
-                GroupInfo? groupInfo = dBContext.GroupInfos.Find(group.GroupId);
-                if (groupInfo == null)
+            Player? player = serviceRegistry.GetPlayerManager().GetPlayerByUserId(item.UserId ?? string.Empty);
+            if (player != null)
+            { 
+                AlertTypeEnum maxAlertType = AlertTypeEnum.None;
+                foreach (LimitedUserGroups group in userGroups)
                 {
-                    groupInfo = new GroupInfo
+                    GroupInfo? groupInfo = dBContext.GroupInfos.Find(group.GroupId);
+                    if (groupInfo == null)
                     {
-                        GroupId = group.GroupId,
-                        GroupName = group.Name,
-                        AlertType = AlertTypeEnum.None,
-                        CreatedAt = DateTime.UtcNow,
-                        UpdatedAt = DateTime.UtcNow
-                    };
-                    dBContext.GroupInfos.Add(groupInfo);
-                    dBContext.SaveChanges();
-                }
-                else
-                {
-                    groupInfo.GroupName = group.Name;
-                    dBContext.GroupInfos.Update(groupInfo);
-                    dBContext.SaveChanges();
-
-                    if (groupInfo.AlertType > AlertTypeEnum.None)
-                    {
-                        watchedGroups = string.Concat( watchedGroups,  " " + groupInfo.GroupName );
-                        if( groupInfo.AlertType > maxAlertType)
+                        groupInfo = new GroupInfo
                         {
-                            maxAlertType = groupInfo.AlertType;
+                            GroupId = group.GroupId,
+                            GroupName = group.Name,
+                            AlertType = AlertTypeEnum.None,
+                            CreatedAt = DateTime.UtcNow,
+                            UpdatedAt = DateTime.UtcNow
+                        };
+                        dBContext.GroupInfos.Add(groupInfo);
+                        dBContext.SaveChanges();
+                    }
+                    else
+                    {
+                        groupInfo.GroupName = group.Name;
+                        dBContext.GroupInfos.Update(groupInfo);
+                        dBContext.SaveChanges();
+
+                        if (groupInfo.AlertType > AlertTypeEnum.None)
+                        {
+                            player = serviceRegistry.GetPlayerManager().AddPlayerEventByUserId(item.UserId ?? string.Empty, PlayerEvent.EventType.GroupWatch, $"User is member of group: {groupInfo.GroupName} with alert level {groupInfo.AlertType}");
+                            player?.AddAlertMessage(AlertClassEnum.Group, groupInfo.AlertType, "Yellow", groupInfo.GroupName);
+                            maxAlertType = maxAlertType < groupInfo.AlertType ? groupInfo.AlertType : maxAlertType;
                         }
                     }
                 }
-            }
 
-            if (maxAlertType > AlertTypeEnum.None)
-            {                
-                Player? player = serviceRegistry.GetPlayerManager().GetPlayerByUserId(item.UserId ?? string.Empty);
-                if (player != null)
+                if (player != null && player.IsWatched)
                 {
-                    player.IsGroupWatch = true;
-                    player.PenActivity = watchedGroups;
-                    serviceRegistry.GetPlayerManager().AddPlayerEventByUserId(item.UserId ?? string.Empty, PlayerEvent.EventType.GroupWatch, $"User is member of watched group(s): {watchedGroups}");
+                    SoundManager.PlayAlertSound(CommonConst.Group_Alert_Key, maxAlertType);
+                    return true;
                 }
-
-                SoundManager.PlayAlertSound(CommonConst.Group_Alert_Key, maxAlertType);
-                return true;
             }
-
             return false;
         }
 
@@ -297,16 +287,19 @@ namespace Tailgrab.Clients.Ollama
                 switch(profileWatch)
                 {
                     case "Harrassment & Bullying":
+                        player.AddAlertMessage(AlertClassEnum.Profile, AlertTypeEnum.Nuisance, "Yellow", "Profile: Hate/Bully");
+                        SoundManager.PlayAlertSound(CommonConst.Profile_Alert_Key, AlertTypeEnum.Nuisance);
+                        break;
                     case "Explicit Sexual":
+                        player.AddAlertMessage(AlertClassEnum.Profile, AlertTypeEnum.Nuisance, "Yellow", "Profile: Sexual");
                         SoundManager.PlayAlertSound(CommonConst.Profile_Alert_Key, AlertTypeEnum.Nuisance);
                         break;
                     case "Self Harm":
+                        player.AddAlertMessage(AlertClassEnum.Profile, AlertTypeEnum.Watch, "Yellow", "Profile: Self-Harm");
                         SoundManager.PlayAlertSound(CommonConst.Profile_Alert_Key, AlertTypeEnum.Watch);
                         break;
                 }
 
-                player.IsProfileWatch = true;
-                player.PenActivity = $"Bio: {profileWatch}";
                 serviceRegistry.GetPlayerManager().AddPlayerEventByUserId(player.UserId ?? string.Empty, 
                     PlayerEvent.EventType.ProfileWatch, $"User profile was flagged by the AI : {profileWatch}");
             }

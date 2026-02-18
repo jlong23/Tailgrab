@@ -142,10 +142,10 @@ namespace Tailgrab.PlayerManagement
         public List<KeyValuePair<string, string>> AlertSoundOptions { get; set; } = new List<KeyValuePair<string, string>>();
         public List<KeyValuePair<string, string>> AlertColorOptions { get; } = new List<KeyValuePair<string, string>>
         {
-            new KeyValuePair<string, string>("*NONE", ""),
-            new KeyValuePair<string, string>("Yellow", "#00FFFF"),
-            new KeyValuePair<string, string>("Purple", "#33FFFF"),
-            new KeyValuePair<string, string>("Red", "#FF0000"),
+            new KeyValuePair<string, string>("*NONE", "Normal"),
+            new KeyValuePair<string, string>("Yellow", "Yellow"),
+            new KeyValuePair<string, string>("Purple", "Purple"),
+            new KeyValuePair<string, string>("Red", "Red"),
         };
 
         protected ServiceRegistry _serviceRegistry;
@@ -217,39 +217,25 @@ namespace Tailgrab.PlayerManagement
                 AlertSoundOptions = sounds.Select(s => new KeyValuePair<string, string>(s, s)).ToList();
 
                 AvatarWarnSound.SelectedValue = "*NONE";
-                AvatarWarnColor.SelectedValue = "";
+                AvatarWarnColor.SelectedValue = "Normal";
                 AvatarNuisenceSound.SelectedValue = "ICQ_Uh_Oh";
                 AvatarNuisenceColor.SelectedValue = "Yellow";
                 AvatarCrasherSound.SelectedValue = "Police_Double_Chirping";
                 AvatarCrasherColor.SelectedValue = "Red";
 
                 GroupWarnSound.SelectedValue = "*NONE";
-                GroupWarnColor.SelectedValue = "";
+                GroupWarnColor.SelectedValue = "Normal";
                 GroupNuisenceSound.SelectedValue = "ICQ_Uh_Oh";
                 GroupNuisenceColor.SelectedValue = "Yellow";
                 GroupCrasherSound.SelectedValue = "Police_Double_Chirping";
                 GroupCrasherColor.SelectedValue = "Red";
 
                 ProfileWarnSound.SelectedValue = "*NONE";
-                ProfileWarnColor.SelectedValue = "";
+                ProfileWarnColor.SelectedValue = "Normal";
                 ProfileNuisenceSound.SelectedValue = "ICQ_Uh_Oh";
                 ProfileNuisenceColor.SelectedValue = "Yellow";
                 ProfileCrasherSound.SelectedValue = "Police_Double_Chirping";
                 ProfileCrasherColor.SelectedValue = "Red";
-
-
-                AvatarAlertCombo.ItemsSource = sounds;
-                GroupAlertCombo.ItemsSource = sounds;
-                ProfileAlertCombo.ItemsSource = sounds;
-
-                // Load saved registry values into selected items
-                var avatar = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_Alert_Avatar);
-                var group = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_Alert_Group);
-                var profile = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_Alert_Profile);
-
-                if (!string.IsNullOrEmpty(avatar)) AvatarAlertCombo.SelectedItem = avatar;
-                if (!string.IsNullOrEmpty(group)) GroupAlertCombo.SelectedItem = group;
-                if (!string.IsNullOrEmpty(profile)) ProfileAlertCombo.SelectedItem = profile;
             }
             catch { }
             #endregion
@@ -297,34 +283,6 @@ namespace Tailgrab.PlayerManagement
 
                 ConfigStore.PutStoredKeyString(Common.CommonConst.Registry_Avatar_Gist, avatarGistUrl.Text);
                 ConfigStore.PutStoredKeyString(CommonConst.Registry_Group_Gist, groupGistUrl.Text);
-
-                // Save alert sound selections (or delete if none)
-                if (AvatarAlertCombo.SelectedItem is string avatarSound && !string.IsNullOrEmpty(avatarSound))
-                {
-                    ConfigStore.SaveSecret(CommonConst.Registry_Alert_Avatar, avatarSound);
-                }
-                else
-                {
-                    ConfigStore.DeleteSecret(CommonConst.Registry_Alert_Avatar);
-                }
-
-                if (GroupAlertCombo.SelectedItem is string groupSound && !string.IsNullOrEmpty(groupSound))
-                {
-                    ConfigStore.SaveSecret(CommonConst.Registry_Alert_Group, groupSound);
-                }
-                else
-                {
-                    ConfigStore.DeleteSecret(CommonConst.Registry_Alert_Group);
-                }
-
-                if (ProfileAlertCombo.SelectedItem is string profileSound && !string.IsNullOrEmpty(profileSound))
-                {
-                    ConfigStore.SaveSecret(CommonConst.Registry_Alert_Profile, profileSound);
-                }
-                else
-                {
-                    ConfigStore.DeleteSecret(CommonConst.Registry_Alert_Profile);
-                }
 
                 System.Windows.MessageBox.Show("Configuration saved. Restart the Applicaton for all changes to take affect.", "Config", MessageBoxButton.OK, MessageBoxImage.Information);
             }
@@ -2090,14 +2048,17 @@ namespace Tailgrab.PlayerManagement
         public string AvatarName { get; private set; }
         public string PenActivity { get; private set; }
         public string? LastStickerUrl { get; private set; }
-        public System.Windows.Media.ImageSource? LastStickerImage { get; private set; }
+        public string? LastStickerImageUrl { get; private set; }
         public string InstanceStartTime { get; private set; }
         public string InstanceEndTime { get; private set; }
         public string Profile { get; private set; }
         public string AIEval { get; private set; }
         public bool IsWatched { get; set; } = false;
-        public string WatchCode { get; private set; } = string.Empty;
         public string History { get; set; } = string.Empty;
+        public string AlertMessages { get; set; } = string.Empty;
+
+        private string _AlertColor = "Normal";
+
         public ObservableCollection<PrintInfoViewModel> Prints { get; private set; } = new ObservableCollection<PrintInfoViewModel>();
         public ObservableCollection<EmojiInfoViewModel> Emojis { get; private set; } = new ObservableCollection<EmojiInfoViewModel>();
 
@@ -2105,12 +2066,7 @@ namespace Tailgrab.PlayerManagement
         {
             get
             {
-                if (IsWatched)
-                {
-                    return "Alert";
-                }
-
-                return "Normal";
+                return _AlertColor;
             }
         }
 
@@ -2121,13 +2077,14 @@ namespace Tailgrab.PlayerManagement
             AvatarName = p.AvatarName;
             PenActivity = p.PenActivity;
             LastStickerUrl = p.LastStickerUrl;
-            LastStickerImage = LoadImageFromUrl(p.LastStickerUrl);
+            LastStickerImageUrl = p.LastStickerUrl;
             InstanceStartTime = p.InstanceStartTime.ToString("u");
             InstanceEndTime = p.InstanceEndTime.HasValue ? p.InstanceEndTime.Value.ToString("u") : string.Empty;
             Profile = p.UserBio ?? string.Empty;
             AIEval = p.AIEval ?? "Not Evaluated";
             IsWatched = p.IsWatched;
-            WatchCode = p.WatchCode;
+            AlertMessages = string.Empty;            
+
             // populate prints
             if (p.PrintData != null)
             {
@@ -2136,6 +2093,7 @@ namespace Tailgrab.PlayerManagement
                     Prints.Add(new PrintInfoViewModel(pr));
                 }
             }
+
             if (p.Inventory != null)
             {
                 foreach (var inv in p.Inventory)
@@ -2160,7 +2118,7 @@ namespace Tailgrab.PlayerManagement
             if (DisplayName != p.DisplayName) { DisplayName = p.DisplayName; changed = true; }
             if (AvatarName != p.AvatarName) { AvatarName = p.AvatarName; changed = true; }
             if (PenActivity != p.PenActivity) { PenActivity = p.PenActivity; changed = true; }
-            if (LastStickerUrl != p.LastStickerUrl) { LastStickerUrl = p.LastStickerUrl; LastStickerImage = LoadImageFromUrl(p.LastStickerUrl); changed = true; }
+            if (LastStickerUrl != p.LastStickerUrl) { LastStickerUrl = p.LastStickerUrl; LastStickerImageUrl = p.LastStickerUrl; changed = true; }
 
             var start = p.InstanceStartTime.ToString("u");
             if (InstanceStartTime != start) { InstanceStartTime = start; changed = true; }
@@ -2170,7 +2128,9 @@ namespace Tailgrab.PlayerManagement
             if (Profile != (p.UserBio ?? string.Empty)) { Profile = p.UserBio ?? string.Empty; changed = true; }
             if (AIEval != (p.AIEval ?? "Not Evaluated")) { AIEval = p.AIEval ?? "Not Evaluated"; changed = true; }
             if (IsWatched != p.IsWatched) { IsWatched = p.IsWatched; changed = true; }
-            if (WatchCode != p.WatchCode) { WatchCode = p.WatchCode; changed = true; }
+            if (AlertMessages != p.AlertMessage) { AlertMessages = p.AlertMessage ?? string.Empty; changed = true; }
+
+            if(_AlertColor != p.AlertColor ) { _AlertColor = p.AlertColor; }
 
             if (changed) OnPropertyChanged(string.Empty);
             // update prints collection
@@ -2192,34 +2152,12 @@ namespace Tailgrab.PlayerManagement
                 }
             }
 
-
             string history = string.Empty;
             foreach (var hist in p.Events)
             {
                 history += $"({hist.EventTime:u} - {hist.EventDescription})\n";
             }
             History = history.TrimEnd();
-        }
-
-        private System.Windows.Media.ImageSource? LoadImageFromUrl(string? url)
-        {
-            if (string.IsNullOrEmpty(url)) return null;
-            try
-            {
-                var bitmap = new System.Windows.Media.Imaging.BitmapImage();
-                bitmap.BeginInit();
-                bitmap.UriSource = new Uri(url);
-                bitmap.DecodePixelWidth = 200;
-                bitmap.DecodePixelHeight = 200;
-                bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
-                bitmap.EndInit();
-                bitmap.Freeze();
-                return bitmap;
-            }
-            catch
-            {
-                return null;
-            }
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
