@@ -218,6 +218,24 @@ namespace Tailgrab.PlayerManagement
 
                 AvatarWarnSound.SelectedValue = "*NONE";
                 AvatarWarnColor.SelectedValue = "";
+                AvatarNuisenceSound.SelectedValue = "ICQ_Uh_Oh";
+                AvatarNuisenceColor.SelectedValue = "Yellow";
+                AvatarCrasherSound.SelectedValue = "Police_Double_Chirping";
+                AvatarCrasherColor.SelectedValue = "Red";
+
+                GroupWarnSound.SelectedValue = "*NONE";
+                GroupWarnColor.SelectedValue = "";
+                GroupNuisenceSound.SelectedValue = "ICQ_Uh_Oh";
+                GroupNuisenceColor.SelectedValue = "Yellow";
+                GroupCrasherSound.SelectedValue = "Police_Double_Chirping";
+                GroupCrasherColor.SelectedValue = "Red";
+
+                ProfileWarnSound.SelectedValue = "*NONE";
+                ProfileWarnColor.SelectedValue = "";
+                ProfileNuisenceSound.SelectedValue = "ICQ_Uh_Oh";
+                ProfileNuisenceColor.SelectedValue = "Yellow";
+                ProfileCrasherSound.SelectedValue = "Police_Double_Chirping";
+                ProfileCrasherColor.SelectedValue = "Red";
 
 
                 AvatarAlertCombo.ItemsSource = sounds;
@@ -321,17 +339,49 @@ namespace Tailgrab.PlayerManagement
         {
             try
             {
-                ConfigStore.PutStoredKeyString(CommonConst.Registry_AvatarAlertWarn_Sound, (string)AvatarWarnSound.SelectedValue);
-                ConfigStore.PutStoredKeyString(CommonConst.Registry_AvatarAlertNuisence_Sound, (string)AvatarNuisenceSound.SelectedValue);
-                ConfigStore.PutStoredKeyString(CommonConst.Registry_AvatarAlertCrasher_Sound, (string)AvatarCrasherSound.SelectedValue);
-                ConfigStore.PutStoredKeyString(CommonConst.Registry_AvatarAlertWarn_Color, (string)AvatarWarnColor.SelectedValue);
-                ConfigStore.PutStoredKeyString(CommonConst.Registry_AvatarAlertNuisence_Color, (string)AvatarNuisenceColor.SelectedValue);
-                ConfigStore.PutStoredKeyString(CommonConst.Registry_AvatarAlertCrasher_Color, (string)AvatarCrasherColor.SelectedValue);
+                // Avatar Alerts
+                SetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Watch, CommonConst.Sound_Alert_Key, (string)AvatarWarnSound.SelectedValue);
+                SetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Sound_Alert_Key, (string)AvatarNuisenceSound.SelectedValue);
+                SetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Sound_Alert_Key, (string)AvatarCrasherSound.SelectedValue);
+                SetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Watch, CommonConst.Color_Alert_Key, (string)AvatarWarnColor.SelectedValue);
+                SetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Color_Alert_Key, (string)AvatarNuisenceColor.SelectedValue);
+                SetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Color_Alert_Key, (string)AvatarCrasherColor.SelectedValue);
+
+                // Group Alerts
+                SetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Watch, CommonConst.Sound_Alert_Key, (string)GroupWarnSound.SelectedValue);
+                SetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Sound_Alert_Key, (string)GroupNuisenceSound.SelectedValue);
+                SetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Sound_Alert_Key, (string)GroupCrasherSound.SelectedValue);
+                SetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Watch, CommonConst.Color_Alert_Key, (string)GroupWarnColor.SelectedValue);
+                SetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Color_Alert_Key, (string)GroupNuisenceColor.SelectedValue);
+                SetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Color_Alert_Key, (string)GroupCrasherColor.SelectedValue);
+
+                // Group Alerts
+                SetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Watch, CommonConst.Sound_Alert_Key, (string)ProfileWarnSound.SelectedValue);
+                SetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Sound_Alert_Key, (string)ProfileNuisenceSound.SelectedValue);
+                SetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Sound_Alert_Key, (string)ProfileCrasherSound.SelectedValue);
+                SetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Watch, CommonConst.Color_Alert_Key, (string)ProfileWarnColor.SelectedValue);
+                SetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Color_Alert_Key, (string)ProfileNuisenceColor.SelectedValue);
+                SetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Color_Alert_Key, (string)ProfileCrasherColor.SelectedValue);
             }
             catch (Exception ex)
             {
                 System.Windows.MessageBox.Show($"Failed to save configuration: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+
+        private void SetAlertKeyString(string alertKey, AlertTypeEnum alertType, string subType, object value)
+        { 
+            string key = CommonConst.ConfigRegistryPath + "\\" + alertKey + "\\" + alertType.ToString();
+
+            if (value is string stringValue && !string.IsNullOrEmpty(stringValue))
+            {
+                ConfigStore.PutStoredKeyString(key, subType, stringValue);
+            }
+            else
+            {
+                ConfigStore.RemoveStoredKeyString(key, subType);
+            }
+
         }
 
 

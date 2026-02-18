@@ -57,9 +57,14 @@ namespace Tailgrab.Common
 
         public static string? GetStoredKeyString(string keyName)
         {
+            return GetStoredKeyString(CommonConst.ConfigRegistryPath, keyName);
+        }
+
+        public static string? GetStoredKeyString(string keyPath, string keyName)
+        {
             try
             {
-                using (RegistryKey? key = Registry.CurrentUser.OpenSubKey(CommonConst.ConfigRegistryPath))
+                using (RegistryKey? key = Registry.CurrentUser.OpenSubKey(keyPath))
                 {
                     if (key == null)
                     {
@@ -86,9 +91,14 @@ namespace Tailgrab.Common
 
         public static void PutStoredKeyString(string keyName, string keyValue)
         {
+            PutStoredKeyString(CommonConst.ConfigRegistryPath, keyName, keyValue);
+        }
+
+        public static void PutStoredKeyString(string keyPath, string keyName, string keyValue)
+        {
             try
             {
-                using (RegistryKey key = Registry.CurrentUser.CreateSubKey(CommonConst.ConfigRegistryPath))
+                using (RegistryKey key = Registry.CurrentUser.CreateSubKey(keyPath))
                 {
                     key.SetValue(keyName, keyValue, RegistryValueKind.String);
                 }
@@ -98,5 +108,15 @@ namespace Tailgrab.Common
                 logger.Error(ex, $"Failed to save value to registry. {keyName}");
             }
         }
+
+        public static void RemoveStoredKeyString(string keyPath, string keyName)
+        {
+            using (var key = Registry.CurrentUser.OpenSubKey(keyPath, writable: true))
+            {
+                if (key == null) return;
+                key.DeleteValue(keyName, throwOnMissingValue: false);
+            }
+        }
+
     }
 }

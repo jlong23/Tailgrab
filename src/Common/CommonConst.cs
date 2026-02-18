@@ -35,29 +35,11 @@
         public const string Registry_Avatar_Checksum = "GIST_AVATAR_LIST_CHECKSUM";
         public const string Registry_Avatar_Gist = "GIST_AVATAR_LIST_URL";
 
+        public const string Avatar_Alert_Key = "Avatar";
+        public const string Group_Alert_Key = "Group";
+        public const string Profile_Alert_Key = "Profile";
+        public const string Sound_Alert_Key = "Sound";
+        public const string Color_Alert_Key = "Color";
 
-        public const string Registry_AvatarAlertWarn_Sound = "\\Alerts\\AVATAR\\WARN_SOUND";
-        public const string Registry_AvatarAlertNuisence_Sound = "\\Alerts\\AVATAR\\NUISENCE_SOUND";
-        public const string Registry_AvatarAlertCrasher_Sound = "\\Alerts\\AVATAR\\CRASHER_SOUND";
-
-        public const string Registry_GroupAlertWarn_Sound = "\\Alerts\\GROUP\\WARN_SOUND";
-        public const string Registry_GroupAlertNuisence_Sound = "\\Alerts\\GROUP\\NUISENCE_SOUND";
-        public const string Registry_GroupAlertCrasher_Sound = "\\Alerts\\GROUP\\CRASHER_SOUND";
-
-        public const string Registry_ProfileAlertWarn_Sound = "\\Alerts\\PROFILE\\WARN_SOUND";
-        public const string Registry_ProfileAlertNuisence_Sound = "\\Alerts\\PROFILE\\NUISENCE_SOUND";
-        public const string Registry_ProfileAlertCrasher_Sound = "\\Alerts\\PROFILE\\CRASHER_SOUND";
-
-        public const string Registry_AvatarAlertWarn_Color = "\\Alerts\\AVATAR\\WARN_COLOR";
-        public const string Registry_AvatarAlertNuisence_Color = "\\Alerts\\AVATAR\\NUISENCE_COLOR";
-        public const string Registry_AvatarAlertCrasher_Color = "\\Alerts\\AVATAR\\CRASHER_COLOR";
-
-        public const string Registry_GroupAlertWarn_Color = "\\Alerts\\GROUP\\WARN_COLOR";
-        public const string Registry_GroupAlertNuisence_Color = "\\Alerts\\GROUP\\NUISENCE_COLOR";
-        public const string Registry_GroupAlertCrasher_Color = "\\Alerts\\GROUP\\CRASHER_COLOR";
-
-        public const string Registry_ProfileAlertWarn_v = "\\Alerts\\PROFILE\\WARN_COLOR";
-        public const string Registry_ProfileAlertNuisence_Color = "\\Alerts\\PROFILE\\NUISENCE_COLOR";
-        public const string Registry_ProfileAlertCrasher_Color = "\\Alerts\\PROFILE\\CRASHER_COLOR";
     }
 }

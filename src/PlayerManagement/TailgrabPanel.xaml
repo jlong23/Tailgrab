@@ -245,21 +245,7 @@ Title="Tailgrab Player Panel"
                                         <ComboBox Name="OverlayProfileReportReasonComboBox" 
                                               DisplayMemberPath="DisplayName"
                                               SelectedValuePath="Value"
-                                              SelectedIndex="0">
-                                            <ComboBox.ItemContainerStyle>
-                                                <Style TargetType="ComboBoxItem">
-                                                    <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.WindowBrushKey}}" />
-                                                    <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" />
-                                                    <Setter Property="Padding" Value="4" />
-                                                    <Style.Triggers>
-                                                        <Trigger Property="IsSelected" Value="True">
-                                                            <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}" />
-                                                            <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.HighlightTextBrushKey}}" />
-                                                        </Trigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </ComboBox.ItemContainerStyle>
-                                        </ComboBox>
+                                              SelectedIndex="0"/>
                                     </StackPanel>
 
                                     <!-- Report Description -->
@@ -569,21 +555,7 @@ Title="Tailgrab Player Panel"
                                             <ComboBox Name="PrintOverlayReportReasonComboBox" 
                                                   DisplayMemberPath="DisplayName"
                                                   SelectedValuePath="Value"
-                                                  SelectedIndex="0">
-                                                <ComboBox.ItemContainerStyle>
-                                                    <Style TargetType="ComboBoxItem">
-                                                        <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.WindowBrushKey}}" />
-                                                        <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" />
-                                                        <Setter Property="Padding" Value="4" />
-                                                        <Style.Triggers>
-                                                            <Trigger Property="IsSelected" Value="True">
-                                                                <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}" />
-                                                                <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.HighlightTextBrushKey}}" />
-                                                            </Trigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </ComboBox.ItemContainerStyle>
-                                            </ComboBox>
+                                                  SelectedIndex="0"/>
                                         </StackPanel>
 
                                         <!-- Report Description -->
@@ -804,21 +776,7 @@ Title="Tailgrab Player Panel"
                                             <ComboBox Name="OverlayReportReasonComboBox" 
                                                   DisplayMemberPath="DisplayName"
                                                   SelectedValuePath="Value"
-                                                  SelectedIndex="0">
-                                                <ComboBox.ItemContainerStyle>
-                                                    <Style TargetType="ComboBoxItem">
-                                                        <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.WindowBrushKey}}" />
-                                                        <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" />
-                                                        <Setter Property="Padding" Value="4" />
-                                                        <Style.Triggers>
-                                                            <Trigger Property="IsSelected" Value="True">
-                                                                <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}" />
-                                                                <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.HighlightTextBrushKey}}" />
-                                                            </Trigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </ComboBox.ItemContainerStyle>
-                                            </ComboBox>
+                                                  SelectedIndex="0"/>
                                         </StackPanel>
 
                                         <!-- Report Description -->
@@ -905,24 +863,7 @@ Title="Tailgrab Player Panel"
                                                 <DataTemplate>
                                                     <ComboBox ItemsSource="{Binding DataContext.AlertTypeOptions, RelativeSource={RelativeSource AncestorType=Window}}"
                                                           SelectedValuePath="Value" DisplayMemberPath="Key"
-                                                          SelectedValue="{Binding AlertType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                          Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
-                                                          Foreground="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"
-                                                          BorderBrush="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}">
-                                                        <ComboBox.ItemContainerStyle>
-                                                            <Style TargetType="ComboBoxItem">
-                                                                <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.WindowBrushKey}}" />
-                                                                <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" />
-                                                                <Setter Property="Padding" Value="4" />
-                                                                <Style.Triggers>
-                                                                    <Trigger Property="IsSelected" Value="True">
-                                                                        <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}" />
-                                                                        <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.HighlightTextBrushKey}}" />
-                                                                    </Trigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </ComboBox.ItemContainerStyle>
-                                                    </ComboBox>
+                                                          SelectedValue="{Binding AlertType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                                                 </DataTemplate>
                                             </DataGridTemplateColumn.CellEditingTemplate>
                                         </DataGridTemplateColumn>
@@ -979,24 +920,7 @@ Title="Tailgrab Player Panel"
                                                 <DataTemplate>
                                                     <ComboBox ItemsSource="{Binding DataContext.AlertTypeOptions, RelativeSource={RelativeSource AncestorType=Window}}"
                                                           SelectedValuePath="Value" DisplayMemberPath="Key"
-                                                          SelectedValue="{Binding AlertType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                          Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
-                                                          Foreground="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"
-                                                          BorderBrush="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}">
-                                                        <ComboBox.ItemContainerStyle>
-                                                            <Style TargetType="ComboBoxItem">
-                                                                <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.WindowBrushKey}}" />
-                                                                <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" />
-                                                                <Setter Property="Padding" Value="4" />
-                                                                <Style.Triggers>
-                                                                    <Trigger Property="IsSelected" Value="True">
-                                                                        <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}" />
-                                                                        <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.HighlightTextBrushKey}}" />
-                                                                    </Trigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </ComboBox.ItemContainerStyle>
-                                                    </ComboBox>
+                                                          SelectedValue="{Binding AlertType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                                                 </DataTemplate>
                                             </DataGridTemplateColumn.CellEditingTemplate>
                                         </DataGridTemplateColumn>
@@ -1167,65 +1091,13 @@ Title="Tailgrab Player Panel"
                                             <RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
                                         <Label Grid.Column="1" Content="Avatar Alert:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
-                                        <ComboBox Grid.Row="0" Grid.Column="1" Name="AvatarAlertCombo" Margin="108,2,107,2">
-                                            <ComboBox.Style>
-                                                <Style TargetType="ComboBox">
-                                                    <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.ControlBrushKey}}" />
-                                                    <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" />
-                                                    <Setter Property="BorderBrush" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" />
-                                                    <Setter Property="Padding" Value="4" />
-                                                </Style>
-                                            </ComboBox.Style>
-                                            <ComboBox.ItemContainerStyle>
-                                                <Style TargetType="ComboBoxItem">
-                                                    <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.WindowBrushKey}}" />
-                                                    <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" />
-                                                    <Setter Property="Padding" Value="4" />
-                                                    <Style.Triggers>
-                                                        <Trigger Property="IsSelected" Value="True">
-                                                            <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}" />
-                                                            <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.HighlightTextBrushKey}}" />
-                                                        </Trigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </ComboBox.ItemContainerStyle>
-                                        </ComboBox>
+                                        <ComboBox Grid.Row="0" Grid.Column="1" Name="AvatarAlertCombo" Margin="108,2,107,2"/>
 
                                         <Label Grid.Row="1" Grid.Column="1" Content="Group Alert:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="25" Margin="34,0,0,0" Width="73"/>
-                                        <ComboBox Grid.Row="1" Grid.Column="1" Name="GroupAlertCombo" Margin="108,2,107,2">
-                                            <ComboBox.ItemContainerStyle>
-                                                <Style TargetType="ComboBoxItem">
-                                                    <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.WindowBrushKey}}" />
-                                                    <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" />
-                                                    <Setter Property="Padding" Value="4" />
-                                                    <Style.Triggers>
-                                                        <Trigger Property="IsSelected" Value="True">
-                                                            <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}" />
-                                                            <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.HighlightTextBrushKey}}" />
-                                                        </Trigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </ComboBox.ItemContainerStyle>
-                                        </ComboBox>
-
-
+                                        <ComboBox Grid.Row="1" Grid.Column="1" Name="GroupAlertCombo" Margin="108,2,107,2"/>
+                                        
                                         <Label Grid.Row="2" Grid.Column="1" Content="Profile Alert:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
-                                        <ComboBox Grid.Row="2" Grid.Column="1" Name="ProfileAlertCombo" Margin="108,2,107,2">
-                                            <ComboBox.ItemContainerStyle>
-                                                <Style TargetType="ComboBoxItem">
-                                                    <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.WindowBrushKey}}" />
-                                                    <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" />
-                                                    <Setter Property="Padding" Value="4" />
-                                                    <Style.Triggers>
-                                                        <Trigger Property="IsSelected" Value="True">
-                                                            <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}" />
-                                                            <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.HighlightTextBrushKey}}" />
-                                                        </Trigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </ComboBox.ItemContainerStyle>
-                                        </ComboBox>
-
+                                        <ComboBox Grid.Row="2" Grid.Column="1" Name="ProfileAlertCombo" Margin="108,2,107,2"/>
                                     </Grid>
                                 </GroupBox>
 
