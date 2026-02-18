@@ -16,7 +16,7 @@ namespace Tailgrab.Common
     public static class SoundManager
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-        private static readonly string[] allSystemSounds = { "Asterisk", "Beep", "Exclamation", "Warning", "Hand", "Error", "Question" };
+        private static readonly string[] allSystemSounds = { "*NONE", "Asterisk", "Beep", "Exclamation", "Warning", "Hand", "Error", "Question" };
 
         /// <summary>
         /// Enumerate available sound base filenames (without extension) from the ./sounds directory.
@@ -28,32 +28,32 @@ namespace Tailgrab.Common
             {
                 var baseDir = AppContext.BaseDirectory ?? Directory.GetCurrentDirectory();
                 var soundsDir = Path.Combine(baseDir, "sounds");
-                if (!Directory.Exists(soundsDir))
+                if (Directory.Exists(soundsDir))
                 {
-                    return new List<string>();
+
+                    var exts = new[] { ".wav", ".mp3", ".ogg" };
+                    var files = Directory.EnumerateFiles(soundsDir)
+                        .Where(f => exts.Contains(Path.GetExtension(f), StringComparer.OrdinalIgnoreCase))
+                        .Select(f => Path.GetFileNameWithoutExtension(f))
+                        .Where(n => !string.IsNullOrWhiteSpace(n))
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
+                        .ToList();
+
+                    files = allSystemSounds
+                        .Concat(files)
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .ToList();
+
+                    return files;
                 }
-
-                var exts = new[] { ".wav", ".mp3", ".ogg" };
-                var files = Directory.EnumerateFiles(soundsDir)
-                    .Where(f => exts.Contains(Path.GetExtension(f), StringComparer.OrdinalIgnoreCase))
-                    .Select(f => Path.GetFileNameWithoutExtension(f))
-                    .Where(n => !string.IsNullOrWhiteSpace(n))
-                    .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
-                    .ToList();
-
-                files = allSystemSounds
-                    .Concat(files)
-                    .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .ToList();
-
-                return files;
             }
             catch (Exception ex)
             {
                 Logger.Warn(ex, "Failed to enumerate sounds directory");
-                return new List<string>();
             }
+
+            return new List<string>();
         }
 
         public static void PlayAlertSound(string entityType, AlertTypeEnum alertType )

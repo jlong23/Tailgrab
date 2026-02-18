@@ -20,8 +20,11 @@ Title="Tailgrab Player Panel"
                 <TabItem Header="Active Players">
                     <Grid>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="215*"/>
-                            <ColumnDefinition Width="108*"/>
+                            <ColumnDefinition Width="316*"/>
+                            <ColumnDefinition Width="25*"/>
+                            <ColumnDefinition Width="364*"/>
+                            <ColumnDefinition Width="68*"/>
+                            <ColumnDefinition Width="285*"/>
                         </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="13*"/>
@@ -29,14 +32,14 @@ Title="Tailgrab Player Panel"
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*" MinHeight="100"/>
                         </Grid.RowDefinitions>
-                        
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="2">
+
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="5">
                             <TextBox Name="ActiveFilterBox" Width="300" Margin="0,0,8,0" />
                             <Button Content="Apply Filter" Click="ActiveApplyFilter_Click" Margin="0,0,6,0"/>
                             <Button Content="Clear Filter" Click="ActiveClearFilter_Click"/>
                         </StackPanel>
 
-                        <ListView Name="ActiveListView" ItemsSource="{Binding ActiveView}" SelectedItem="{Binding SelectedActive, Mode=TwoWay}" Margin="0,25,0,1" Grid.RowSpan="2" Grid.ColumnSpan="2">
+                        <ListView Name="ActiveListView" ItemsSource="{Binding ActiveView}" SelectedItem="{Binding SelectedActive, Mode=TwoWay}" Margin="0,25,0,1" Grid.RowSpan="2" Grid.ColumnSpan="5">
                             <ListView.Resources>
                                 <Style TargetType="{x:Type ListViewItem}">
                                     <Style.Triggers>
@@ -154,9 +157,9 @@ Title="Tailgrab Player Panel"
                             </ListView.View>
                         </ListView>
 
-                        <GridSplitter Grid.Row="2" Grid.ColumnSpan="2" Height="5" HorizontalAlignment="Stretch" VerticalAlignment="Center" Background="#FF3F3F46" ShowsPreview="False" ResizeDirection="Rows"/>
+                        <GridSplitter Grid.Row="2" Grid.ColumnSpan="5" Height="5" HorizontalAlignment="Stretch" VerticalAlignment="Center" Background="#FF3F3F46" ShowsPreview="False" ResizeDirection="Rows"/>
 
-                        <Grid Margin="0,0,0,6" Grid.ColumnSpan="2" Grid.Row="3">
+                        <Grid Margin="0,0,0,6" Grid.ColumnSpan="5" Grid.Row="3">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
@@ -176,12 +179,12 @@ Title="Tailgrab Player Panel"
 
                             <TextBox Name="UserAlertsBox" Grid.Column="2" Height="auto" Margin="4,0,8,0" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" Text="{Binding SelectedActive.History, Mode=OneWay, FallbackValue='', TargetNullValue=''}" />
                         </Grid>
-                        
+
                         <!-- Overlay Panel for Report Profile -->
                         <Border Name="OverlayProfileReport" 
                             Grid.Row="0" 
                             Grid.RowSpan="3"
-                            Grid.ColumnSpan="2"
+                            Grid.ColumnSpan="5"
                             Background="#CC000000" 
                             Visibility="Collapsed"
                             Panel.ZIndex="1000">
@@ -1231,10 +1234,145 @@ Title="Tailgrab Player Panel"
                                 </StackPanel>
                             </Grid>
                         </TabItem>
+                        <TabItem Header="Alerts">
+                            <Grid Margin="6">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="auto" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+
+                                <GroupBox Header="Alert Sounds" Grid.Row="0" Margin="0,0,0,6">
+                                    <Grid Margin="6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="63*" />
+                                            <ColumnDefinition Width="233*" />
+                                            <ColumnDefinition Width="233*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+
+                                        <Label Grid.Column="0" Content="Avatar Alert:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
+
+                                        <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="2">
+                                            <Label Content="Warn:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
+                                            <ComboBox Name="AvatarWarnSound" ItemsSource="{Binding DataContext.AlertSoundOptions, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                          SelectedValuePath="Value" DisplayMemberPath="Key" Margin="2,2,2,2" Width="200"/>
+
+                                            <Label Content="Color:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
+                                            <ComboBox Name="AvatarWarnColor" ItemsSource="{Binding DataContext.AlertColorOptions, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                          SelectedValuePath="Value" DisplayMemberPath="Key" Margin="2,2,2,2" Width="200"/>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="2">
+                                            <Label Content="Nuisence:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
+                                            <ComboBox Name="AvatarNuisenceSound" ItemsSource="{Binding DataContext.AlertSoundOptions, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                          SelectedValuePath="Value" DisplayMemberPath="Key" Margin="2,2,2,2" Width="200"/>
+
+                                            <Label Content="Color:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
+                                            <ComboBox Name="AvatarNuisenceColor" ItemsSource="{Binding DataContext.AlertColorOptions, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                          SelectedValuePath="Value" DisplayMemberPath="Key" Margin="2,2,2,2" Width="200"/>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="2">
+                                            <Label Content="Crasher:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
+                                            <ComboBox Name="AvatarCrasherSound" ItemsSource="{Binding DataContext.AlertSoundOptions, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                          SelectedValuePath="Value" DisplayMemberPath="Key" Margin="2,2,2,2" Width="200"/>
+
+                                            <Label Content="Color:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
+                                            <ComboBox Name="AvatarCrasherColor" ItemsSource="{Binding DataContext.AlertColorOptions, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                          SelectedValuePath="Value" DisplayMemberPath="Key" Margin="2,2,2,2" Width="200"/>
+                                        </StackPanel>
+
+
+                                        <Label Grid.Row="3" Grid.Column="0" Content="Group Alert:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
+
+                                        <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="2">
+                                            <Label Content="Warn:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
+                                            <ComboBox Name="GroupWarnSound" ItemsSource="{Binding DataContext.AlertSoundOptions, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                          SelectedValuePath="Value" DisplayMemberPath="Key" Margin="2,2,2,2" Width="200"/>
+
+                                            <Label Content="Color:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
+                                            <ComboBox Name="GroupWarnColor" ItemsSource="{Binding DataContext.AlertColorOptions, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                          SelectedValuePath="Value" DisplayMemberPath="Key" Margin="2,2,2,2" Width="200"/>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Row="4" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="2">
+                                            <Label Content="Nuisence:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
+                                            <ComboBox Name="GroupNuisenceSound" ItemsSource="{Binding DataContext.AlertSoundOptions, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                          SelectedValuePath="Value" DisplayMemberPath="Key" Margin="2,2,2,2" Width="200"/>
+
+                                            <Label Content="Color:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
+                                            <ComboBox Name="GroupNuisenceColor" ItemsSource="{Binding DataContext.AlertColorOptions, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                          SelectedValuePath="Value" DisplayMemberPath="Key" Margin="2,2,2,2" Width="200"/>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Row="5" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="2">
+                                            <Label Content="Crasher:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
+                                            <ComboBox Name="GroupCrasherSound" ItemsSource="{Binding DataContext.AlertSoundOptions, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                          SelectedValuePath="Value" DisplayMemberPath="Key" Margin="2,2,2,2" Width="200"/>
+
+                                            <Label Content="Color:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
+                                            <ComboBox Name="GroupCrasherColor" ItemsSource="{Binding DataContext.AlertColorOptions, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                          SelectedValuePath="Value" DisplayMemberPath="Key" Margin="2,2,2,2" Width="200"/>
+                                        </StackPanel>
+
+
+                                        <Label Grid.Row="6" Grid.Column="0" Content="Profile Alert:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
+
+                                        <StackPanel Grid.Row="6" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="2">
+                                            <Label Content="Warn:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
+                                            <ComboBox Name="ProfileWarnSound" ItemsSource="{Binding DataContext.AlertSoundOptions, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                          SelectedValuePath="Value" DisplayMemberPath="Key" Margin="2,2,2,2" Width="200"/>
+
+                                            <Label Content="Color:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
+                                            <ComboBox Name="ProfileWarnColor" ItemsSource="{Binding DataContext.AlertColorOptions, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                          SelectedValuePath="Value" DisplayMemberPath="Key" Margin="2,2,2,2" Width="200"/>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Row="7" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="2">
+                                            <Label Content="Nuisence:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
+                                            <ComboBox Name="ProfileNuisenceSound" ItemsSource="{Binding DataContext.AlertSoundOptions, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                          SelectedValuePath="Value" DisplayMemberPath="Key" Margin="2,2,2,2" Width="200"/>
+
+                                            <Label Content="Color:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
+                                            <ComboBox Name="ProfileNuisenceColor" ItemsSource="{Binding DataContext.AlertColorOptions, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                          SelectedValuePath="Value" DisplayMemberPath="Key" Margin="2,2,2,2" Width="200"/>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Row="8" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="2">
+                                            <Label Content="Crasher:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
+                                            <ComboBox Name="ProfileCrasherSound" ItemsSource="{Binding DataContext.AlertSoundOptions, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                          SelectedValuePath="Value" DisplayMemberPath="Key" Margin="2,2,2,2" Width="200"/>
+
+                                            <Label Content="Color:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
+                                            <ComboBox Name="ProfileCrasherColor" ItemsSource="{Binding DataContext.AlertColorOptions, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                          SelectedValuePath="Value" DisplayMemberPath="Key" Margin="2,2,2,2" Width="200"/>
+                                        </StackPanel>
+
+
+                                    </Grid>
+                                </GroupBox>
+
+                                <StackPanel Orientation="Horizontal" Grid.Row="4" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,6,0,0">
+                                    <Button Content="Save Config" Click="SaveAlerts_Click" Width="120" />
+                                </StackPanel>
+                            </Grid>
+                        </TabItem>
                     </TabControl>
                 </TabItem>
 
             </TabControl>
+
+
         </Grid>
 
         <!-- Status Bar -->

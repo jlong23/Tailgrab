@@ -750,7 +750,26 @@ public class FileTailer
         var tabControlStyle = new Style(typeof(System.Windows.Controls.TabControl));
         tabControlStyle.Setters.Add(new Setter(System.Windows.Controls.Control.BackgroundProperty, darkWindow));
         tabControlStyle.Setters.Add(new Setter(System.Windows.Controls.Control.ForegroundProperty, lightText));
+        tabControlStyle.Setters.Add(new Setter(System.Windows.Controls.Control.BorderBrushProperty, darkControl));
         app.Resources[typeof(System.Windows.Controls.TabControl)] = tabControlStyle;
+
+        // TabItem style - for individual tab headers
+        var tabItemStyle = new Style(typeof(System.Windows.Controls.TabItem));
+        tabItemStyle.Setters.Add(new Setter(System.Windows.Controls.Control.BackgroundProperty, darkControl));
+        tabItemStyle.Setters.Add(new Setter(System.Windows.Controls.Control.ForegroundProperty, lightText));
+        tabItemStyle.Setters.Add(new Setter(System.Windows.Controls.Control.BorderBrushProperty, darkControl));
+        tabItemStyle.Setters.Add(new Setter(System.Windows.Controls.Control.PaddingProperty, new Thickness(8, 4, 8, 4)));
+        
+        var tabSelectedTrigger = new Trigger { Property = System.Windows.Controls.TabItem.IsSelectedProperty, Value = true };
+        tabSelectedTrigger.Setters.Add(new Setter(System.Windows.Controls.Control.BackgroundProperty, darkWindow));
+        tabSelectedTrigger.Setters.Add(new Setter(System.Windows.Controls.Control.ForegroundProperty, accent));
+        tabItemStyle.Triggers.Add(tabSelectedTrigger);
+        
+        var tabMouseOverTrigger = new Trigger { Property = System.Windows.Controls.TabItem.IsMouseOverProperty, Value = true };
+        tabMouseOverTrigger.Setters.Add(new Setter(System.Windows.Controls.Control.BackgroundProperty, new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(50, 50, 53))));
+        tabItemStyle.Triggers.Add(tabMouseOverTrigger);
+        
+        app.Resources[typeof(System.Windows.Controls.TabItem)] = tabItemStyle;
 
         var groupBoxStyle = new Style(typeof(System.Windows.Controls.GroupBox));
         groupBoxStyle.Setters.Add(new Setter(System.Windows.Window.BackgroundProperty, darkWindow));
@@ -758,8 +777,9 @@ public class FileTailer
         app.Resources[typeof(System.Windows.Controls.GroupBox)] = groupBoxStyle;
 
         var comboBoxStyle = new Style(typeof(System.Windows.Controls.ComboBox));
-        comboBoxStyle.Setters.Add(new Setter(System.Windows.Controls.Control.BackgroundProperty, darkControl));
+        comboBoxStyle.Setters.Add(new Setter(System.Windows.Controls.Control.BackgroundProperty, darkWindow));
         comboBoxStyle.Setters.Add(new Setter(System.Windows.Controls.Control.ForegroundProperty, lightText));
+        comboBoxStyle.Setters.Add(new Setter(System.Windows.Controls.Control.BorderBrushProperty, accent));
         app.Resources[typeof(System.Windows.Controls.ComboBox)] = comboBoxStyle;
 
         // Ensure ComboBox items and selected text use the dark theme when the control is not focused.
@@ -767,13 +787,31 @@ public class FileTailer
         comboBoxItemStyle.Setters.Add(new Setter(System.Windows.Controls.Control.BackgroundProperty, darkWindow));
         comboBoxItemStyle.Setters.Add(new Setter(System.Windows.Controls.Control.ForegroundProperty, lightText));
         comboBoxItemStyle.Setters.Add(new Setter(System.Windows.Controls.Control.BorderBrushProperty, System.Windows.Media.Brushes.Transparent));
+        comboBoxItemStyle.Setters.Add(new Setter(System.Windows.Controls.Control.PaddingProperty, new Thickness(4)));
 
         var comboSelectedTrigger = new Trigger { Property = System.Windows.Controls.ComboBoxItem.IsSelectedProperty, Value = true };
-        comboSelectedTrigger.Setters.Add(new Setter(System.Windows.Controls.Control.BackgroundProperty, darkWindow));
+        comboSelectedTrigger.Setters.Add(new Setter(System.Windows.Controls.Control.BackgroundProperty, new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(60, 60, 63))));
         comboSelectedTrigger.Setters.Add(new Setter(System.Windows.Controls.Control.ForegroundProperty, lightText));
-
         comboBoxItemStyle.Triggers.Add(comboSelectedTrigger);
+
+        var comboHighlightedTrigger = new Trigger { Property = System.Windows.Controls.ComboBoxItem.IsHighlightedProperty, Value = true };
+        comboHighlightedTrigger.Setters.Add(new Setter(System.Windows.Controls.Control.BackgroundProperty, new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(50, 50, 53))));
+        comboHighlightedTrigger.Setters.Add(new Setter(System.Windows.Controls.Control.ForegroundProperty, lightText));
+        comboBoxItemStyle.Triggers.Add(comboHighlightedTrigger);
+
         app.Resources[typeof(System.Windows.Controls.ComboBoxItem)] = comboBoxItemStyle;
+        
+        // Style for the ComboBox toggle button
+        var toggleButtonStyle = new Style(typeof(System.Windows.Controls.Primitives.ToggleButton));
+        toggleButtonStyle.Setters.Add(new Setter(System.Windows.Controls.Control.BackgroundProperty, darkControl));
+        toggleButtonStyle.Setters.Add(new Setter(System.Windows.Controls.Control.ForegroundProperty, lightText));
+        toggleButtonStyle.Setters.Add(new Setter(System.Windows.Controls.Control.BorderBrushProperty, accent));
+        app.Resources[typeof(System.Windows.Controls.Primitives.ToggleButton)] = toggleButtonStyle;
+        
+        // Style for ComboBox Popup background
+        var popupStyle = new Style(typeof(System.Windows.Controls.Primitives.Popup));
+        popupStyle.Setters.Add(new Setter(System.Windows.Controls.Control.BackgroundProperty, darkWindow));
+        app.Resources[typeof(System.Windows.Controls.Primitives.Popup)] = popupStyle;
 
         var windowStyle = new Style(typeof(System.Windows.Window));
         windowStyle.Setters.Add(new Setter(System.Windows.Window.BackgroundProperty, darkWindow));

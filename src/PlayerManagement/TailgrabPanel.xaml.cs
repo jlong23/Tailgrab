@@ -130,12 +130,22 @@ namespace Tailgrab.PlayerManagement
             new KeyValuePair<string,bool>("NO", false)
         };
 
-        public List<KeyValuePair<string, AlertTypeEnum>> AlertTypeOptions { get; }  = new List<KeyValuePair<string, AlertTypeEnum>>
+        public List<KeyValuePair<string, AlertTypeEnum>> AlertTypeOptions { get; } = new List<KeyValuePair<string, AlertTypeEnum>>
         {
             new KeyValuePair<string, AlertTypeEnum>("None", AlertTypeEnum.None),
             new KeyValuePair<string, AlertTypeEnum>("Watch", AlertTypeEnum.Watch),
             new KeyValuePair<string, AlertTypeEnum>("Nuisance", AlertTypeEnum.Nuisance),
             new KeyValuePair<string, AlertTypeEnum>("Crasher", AlertTypeEnum.Crasher)
+        };
+
+
+        public List<KeyValuePair<string, string>> AlertSoundOptions { get; set; } = new List<KeyValuePair<string, string>>();
+        public List<KeyValuePair<string, string>> AlertColorOptions { get; } = new List<KeyValuePair<string, string>>
+        {
+            new KeyValuePair<string, string>("*NONE", ""),
+            new KeyValuePair<string, string>("Yellow", "#00FFFF"),
+            new KeyValuePair<string, string>("Purple", "#33FFFF"),
+            new KeyValuePair<string, string>("Red", "#FF0000"),
         };
 
         protected ServiceRegistry _serviceRegistry;
@@ -184,8 +194,8 @@ namespace Tailgrab.PlayerManagement
             var ollamaProfilePrompt = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_Ollama_API_Prompt) ?? Tailgrab.Common.CommonConst.Default_Ollama_API_Prompt;
             var ollamaImagePrompt = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_Ollama_API_Image_Prompt) ?? Tailgrab.Common.CommonConst.Default_Ollama_API_Image_Prompt;
             var ollamaModel = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_Ollama_API_Model) ?? Tailgrab.Common.CommonConst.Default_Ollama_API_Model;
-            var avatarGistUri = ConfigStore.GetStoredUri(Tailgrab.Common.CommonConst.Registry_Avatar_Gist);
-            var groupGistUri = ConfigStore.GetStoredUri(Tailgrab.Common.CommonConst.Registry_Group_Gist);
+            var avatarGistUri = ConfigStore.GetStoredKeyString(Tailgrab.Common.CommonConst.Registry_Avatar_Gist);
+            var groupGistUri = ConfigStore.GetStoredKeyString(Tailgrab.Common.CommonConst.Registry_Group_Gist);
 
             // Populate UI boxes but do not reveal secrets
             if (!string.IsNullOrEmpty(vrUser)) VrUserBox.Text = vrUser;
@@ -204,6 +214,12 @@ namespace Tailgrab.PlayerManagement
             try
             {
                 var sounds = Tailgrab.Common.SoundManager.GetAvailableSounds();
+                AlertSoundOptions = sounds.Select(s => new KeyValuePair<string, string>(s, s)).ToList();
+
+                AvatarWarnSound.SelectedValue = "*NONE";
+                AvatarWarnColor.SelectedValue = "";
+
+
                 AvatarAlertCombo.ItemsSource = sounds;
                 GroupAlertCombo.ItemsSource = sounds;
                 ProfileAlertCombo.ItemsSource = sounds;
@@ -252,47 +268,65 @@ namespace Tailgrab.PlayerManagement
             try
             {
                 // Save to registry protected store
-                ConfigStore.SaveSecret(Tailgrab.Common.CommonConst.Registry_VRChat_Web_UserName, VrUserBox.Text ?? string.Empty);
-                if (!string.IsNullOrEmpty(VrPassBox.Password)) ConfigStore.SaveSecret(Tailgrab.Common.CommonConst.Registry_VRChat_Web_Password, VrPassBox.Password);
-                if (!string.IsNullOrEmpty(Vr2FaBox.Password)) ConfigStore.SaveSecret(Tailgrab.Common.CommonConst.Registry_VRChat_Web_2FactorKey, Vr2FaBox.Password);
-                if (!string.IsNullOrEmpty(VrOllamaBox.Password)) ConfigStore.SaveSecret(Tailgrab.Common.CommonConst.Registry_Ollama_API_Key, VrOllamaBox.Password);
-                ConfigStore.SaveSecret(Tailgrab.Common.CommonConst.Registry_Ollama_API_Endpoint, VrOllamaEndpointBox.Text ?? Tailgrab.Common.CommonConst.Default_Ollama_API_Endpoint);
-                ConfigStore.SaveSecret(Tailgrab.Common.CommonConst.Registry_Ollama_API_Prompt, VrOllamaPromptBox.Text ?? Tailgrab.Common.CommonConst.Default_Ollama_API_Prompt);
-                ConfigStore.SaveSecret(Tailgrab.Common.CommonConst.Registry_Ollama_API_Image_Prompt, VrOllamaImagePromptBox.Text ?? Tailgrab.Common.CommonConst.Default_Ollama_API_Image_Prompt);
-                ConfigStore.SaveSecret(Tailgrab.Common.CommonConst.Registry_Ollama_API_Model, VrOllamaModelBox.Text ?? Tailgrab.Common.CommonConst.Default_Ollama_API_Model);
+                ConfigStore.SaveSecret(CommonConst.Registry_VRChat_Web_UserName, VrUserBox.Text ?? string.Empty);
+                if (!string.IsNullOrEmpty(VrPassBox.Password)) ConfigStore.SaveSecret(CommonConst.Registry_VRChat_Web_Password, VrPassBox.Password);
+                if (!string.IsNullOrEmpty(Vr2FaBox.Password)) ConfigStore.SaveSecret(CommonConst.Registry_VRChat_Web_2FactorKey, Vr2FaBox.Password);
+                if (!string.IsNullOrEmpty(VrOllamaBox.Password)) ConfigStore.SaveSecret(CommonConst.Registry_Ollama_API_Key, VrOllamaBox.Password);
+                ConfigStore.SaveSecret(CommonConst.Registry_Ollama_API_Endpoint, VrOllamaEndpointBox.Text ?? CommonConst.Default_Ollama_API_Endpoint);
+                ConfigStore.SaveSecret(CommonConst.Registry_Ollama_API_Prompt, VrOllamaPromptBox.Text ?? CommonConst.Default_Ollama_API_Prompt);
+                ConfigStore.SaveSecret(CommonConst.Registry_Ollama_API_Image_Prompt, VrOllamaImagePromptBox.Text ?? CommonConst.Default_Ollama_API_Image_Prompt);
+                ConfigStore.SaveSecret(CommonConst.Registry_Ollama_API_Model, VrOllamaModelBox.Text ?? CommonConst.Default_Ollama_API_Model);
 
-                ConfigStore.PutStoredUri(Common.CommonConst.Registry_Avatar_Gist, avatarGistUrl.Text);
-                ConfigStore.PutStoredUri(Common.CommonConst.Registry_Group_Gist, groupGistUrl.Text);
+                ConfigStore.PutStoredKeyString(Common.CommonConst.Registry_Avatar_Gist, avatarGistUrl.Text);
+                ConfigStore.PutStoredKeyString(CommonConst.Registry_Group_Gist, groupGistUrl.Text);
 
                 // Save alert sound selections (or delete if none)
                 if (AvatarAlertCombo.SelectedItem is string avatarSound && !string.IsNullOrEmpty(avatarSound))
                 {
-                    ConfigStore.SaveSecret(Tailgrab.Common.CommonConst.Registry_Alert_Avatar, avatarSound);
+                    ConfigStore.SaveSecret(CommonConst.Registry_Alert_Avatar, avatarSound);
                 }
                 else
                 {
-                    ConfigStore.DeleteSecret(Tailgrab.Common.CommonConst.Registry_Alert_Avatar);
+                    ConfigStore.DeleteSecret(CommonConst.Registry_Alert_Avatar);
                 }
 
                 if (GroupAlertCombo.SelectedItem is string groupSound && !string.IsNullOrEmpty(groupSound))
                 {
-                    ConfigStore.SaveSecret(Tailgrab.Common.CommonConst.Registry_Alert_Group, groupSound);
+                    ConfigStore.SaveSecret(CommonConst.Registry_Alert_Group, groupSound);
                 }
                 else
                 {
-                    ConfigStore.DeleteSecret(Tailgrab.Common.CommonConst.Registry_Alert_Group);
+                    ConfigStore.DeleteSecret(CommonConst.Registry_Alert_Group);
                 }
 
                 if (ProfileAlertCombo.SelectedItem is string profileSound && !string.IsNullOrEmpty(profileSound))
                 {
-                    ConfigStore.SaveSecret(Tailgrab.Common.CommonConst.Registry_Alert_Profile, profileSound);
+                    ConfigStore.SaveSecret(CommonConst.Registry_Alert_Profile, profileSound);
                 }
                 else
                 {
-                    ConfigStore.DeleteSecret(Tailgrab.Common.CommonConst.Registry_Alert_Profile);
+                    ConfigStore.DeleteSecret(CommonConst.Registry_Alert_Profile);
                 }
 
                 System.Windows.MessageBox.Show("Configuration saved. Restart the Applicaton for all changes to take affect.", "Config", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"Failed to save configuration: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+
+        private void SaveAlerts_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                ConfigStore.PutStoredKeyString(CommonConst.Registry_AvatarAlertWarn_Sound, (string)AvatarWarnSound.SelectedValue);
+                ConfigStore.PutStoredKeyString(CommonConst.Registry_AvatarAlertNuisence_Sound, (string)AvatarNuisenceSound.SelectedValue);
+                ConfigStore.PutStoredKeyString(CommonConst.Registry_AvatarAlertCrasher_Sound, (string)AvatarCrasherSound.SelectedValue);
+                ConfigStore.PutStoredKeyString(CommonConst.Registry_AvatarAlertWarn_Color, (string)AvatarWarnColor.SelectedValue);
+                ConfigStore.PutStoredKeyString(CommonConst.Registry_AvatarAlertNuisence_Color, (string)AvatarNuisenceColor.SelectedValue);
+                ConfigStore.PutStoredKeyString(CommonConst.Registry_AvatarAlertCrasher_Color, (string)AvatarCrasherColor.SelectedValue);
             }
             catch (Exception ex)
             {

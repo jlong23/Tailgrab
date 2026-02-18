@@ -55,7 +55,7 @@ namespace Tailgrab.Common
             }
         }
 
-        public static string? GetStoredUri(string keyName)
+        public static string? GetStoredKeyString(string keyName)
         {
             try
             {
@@ -84,7 +84,7 @@ namespace Tailgrab.Common
             }
         }
 
-        public static void PutStoredUri(string keyName, string keyValue)
+        public static void PutStoredKeyString(string keyName, string keyValue)
         {
             try
             {

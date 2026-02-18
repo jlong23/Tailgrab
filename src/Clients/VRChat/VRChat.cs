@@ -27,7 +27,11 @@ namespace Tailgrab.Clients.VRChat
             string? password = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_VRChat_Web_Password);
             string? twoFactorSecret = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_VRChat_Web_2FactorKey);
 
-            if (username is null || password is null || twoFactorSecret is null)
+            // Persist cookies to disk (cookies.json) for reuse
+            try
+            {
+
+                if (username is null || password is null || twoFactorSecret is null)
             {
                 System.Windows.MessageBox.Show("VR Chat Web API Credentials are not set yet, use the Config / Secrets tab to update credenials and restart Tailgrab.", "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
                 return;
@@ -94,18 +98,16 @@ namespace Tailgrab.Clients.VRChat
             }
 
             var currentUser = await _vrchat.Authentication.GetCurrentUserAsync();
-            Console.WriteLine($"Logged in as \"{currentUser.DisplayName}\"");
+            logger.Info($"Logged in as \"{currentUser.DisplayName}\"");
 
             var cookies = _vrchat.GetCookies();
 
-            // Persist cookies to disk (cookies.json) for reuse
-            try
-            {
                 SaveCookiesToFile(cookiePath, cookies);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Failed to save cookies to '{cookiePath}': {ex.Message}");
+                logger.Error($"Failed to Log Into VRC and to save cookies': {ex.Message}");
+                System.Windows.MessageBox.Show($"Failed to Log Into VRChat Web API, check logs for details. Error: {ex.Message}", "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
             }
         }
 
