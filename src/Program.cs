@@ -653,7 +653,11 @@ public class FileTailer
         var darkWindow = new SolidColorBrush(System.Windows.Media.Color.FromRgb(30, 30, 30));
         var darkControl = new SolidColorBrush(System.Windows.Media.Color.FromRgb(45, 45, 48));
         var lightText = new SolidColorBrush(System.Windows.Media.Color.FromRgb(230, 230, 230));
-        var accent = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0, 122, 204));
+        var accent = new SolidColorBrush(System.Windows.Media.Color.FromRgb(29, 44, 55));
+
+        var highlightDark = new SolidColorBrush(System.Windows.Media.Color.FromRgb(112, 112, 174));
+        var highlightDarkText = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0, 0, 0));
+
 
         // Override common system brushes
         app.Resources[System.Windows.SystemColors.WindowBrushKey] = darkWindow;
@@ -682,12 +686,13 @@ public class FileTailer
         listViewItemStyle.Setters.Add(new Setter(System.Windows.Controls.Control.BorderBrushProperty, System.Windows.Media.Brushes.Transparent));
 
         var selectedTrigger = new Trigger { Property = System.Windows.Controls.ListViewItem.IsSelectedProperty, Value = true };
-        selectedTrigger.Setters.Add(new Setter(System.Windows.Controls.Control.BackgroundProperty, new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(60, 60, 63))));
-        selectedTrigger.Setters.Add(new Setter(System.Windows.Controls.Control.ForegroundProperty, lightText));
+        selectedTrigger.Setters.Add(new Setter(System.Windows.Controls.Control.BackgroundProperty, highlightDark));
+        selectedTrigger.Setters.Add(new Setter(System.Windows.Controls.Control.ForegroundProperty, highlightDarkText));
         listViewItemStyle.Triggers.Add(selectedTrigger);
 
         var mouseOverTrigger = new Trigger { Property = System.Windows.Controls.ListViewItem.IsMouseOverProperty, Value = true };
-        mouseOverTrigger.Setters.Add(new Setter(System.Windows.Controls.Control.BackgroundProperty, new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(50, 50, 53))));
+        mouseOverTrigger.Setters.Add(new Setter(System.Windows.Controls.Control.BackgroundProperty, highlightDark));
+        mouseOverTrigger.Setters.Add(new Setter(System.Windows.Controls.Control.ForegroundProperty, highlightDarkText));
         listViewItemStyle.Triggers.Add(mouseOverTrigger);
 
         app.Resources[typeof(System.Windows.Controls.ListViewItem)] = listViewItemStyle;
@@ -697,6 +702,17 @@ public class FileTailer
         headerStyle.Setters.Add(new Setter(System.Windows.Controls.Control.BackgroundProperty, darkControl));
         headerStyle.Setters.Add(new Setter(System.Windows.Controls.Control.ForegroundProperty, lightText));
         headerStyle.Setters.Add(new Setter(System.Windows.Controls.Control.BorderBrushProperty, accent));
+
+        var headerMouseOverTrigger = new Trigger { Property = System.Windows.Controls.GridViewColumnHeader.IsMouseOverProperty, Value = true };
+        headerMouseOverTrigger.Setters.Add(new Setter(System.Windows.Controls.Control.BackgroundProperty, highlightDark));
+        headerMouseOverTrigger.Setters.Add(new Setter(System.Windows.Controls.Control.ForegroundProperty, highlightDarkText));
+        headerStyle.Triggers.Add(headerMouseOverTrigger);
+
+        var headerPressedTrigger = new Trigger { Property = System.Windows.Controls.GridViewColumnHeader.IsPressedProperty, Value = true };
+        headerPressedTrigger.Setters.Add(new Setter(System.Windows.Controls.Control.BackgroundProperty, highlightDark));
+        headerPressedTrigger.Setters.Add(new Setter(System.Windows.Controls.Control.ForegroundProperty, highlightDarkText));
+        headerStyle.Triggers.Add(headerPressedTrigger);
+
         app.Resources[typeof(System.Windows.Controls.GridViewColumnHeader)] = headerStyle;
 
         // DataGrid dark theme styles for Config -> Avatars DB
@@ -720,8 +736,8 @@ public class FileTailer
         dgCellStyle.Setters.Add(new Setter(System.Windows.Controls.Control.ForegroundProperty, lightText));
         dgCellStyle.Setters.Add(new Setter(System.Windows.Controls.Control.BorderBrushProperty, System.Windows.Media.Brushes.Transparent));
         var cellSelectedTrigger = new Trigger { Property = System.Windows.Controls.DataGridCell.IsSelectedProperty, Value = true };
-        cellSelectedTrigger.Setters.Add(new Setter(System.Windows.Controls.Control.BackgroundProperty, new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(60, 60, 63))));
-        cellSelectedTrigger.Setters.Add(new Setter(System.Windows.Controls.Control.ForegroundProperty, lightText));
+        cellSelectedTrigger.Setters.Add(new Setter(System.Windows.Controls.Control.BackgroundProperty, highlightDark));
+        cellSelectedTrigger.Setters.Add(new Setter(System.Windows.Controls.Control.ForegroundProperty, highlightDarkText));
         dgCellStyle.Triggers.Add(cellSelectedTrigger);
         app.Resources[typeof(System.Windows.Controls.DataGridCell)] = dgCellStyle;
 
@@ -729,7 +745,8 @@ public class FileTailer
         dgRowStyle.Setters.Add(new Setter(System.Windows.Controls.Control.BackgroundProperty, darkWindow));
         dgRowStyle.Setters.Add(new Setter(System.Windows.Controls.Control.ForegroundProperty, lightText));
         var rowSelectedTrigger = new Trigger { Property = System.Windows.Controls.DataGridRow.IsSelectedProperty, Value = true };
-        rowSelectedTrigger.Setters.Add(new Setter(System.Windows.Controls.Control.BackgroundProperty, new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(60, 60, 63))));
+        rowSelectedTrigger.Setters.Add(new Setter(System.Windows.Controls.Control.BackgroundProperty, highlightDark));
+        rowSelectedTrigger.Setters.Add(new Setter(System.Windows.Controls.Control.ForegroundProperty, highlightDarkText));
         dgRowStyle.Triggers.Add(rowSelectedTrigger);
         app.Resources[typeof(System.Windows.Controls.DataGridRow)] = dgRowStyle;
 
@@ -766,7 +783,8 @@ public class FileTailer
         tabItemStyle.Triggers.Add(tabSelectedTrigger);
         
         var tabMouseOverTrigger = new Trigger { Property = System.Windows.Controls.TabItem.IsMouseOverProperty, Value = true };
-        tabMouseOverTrigger.Setters.Add(new Setter(System.Windows.Controls.Control.BackgroundProperty, new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(50, 50, 53))));
+        tabMouseOverTrigger.Setters.Add(new Setter(System.Windows.Controls.Control.BackgroundProperty, new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(112, 112, 174))));
+        tabMouseOverTrigger.Setters.Add(new Setter(System.Windows.Controls.Control.ForegroundProperty, new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0, 0, 0))));
         tabItemStyle.Triggers.Add(tabMouseOverTrigger);
         
         app.Resources[typeof(System.Windows.Controls.TabItem)] = tabItemStyle;

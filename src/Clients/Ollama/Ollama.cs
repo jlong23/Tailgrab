@@ -287,15 +287,15 @@ namespace Tailgrab.Clients.Ollama
                 switch(profileWatch)
                 {
                     case "Harrassment & Bullying":
-                        player.AddAlertMessage(AlertClassEnum.Profile, AlertTypeEnum.Nuisance, "Yellow", "Profile: Hate/Bully");
+                        player.AddAlertMessage(AlertClassEnum.Profile, AlertTypeEnum.Nuisance, "Yellow", "Hate/Bully");
                         SoundManager.PlayAlertSound(CommonConst.Profile_Alert_Key, AlertTypeEnum.Nuisance);
                         break;
                     case "Explicit Sexual":
-                        player.AddAlertMessage(AlertClassEnum.Profile, AlertTypeEnum.Nuisance, "Yellow", "Profile: Sexual");
+                        player.AddAlertMessage(AlertClassEnum.Profile, AlertTypeEnum.Nuisance, "Yellow", "Sexual");
                         SoundManager.PlayAlertSound(CommonConst.Profile_Alert_Key, AlertTypeEnum.Nuisance);
                         break;
                     case "Self Harm":
-                        player.AddAlertMessage(AlertClassEnum.Profile, AlertTypeEnum.Watch, "Yellow", "Profile: Self-Harm");
+                        player.AddAlertMessage(AlertClassEnum.Profile, AlertTypeEnum.Watch, "Yellow", "Self-Harm");
                         SoundManager.PlayAlertSound(CommonConst.Profile_Alert_Key, AlertTypeEnum.Watch);
                         break;
                 }

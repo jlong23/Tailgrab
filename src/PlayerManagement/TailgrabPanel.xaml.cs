@@ -424,10 +424,10 @@ namespace Tailgrab.PlayerManagement
 
         private void AddOrUpdatePlayer(Player p)
         {
-            var vm = ActivePlayers.FirstOrDefault(x => x.UserId == p.UserId);
-            var vmPast = PastPlayers.FirstOrDefault(x => x.UserId == p.UserId);
-            var vmPrint = PrintPlayers.FirstOrDefault(x => x.UserId == p.UserId);
-            var vmEmoji = EmojiPlayers.FirstOrDefault(x => x.UserId == p.UserId);
+            PlayerViewModel? vm = ActivePlayers.FirstOrDefault(x => x.UserId == p.UserId);
+            PlayerViewModel? vmPast = PastPlayers.FirstOrDefault(x => x.UserId == p.UserId);
+            PlayerViewModel? vmPrint = PrintPlayers.FirstOrDefault(x => x.UserId == p.UserId);
+            PlayerViewModel? vmEmoji = EmojiPlayers.FirstOrDefault(x => x.UserId == p.UserId);
 
             if (p.InstanceEndTime == null)
             {
@@ -470,30 +470,9 @@ namespace Tailgrab.PlayerManagement
             }
             else
             {
-                // Past player
-                if (vmPast != null)
-                {
-                    vmPast.UpdateFrom(p);
-                }
-                else
-                {
-                    var newVm = new PlayerViewModel(p);
-                    PastPlayers.Add(newVm);
-                }
-
                 if (vm != null)
                 {
-                    ActivePlayers.Remove(vm);
-                }
-                // move prints if present
-                if (vmPrint != null)
-                {
-                    PrintPlayers.Remove(vmPrint);
-                }
-                // move Emoji if present
-                if (vmEmoji != null)
-                {
-                    EmojiPlayers.Remove(vmEmoji);
+                    PastPlayers.Add(vm);
                 }
             }
         }
@@ -518,8 +497,8 @@ namespace Tailgrab.PlayerManagement
             }
 
             var olderThan = DateTime.Now.AddMinutes(-15);
-            var toRemove = new List<PlayerViewModel>();
-            foreach (var oldPlayer in PastPlayers)
+            List<PlayerViewModel> toRemove = new List<PlayerViewModel>();
+            foreach (PlayerViewModel oldPlayer in PastPlayers)
             {
                 if (!string.IsNullOrEmpty(oldPlayer.InstanceEndTime))
                 {
@@ -533,9 +512,11 @@ namespace Tailgrab.PlayerManagement
                     }
                 }
             }
-            foreach (var oldPlayer in toRemove)
+            foreach (PlayerViewModel oldPlayer in toRemove)
             {
                 PastPlayers.Remove(oldPlayer);
+                PrintPlayers.Remove(oldPlayer);
+                EmojiPlayers.Remove(oldPlayer);
             }
         }
 
@@ -2129,8 +2110,7 @@ namespace Tailgrab.PlayerManagement
             if (AIEval != (p.AIEval ?? "Not Evaluated")) { AIEval = p.AIEval ?? "Not Evaluated"; changed = true; }
             if (IsWatched != p.IsWatched) { IsWatched = p.IsWatched; changed = true; }
             if (AlertMessages != p.AlertMessage) { AlertMessages = p.AlertMessage ?? string.Empty; changed = true; }
-
-            if(_AlertColor != p.AlertColor ) { _AlertColor = p.AlertColor; }
+            if (_AlertColor != p.AlertColor ) { _AlertColor = p.AlertColor; changed = true; }
 
             if (changed) OnPropertyChanged(string.Empty);
             // update prints collection
@@ -2175,6 +2155,7 @@ namespace Tailgrab.PlayerManagement
         public DateTime Timestamp { get; set; }
         public string PrintUrl { get; set; }
         public string AIEvaluation { get; set; }
+        public string AIClass { get; set; }
         public string AuthorName { get; set; }
         public PrintInfoViewModel(PlayerPrint p )
         {
@@ -2185,6 +2166,7 @@ namespace Tailgrab.PlayerManagement
             PrintUrl = p.PrintUrl;
             AuthorName = p.AuthorName;
             AIEvaluation = p.AIEvaluation;
+            AIClass = p.AIClass;
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;

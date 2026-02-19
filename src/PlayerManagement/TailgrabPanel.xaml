@@ -53,7 +53,11 @@ Title="Tailgrab Player Panel"
                                         </DataTrigger>
                                         <DataTrigger Binding="{Binding HighlightClass}" Value="Red">
                                             <Setter Property="Background" Value="Red" />
-                                            <Setter Property="Foreground" Value="Black" />
+                                            <Setter Property="Foreground" Value="Yellow" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding HighlightClass}" Value="Purple">
+                                            <Setter Property="Background" Value="Purple" />
+                                            <Setter Property="Foreground" Value="Yellow" />
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
@@ -292,7 +296,11 @@ Title="Tailgrab Player Panel"
                                         </DataTrigger>
                                         <DataTrigger Binding="{Binding HighlightClass}" Value="Red">
                                             <Setter Property="Background" Value="Red" />
-                                            <Setter Property="Foreground" Value="Black" />
+                                            <Setter Property="Foreground" Value="Yellow" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding HighlightClass}" Value="Purple">
+                                            <Setter Property="Background" Value="Purple" />
+                                            <Setter Property="Foreground" Value="Yellow" />
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
@@ -358,7 +366,7 @@ Title="Tailgrab Player Panel"
                                         </GridViewColumn.Header>
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate>
-                                                <TextBlock Text="{Binding UserId}" />
+                                                <TextBlock Text="{Binding AlertMessages}" />
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
@@ -396,16 +404,18 @@ Title="Tailgrab Player Panel"
                 <TabItem Header="Prints">
                     <Grid>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="229*"/>
+                            <ColumnDefinition Width="34*"/>
+                            <ColumnDefinition Width="7*"/>
+                            <ColumnDefinition Width="188*"/>
                             <ColumnDefinition Width="46*"/>
-                            <ColumnDefinition Width="784*"/>
+                            <ColumnDefinition Width="783*"/>
                         </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="*" />
                         </Grid.RowDefinitions>
 
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="3">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="5">
                             <TextBox Name="PrintFilterBox" Width="300" Margin="0,0,8,0" />
                             <Button Content="Apply Filter" Click="PrintApplyFilter_Click" Margin="0,0,6,0"/>
                             <Button Content="Clear Filter" Click="PrintClearFilter_Click"/>
@@ -413,7 +423,7 @@ Title="Tailgrab Player Panel"
                         </StackPanel>
 
                         <!-- Show each player and their prints -->
-                        <ListView Name="PrintListView" Grid.Row="1" ItemsSource="{Binding PrintView}" Grid.ColumnSpan="3">
+                        <ListView Name="PrintListView" Grid.Row="1" ItemsSource="{Binding PrintView}" Grid.ColumnSpan="5">
                             <ListView.ItemTemplate>
                                 <DataTemplate>
                                     <Border BorderBrush="Gray" BorderThickness="0,0,0,1" Padding="6">
@@ -443,7 +453,7 @@ Title="Tailgrab Player Panel"
                                                                 <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding PrintId}" VerticalAlignment="Center"/>
                                                                 <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding AuthorName}" VerticalAlignment="Center"/>
                                                                 <TextBlock Grid.Row="0" Grid.Column="2" Text="{Binding Timestammp, StringFormat={}{0:u}}" VerticalAlignment="Center"/>
-                                                                <TextBlock Grid.Row="0" Grid.Column="3" Text="{Binding AIEvaluation}" VerticalAlignment="Center"/>
+                                                                <TextBlock Grid.Row="0" Grid.Column="3" Text="{Binding AIClass}" VerticalAlignment="Center"/>
 
                                                                 <!-- Second Row - Button -->
                                                                 <Button Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="4" 
@@ -483,7 +493,7 @@ Title="Tailgrab Player Panel"
                             Grid.RowSpan="2" 
                             Background="#CC000000" 
                             Visibility="Collapsed"
-                            Panel.ZIndex="1000" Grid.ColumnSpan="3">
+                            Panel.ZIndex="1000" Grid.ColumnSpan="5">
                             <Border Background="#FF2D2D30" 
                                 MaxWidth="950" 
                                 MaxHeight="550" 

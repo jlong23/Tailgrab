@@ -66,9 +66,10 @@ namespace Tailgrab.PlayerManagement
         public DateTime CreatedAt { get; set; }
         public string PrintUrl { get; set; }
         public string AIEvaluation { get; set; }
+        public string AIClass { get; set; }
         public string AuthorName { get; set; }
 
-        public PlayerPrint(VRChat.API.Model.Print p, string aiEvaluation)
+        public PlayerPrint(VRChat.API.Model.Print p, string aiEvaluation, string aIClass)
         {
             PrintId = p.Id;
             OwnerId = p.OwnerId;
@@ -77,6 +78,7 @@ namespace Tailgrab.PlayerManagement
             PrintUrl = p.Files.Image;
             AuthorName = p.AuthorName;
             AIEvaluation = aiEvaluation;
+            AIClass = aIClass;
         }
     }
 
@@ -94,6 +96,17 @@ namespace Tailgrab.PlayerManagement
             Color = color;
             Message = message;
             Timestamp = DateTime.Now;
+        }
+    }
+
+    public class PlayerAvatar
+    {
+        public string AvatarName { get; set; }
+        public string? CreatedBy { get; set; }
+        public PlayerAvatar(string avatarName, string createdBy )
+        {
+            AvatarName = avatarName;
+            CreatedBy = createdBy;
         }
     }
 
@@ -273,6 +286,7 @@ namespace Tailgrab.PlayerManagement
         private static Dictionary<int, string> userIdByNetworkId = new Dictionary<int, string>();
         private static Dictionary<string, string> userIdByDisplayName = new Dictionary<string, string>();
         private static Dictionary<string, string> avatarByDisplayName = new Dictionary<string, string>();
+        private static Dictionary<string, PlayerAvatar> PlayerAvatarByName = new Dictionary<string, PlayerAvatar>();
 
         public static readonly AnsiColor COLOR_PREFIX_LEAVE = AnsiColor.Yellow;
         public static readonly AnsiColor COLOR_PREFIX_JOIN = AnsiColor.Green;
@@ -408,6 +422,8 @@ namespace Tailgrab.PlayerManagement
                 TimeSpan timeDifference = (TimeSpan)(player.InstanceEndTime - player.InstanceStartTime);
                 logger.Debug($"{displayName} session time: {timeDifference.TotalMinutes} minutes");
                 TailgrabDBContext dBContext = serviceRegistry.GetDBContext();
+
+                // Update or create UserInfo record with elapsed time
                 UserInfo? user = dBContext.UserInfos.Find(player.UserId);
                 if (user == null)
                 {
@@ -477,6 +493,7 @@ namespace Tailgrab.PlayerManagement
             userIdByNetworkId.Clear();
             playersByUserId.Clear();
             userIdByDisplayName.Clear();
+            PlayerAvatarByName.Clear();
 
             // Also a global cleared notification (consumers may want to reset)
             OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Cleared, new Player("", "", CurrentSession) { InstanceStartTime = DateTime.MinValue });
@@ -535,7 +552,7 @@ namespace Tailgrab.PlayerManagement
                     if (watchedAvatar.AlertType > AlertTypeEnum.None)
                     {
                         player = AddPlayerEventByDisplayName(displayName, PlayerEvent.EventType.AvatarWatch, $"User has used a watched Avatar : {avatarName} alertType: {watchedAvatar.AlertType.ToString()}");
-                        player?.AddAlertMessage(AlertClassEnum.Avatar, watchedAvatar.AlertType, watchedAvatar.AlertType == AlertTypeEnum.Crasher ? "Red" : "Yellow", $"Avatar: {avatarName} / {watchedAvatar.AlertType.ToString()}");
+                        player?.AddAlertMessage(AlertClassEnum.Avatar, watchedAvatar.AlertType, watchedAvatar.AlertType == AlertTypeEnum.Crasher ? "Red" : "Yellow", $"{avatarName}");
                     }
                 }
                 if (player != null)
@@ -544,6 +561,30 @@ namespace Tailgrab.PlayerManagement
                     OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Updated, player);
                 }
             }
+        }
+
+        public void UnpackAvatar(string avatarName, string uploadedBy)
+        {
+            PlayerAvatar playerAvatar = UpdatePlayerAvatar(avatarName, uploadedBy);
+
+            //
+            // Check Avatar IDs 
+        }
+
+        public PlayerAvatar UpdatePlayerAvatar( string avatarName, string uploadedBy)
+        {
+
+            if (PlayerAvatarByName.TryGetValue(avatarName, out PlayerAvatar? playerAvatar))
+            {
+                return playerAvatar;
+            }
+            else
+            {
+                playerAvatar = new PlayerAvatar(avatarName, uploadedBy);
+                PlayerAvatarByName[avatarName] = playerAvatar;
+
+            }
+            return playerAvatar;
         }
 
         private void PrintPlayerInfo(Player player)
@@ -598,17 +639,17 @@ namespace Tailgrab.PlayerManagement
                         string? evaluated = await ollamaClient.ClassifyImageList(userId, inventoryId, new List<string>{ itemUrl, itemContent });
                         if (evaluated != null)
                         {
-                            aiEvaluation = EvaluatImage(evaluated) ?? "OK";
+                            aiEvaluation = EvaluateImage(evaluated) ?? "OK";
                             logger.Info($"Ollama classification for inventory item {inventoryId}: {aiEvaluation}: {evaluated}");
                             if (!aiEvaluation.Equals("OK"))
                             {
                                 AddPlayerEventByUserId(userId, PlayerEvent.EventType.Emoji, $"AI Evaluation: Spawned Item {itemName} ({inventoryId}) was classified {evaluated}");
-                                player.AddAlertMessage(AlertClassEnum.EmojiSticker, AlertTypeEnum.Nuisance, "Yellow", $"Emote/Sticker: {evaluated}");
+                                player.AddAlertMessage(AlertClassEnum.EmojiSticker, AlertTypeEnum.Nuisance, "Yellow", $"{evaluated}");
                             }
                         }
                     }
 
-                    PlayerInventory inventory = new PlayerInventory(inventoryId, itemName, itemUrl, inventoryType, aiEvaluation);
+                    PlayerInventory inventory = new PlayerInventory(inventoryId, itemName, itemContent, inventoryType, aiEvaluation);
                     player.Inventory.Add(inventory);
 
                     AddPlayerEventByUserId(userId, PlayerEvent.EventType.Emoji, $"Spawned Item: {itemName} ({inventoryId})");
@@ -617,7 +658,7 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
-        private static string? EvaluatImage(string? imageEvaluation)
+        private static string? EvaluateImage(string? imageEvaluation)
         {
             if (string.IsNullOrEmpty(imageEvaluation))
             {
@@ -681,25 +722,25 @@ namespace Tailgrab.PlayerManagement
                     {
                         logger.Info($"Fetched print info for print {printId} owned by {player.DisplayName} (ID: {printInfo.OwnerId})");
                         string? evaluated = string.Empty;
+                        string aiEvaluation = "OK";
                         var ollamaClient = serviceRegistry.GetOllamaAPIClient();
                         if (ollamaClient != null)
-                        {
-                            string aiEvaluation = "OK";
+                        {                            
                             List<string> imageUrls = new List<string>();
                             imageUrls.Add(printInfo.Files.Image);
                             evaluated = await ollamaClient.ClassifyImageList(printInfo.OwnerId, printInfo.Id, imageUrls);
                             if (evaluated != null)
                             {
-                                aiEvaluation = EvaluatImage(evaluated) ?? "OK";
+                                aiEvaluation = EvaluateImage(evaluated) ?? "OK";
                                 logger.Info($"Ollama classification for inventory item {printInfo.Id}: {aiEvaluation}: {evaluated}");
                                 if (!aiEvaluation.Equals("OK"))
                                 {
-                                    player = AddPlayerEventByUserId(printInfo.OwnerId, PlayerEvent.EventType.Print, $"AI Evaluation: Print {printId} was classified {evaluated}");                                    
-                                    player?.AddAlertMessage(AlertClassEnum.Print, AlertTypeEnum.Nuisance, "Yellow", $"Print: {evaluated}");
+                                    player = AddPlayerEventByUserId(printInfo.OwnerId, PlayerEvent.EventType.Print, $"AI Evaluation: Print {printId} was classified {aiEvaluation}");                                    
+                                    player?.AddAlertMessage(AlertClassEnum.Print, AlertTypeEnum.Nuisance, "Yellow", $"{aiEvaluation}");
                                 }
                             }
                         }
-                        player?.PrintData[printId] = new PlayerPrint(printInfo, evaluated ?? "Not Evaluated");
+                        player?.PrintData[printId] = new PlayerPrint(printInfo, evaluated ?? "Not Evaluated", aiEvaluation);
                     }
                     
                 }
