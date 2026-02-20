@@ -25,7 +25,7 @@ Tailgrab will read the VRChat Local Game Log files in real time, parse them for 
 
 ### New Install
 
-> [!NOTE]
+> [!IMPORTANT]
 > Ensure you have extended logging enabled in VRChat by going to Steam > VR Chat > Settings (Gear Icon) > Properties.  Set the following into the Lauch Options.
 > 
 > [<img src="./docs/SteamVRChatSettings.png" width="300" />](./docs/SteamVRChatSettings.png)

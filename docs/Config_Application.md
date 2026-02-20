@@ -114,10 +114,9 @@ The default prompt is designed to look for potential PG13 violation, but you can
 | Harassment & Bullying | Any content that would be considered trolling based on Religion, Race  or Sexual Orientation |
 | Self Harm | Any content that could be considered a cry for help |
 
-> [!TIP]
 
+> [!TIP]
 > The Classification names are set, but how you word the prompt can get the AI to be as leinent or as strict as you want, you can also add more classifications if you want, just make sure to include them in the prompt and have the AI respond with the classification on the first line of the response for the application to parse it correctly.  You can also use the reasoning section to give you more context on why the AI classified it a certain way, this can be helpful when you are on the fence about a user and want to make a judgement call on whether to report them or not.
 
 > [!NOTE]
-
 > The system puts the Prompt plus attached copy of the Image thumbnail for evaluation:
