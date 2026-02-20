@@ -9,9 +9,8 @@ Tailgrab will read the VRChat Local Game Log files in real time, parse them for 
 - Shows a live feed of user in the current instance with their VRChat Avatar and UserID
 - When in Furry Hideout, shows user's usage of Furry Hideout Pens
 - Quick view of the user's historical avatar, pen, print, emoji and sticker usage in the current instance.
-- AI powered insights on user Profile content.
+- AI powered insights on user Profile, Sticker, Emoji and Print content.
 - Quick reporting of User's Profile to the in game moderation instance
-- AI powered insights on user Image Assets used.
 - Quick reporting of User's Images to the in game moderation instance
 - Copy Button that copies the user's VRChat User Id, Display name, Instance Stats and historical activity for pasting into your favorite moderation toolset.
 - Avatar Flagging based on user directed database.
@@ -25,6 +24,17 @@ Tailgrab will read the VRChat Local Game Log files in real time, parse them for 
 > I am learing how to build a Installer for the appliction, but for now you will need to download the latest release and extract the zip file to a location of your choice on your Windows machine.  Then you can run the ```tailgrab.exe``` application to start monitoring your VRChat instance.
 
 ### New Install
+
+> [!NOTE]
+> Ensure you have extended logging enabled in VRChat by going to Steam > VR Chat > Settings (Gear Icon) > Properties.  Set the following into the Lauch Options.
+> 
+> [<img src="./docs/SteamVRChatSettings.png" width="300" />](./docs/SteamVRChatSettings.png)
+>
+>```--enable-sdk-log-levels --enable-debug-gui --enable-udon-debug-logging --log-debug-levels="Always;API;AssetBundleDownloadManager;ContentCreator;All;NetworkTransport;NetworkData;NetworkProcessing```
+>
+> This will expose more information in the VRChat logs that TailGrab can parse and use to provide more insights and trigger actions based on the events that are happening in your VRChat instance.
+
+
 1. Download the latest release of TailGrab from the [Latest Release](https://github.com/jlong23/Tailgrab/releases/latest) page.
 1. Extract the downloaded zip file to a location of your choice on your Windows machine.
 1. Run the ```tailgrab.exe``` application to start monitoring your VRChat instance.
@@ -98,4 +108,6 @@ DB Browser for SQLite - https://sqlitebrowser.org/
 [Config Tab, Line Handlers](./docs/Config_LineHandlers.md) Configure Actions to Trigger based on VRChat Log Events.
 
 [Config Tab, Secrets](./docs/Config_Application.md) Configure API Keys and other application settings.
+
+[Config Tab, Alerts](./docs/Config_Alerts.md) Configure Alert Levels sounds and highlight colors.
 
