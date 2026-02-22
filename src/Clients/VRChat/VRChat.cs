@@ -514,7 +514,7 @@ namespace Tailgrab.Clients.VRChat
                 using HttpClient httpClient = new HttpClient(handler);
                 httpClient.DefaultRequestHeaders.Add("User-Agent", UserAgent);
 
-                // Download the image
+                // Submit the moderation report
                 HttpResponseMessage response = await httpClient.PostAsJsonAsync($"{URI_VRC_BASE_API}/api/1/moderationReports", rpt);
                 string responseContent = await response.Content.ReadAsStringAsync();
                 logger.Debug($"Response from submitting moderation report for content {rpt.ContentId}: {responseContent}");
