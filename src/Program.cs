@@ -26,6 +26,7 @@ public class FileTailer
     /// A List of opened file paths to avoid opening the same file multiple times.
     /// </summary>
     static List<string> OpenedFiles = new List<string> { };
+    static Dictionary<string, FileWatchItem> WatchedFiles = new Dictionary<string, FileWatchItem>();
 
     /// <summary>
     /// The path to the user's profile directory.
@@ -53,22 +54,35 @@ public class FileTailer
         {
             return;
         }
-        OpenedFiles.Add(filePath);
 
-        logger.Info($"Tailing file: {filePath}. Press Ctrl+C to stop.");
+        logger.Info($"Tailing file: {filePath}");
 
         using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
         using (StreamReader sr = new StreamReader(fs, Encoding.UTF8))
         {
+
             // Start at the end of the file
             long lastMaxOffset = fs.Length;
             fs.Seek(lastMaxOffset, SeekOrigin.Begin);
+
+            OpenedFiles.Add(filePath);
+            WatchedFiles[filePath] = new FileWatchItem(lastMaxOffset);
 
             while (true)
             {
                 // If the file size hasn't changed, wait
                 if (fs.Length == lastMaxOffset)
                 {
+                    if (WatchedFiles.ContainsKey(filePath))
+                    {
+                        WatchedFiles[filePath].ElapsedTime += 1;
+                        if (WatchedFiles[filePath].ElapsedTime >= 9000) // If we've been watching this file for 15 minutes without changes
+                        {
+                            logger.Info($"Timeout waiting for new lines in '{filePath}'");
+                            return;
+                        }
+                    }
+
                     await Task.Delay(100); // Adjust delay as needed
                     continue;
                 }
@@ -88,6 +102,9 @@ public class FileTailer
 
                 // Update the offset to the new end of the file
                 lastMaxOffset = fs.Length;
+
+                // Reset the watch counter for this file since we have new data
+                WatchedFiles.Remove(filePath);
             }
         }
     }
@@ -116,10 +133,12 @@ public class FileTailer
         // ensure existing files are tailed immediately
         try
         {
-            string _todaysFile = $"output_log_{DateTime.Now:yyyy_MM_dd}*.txt";
+            string _todaysFile = $"output_log_{DateTime.Now:yyyy-MM-dd}_*.txt";
+            logger.Debug($"Looking for existing log files matching: {_todaysFile}");
             var existing = Directory.GetFiles(LogWatcher.Path, _todaysFile);
             foreach (var f in existing)
             {
+                logger.Debug($"Found File to Tail: {f}");
                 _ = Task.Run(() => TailFileAsync(f));
             }
         }
@@ -655,8 +674,8 @@ public class FileTailer
         var lightText = new SolidColorBrush(System.Windows.Media.Color.FromRgb(230, 230, 230));
         var accent = new SolidColorBrush(System.Windows.Media.Color.FromRgb(29, 44, 55));
 
-        var highlightDark = new SolidColorBrush(System.Windows.Media.Color.FromRgb(112, 112, 174));
-        var highlightDarkText = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0, 0, 0));
+        var highlightDark = new SolidColorBrush(System.Windows.Media.Color.FromRgb(70, 70, 109));
+        var highlightDarkText = new SolidColorBrush(System.Windows.Media.Color.FromRgb(200, 200, 129));
 
 
         // Override common system brushes
@@ -913,5 +932,16 @@ public class BuildInfo
                        .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
                        ?.InformationalVersion
                        ?? GetAssemblyVersion();
+    }
+}
+
+public class FileWatchItem
+{
+    public long StartingSize { get; set; }
+    public int ElapsedTime { get; set; }
+    public FileWatchItem(long startingSize)
+    {
+        StartingSize = startingSize;
+        ElapsedTime = 0;
     }
 }
