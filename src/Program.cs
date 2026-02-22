@@ -501,23 +501,6 @@ public class FileTailer
     {
         try
         {
-            var dataDir = Path.Combine(AppContext.BaseDirectory, "data");
-            var databasePath = Path.Combine(dataDir, "avatars.sqlite");
-
-            if (!File.Exists(databasePath))
-            {
-                logger.Warn($"Database file not found at '{databasePath}'. Nothing to backup.");
-                return;
-            }
-
-            // Create backup directory with timestamp
-            var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-            var backupDirName = $"backup_{timestamp}";
-            var backupDir = Path.Combine(dataDir, backupDirName);
-            Directory.CreateDirectory(backupDir);
-
-            logger.Info($"Creating database backup in: '{backupDirName}'");
-
             // Get database context
             if (_serviceRegistry == null)
             {
@@ -527,112 +510,12 @@ public class FileTailer
 
             var context = _serviceRegistry.GetDBContext();
 
-            // Export each table to JSON
-            int totalRecords = 0;
+            context.CreateDatabaseBackup();
 
-            // Export AvatarInfo table
-            logger.Info("Exporting AvatarInfo table...");
-            var avatars = context.AvatarInfos.ToList();
-            var avatarsJson = JsonSerializer.Serialize(avatars, new JsonSerializerOptions { WriteIndented = true });
-            File.WriteAllText(Path.Combine(backupDir, "AvatarInfo.json"), avatarsJson);
-            logger.Info($"  Exported {avatars.Count} avatar records");
-            totalRecords += avatars.Count;
-
-            // Export GroupInfo table
-            logger.Info("Exporting GroupInfo table...");
-            var groups = context.GroupInfos.ToList();
-            var groupsJson = JsonSerializer.Serialize(groups, new JsonSerializerOptions { WriteIndented = true });
-            File.WriteAllText(Path.Combine(backupDir, "GroupInfo.json"), groupsJson);
-            logger.Info($"  Exported {groups.Count} group records");
-            totalRecords += groups.Count;
-
-            // Export UserInfo table
-            logger.Info("Exporting UserInfo table...");
-            var users = context.UserInfos.ToList();
-            var usersJson = JsonSerializer.Serialize(users, new JsonSerializerOptions { WriteIndented = true });
-            File.WriteAllText(Path.Combine(backupDir, "UserInfo.json"), usersJson);
-            logger.Info($"  Exported {users.Count} user records");
-            totalRecords += users.Count;
-
-            // Export ProfileEvaluation table
-            logger.Info("Exporting ProfileEvaluation table...");
-            var profiles = context.ProfileEvaluations.ToList();
-            var profilesJson = JsonSerializer.Serialize(profiles, new JsonSerializerOptions { WriteIndented = true });
-            File.WriteAllText(Path.Combine(backupDir, "ProfileEvaluation.json"), profilesJson);
-            logger.Info($"  Exported {profiles.Count} profile evaluation records");
-            totalRecords += profiles.Count;
-
-            // Export ImageEvaluation table
-            logger.Info("Exporting ImageEvaluation table...");
-            var images = context.ImageEvaluations.ToList();
-            var imagesJson = JsonSerializer.Serialize(images, new JsonSerializerOptions { WriteIndented = true });
-            File.WriteAllText(Path.Combine(backupDir, "ImageEvaluation.json"), imagesJson);
-            logger.Info($"  Exported {images.Count} image evaluation records");
-            totalRecords += images.Count;
-
-            // Create backup metadata file
-            var metadata = new
-            {
-                BackupTimestamp = timestamp,
-                BackupDate = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
-                ApplicationVersion = BuildInfo.GetInformationalVersion(),
-                DatabasePath = databasePath,
-                TotalRecords = totalRecords,
-                Tables = new[]
-                {
-                    new { TableName = "AvatarInfo", RecordCount = avatars.Count },
-                    new { TableName = "GroupInfo", RecordCount = groups.Count },
-                    new { TableName = "UserInfo", RecordCount = users.Count },
-                    new { TableName = "ProfileEvaluation", RecordCount = profiles.Count },
-                    new { TableName = "ImageEvaluation", RecordCount = images.Count }
-                }
-            };
-            var metadataJson = JsonSerializer.Serialize(metadata, new JsonSerializerOptions { WriteIndented = true });
-            File.WriteAllText(Path.Combine(backupDir, "_backup_metadata.json"), metadataJson);
-
-            // Calculate total backup size
-            var backupDirInfo = new DirectoryInfo(backupDir);
-            var totalSize = backupDirInfo.GetFiles().Sum(f => f.Length);
-
-            logger.Info($"Database backup completed successfully:");
-            logger.Info($"  Location: '{backupDir}'");
-            logger.Info($"  Total records: {totalRecords}");
-            logger.Info($"  Backup size: {totalSize / 1024.0:F2} KB");
-
-            // Clean up old backups (keep only last 10)
-            CleanupOldBackups(dataDir, 10);
         }
         catch (Exception ex)
         {
             logger.Error(ex, "Failed to create database backup");
-        }
-    }
-
-    /// <summary>
-    /// Clean up old backup directories, keeping only the specified number of most recent backups.
-    /// </summary>
-    private static void CleanupOldBackups(string dataDir, int keepCount)
-    {
-        try
-        {
-            var backupDirs = Directory.GetDirectories(dataDir, "backup_*")
-                .Select(d => new DirectoryInfo(d))
-                .OrderByDescending(d => d.CreationTime)
-                .ToList();
-
-            if (backupDirs.Count > keepCount)
-            {
-                var dirsToDelete = backupDirs.Skip(keepCount);
-                foreach (var dir in dirsToDelete)
-                {
-                    logger.Info($"Deleting old backup directory: '{dir.Name}'");
-                    dir.Delete(recursive: true);
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            logger.Warn(ex, "Failed to clean up old backup directories");
         }
     }
 
