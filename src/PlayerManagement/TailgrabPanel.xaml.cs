@@ -1,13 +1,14 @@
 ﻿using NLog;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Threading.Channels;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
 using System.Windows.Threading;
-using Tailgrab.Common;
 using Tailgrab.Clients.VRChat;
+using Tailgrab.Common;
 using Tailgrab.Models;
 using VRChat.API.Model;
 using static Tailgrab.Clients.VRChat.VRChatClient;
@@ -959,8 +960,7 @@ namespace Tailgrab.PlayerManagement
         private void ShowProfileReportOverlayPast(PlayerViewModel pvm)
         {
             // Populate the overlay fields
-            OverlayProfileReportUserIdTextBox.Text = pvm.UserId.Trim();
-
+            OverlayProfileReportUserIdTextBox.Text = pvm.UserId;
             // Setup report reasons for profile (includes Child Exploitation)
 
             ProfilePastReportReason.ItemsSource = ProfileReportReasonsOptions;
@@ -977,6 +977,7 @@ namespace Tailgrab.PlayerManagement
                     if(!string.IsNullOrEmpty(pvm.AIEval))
                     {
                         ProfilePastReportDescription.Text = pvm.AIEval;
+                        ProfilePastReportReason.SelectedIndex = 0;
                         logger.Debug($"Loaded AI evaluation for user: {pvm.UserId}");
                     }
                     else
@@ -992,38 +993,8 @@ namespace Tailgrab.PlayerManagement
                 }
             }
 
-            // Clear any validation errors
-            ClearProfileReportValidationErrorsPast();
-
             // Show the overlay
             ProfilePastReportOverlay.Visibility = Visibility.Visible;
-        }
-
-        private void ClearProfileReportValidationErrorsPast()
-        {
-            // Reset UserID field
-            ProfilePastReportUserId.BorderBrush = System.Windows.SystemColors.ControlDarkBrush;
-            ProfilePastReportUserId.BorderThickness = new Thickness(1);
-            ProfilePastReportUserIdError.Visibility = Visibility.Collapsed;
-        }
-
-        private bool ValidateProfileReportFieldsPast()
-        {
-            bool isValid = true;
-
-            // Clear any previous validation errors first
-            ClearProfileReportValidationErrors();
-
-            // Validate User ID
-            if (string.IsNullOrWhiteSpace(ProfilePastReportUserId.Text))
-            {
-                ProfilePastReportUserId.BorderBrush = new SolidColorBrush(Colors.Yellow);
-                ProfilePastReportUserId.BorderThickness = new Thickness(3);
-                ProfilePastReportUserIdError.Visibility = Visibility.Visible;
-                isValid = false;
-            }
-
-            return isValid;
         }
 
         private void OverlayProfileReportPastCancel_Click(object sender, RoutedEventArgs e)
@@ -1043,12 +1014,6 @@ namespace Tailgrab.PlayerManagement
         {
             try
             {
-                // Validate required fields
-                if (!ValidateProfileReportFields())
-                {
-                    return;
-                }
-
                 string userId = ProfilePastReportUserId.Text.Trim();
                 string category = ProfilePastReportCategory.Text;
                 string reportReason = ProfilePastReportReason.SelectedValue?.ToString() ?? string.Empty;
@@ -2228,11 +2193,10 @@ namespace Tailgrab.PlayerManagement
         public bool IsWatched { get; set; } = false;
         public string History { get; set; } = string.Empty;
         public string AlertMessages { get; set; } = string.Empty;
-
-        private string _AlertColor = "Normal";
-
         public ObservableCollection<PrintInfoViewModel> Prints { get; private set; } = new ObservableCollection<PrintInfoViewModel>();
         public ObservableCollection<EmojiInfoViewModel> Emojis { get; private set; } = new ObservableCollection<EmojiInfoViewModel>();
+
+        private string _AlertColor = "Normal";
 
         public string HighlightClass
         {
@@ -2240,6 +2204,12 @@ namespace Tailgrab.PlayerManagement
             {
                 return _AlertColor;
             }
+        }
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+        protected void OnPropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
         public PlayerViewModel(Player p)
@@ -2255,31 +2225,10 @@ namespace Tailgrab.PlayerManagement
             Profile = p.UserBio ?? string.Empty;
             AIEval = p.AIEval ?? "Not Evaluated";
             IsWatched = p.IsWatched;
-            AlertMessages = string.Empty;            
+            AlertMessages = p.AlertMessage;
+            _AlertColor = p.AlertColor;
 
-            // populate prints
-            if (p.PrintData != null)
-            {
-                foreach (var pr in p.PrintData.Values)
-                {
-                    Prints.Add(new PrintInfoViewModel(pr));
-                }
-            }
-
-            if (p.Inventory != null)
-            {
-                foreach (var inv in p.Inventory)
-                {
-                    Emojis.Add(new EmojiInfoViewModel(p.UserId, inv));
-                }
-            }
-
-            string history = string.Empty;
-            foreach (var hist in p.Events)
-            {
-                history += $"({hist.EventTime:u} - {hist.EventDescription})\n";
-            }
-            History = history.TrimEnd();
+            PopulateCollectionsFromPlayer(p);;
         }
 
         public void UpdateFrom(Player p)
@@ -2304,55 +2253,60 @@ namespace Tailgrab.PlayerManagement
             if (_AlertColor != p.AlertColor ) { _AlertColor = p.AlertColor; changed = true; }
 
             if (changed) OnPropertyChanged(string.Empty);
-            // update prints collection
+
+            PopulateCollectionsFromPlayer(p); ;
+        }
+
+        public override string ToString()
+        {
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine("PlayerViewModel:");
+            sb.AppendLine($"DisplayName: {DisplayName}");
+            sb.AppendLine($"UserId: {UserId}");
+            sb.AppendLine($"AvatarName: {AvatarName}");
+            sb.AppendLine($"PenActivity: {PenActivity}");
+            sb.AppendLine($"InstanceStartTime: {InstanceStartTime}");
+            sb.AppendLine($"InstanceEndTime: {InstanceEndTime}");
+            sb.AppendLine($"Profile: {Profile}");
+            sb.AppendLine($"AIEval: {AIEval}");
+            sb.AppendLine($"IsWatched: {IsWatched}");
+            sb.AppendLine($"Prints (Count): {Prints.Count}");
+            sb.AppendLine($"Emojis (Count): {Emojis.Count}");
+            sb.AppendLine($"History: {History}");
+            sb.AppendLine($"AlertColor: {_AlertColor}");
+            sb.AppendLine($"AlertMessages: {AlertMessages}");
+
+            return sb.ToString();
+        }
+        private void PopulateCollectionsFromPlayer(Player p)
+        {
+            // Print Collection
+            Prints.Clear();
             if (p.PrintData != null)
             {
-                // simple replace strategy
-                Prints.Clear();
                 foreach (var pr in p.PrintData.Values)
                 {
                     Prints.Add(new PrintInfoViewModel(pr));
                 }
             }
+
+            // Emoji and Sticker Inventory Collection
+            Emojis.Clear();
             if (p.Inventory != null)
             {
-                Emojis.Clear();
                 foreach (var inv in p.Inventory)
                 {
                     Emojis.Add(new EmojiInfoViewModel(p.UserId, inv));
                 }
             }
 
+            // Event History
             string history = string.Empty;
             foreach (var hist in p.Events)
             {
                 history += $"({hist.EventTime:u} - {hist.EventDescription})\n";
             }
             History = history.TrimEnd();
-        }
-
-        public event PropertyChangedEventHandler? PropertyChanged;
-        protected void OnPropertyChanged(string propertyName)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
-
-        public override string ToString()
-        {
-            var sb = new System.Text.StringBuilder();
-            sb.AppendLine("PlayerViewModel:\n");
-            sb.AppendLine($"DisplayName: {DisplayName}\n");
-            sb.AppendLine($"UserId: {UserId}\n");
-            sb.AppendLine($"AvatarName: {AvatarName}\n");
-            sb.AppendLine($"PenActivity: {PenActivity}\n");
-            sb.AppendLine($"InstanceStartTime: {InstanceStartTime}\n");
-            sb.AppendLine($"InstanceEndTime: {InstanceEndTime}\n");
-            sb.AppendLine($"Profile: {Profile}\n");
-            sb.AppendLine($"AIEval: {AIEval}\n");
-            sb.AppendLine($"IsWatched: {IsWatched}\n");
-            sb.AppendLine($"AlertMessages: {AlertMessages}\n");
-
-            return sb.ToString();
         }
     }
 

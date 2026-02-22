@@ -481,21 +481,7 @@ Title="Tailgrab Player Panel"
                                     <!-- User ID -->
                                     <StackPanel Grid.Row="1" Margin="0,0,0,12">
                                         <Label Content="User ID: *" FontWeight="Bold" Foreground="#FFE6E6E6"/>
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
-                                            <TextBox Name="ProfilePastReportUserId" Grid.Column="0" IsReadOnly="True"/>
-                                            <Label Name="ProfilePastReportUserIdError" 
-                                               Grid.Column="1" 
-                                               Content="Required" 
-                                               Foreground="Red" 
-                                               FontWeight="Bold"
-                                               Margin="8,0,0,0"
-                                               VerticalAlignment="Center"
-                                               Visibility="Collapsed"/>
-                                        </Grid>
+                                        <TextBox Name="ProfilePastReportUserId" IsReadOnly="True"/>
                                     </StackPanel>
 
                                     <!-- Category -->
