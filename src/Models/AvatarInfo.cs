@@ -24,6 +24,8 @@ public partial class AvatarInfo
 
     public string ImageUrl { get; set; }
 
+    public string UserName { get; set; }
+
     public AvatarInfo()
     {
         CreatedAt = DateTime.UtcNow;
@@ -31,6 +33,6 @@ public partial class AvatarInfo
 
     public override string ToString()
     {
-        return $"GroupId: {AvatarId}, UserId: {UserId}, GroupName: {AvatarName}, CreatedAt: {CreatedAt}, UpdatedAt: {UpdatedAt}, IsBOS: {IsBos}, AlertType: {AlertType}";
+        return $"AvatarInfo: AvatarId={AvatarId}, UserId={UserId}, AvatarName={AvatarName}, CreatedAt={CreatedAt}, UpdatedAt={UpdatedAt}, IsBos={IsBos}, AlertType={AlertType}, ImageUrl={ImageUrl}, UserName={UserName}";
     }
 }

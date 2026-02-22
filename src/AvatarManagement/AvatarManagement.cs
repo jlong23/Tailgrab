@@ -87,7 +87,6 @@ namespace Tailgrab.AvatarManagement
             {
                 if ((DateTime.UtcNow - dateTime).TotalMinutes < 60)
                 {
-                    logger.Debug($"Skipping adding avatar {avatarId} as it was recently processed.");
                     return;
                 }
             }
@@ -130,7 +129,8 @@ namespace Tailgrab.AvatarManagement
                                 CreatedAt = avatar.CreatedAt,
                                 UpdatedAt = DateTime.UtcNow,
                                 IsBos = false,
-                                AlertType = AlertTypeEnum.None
+                                AlertType = AlertTypeEnum.None,
+                                UserName = avatar.AuthorName
                             };
 
                             AddAvatar(avatarInfo);
@@ -138,6 +138,7 @@ namespace Tailgrab.AvatarManagement
                         else
                         {
                             dbAvatarInfo.UserId = avatar.AuthorId;
+                            dbAvatarInfo.UserName = avatar.AuthorName;
                             dbAvatarInfo.AvatarName = avatar.Name;
                             dbAvatarInfo.ImageUrl = avatar.ImageUrl;
                             dbAvatarInfo.CreatedAt = avatar.CreatedAt;
@@ -196,18 +197,20 @@ namespace Tailgrab.AvatarManagement
                             {
                                 updateNeeded = true;
                             }
-                            else if (!dbAvatarInfo.IsBos &&
-                                (!dbAvatarInfo.UpdatedAt.HasValue || dbAvatarInfo.UpdatedAt.Value >= DateTime.UtcNow.AddHours(-24)))
+                            else if (dbAvatarInfo.AlertType == AlertTypeEnum.None &&
+                                (!dbAvatarInfo.UpdatedAt.HasValue || dbAvatarInfo.UpdatedAt.Value >= DateTime.UtcNow.AddHours(-2)))
                             {
                                 updateNeeded = true;
                             }
 
                             if (updateNeeded)
                             {
+                                // Adds and Updates avatar info in the database, if it doesn't exist or was last updated more than 2 hours ago
                                 Avatar? avatarData = FetchUpdateAvatarData(serviceRegistry, dBContext, item.AvatarId, dbAvatarInfo);
 
                                 if (avatarData == null && dbAvatarInfo == null)
                                 {
+                                    // Private Avatar
                                     CreateAvatarInfoForPrivate(dBContext, item.AvatarId);
                                 }
 
@@ -272,6 +275,7 @@ namespace Tailgrab.AvatarManagement
                         {
                             AvatarId = avatarData.Id,
                             UserId = avatarData.AuthorId,
+                            UserName = avatarData.Name,
                             AvatarName = avatarData.Name,
                             ImageUrl = avatarData.ImageUrl,
                             CreatedAt = avatarData.CreatedAt,
@@ -300,6 +304,7 @@ namespace Tailgrab.AvatarManagement
                         }
 
                         dbAvatarInfo.UserId = avatarData.AuthorId;
+                        dbAvatarInfo.UserName = avatarData.AuthorName;
                         dbAvatarInfo.AvatarName = avatarData.Name;
                         dbAvatarInfo.ImageUrl = avatarData.ImageUrl;
                         dbAvatarInfo.CreatedAt = avatarData.CreatedAt;
