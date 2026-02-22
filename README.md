@@ -52,6 +52,10 @@ Tailgrab will read the VRChat Local Game Log files in real time, parse them for 
 [Config Line Handlers](./docs/Config_LineHandlers.md) for details on how to configure the application to respond to VRChat local game log events.
 
 ## Quick Usage
+
+> [!IMPORTANT]
+> By default TailGrab will look for VRChat log files in the default location of ```YourUserHome\AppData\LocalLow\VRChat\VRChat\```, and should pick up any log files that are created on the same date Tailgrab is being run.  Meaning you can restart Tailgrab while VRC is running and rejoin the instance to repopulate the active players.  If you do this in a low activity instance, aka homeworld; you may need to do the 'Rejoin' as soon as possible to ensure the pickup of the logfile.  Tailgrab will pick all other log files for that day, but if there is no activity in the log since the startup from 15 minutes ago, then tailgrab will close and ignore the file for performance reasons.
+
 Click the windows application or open a Powershell or Command Line prompt in your windows host, change directory to where ```tailgrab.exe``` has been extracted to and start it with:
 
 ```.\tailgrab.exe```
