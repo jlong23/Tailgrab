@@ -1,5 +1,4 @@
-﻿using Microsoft.Win32;
-using NLog;
+﻿using NLog;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows;
@@ -17,6 +16,10 @@ namespace Tailgrab.PlayerManagement
 {
     public partial class TailgrabPanel : Window, IDisposable, INotifyPropertyChanged
     {
+        public static Logger logger = LogManager.GetCurrentClassLogger();
+
+        protected ServiceRegistry _serviceRegistry;
+
         private readonly DispatcherTimer fallbackTimer;
         private readonly DispatcherTimer statusBarTimer;
 
@@ -50,6 +53,22 @@ namespace Tailgrab.PlayerManagement
                 }
             }
         }
+
+        private PlayerViewModel? _selectedPast;
+        public PlayerViewModel? SelectedPast
+        {
+            get => _selectedPast;
+            set
+            {
+                if (_selectedPast != value)
+                {
+                    logger.Debug($"SelectedPast changed to: {value?.ToString()}");
+                    _selectedPast = value;
+                    OnPropertyChanged(nameof(SelectedPast));
+                }
+            }
+        }
+
 
         private int _avatarQueueLength;
         public int AvatarQueueLength
@@ -121,15 +140,6 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
-        public PlayerViewModel? SelectedPast { get; set; }
-        public static Logger logger = LogManager.GetCurrentClassLogger();
-
-        public List<KeyValuePair<string, bool>> IsBosOptions { get; } = new List<KeyValuePair<string, bool>>
-        {
-            new KeyValuePair<string,bool>("YES", true),
-            new KeyValuePair<string,bool>("NO", false)
-        };
-
         public List<KeyValuePair<string, AlertTypeEnum>> AlertTypeOptions { get; } = new List<KeyValuePair<string, AlertTypeEnum>>
         {
             new KeyValuePair<string, AlertTypeEnum>("None", AlertTypeEnum.None),
@@ -138,8 +148,6 @@ namespace Tailgrab.PlayerManagement
             new KeyValuePair<string, AlertTypeEnum>("Crasher", AlertTypeEnum.Crasher)
         };
 
-
-        public List<KeyValuePair<string, string>> AlertSoundOptions { get; set; } = new List<KeyValuePair<string, string>>();
         public List<KeyValuePair<string, string>> AlertColorOptions { get; } = new List<KeyValuePair<string, string>>
         {
             new KeyValuePair<string, string>("*NONE", "Normal"),
@@ -148,7 +156,17 @@ namespace Tailgrab.PlayerManagement
             new KeyValuePair<string, string>("Red", "Red"),
         };
 
-        protected ServiceRegistry _serviceRegistry;
+        public List<KeyValuePair<string, string>> AlertSoundOptions { get; set; } = new List<KeyValuePair<string, string>>();
+
+        public List<ReportReasonItem> ProfileReportReasonsOptions = new List<ReportReasonItem>
+        {        
+            new ReportReasonItem("Sexual Content", "sexual"),
+            new ReportReasonItem("Hateful Content", "hateful"),
+            new ReportReasonItem("Gore and Violence", "gore"),
+            new ReportReasonItem("Child Exploitation", "child"),
+            new ReportReasonItem("Other", "other")
+        };
+
 
         public TailgrabPanel(ServiceRegistry serviceRegistry)
         {
@@ -186,16 +204,16 @@ namespace Tailgrab.PlayerManagement
 
             #region Secret Config Load            
             // Load saved secrets into UI fields if desired (not displayed in this view directly)
-            var vrUser = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_VRChat_Web_UserName);
-            var vrPass = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_VRChat_Web_Password);
-            var vr2fa = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_VRChat_Web_2FactorKey);
-            var ollamaKey = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_Ollama_API_Key);
-            var ollamaEndpoint = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_Ollama_API_Endpoint) ?? Tailgrab.Common.CommonConst.Default_Ollama_API_Endpoint;
-            var ollamaProfilePrompt = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_Ollama_API_Prompt) ?? Tailgrab.Common.CommonConst.Default_Ollama_API_Prompt;
-            var ollamaImagePrompt = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_Ollama_API_Image_Prompt) ?? Tailgrab.Common.CommonConst.Default_Ollama_API_Image_Prompt;
-            var ollamaModel = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_Ollama_API_Model) ?? Tailgrab.Common.CommonConst.Default_Ollama_API_Model;
-            var avatarGistUri = ConfigStore.GetStoredKeyString(Tailgrab.Common.CommonConst.Registry_Avatar_Gist);
-            var groupGistUri = ConfigStore.GetStoredKeyString(Tailgrab.Common.CommonConst.Registry_Group_Gist);
+            var vrUser = ConfigStore.LoadSecret(CommonConst.Registry_VRChat_Web_UserName);
+            var vrPass = ConfigStore.LoadSecret(CommonConst.Registry_VRChat_Web_Password);
+            var vr2fa = ConfigStore.LoadSecret(CommonConst.Registry_VRChat_Web_2FactorKey);
+            var ollamaKey = ConfigStore.LoadSecret(CommonConst.Registry_Ollama_API_Key);
+            var ollamaEndpoint = ConfigStore.LoadSecret(CommonConst.Registry_Ollama_API_Endpoint) ?? CommonConst.Default_Ollama_API_Endpoint;
+            var ollamaProfilePrompt = ConfigStore.LoadSecret(CommonConst.Registry_Ollama_API_Prompt) ?? CommonConst.Default_Ollama_API_Prompt;
+            var ollamaImagePrompt = ConfigStore.LoadSecret(CommonConst.Registry_Ollama_API_Image_Prompt) ?? CommonConst.Default_Ollama_API_Image_Prompt;
+            var ollamaModel = ConfigStore.LoadSecret(CommonConst.Registry_Ollama_API_Model) ?? CommonConst.Default_Ollama_API_Model;
+            var avatarGistUri = ConfigStore.GetStoredKeyString(CommonConst.Registry_Avatar_Gist);
+            var groupGistUri = ConfigStore.GetStoredKeyString(CommonConst.Registry_Group_Gist);
 
             // Populate UI boxes but do not reveal secrets
             if (!string.IsNullOrEmpty(vrUser)) VrUserBox.Text = vrUser;
@@ -213,29 +231,33 @@ namespace Tailgrab.PlayerManagement
             // Populate sound combo boxes
             try
             {
-                var sounds = Tailgrab.Common.SoundManager.GetAvailableSounds();
+                var sounds = SoundManager.GetAvailableSounds();
                 AlertSoundOptions = sounds.Select(s => new KeyValuePair<string, string>(s, s)).ToList();
 
-                AvatarWarnSound.SelectedValue = "*NONE";
-                AvatarWarnColor.SelectedValue = "Normal";
-                AvatarNuisenceSound.SelectedValue = "ICQ_Uh_Oh";
-                AvatarNuisenceColor.SelectedValue = "Yellow";
-                AvatarCrasherSound.SelectedValue = "Police_Double_Chirping";
-                AvatarCrasherColor.SelectedValue = "Red";
+                // Avatar Alerts
+                AvatarWarnSound.SelectedValue = GetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Watch, CommonConst.Sound_Alert_Key) ?? "*NONE";
+                AvatarNuisanceSound.SelectedValue = GetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Sound_Alert_Key) ?? "*NONE";
+                AvatarCrasherSound.SelectedValue = GetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Sound_Alert_Key) ?? "*NONE";
+                AvatarWarnColor.SelectedValue = GetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Watch, CommonConst.Color_Alert_Key) ?? "Normal";
+                AvatarNuisanceColor.SelectedValue = GetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Color_Alert_Key) ?? "Yellow";
+                AvatarCrasherColor.SelectedValue = GetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Color_Alert_Key) ?? "Red";
 
-                GroupWarnSound.SelectedValue = "*NONE";
-                GroupWarnColor.SelectedValue = "Normal";
-                GroupNuisenceSound.SelectedValue = "ICQ_Uh_Oh";
-                GroupNuisenceColor.SelectedValue = "Yellow";
-                GroupCrasherSound.SelectedValue = "Police_Double_Chirping";
-                GroupCrasherColor.SelectedValue = "Red";
+                // Group Alerts
+                GroupWarnSound.SelectedValue = GetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Watch, CommonConst.Sound_Alert_Key) ?? "*NONE";
+                GroupNuisanceSound.SelectedValue = GetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Sound_Alert_Key) ?? "*NONE";
+                GroupCrasherSound.SelectedValue = GetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Sound_Alert_Key) ?? "*NONE";
+                GroupWarnColor.SelectedValue = GetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Watch, CommonConst.Color_Alert_Key) ?? "Normal";
+                GroupNuisanceColor.SelectedValue = GetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Color_Alert_Key) ?? "Yellow";
+                GroupCrasherColor.SelectedValue = GetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Color_Alert_Key) ?? "Red";
 
-                ProfileWarnSound.SelectedValue = "*NONE";
-                ProfileWarnColor.SelectedValue = "Normal";
-                ProfileNuisenceSound.SelectedValue = "ICQ_Uh_Oh";
-                ProfileNuisenceColor.SelectedValue = "Yellow";
-                ProfileCrasherSound.SelectedValue = "Police_Double_Chirping";
-                ProfileCrasherColor.SelectedValue = "Red";
+                // Group Alerts
+                ProfileWarnSound.SelectedValue = GetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Watch, CommonConst.Sound_Alert_Key) ?? "*NONE";
+                ProfileNuisanceSound.SelectedValue = GetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Sound_Alert_Key) ?? "*NONE";
+                ProfileCrasherSound.SelectedValue = GetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Sound_Alert_Key) ?? "*NONE";
+                ProfileWarnColor.SelectedValue = GetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Watch, CommonConst.Color_Alert_Key) ?? "Normal";
+                ProfileNuisanceColor.SelectedValue = GetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Color_Alert_Key) ?? "Yellow";
+                ProfileCrasherColor.SelectedValue = GetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Color_Alert_Key) ?? "Red";
+
             }
             catch { }
             #endregion
@@ -272,10 +294,10 @@ namespace Tailgrab.PlayerManagement
             try
             {
                 // Save to registry protected store
-                ConfigStore.SaveSecret(CommonConst.Registry_VRChat_Web_UserName, VrUserBox.Text ?? string.Empty);
-                if (!string.IsNullOrEmpty(VrPassBox.Password)) ConfigStore.SaveSecret(CommonConst.Registry_VRChat_Web_Password, VrPassBox.Password);
-                if (!string.IsNullOrEmpty(Vr2FaBox.Password)) ConfigStore.SaveSecret(CommonConst.Registry_VRChat_Web_2FactorKey, Vr2FaBox.Password);
-                if (!string.IsNullOrEmpty(VrOllamaBox.Password)) ConfigStore.SaveSecret(CommonConst.Registry_Ollama_API_Key, VrOllamaBox.Password);
+                ConfigStore.SaveSecret(CommonConst.Registry_VRChat_Web_UserName, VrUserBox.Text.Trim() ?? string.Empty);
+                if (!string.IsNullOrEmpty(VrPassBox.Password)) ConfigStore.SaveSecret(CommonConst.Registry_VRChat_Web_Password, VrPassBox.Password.Trim());
+                if (!string.IsNullOrEmpty(Vr2FaBox.Password)) ConfigStore.SaveSecret(CommonConst.Registry_VRChat_Web_2FactorKey, Vr2FaBox.Password.Trim());
+                if (!string.IsNullOrEmpty(VrOllamaBox.Password)) ConfigStore.SaveSecret(CommonConst.Registry_Ollama_API_Key, VrOllamaBox.Password.Trim());
                 ConfigStore.SaveSecret(CommonConst.Registry_Ollama_API_Endpoint, VrOllamaEndpointBox.Text ?? CommonConst.Default_Ollama_API_Endpoint);
                 ConfigStore.SaveSecret(CommonConst.Registry_Ollama_API_Prompt, VrOllamaPromptBox.Text ?? CommonConst.Default_Ollama_API_Prompt);
                 ConfigStore.SaveSecret(CommonConst.Registry_Ollama_API_Image_Prompt, VrOllamaImagePromptBox.Text ?? CommonConst.Default_Ollama_API_Image_Prompt);
@@ -299,26 +321,26 @@ namespace Tailgrab.PlayerManagement
             {
                 // Avatar Alerts
                 SetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Watch, CommonConst.Sound_Alert_Key, (string)AvatarWarnSound.SelectedValue);
-                SetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Sound_Alert_Key, (string)AvatarNuisenceSound.SelectedValue);
+                SetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Sound_Alert_Key, (string)AvatarNuisanceSound.SelectedValue);
                 SetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Sound_Alert_Key, (string)AvatarCrasherSound.SelectedValue);
                 SetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Watch, CommonConst.Color_Alert_Key, (string)AvatarWarnColor.SelectedValue);
-                SetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Color_Alert_Key, (string)AvatarNuisenceColor.SelectedValue);
+                SetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Color_Alert_Key, (string)AvatarNuisanceColor.SelectedValue);
                 SetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Color_Alert_Key, (string)AvatarCrasherColor.SelectedValue);
 
                 // Group Alerts
                 SetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Watch, CommonConst.Sound_Alert_Key, (string)GroupWarnSound.SelectedValue);
-                SetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Sound_Alert_Key, (string)GroupNuisenceSound.SelectedValue);
+                SetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Sound_Alert_Key, (string)GroupNuisanceSound.SelectedValue);
                 SetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Sound_Alert_Key, (string)GroupCrasherSound.SelectedValue);
                 SetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Watch, CommonConst.Color_Alert_Key, (string)GroupWarnColor.SelectedValue);
-                SetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Color_Alert_Key, (string)GroupNuisenceColor.SelectedValue);
+                SetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Color_Alert_Key, (string)GroupNuisanceColor.SelectedValue);
                 SetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Color_Alert_Key, (string)GroupCrasherColor.SelectedValue);
 
                 // Group Alerts
                 SetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Watch, CommonConst.Sound_Alert_Key, (string)ProfileWarnSound.SelectedValue);
-                SetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Sound_Alert_Key, (string)ProfileNuisenceSound.SelectedValue);
+                SetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Sound_Alert_Key, (string)ProfileNuisanceSound.SelectedValue);
                 SetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Sound_Alert_Key, (string)ProfileCrasherSound.SelectedValue);
                 SetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Watch, CommonConst.Color_Alert_Key, (string)ProfileWarnColor.SelectedValue);
-                SetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Color_Alert_Key, (string)ProfileNuisenceColor.SelectedValue);
+                SetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Color_Alert_Key, (string)ProfileNuisanceColor.SelectedValue);
                 SetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Color_Alert_Key, (string)ProfileCrasherColor.SelectedValue);
             }
             catch (Exception ex)
@@ -342,6 +364,12 @@ namespace Tailgrab.PlayerManagement
 
         }
 
+        private string? GetAlertKeyString(string alertKey, AlertTypeEnum alertType, string subType)
+        {
+            string key = CommonConst.ConfigRegistryPath + "\\" + alertKey + "\\" + alertType.ToString();
+
+            return ConfigStore.GetStoredKeyString(key, subType);
+        }
 
         private void StatusBarTimer_Tick(object? sender, EventArgs e)
         {
@@ -424,55 +452,70 @@ namespace Tailgrab.PlayerManagement
 
         private void AddOrUpdatePlayer(Player p)
         {
-            PlayerViewModel? vm = ActivePlayers.FirstOrDefault(x => x.UserId == p.UserId);
-            PlayerViewModel? vmPast = PastPlayers.FirstOrDefault(x => x.UserId == p.UserId);
-            PlayerViewModel? vmPrint = PrintPlayers.FirstOrDefault(x => x.UserId == p.UserId);
-            PlayerViewModel? vmEmoji = EmojiPlayers.FirstOrDefault(x => x.UserId == p.UserId);
 
             if (p.InstanceEndTime == null)
             {
-                if (vm != null)
-                {
-                    vm.UpdateFrom(p);
-                }
-                else
-                {
-                    // Not in active
-                    var newVm = new PlayerViewModel(p);
-                    ActivePlayers.Add(newVm);
-                }
+                UpdatePlayerData(p);
 
-                // If player has prints, add/update print list
-                if (p.PrintData != null && p.PrintData.Count > 0)
-                {
-                    if (vmPrint != null)
-                    {
-                        vmPrint.UpdateFrom(p);
-                    }
-                    else
-                    {
-                        PrintPlayers.Add(new PlayerViewModel(p));
-                    }
-                }
+                UpdatePlayerPrintData(p);
 
-                // If player has Emojis, add/update emoji list
-                if (p.Inventory != null && p.Inventory.Count > 0)
-                {
-                    if (vmEmoji != null)
-                    {
-                        vmEmoji.UpdateFrom(p);
-                    }
-                    else
-                    {
-                        EmojiPlayers.Add(new PlayerViewModel(p));
-                    }
-                }
+                UpdatePlayerEmojiData(p);
             }
             else
             {
+                PlayerViewModel? vm = ActivePlayers.FirstOrDefault(x => x.UserId == p.UserId);
                 if (vm != null)
                 {
                     PastPlayers.Add(vm);
+                }
+            }
+        }
+
+        private void UpdatePlayerData(Player p)
+        {
+            PlayerViewModel? vm = ActivePlayers.FirstOrDefault(x => x.UserId == p.UserId);
+            if (vm != null)
+            {
+                vm.UpdateFrom(p);
+            }
+            else
+            {
+                // Not in active
+                var newVm = new PlayerViewModel(p);
+                ActivePlayers.Add(newVm);
+            }
+        }
+
+        private void UpdatePlayerEmojiData(Player p)
+        {
+            // If player has Emojis, add/update emoji list
+            if (p.Inventory != null && p.Inventory.Count > 0)
+            {
+                PlayerViewModel? vmEmoji = EmojiPlayers.FirstOrDefault(x => x.UserId == p.UserId);
+                if (vmEmoji != null)
+                {
+                    vmEmoji.UpdateFrom(p);
+                }
+                else
+                {
+                    EmojiPlayers.Add(new PlayerViewModel(p));
+                }
+            }
+        }
+
+        private void UpdatePlayerPrintData(Player p)
+        {
+            // If player has prints, add/update print list
+            if (p.PrintData != null && p.PrintData.Count > 0)
+            {
+                PlayerViewModel? vmPrint = PrintPlayers.FirstOrDefault(x => x.UserId == p.UserId);
+                if (vmPrint != null)
+                {
+                    vmPrint.UpdateFrom(p);
+                }
+                else
+                {
+                    PrintPlayers.Add(new PlayerViewModel(p));
                 }
             }
         }
@@ -496,7 +539,12 @@ namespace Tailgrab.PlayerManagement
                 PastPlayers.Add(new PlayerViewModel(p));
             }
 
-            var olderThan = DateTime.Now.AddMinutes(-15);
+            PurgePastOlderThan(-15);
+        }
+
+        private void PurgePastOlderThan(int minutes)
+        {
+            var olderThan = DateTime.Now.AddMinutes(minutes);
             List<PlayerViewModel> toRemove = new List<PlayerViewModel>();
             foreach (PlayerViewModel oldPlayer in PastPlayers)
             {
@@ -506,7 +554,6 @@ namespace Tailgrab.PlayerManagement
                     {
                         if (endTime < olderThan)
                         {
-                            logger.Debug($"Removing old past player {oldPlayer.DisplayName} as {endTime} is older than cutoff {olderThan}");
                             toRemove.Add(oldPlayer);
                         }
                     }
@@ -561,31 +608,25 @@ namespace Tailgrab.PlayerManagement
             // Find the DataContext for the row (should be PlayerViewModel)
             if (btn.DataContext is PlayerViewModel pvm)
             {
-                // Try to find the underlying Player by UserId
-                var player = _serviceRegistry.GetPlayerManager().GetPlayerByUserId(pvm.UserId);
-                if (player == null)
-                {
-                    // Build formatted string from the viewmodel alone
-                    var sb = new System.Text.StringBuilder();
-                    sb.AppendLine($"DisplayName: {pvm.DisplayName}");
-                    sb.AppendLine($"UserId: {pvm.UserId}");
-                    sb.AppendLine($"GroupName: {pvm.AvatarName}");
-                    sb.AppendLine($"InstanceStart: {pvm.InstanceStartTime}");
-                    sb.AppendLine($"InstanceEnd: {pvm.InstanceEndTime}");
-                    sb.AppendLine($"WorldId: {PlayerManager.CurrentSession?.WorldId}");
-                    sb.AppendLine($"InstanceId: {PlayerManager.CurrentSession?.InstanceId}");
+                // Build formatted string from the viewmodel alone
+                var sb = new System.Text.StringBuilder();
+                sb.AppendLine($"DisplayName: {pvm.DisplayName}");
+                sb.AppendLine($"UserId: {pvm.UserId}");
+                sb.AppendLine($"GroupName: {pvm.AvatarName}");
+                sb.AppendLine($"InstanceStart: {pvm.InstanceStartTime}");
+                sb.AppendLine($"InstanceEnd: {pvm.InstanceEndTime}");
+                sb.AppendLine($"WorldId: {PlayerManager.CurrentSession?.WorldId}");
+                sb.AppendLine($"InstanceId: {PlayerManager.CurrentSession?.InstanceId}");
 
-                    sb.AppendLine($"User Profile at Instance Start:\n");
-                    sb.AppendLine($"{pvm.Profile}");
-                    var text = sb.ToString();
-                    sb.AppendLine($"Evaluation of Profile:\n");
-                    sb.AppendLine($"{pvm.AIEval}");
+                sb.AppendLine($"User Profile at Instance Start:\n");
+                sb.AppendLine($"{pvm.Profile}");
+                sb.AppendLine($"Evaluation of Profile:\n");
+                sb.AppendLine($"{pvm.AIEval}");
 
-                    System.Windows.Clipboard.SetText(text);
-                    return;
-                }
+                var text = sb.ToString();
 
-                System.Windows.Clipboard.SetText(player.ToString());
+                System.Windows.Clipboard.SetText(text);
+                return;
             }
         }
 
@@ -710,16 +751,7 @@ namespace Tailgrab.PlayerManagement
             OverlayProfileReportUserIdTextBox.Text = userId.Trim();
 
             // Setup report reasons for profile (includes Child Exploitation)
-            var profileReportReasons = new List<ReportReasonItem>
-            {
-                new ReportReasonItem("Sexual Content", "sexual"),
-                new ReportReasonItem("Hateful Content", "hateful"),
-                new ReportReasonItem("Gore and Violence", "gore"),
-                new ReportReasonItem("Child Exploitation", "child"),
-                new ReportReasonItem("Other", "other")
-            };
-
-            OverlayProfileReportReasonComboBox.ItemsSource = profileReportReasons;
+            OverlayProfileReportReasonComboBox.ItemsSource = ProfileReportReasonsOptions;
             OverlayProfileReportReasonComboBox.SelectedIndex = 0;
 
             if (string.IsNullOrEmpty(userId))
@@ -851,6 +883,7 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
+        // Reusable method to submit profile report - can be called from other places in the future if needed
         private async Task<bool> SubmitProfileReport(string userId, string category, string reportReason, string reportDescription)
         {
             ModerationReportPayload rpt = new ModerationReportPayload();
@@ -901,6 +934,164 @@ namespace Tailgrab.PlayerManagement
                 ApplyFilter(PastView, PastFilterBox.Text);
             }
         }
+
+        private void ReportPlayerPast_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not System.Windows.Controls.Button btn) return;
+
+            // Find the DataContext for the row (should be PlayerViewModel)
+            if (btn.DataContext is PlayerViewModel pvm)
+            {
+                try
+                {
+                    ShowProfileReportOverlayPast(pvm);
+                }
+                catch (Exception ex)
+                {
+                    logger.Error(ex, "Failed to open Report Profile overlay");
+                    System.Windows.MessageBox.Show($"Failed to open Report Profile overlay: {ex.Message}",
+                        "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                }
+            }
+        }
+
+
+        private void ShowProfileReportOverlayPast(PlayerViewModel pvm)
+        {
+            // Populate the overlay fields
+            OverlayProfileReportUserIdTextBox.Text = pvm.UserId.Trim();
+
+            // Setup report reasons for profile (includes Child Exploitation)
+
+            ProfilePastReportReason.ItemsSource = ProfileReportReasonsOptions;
+            ProfilePastReportReason.SelectedIndex = 0;
+
+            if (string.IsNullOrEmpty(pvm.UserId))
+            {
+                ProfilePastReportDescription.Text = string.Empty;
+            }
+            else
+            {
+                try
+                {
+                    if(!string.IsNullOrEmpty(pvm.AIEval))
+                    {
+                        ProfilePastReportDescription.Text = pvm.AIEval;
+                        logger.Debug($"Loaded AI evaluation for user: {pvm.UserId}");
+                    }
+                    else
+                    {
+                        ProfilePastReportDescription.Text = "No AI evaluation available for this user.";
+                        logger.Debug($"No AI evaluation found for user: {pvm.UserId}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.Error(ex, $"Error loading AI evaluation for user: {pvm.UserId}");
+                    ProfilePastReportDescription.Text = $"Error loading AI evaluation: {ex.Message}";
+                }
+            }
+
+            // Clear any validation errors
+            ClearProfileReportValidationErrorsPast();
+
+            // Show the overlay
+            ProfilePastReportOverlay.Visibility = Visibility.Visible;
+        }
+
+        private void ClearProfileReportValidationErrorsPast()
+        {
+            // Reset UserID field
+            ProfilePastReportUserId.BorderBrush = System.Windows.SystemColors.ControlDarkBrush;
+            ProfilePastReportUserId.BorderThickness = new Thickness(1);
+            ProfilePastReportUserIdError.Visibility = Visibility.Collapsed;
+        }
+
+        private bool ValidateProfileReportFieldsPast()
+        {
+            bool isValid = true;
+
+            // Clear any previous validation errors first
+            ClearProfileReportValidationErrors();
+
+            // Validate User ID
+            if (string.IsNullOrWhiteSpace(ProfilePastReportUserId.Text))
+            {
+                ProfilePastReportUserId.BorderBrush = new SolidColorBrush(Colors.Yellow);
+                ProfilePastReportUserId.BorderThickness = new Thickness(3);
+                ProfilePastReportUserIdError.Visibility = Visibility.Visible;
+                isValid = false;
+            }
+
+            return isValid;
+        }
+
+        private void OverlayProfileReportPastCancel_Click(object sender, RoutedEventArgs e)
+        {
+            // Hide the overlay
+            ProfilePastReportOverlay.Visibility = Visibility.Collapsed;
+
+            // Clear the fields
+            ProfilePastReportUserId.Text = string.Empty;
+            ProfilePastReportDescription.Text = string.Empty;
+
+            // Clear validation errors
+            ClearProfileReportValidationErrors();
+        }
+
+        private async void OverlayProfileReportPastSubmit_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // Validate required fields
+                if (!ValidateProfileReportFields())
+                {
+                    return;
+                }
+
+                string userId = ProfilePastReportUserId.Text.Trim();
+                string category = ProfilePastReportCategory.Text;
+                string reportReason = ProfilePastReportReason.SelectedValue?.ToString() ?? string.Empty;
+                string reportDescription = ProfilePastReportDescription.Text;
+
+                // Disable the submit button to prevent double-submission
+                OverlayProfileReportPastSubmitButton.IsEnabled = false;
+
+                // Call the method that will handle the future web service call
+                bool success = await SubmitProfileReport(userId, category, reportReason, reportDescription);
+
+                // Show success message
+                if (!success)
+                {
+                    System.Windows.MessageBox.Show("Failed to submit report. Please try again later.", "Error",
+                        System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                    OverlayProfileReportPastSubmitButton.IsEnabled = true;
+                    return;
+                }
+
+                // Hide the overlay
+                ProfilePastReportOverlay.Visibility = Visibility.Collapsed;
+
+                // Clear the fields
+                ProfilePastReportUserId.Text = string.Empty;
+                ProfilePastReportDescription.Text = string.Empty;
+
+                // Clear validation errors
+                ClearProfileReportValidationErrors();
+
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to submit profile report");
+                System.Windows.MessageBox.Show($"Failed to submit report: {ex.Message}",
+                    "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+            }
+            finally
+            {
+                OverlayProfileReportPastSubmitButton.IsEnabled = true;
+            }
+        }
+
 
         #endregion
 
@@ -2144,6 +2335,24 @@ namespace Tailgrab.PlayerManagement
         protected void OnPropertyChanged(string propertyName)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        public override string ToString()
+        {
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine("PlayerViewModel:\n");
+            sb.AppendLine($"DisplayName: {DisplayName}\n");
+            sb.AppendLine($"UserId: {UserId}\n");
+            sb.AppendLine($"AvatarName: {AvatarName}\n");
+            sb.AppendLine($"PenActivity: {PenActivity}\n");
+            sb.AppendLine($"InstanceStartTime: {InstanceStartTime}\n");
+            sb.AppendLine($"InstanceEndTime: {InstanceEndTime}\n");
+            sb.AppendLine($"Profile: {Profile}\n");
+            sb.AppendLine($"AIEval: {AIEval}\n");
+            sb.AppendLine($"IsWatched: {IsWatched}\n");
+            sb.AppendLine($"AlertMessages: {AlertMessages}\n");
+
+            return sb.ToString();
         }
     }
 

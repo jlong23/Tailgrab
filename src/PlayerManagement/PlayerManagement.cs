@@ -1,8 +1,5 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.VisualBasic.ApplicationServices;
 using NLog;
 using System.Text;
-using System.Windows;
 using Tailgrab.Clients.VRChat;
 using Tailgrab.Common;
 using Tailgrab.LineHandler;
@@ -69,7 +66,7 @@ namespace Tailgrab.PlayerManagement
         public string AIClass { get; set; }
         public string AuthorName { get; set; }
 
-        public PlayerPrint(VRChat.API.Model.Print p, string aiEvaluation, string aIClass)
+        public PlayerPrint(VRChat.API.Model.Print p, string aiEvaluation, string aiClassification)
         {
             PrintId = p.Id;
             OwnerId = p.OwnerId;
@@ -78,7 +75,7 @@ namespace Tailgrab.PlayerManagement
             PrintUrl = p.Files.Image;
             AuthorName = p.AuthorName;
             AIEvaluation = aiEvaluation;
-            AIClass = aIClass;
+            AIClass = aiClassification;
         }
     }
 
@@ -644,7 +641,7 @@ namespace Tailgrab.PlayerManagement
                             if (!aiEvaluation.Equals("OK"))
                             {
                                 AddPlayerEventByUserId(userId, PlayerEvent.EventType.Emoji, $"AI Evaluation: Spawned Item {itemName} ({inventoryId}) was classified {evaluated}");
-                                player.AddAlertMessage(AlertClassEnum.EmojiSticker, AlertTypeEnum.Nuisance, "Yellow", $"{evaluated}");
+                                player.AddAlertMessage(AlertClassEnum.EmojiSticker, AlertTypeEnum.Nuisance, "Yellow", $"{aiEvaluation}");
                             }
                         }
                     }
@@ -741,8 +738,7 @@ namespace Tailgrab.PlayerManagement
                             }
                         }
                         player?.PrintData[printId] = new PlayerPrint(printInfo, evaluated ?? "Not Evaluated", aiEvaluation);
-                    }
-                    
+                    }                    
                 }
             }
         }

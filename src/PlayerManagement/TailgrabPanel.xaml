@@ -19,13 +19,6 @@ Title="Tailgrab Player Panel"
             <TabControl>
                 <TabItem Header="Active Players">
                     <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="316*"/>
-                            <ColumnDefinition Width="25*"/>
-                            <ColumnDefinition Width="364*"/>
-                            <ColumnDefinition Width="68*"/>
-                            <ColumnDefinition Width="285*"/>
-                        </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="13*"/>
                             <RowDefinition Height="267*"/>
@@ -33,16 +26,20 @@ Title="Tailgrab Player Panel"
                             <RowDefinition Height="*" MinHeight="100"/>
                         </Grid.RowDefinitions>
 
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="5">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6" Grid.Row="0">
                             <TextBox Name="ActiveFilterBox" Width="300" Margin="0,0,8,0" />
                             <Button Content="Apply Filter" Click="ActiveApplyFilter_Click" Margin="0,0,6,0"/>
                             <Button Content="Clear Filter" Click="ActiveClearFilter_Click"/>
                         </StackPanel>
 
-                        <ListView Name="ActiveListView" ItemsSource="{Binding ActiveView}" SelectedItem="{Binding SelectedActive, Mode=TwoWay}" Margin="0,25,0,1" Grid.RowSpan="2" Grid.ColumnSpan="5">
+                        <ListView Name="ActiveListView" ItemsSource="{Binding ActiveView}" SelectedItem="{Binding SelectedActive, Mode=TwoWay}" Grid.Row="1">
                             <ListView.Resources>
                                 <Style TargetType="{x:Type ListViewItem}">
+                                    <Setter Property="Background" Value="#FF1E1E1E"/>
+                                    <Setter Property="Foreground" Value="#FFE6E6E6"/>
+                                    <Setter Property="BorderBrush" Value="Transparent"/>
                                     <Style.Triggers>
+                                        <!-- Existing DataTriggers -->
                                         <DataTrigger Binding="{Binding HighlightClass}" Value="Normal">
                                             <Setter Property="Background" Value="#FF1E1E1E" />
                                             <Setter Property="Foreground" Value="#FFE6E6E6" />
@@ -59,6 +56,16 @@ Title="Tailgrab Player Panel"
                                             <Setter Property="Background" Value="Purple" />
                                             <Setter Property="Foreground" Value="Yellow" />
                                         </DataTrigger>
+
+                                        <!-- Add these triggers for selection and mouse-over -->
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter Property="Background" Value="#FF1d1db3"/>
+                                            <Setter Property="Foreground" Value="#FFFFFF00"/>
+                                        </Trigger>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter Property="Background" Value="#FF1d1db3"/>
+                                            <Setter Property="Foreground" Value="#FFFFFF00"/>
+                                        </Trigger>
                                     </Style.Triggers>
                                 </Style>
                             </ListView.Resources>
@@ -155,9 +162,9 @@ Title="Tailgrab Player Panel"
                             </ListView.View>
                         </ListView>
 
-                        <GridSplitter Grid.Row="2" Grid.ColumnSpan="5" Height="5" HorizontalAlignment="Stretch" VerticalAlignment="Center" Background="#FF3F3F46" ShowsPreview="False" ResizeDirection="Rows"/>
+                        <GridSplitter Grid.Row="2" Height="5" HorizontalAlignment="Stretch" VerticalAlignment="Center" Background="#FF3F3F46" ShowsPreview="False" ResizeDirection="Rows"/>
 
-                        <Grid Margin="0,0,0,6" Grid.ColumnSpan="5" Grid.Row="3">
+                        <Grid Margin="0,0,0,6" Grid.Row="3">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
@@ -182,7 +189,7 @@ Title="Tailgrab Player Panel"
                         <Border Name="OverlayProfileReport" 
                             Grid.Row="0" 
                             Grid.RowSpan="3"
-                            Grid.ColumnSpan="5"
+                            Grid.ColumnSpan="2"
                             Background="#CC000000" 
                             Visibility="Collapsed"
                             Panel.ZIndex="1000">
@@ -272,11 +279,13 @@ Title="Tailgrab Player Panel"
                 <TabItem Header="Past Players">
                     <Grid>
                         <Grid.RowDefinitions>
+                            <RowDefinition Height="13*"/>
+                            <RowDefinition Height="267*"/>
                             <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*" MinHeight="100"/>
                         </Grid.RowDefinitions>
 
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6" Grid.Row="0">
                             <TextBox Name="PastFilterBox" Width="300" Margin="0,0,8,0" />
                             <Button Content="Apply Filter" Click="PastApplyFilter_Click" Margin="0,0,6,0"/>
                             <Button Content="Clear Filter" Click="PastClearFilter_Click"/>
@@ -285,7 +294,11 @@ Title="Tailgrab Player Panel"
                         <ListView Name="PastListView" Grid.Row="1" ItemsSource="{Binding PastView}" SelectedItem="{Binding SelectedPast, Mode=TwoWay}">
                             <ListView.Resources>
                                 <Style TargetType="{x:Type ListViewItem}">
+                                    <Setter Property="Background" Value="#FF1E1E1E"/>
+                                    <Setter Property="Foreground" Value="#FFE6E6E6"/>
+                                    <Setter Property="BorderBrush" Value="Transparent"/>
                                     <Style.Triggers>
+                                        <!-- Existing DataTriggers -->
                                         <DataTrigger Binding="{Binding HighlightClass}" Value="Normal">
                                             <Setter Property="Background" Value="#FF1E1E1E" />
                                             <Setter Property="Foreground" Value="#FFE6E6E6" />
@@ -302,6 +315,16 @@ Title="Tailgrab Player Panel"
                                             <Setter Property="Background" Value="Purple" />
                                             <Setter Property="Foreground" Value="Yellow" />
                                         </DataTrigger>
+
+                                        <!-- Add these triggers for selection and mouse-over -->
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter Property="Background" Value="#FF1d1db3"/>
+                                            <Setter Property="Foreground" Value="#FFFFFF00"/>
+                                        </Trigger>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter Property="Background" Value="#FF1d1db3"/>
+                                            <Setter Property="Foreground" Value="#FFFFFF00"/>
+                                        </Trigger>
                                     </Style.Triggers>
                                 </Style>
                             </ListView.Resources>
@@ -390,7 +413,7 @@ Title="Tailgrab Player Panel"
                                         </GridViewColumn.Header>
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate>
-                                                <Button Content="Report" Click="ReportPlayer_Click" Padding="4,2" ToolTip="{Binding AIEval}"/>
+                                                <Button Content="Report" Click="ReportPlayerPast_Click" Padding="4,2" ToolTip="{Binding AIEval}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
@@ -398,6 +421,118 @@ Title="Tailgrab Player Panel"
                                 </GridView>
                             </ListView.View>
                         </ListView>
+
+                        <GridSplitter Grid.Row="2" Height="5" HorizontalAlignment="Stretch" VerticalAlignment="Center" Background="#FF3F3F46" ShowsPreview="False" ResizeDirection="Rows"/>
+
+                        <Grid Margin="0,0,0,6" Grid.Row="3">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBox Name="UserPofileBoxPast" Grid.Column="0" Height="auto" Margin="0,0,4,0" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto">
+                                <TextBox.Text>
+                                    <MultiBinding StringFormat="{}User Profile:&#x0a;{0}&#x0a;&#x0a;AI Evaluation:&#x0a;{1}" Mode="OneWay">
+                                        <Binding Path="SelectedPast.Profile" Mode="OneWay" FallbackValue="" TargetNullValue=""/>
+                                        <Binding Path="SelectedPast.AIEval" Mode="OneWay" FallbackValue="" TargetNullValue=""/>
+                                    </MultiBinding>
+                                </TextBox.Text>
+                            </TextBox>
+
+                            <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="#FF3F3F46" ShowsPreview="False"/>
+
+                            <TextBox Name="UserAlertsBoxPast" Grid.Column="2" Height="auto" Margin="4,0,8,0" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" Text="{Binding SelectedPast.History, Mode=OneWay, FallbackValue='', TargetNullValue=''}" />
+                        </Grid>
+
+                        <!-- Overlay Panel for Report Profile -->
+                        <Border Name="ProfilePastReportOverlay" 
+                            Grid.Row="0" 
+                            Grid.RowSpan="2"
+                            Grid.ColumnSpan="2"
+                            Background="#CC000000" 
+                            Visibility="Collapsed"
+                            Panel.ZIndex="1000">
+                            <Border Background="#FF2D2D30" 
+                                MaxWidth="650" 
+                                MaxHeight="500" 
+                                CornerRadius="8"
+                                Padding="16"
+                                VerticalAlignment="Center"
+                                HorizontalAlignment="Center">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+
+                                    <!-- Title -->
+                                    <TextBlock Grid.Row="0" 
+                                           Text="Report User Profile" 
+                                           FontSize="20" 
+                                           FontWeight="Bold" 
+                                           Foreground="#FFE6E6E6"
+                                           Margin="0,0,0,16"/>
+
+                                    <!-- User ID -->
+                                    <StackPanel Grid.Row="1" Margin="0,0,0,12">
+                                        <Label Content="User ID: *" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBox Name="ProfilePastReportUserId" Grid.Column="0" IsReadOnly="True"/>
+                                            <Label Name="ProfilePastReportUserIdError" 
+                                               Grid.Column="1" 
+                                               Content="Required" 
+                                               Foreground="Red" 
+                                               FontWeight="Bold"
+                                               Margin="8,0,0,0"
+                                               VerticalAlignment="Center"
+                                               Visibility="Collapsed"/>
+                                        </Grid>
+                                    </StackPanel>
+
+                                    <!-- Category -->
+                                    <StackPanel Grid.Row="2" Margin="0,0,0,12">
+                                        <Label Content="Category:" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                                        <TextBox Name="ProfilePastReportCategory" IsReadOnly="True" Text="Profile"/>
+                                    </StackPanel>
+
+                                    <!-- Report Reason -->
+                                    <StackPanel Grid.Row="3" Margin="0,0,0,12">
+                                        <Label Content="Report Reason:" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                                        <ComboBox Name="ProfilePastReportReason" 
+                                              DisplayMemberPath="DisplayName"
+                                              SelectedValuePath="Value"
+                                              SelectedIndex="0"/>
+                                    </StackPanel>
+
+                                    <!-- Report Description -->
+                                    <StackPanel Grid.Row="4" Margin="0,0,0,12">
+                                        <Label Content="Report Description (AI Evaluation):" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                                        <TextBox Name="ProfilePastReportDescription" 
+                                             TextWrapping="Wrap" 
+                                             AcceptsReturn="True" 
+                                             VerticalScrollBarVisibility="Auto"
+                                             IsReadOnly="False"
+                                             MinHeight="200"/>
+                                    </StackPanel>
+
+                                    <!-- Action Buttons -->
+                                    <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right">
+                                        <Button Name="OverlayProfileReportPastCancelButton" Content="Cancel" Width="100" Margin="0,0,12,0" Click="OverlayProfileReportPastCancel_Click"/>
+                                        <Button Name="OverlayProfileReportPastSubmitButton" Content="Submit" Width="100" Click="OverlayProfileReportPastSubmit_Click"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </Border>
+
                     </Grid>
                 </TabItem>
 
@@ -848,14 +983,7 @@ Title="Tailgrab Player Panel"
                         <TabItem Header="Known Avatars">
                             <Grid>
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="29*"/>
-                                    <ColumnDefinition Width="89*"/>
-                                    <ColumnDefinition Width="27*"/>
-                                    <ColumnDefinition Width="44*"/>
-                                    <ColumnDefinition Width="16*"/>
-                                    <ColumnDefinition Width="172*"/>
-                                    <ColumnDefinition Width="284*"/>
-                                    <ColumnDefinition Width="392*"/>
+                                    <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto" />
@@ -874,10 +1002,8 @@ Title="Tailgrab Player Panel"
 
                                 <DataGrid Name="AvatarDbGrid" Grid.Row="1" AutoGenerateColumns="False" CanUserSortColumns="True" IsReadOnly="False" ItemsSource="{Binding AvatarDbView}" CellEditEnding="AvatarDbGrid_CellEditEnding" Grid.ColumnSpan="8">
                                     <DataGrid.Columns>
-                                        <DataGridTextColumn Header="Avatar Name" Binding="{Binding AvatarName}" SortMemberPath="AvatarName" Width="*" />
-                                        <DataGridTextColumn Header="Avatar ID" Binding="{Binding AvatarId}" SortMemberPath="AvatarId" Width="300" />
                                         <!-- AlertType as template column: display enum name, edit with ComboBox -->
-                                        <DataGridTemplateColumn Header="Alert" SortMemberPath="AlertType" Width="120">
+                                        <DataGridTemplateColumn Header="Alert" SortMemberPath="AlertType" Width="80">
                                             <DataGridTemplateColumn.CellTemplate>
                                                 <DataTemplate>
                                                     <TextBlock Text="{Binding AlertType}" Foreground="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" />
@@ -891,7 +1017,10 @@ Title="Tailgrab Player Panel"
                                                 </DataTemplate>
                                             </DataGridTemplateColumn.CellEditingTemplate>
                                         </DataGridTemplateColumn>
-                                        <DataGridTextColumn Header="Last Updated" Binding="{Binding UpdatedAt, StringFormat={}{0:u}}" SortMemberPath="UpdatedAt" Width="200" IsReadOnly="True" />
+                                        <DataGridTextColumn Header="Avatar Name" Binding="{Binding AvatarName}" SortMemberPath="AvatarName" Width="150*" />
+                                        <DataGridTextColumn Header="Avatar ID" Binding="{Binding AvatarId}" SortMemberPath="AvatarId" Width="250" />
+                                        <DataGridTextColumn Header="User Name" Binding="{Binding UserName}" SortMemberPath="UserName" Width="150*" />
+                                        <DataGridTextColumn Header="Last Updated" Binding="{Binding UpdatedAt, StringFormat={}{0:u}}" SortMemberPath="UpdatedAt" Width="150" IsReadOnly="True" />
                                         <DataGridTemplateColumn Header="Browser" Width="80">
                                             <DataGridTemplateColumn.CellTemplate>
                                                 <DataTemplate>
@@ -1148,12 +1277,12 @@ Title="Tailgrab Player Panel"
                                         </StackPanel>
 
                                         <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="2">
-                                            <Label Content="Nuisence:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
-                                            <ComboBox Name="AvatarNuisenceSound" ItemsSource="{Binding DataContext.AlertSoundOptions, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            <Label Content="Nuisance:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
+                                            <ComboBox Name="AvatarNuisanceSound" ItemsSource="{Binding DataContext.AlertSoundOptions, RelativeSource={RelativeSource AncestorType=Window}}"
                                                           SelectedValuePath="Value" DisplayMemberPath="Key" Margin="2,2,2,2" Width="200"/>
 
                                             <Label Content="Color:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
-                                            <ComboBox Name="AvatarNuisenceColor" ItemsSource="{Binding DataContext.AlertColorOptions, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            <ComboBox Name="AvatarNuisanceColor" ItemsSource="{Binding DataContext.AlertColorOptions, RelativeSource={RelativeSource AncestorType=Window}}"
                                                           SelectedValuePath="Value" DisplayMemberPath="Key" Margin="2,2,2,2" Width="200"/>
                                         </StackPanel>
 
@@ -1181,12 +1310,12 @@ Title="Tailgrab Player Panel"
                                         </StackPanel>
 
                                         <StackPanel Grid.Row="4" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="2">
-                                            <Label Content="Nuisence:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
-                                            <ComboBox Name="GroupNuisenceSound" ItemsSource="{Binding DataContext.AlertSoundOptions, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            <Label Content="Nuisance:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
+                                            <ComboBox Name="GroupNuisanceSound" ItemsSource="{Binding DataContext.AlertSoundOptions, RelativeSource={RelativeSource AncestorType=Window}}"
                                                           SelectedValuePath="Value" DisplayMemberPath="Key" Margin="2,2,2,2" Width="200"/>
 
                                             <Label Content="Color:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
-                                            <ComboBox Name="GroupNuisenceColor" ItemsSource="{Binding DataContext.AlertColorOptions, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            <ComboBox Name="GroupNuisanceColor" ItemsSource="{Binding DataContext.AlertColorOptions, RelativeSource={RelativeSource AncestorType=Window}}"
                                                           SelectedValuePath="Value" DisplayMemberPath="Key" Margin="2,2,2,2" Width="200"/>
                                         </StackPanel>
 
@@ -1214,12 +1343,12 @@ Title="Tailgrab Player Panel"
                                         </StackPanel>
 
                                         <StackPanel Grid.Row="7" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="2">
-                                            <Label Content="Nuisence:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
-                                            <ComboBox Name="ProfileNuisenceSound" ItemsSource="{Binding DataContext.AlertSoundOptions, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            <Label Content="Nuisance:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
+                                            <ComboBox Name="ProfileNuisanceSound" ItemsSource="{Binding DataContext.AlertSoundOptions, RelativeSource={RelativeSource AncestorType=Window}}"
                                                           SelectedValuePath="Value" DisplayMemberPath="Key" Margin="2,2,2,2" Width="200"/>
 
                                             <Label Content="Color:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
-                                            <ComboBox Name="ProfileNuisenceColor" ItemsSource="{Binding DataContext.AlertColorOptions, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            <ComboBox Name="ProfileNuisanceColor" ItemsSource="{Binding DataContext.AlertColorOptions, RelativeSource={RelativeSource AncestorType=Window}}"
                                                           SelectedValuePath="Value" DisplayMemberPath="Key" Margin="2,2,2,2" Width="200"/>
                                         </StackPanel>
 
