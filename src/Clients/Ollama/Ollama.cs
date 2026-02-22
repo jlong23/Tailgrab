@@ -150,7 +150,6 @@ namespace Tailgrab.Clients.Ollama
                         {
                             logger.Error(ex, $"Error fetching user profile for userId: {item.UserId}");
                         }
-
                     }
                     else
                     {
@@ -158,6 +157,7 @@ namespace Tailgrab.Clients.Ollama
                         break;
                     }
                 }
+
                 // Wait for a short period before checking the queue again
                 await Task.Delay(10000);
             }
@@ -251,6 +251,9 @@ namespace Tailgrab.Clients.Ollama
             {
                 logger.Error(ex, $"Error processing Ollama request for userId: {item.UserId} - {ex.Message}");
             }
+
+            // Wait for a short period before checking the queue again
+            await Task.Delay(5000);
         }
 
         private static void GetEvaluationFromStore(ServiceRegistry serviceRegistry, ProfileEvaluation evaluated, string? userId)
@@ -287,7 +290,7 @@ namespace Tailgrab.Clients.Ollama
                 switch(profileWatch)
                 {
                     case "Harrassment & Bullying":
-                        player.AddAlertMessage(AlertClassEnum.Profile, AlertTypeEnum.Nuisance, "Yellow", "Hate/Bully");
+                        player.AddAlertMessage(AlertClassEnum.Profile, AlertTypeEnum.Nuisance, "Yellow", "Hate");
                         SoundManager.PlayAlertSound(CommonConst.Profile_Alert_Key, AlertTypeEnum.Nuisance);
                         break;
                     case "Explicit Sexual":
