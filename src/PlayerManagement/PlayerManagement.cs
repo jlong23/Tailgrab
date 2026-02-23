@@ -427,7 +427,6 @@ namespace Tailgrab.PlayerManagement
                     user = new UserInfo();
                     user.DisplayName = player.DisplayName;
                     user.UserId = player.UserId;
-                    user.IsBos = 0;
                     user.CreatedAt = DateTime.Now;
                     user.UpdatedAt = DateTime.Now;
                     user.ElapsedMinutes = timeDifference.TotalMinutes;
@@ -763,8 +762,7 @@ namespace Tailgrab.PlayerManagement
                             GroupId = group.Id,
                             GroupName = group.Name ?? string.Empty,
                             CreatedAt = group.CreatedAt,
-                            UpdatedAt = DateTime.UtcNow,
-                            IsBos = false
+                            UpdatedAt = DateTime.UtcNow
                         };
 
                         dbContext.GroupInfos.Add(newEntity);

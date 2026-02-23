@@ -18,7 +18,6 @@ public partial class UserInfo
 
     public DateTime UpdatedAt { get; set; }
 
-    public int IsBos { get; set; }
     public UserInfo()
     {
         CreatedAt = DateTime.UtcNow;

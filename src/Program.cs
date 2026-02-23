@@ -13,6 +13,7 @@ using Tailgrab.Configuration;
 using Tailgrab.LineHandler;
 using Tailgrab.Models;
 using Tailgrab.PlayerManagement;
+using Tailgrab.Common;
 
 
 public class FileTailer
@@ -410,14 +411,14 @@ public class FileTailer
                     AvatarInfo? existing = dBContext.AvatarInfos.FirstOrDefault(a => a.AvatarId == mod.TargetAvatarId);
                     if (existing != null)
                     {
-                        if (existing.IsBos)
+                        if (existing.AlertType > AlertTypeEnum.Watch)
                         {
                             logger.Debug($"Avatar {existing.AvatarId} is already marked as BOS in the database. Skipping update.");
                             continue; // already marked as BOS, no update needed
                         }
 
                         logger.Debug($"Marking Avatar {existing.AvatarId} is as BOS in the database.");
-                        existing.IsBos = true;
+                        existing.AlertType = AlertTypeEnum.Watch;
                         existing.UpdatedAt = mod.Created;
                         dBContext.SaveChanges();
 
@@ -428,7 +429,7 @@ public class FileTailer
                         {
                             AvatarName = "From Moderation API",
                             AvatarId = mod.TargetAvatarId,
-                            IsBos = true,
+                            AlertType = AlertTypeEnum.Watch,
                             CreatedAt = mod.Created,
                             UpdatedAt = mod.Created
                         });

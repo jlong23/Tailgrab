@@ -96,6 +96,49 @@ The TailGrab SQLite database will stored to the ```{UserProfile}/AppData/Local/T
 
 DB Browser for SQLite - https://sqlitebrowser.org/
 
+##### Export SQL For GIST or Team Share
+
+Avatars:
+
+```SQL
+SELECT 
+	'"' || AvatarId || '","' || AvatarName || '","' || 
+	CASE 
+		WHEN alertType = 1 THEN 'WATCH' 
+		WHEN alertType = 2 THEN 'NUISANCE' 
+		WHEN alertType = 3 THEN 'CRASHER' 
+		ELSE 'NONE' 
+	END || '"' AS GISTLine 
+	FROM AvatarInfo 
+	WHERE alertType > 0 
+	ORDER BY AvatarName
+```
+
+My Avatars GIST Export URL:
+```
+https://gist.githubusercontent.com/jlong23/b4d0d55eaafeffe40e3cffd3da0b2e3b/raw/205cc200bab4fcdb34dc2540c6759b0eae8627ab/TG_Avatar.txt
+```
+
+Groups: 
+
+```SQL
+SELECT 
+	'"' || GroupId || '","' || GroupName || '","' || 
+	CASE 
+		WHEN alertType = 1 THEN 'WATCH' 
+		WHEN alertType = 2 THEN 'NUISANCE' 
+		WHEN alertType = 3 THEN 'CRASHER' 
+		ELSE 'NONE' 
+	END || '"' AS GISTLine 
+	FROM GroupInfo 
+	WHERE alertType > 0 
+	ORDER BY GroupName
+```
+
+My Groups GIST Export URL:
+```
+https://gist.githubusercontent.com/jlong23/2b051df849cabb4da273eaf98225ae4e/raw/392b5926936a3139e7173bd4431a95ac3770be38/TG_Group.txt
+```
 
 ## Detail Documentation
 

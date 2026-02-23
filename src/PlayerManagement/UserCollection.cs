@@ -166,12 +166,11 @@ namespace Tailgrab.PlayerManagement
 
         public DateTime UpdatedAt { get; set; }
 
-        public UserInfoViewModel(Tailgrab.Models.UserInfo u)
+        public UserInfoViewModel(Models.UserInfo u)
         {
             UserId = u.UserId;
             DisplayName = u.DisplayName;
             ElapsedMinutes = u.ElapsedMinutes;
-            IsBos = u.IsBos;
             UpdatedAt = u.UpdatedAt;
         }
 

@@ -1901,7 +1901,6 @@ namespace Tailgrab.PlayerManagement
                             ImageUrl = avatar.ImageUrl ?? string.Empty,
                             CreatedAt = avatar.CreatedAt,
                             UpdatedAt = DateTime.UtcNow,
-                            IsBos = false,
                             AlertType = AlertTypeEnum.None
                         };
                         dbContext.AvatarInfos.Add(newEntity);
@@ -2105,7 +2104,6 @@ namespace Tailgrab.PlayerManagement
                     var entity = db.UserInfos.Find(vm.UserId);
                     if (entity != null)
                     {
-                        entity.IsBos = vm.IsBos;
                         entity.UpdatedAt = DateTime.UtcNow;
                         db.UserInfos.Update(entity);
                         db.SaveChanges();

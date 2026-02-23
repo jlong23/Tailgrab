@@ -14,8 +14,6 @@ public partial class GroupInfo
 
     public string GroupName{ get; set; }
 
-    public bool IsBos{ get; set; }
-
     public AlertTypeEnum AlertType { get; set; } = AlertTypeEnum.None;
 
     public DateTime CreatedAt { get; set; }
@@ -29,6 +27,6 @@ public partial class GroupInfo
 
     public override string ToString()
     {
-        return $"GroupId: {GroupId}, GroupName: {GroupName}, IsBOS: {IsBos}, AlertType: {AlertType}, CreatedAt: {CreatedAt}, UpdatedAt: {UpdatedAt}";
+        return $"GroupId: {GroupId}, GroupName: {GroupName}, AlertType: {AlertType}, CreatedAt: {CreatedAt}, UpdatedAt: {UpdatedAt}";
     }
 }

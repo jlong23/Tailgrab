@@ -128,7 +128,6 @@ namespace Tailgrab.AvatarManagement
                                 ImageUrl = avatar.ImageUrl,
                                 CreatedAt = avatar.CreatedAt,
                                 UpdatedAt = DateTime.UtcNow,
-                                IsBos = false,
                                 AlertType = AlertTypeEnum.None,
                                 UserName = avatar.AuthorName
                             };
@@ -243,8 +242,7 @@ namespace Tailgrab.AvatarManagement
                 AvatarName = $"Unknown Avatar {AvatarId}",
                 ImageUrl = "",
                 CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow,
-                IsBos = false
+                UpdatedAt = DateTime.UtcNow
             };
 
             try
@@ -279,8 +277,7 @@ namespace Tailgrab.AvatarManagement
                             AvatarName = avatarData.Name,
                             ImageUrl = avatarData.ImageUrl,
                             CreatedAt = avatarData.CreatedAt,
-                            UpdatedAt = DateTime.UtcNow,
-                            IsBos = false
+                            UpdatedAt = DateTime.UtcNow
                         };
 
                         try

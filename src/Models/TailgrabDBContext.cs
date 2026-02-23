@@ -35,7 +35,17 @@ public partial class TailgrabDBContext : DbContext
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
-        optionsBuilder.UseSqlite("Data Source=./data/avatars.sqlite");
+        // Define directory: %LOCALAPPDATA%\YourAppName
+        string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        string dbFolder = Path.Combine(appDataPath, "Tailgrab", "data");
+
+        // Ensure directory exists
+        Directory.CreateDirectory(dbFolder);
+
+        string dbPath = Path.Combine(dbFolder, "tailgrab.db");
+
+        // Configure SQLite
+        optionsBuilder.UseSqlite($"Data Source={dbPath}");
     }
 
     public virtual DbSet<AvatarInfo> AvatarInfos { get; set; }
@@ -55,8 +65,6 @@ public partial class TailgrabDBContext : DbContext
             entity.HasKey(e => e.AvatarId);
 
             entity.ToTable("AvatarInfo");
-
-            entity.Property(e => e.IsBos).HasColumnName("IsBOS");
         });
 
         modelBuilder.Entity<GroupInfo>(entity =>
@@ -65,7 +73,6 @@ public partial class TailgrabDBContext : DbContext
 
             entity.ToTable("GroupInfo");
 
-            entity.Property(e => e.IsBos).HasColumnName("IsBOS");
             entity.Property(e => e.CreatedAt).HasColumnName("createDate");
             entity.Property(e => e.UpdatedAt).HasColumnName("updateDate");
         });
@@ -87,7 +94,6 @@ public partial class TailgrabDBContext : DbContext
 
             entity.Property(e => e.CreatedAt).IsRequired();
             entity.Property(e => e.ElapsedMinutes).HasColumnName("elapsedHours");
-            entity.Property(e => e.IsBos).HasColumnName("IsBOS");
         });
 
         modelBuilder.Entity<ImageEvaluation>(entity =>

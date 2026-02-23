@@ -4,6 +4,7 @@ using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
 using Tailgrab.AvatarManagement;
+using Tailgrab.Common;
 using Tailgrab.Models;
 
 namespace Tailgrab.Configuration
@@ -206,18 +207,33 @@ namespace Tailgrab.Configuration
                     // Split by whitespace or comma to get the first column
                     string[] columns = line.Split(new[] { ' ', '\t', ',' }, StringSplitOptions.RemoveEmptyEntries);
                     
-                    if (columns.Length == 0)
+                    if (columns.Length < 3)
                     {
+                        logger.Warn($"Line {lineNumber}: Expected at least 3 columns (AvatarId, AvatarName, AlertType), but got {columns.Length}. Skipping line.");
                         continue;
                     }
 
                     string avatarId = columns[0].Trim().Trim('"');
-                    logger.Info(avatarId);
+                    string avatarName = columns[1].Trim().Trim('"');
+                    string avatarAlert = columns[2].Trim().Trim('"');
+                    
+                    logger.Info(columns);
 
                     if (string.IsNullOrWhiteSpace(avatarId))
                     {
                         logger.Warn($"Line {lineNumber}: Empty avatar ID, skipping.");
                         continue;
+                    }
+
+                    // Convert the alert type string to the AlertTypeEnum, defaulting to None if parsing fails
+                    AlertTypeEnum alertType = AlertTypeEnum.None;
+                    if( Enum.TryParse<AlertTypeEnum>(avatarAlert, out alertType ))
+                    {
+                        // Declared and Defaulted above
+                    } 
+                    else
+                    {
+                        logger.Warn($"Line {lineNumber}: Invalid AlertType '{avatarAlert}' for Avatar ID '{avatarId}', defaulting to None.");
                     }
 
                     try
@@ -229,22 +245,34 @@ namespace Tailgrab.Configuration
 
                         if (avatarInfo == null)
                         {
-                            logger.Debug($"Line {lineNumber}: Avatar ID '{avatarId}' not found in database, skipping.");
+                            logger.Debug($"Line {lineNumber}: Avatar ID '{avatarId}' not found in database/vrc, skipping.");
                             continue;
                         }
 
-                        // Set IsBOS to true
-                        if (!avatarInfo.IsBos)
+                        // Set the alert type to Watch if it is currently None
+                        if (avatarInfo.AlertType == AlertTypeEnum.None)
                         {
-                            avatarInfo.IsBos = true;
+
+                            avatarInfo.AlertType = alertType;
                             avatarInfo.UpdatedAt = DateTime.UtcNow;
                             dbContext.AvatarInfos.Update(avatarInfo);
+
+                            if (avatarInfo.AlertType >= AlertTypeEnum.Nuisance)
+                            {
+                                await _serviceRegistry.GetVRChatAPIClient().BlockAvatarGlobal(avatarInfo.AvatarId);
+                            }
+                            else
+                            {
+                                await _serviceRegistry.GetVRChatAPIClient().DeleteAvatarGlobal(avatarInfo.AvatarId);
+                            }
+
                             processedCount++;
-                            logger.Debug($"Line {lineNumber}: Set IsBOS=true for Avatar ID '{avatarId}'");
+                            logger.Debug($"Line {lineNumber}: Set Watch State for Avatar ID '{avatarId}'");
+
                         }
                         else
                         {
-                            logger.Debug($"Line {lineNumber}: Avatar ID '{avatarId}' already has IsBOS=true, skipping.");
+                            logger.Debug($"Line {lineNumber}: Avatar ID '{avatarId}' already has Has an Alert, skipping.");
                         }
                     }
                     catch (Exception ex)

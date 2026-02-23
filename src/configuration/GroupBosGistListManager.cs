@@ -4,7 +4,9 @@ using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
 using Tailgrab.AvatarManagement;
+using Tailgrab.Common;
 using Tailgrab.Models;
+using VRChat.API.Model;
 
 namespace Tailgrab.Configuration
 {
@@ -206,18 +208,33 @@ namespace Tailgrab.Configuration
                     // Split by whitespace or comma to get the first column
                     string[] columns = line.Split(new[] { ' ', '\t', ',' }, StringSplitOptions.RemoveEmptyEntries);
                     
-                    if (columns.Length == 0)
+                    if (columns.Length < 3)
                     {
+                        logger.Warn($"Line {lineNumber}: Expected at least 3 columns (GroupId, GroupName, AlertType), but got {columns.Length}. Skipping line.");
                         continue;
                     }
 
                     string groupId = columns[0].Trim().Trim('"');
-                    logger.Info(groupId);
+                    string groupName = columns[1].Trim().Trim('"');
+                    string groupAlert = columns[2].Trim().Trim('"');
+
+                    logger.Info(columns);
 
                     if (string.IsNullOrWhiteSpace(groupId))
                     {
                         logger.Warn($"Line {lineNumber}: Empty Group ID, skipping.");
                         continue;
+                    }
+
+                    // Convert the alert type string to the AlertTypeEnum, defaulting to None if parsing fails
+                    AlertTypeEnum alertType = AlertTypeEnum.None;
+                    if (Enum.TryParse<AlertTypeEnum>(groupAlert, out alertType))
+                    {
+                        // Declared and Defaulted above
+                    }
+                    else
+                    {
+                        logger.Warn($"Line {lineNumber}: Invalid AlertType '{groupAlert}' for Group ID '{groupId}', defaulting to None.");
                     }
 
                     try
@@ -231,17 +248,17 @@ namespace Tailgrab.Configuration
                         }
 
                         // Set IsBOS to true
-                        if (!groupInfo.IsBos)
+                        if (groupInfo.AlertType == AlertTypeEnum.None)
                         {
-                            groupInfo.IsBos = true;
+                            groupInfo.AlertType = alertType;
                             groupInfo.UpdatedAt = DateTime.UtcNow;
                             dbContext.GroupInfos.Update(groupInfo);
                             processedCount++;
-                            logger.Debug($"Line {lineNumber}: Set IsBOS=true for Group ID '{groupId}'");
+                            logger.Debug($"Line {lineNumber}: Set AlertType for Group ID '{groupId}'");
                         }
                         else
                         {
-                            logger.Debug($"Line {lineNumber}: Group ID '{groupId}' already has IsBOS=true, skipping.");
+                            logger.Debug($"Line {lineNumber}: Group ID '{groupId}' already has AlertType, skipping.");
                         }
                     }
                     catch (Exception ex)
