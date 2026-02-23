@@ -235,6 +235,9 @@ public class FileTailer
     [STAThread]
     public static void Main(string[] args)
     {
+        //Early in your program do something like this:
+        NLog.GlobalDiagnosticsContext.Set("StartTime", DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss"));
+
 
         // Basic command line parsing:
         // -l <FilePath>    : use explicit log folder/file path

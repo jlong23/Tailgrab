@@ -54,7 +54,7 @@ Tailgrab will read the VRChat Local Game Log files in real time, parse them for 
 ## Quick Usage
 
 > [!IMPORTANT]
-> By default TailGrab will look for VRChat log files in the default location of ```YourUserHome\AppData\LocalLow\VRChat\VRChat\```, and should pick up any log files that are created on the same date Tailgrab is being run.  Meaning you can restart Tailgrab while VRC is running and rejoin the instance to repopulate the active players.  If you do this in a low activity instance, aka homeworld; you may need to do the 'Rejoin' as soon as possible to ensure the pickup of the logfile.  Tailgrab will pick all other log files for that day, but if there is no activity in the log since the startup from 15 minutes ago, then tailgrab will close and ignore the file for performance reasons.
+> By default TailGrab will look for VRChat log files in the default location of ```{UserProfile}\AppData\LocalLow\VRChat\VRChat\```, and should pick up any log files that are created on the same date Tailgrab is being run.  Meaning you can restart Tailgrab while VRC is running and rejoin the instance to repopulate the active players.  If you do this in a low activity instance, aka homeworld; you may need to do the 'Rejoin' as soon as possible to ensure the pickup of the logfile.  Tailgrab will pick all other log files for that day, but if there is no activity in the log since the startup from 15 minutes ago, then tailgrab will close and ignore the file for performance reasons.
 
 Click the windows application or open a Powershell or Command Line prompt in your windows host, change directory to where ```tailgrab.exe``` has been extracted to and start it with:
 
@@ -82,13 +82,17 @@ This can be overridden by passing the full path to the VRChat log files as the f
 
 ### Watching TailGrab Application Logs
 
-The TailGrab application will log it's internal operations to the ```./logs``` folder in the same directory as the application executable.  Each run of the application will create a new log file with a timestamp in the filename.
+The TailGrab application will log it's internal operations to the ```{UserProfile}/AppData/Local/Tailgrab/logs/``` folder in the same directory as the application executable.  Each run of the application will create a new log file with a timestamp in the filename.
 
 If you want to watch the application logs in real time, you can use a tool like ```tail``` from Git Bash or ```Get-Content``` from Powershell session with the log filename.
 
-```Get-Content -Path .\logs\tailgrab-2026-01-26.log -wait```
+```Get-Content -Path $HOME\AppData\Local\Tailgrab\logs\tailgrab_*.log -wait```
 
-## Usefull Tool Sets 
+### Bulk Editing of Database Files
+
+The TailGrab SQLite database will stored to the ```{UserProfile}/AppData/Local/Tailgrab/data/tailgrab.db``` path.
+
+#### Usefull Tool Sets 
 
 DB Browser for SQLite - https://sqlitebrowser.org/
 
