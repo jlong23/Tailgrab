@@ -960,7 +960,7 @@ namespace Tailgrab.PlayerManagement
         private void ShowProfileReportOverlayPast(PlayerViewModel pvm)
         {
             // Populate the overlay fields
-            OverlayProfileReportUserIdTextBox.Text = pvm.UserId;
+            ProfilePastReportUserId.Text = pvm.UserId;
             // Setup report reasons for profile (includes Child Exploitation)
 
             ProfilePastReportReason.ItemsSource = ProfileReportReasonsOptions;
