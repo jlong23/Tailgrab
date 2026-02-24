@@ -10,7 +10,7 @@
                 byte[] inputBytes = System.Text.Encoding.ASCII.GetBytes(input);
                 byte[] hashBytes = md5.ComputeHash(inputBytes);
 
-                return Convert.ToHexString(hashBytes); 
+                return Convert.ToHexString(hashBytes);
             }
         }
         public static string CreateMD5(byte[] imageBytes)

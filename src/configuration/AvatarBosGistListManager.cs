@@ -3,6 +3,7 @@ using NLog;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 using Tailgrab.AvatarManagement;
 using Tailgrab.Common;
 using Tailgrab.Models;
@@ -39,10 +40,10 @@ namespace Tailgrab.Configuration
             try
             {
                 logger.Info($"Downloading GIST content from: {gistUrl}");
-                
+
                 // Download the GIST content
                 string gistContent = await DownloadGistContentAsync(gistUrl);
-                
+
                 if (string.IsNullOrEmpty(gistContent))
                 {
                     logger.Warn("Downloaded GIST content is empty.");
@@ -55,7 +56,7 @@ namespace Tailgrab.Configuration
 
                 // Get the stored checksum from registry
                 string? storedChecksum = GetStoredChecksum();
-                
+
                 // Compare checksums
                 if (storedChecksum != null && storedChecksum.Equals(currentChecksum, StringComparison.OrdinalIgnoreCase))
                 {
@@ -67,7 +68,7 @@ namespace Tailgrab.Configuration
 
                 // Process the file line by line
                 int processedCount = await ProcessAvatarIdsAsync(gistContent);
-                
+
                 logger.Info($"Processed {processedCount} avatar IDs from GIST.");
 
                 // Save the new checksum to registry
@@ -101,7 +102,7 @@ namespace Tailgrab.Configuration
             {
                 byte[] inputBytes = Encoding.UTF8.GetBytes(content);
                 byte[] hashBytes = md5.ComputeHash(inputBytes);
-                
+
                 StringBuilder sb = new StringBuilder();
                 foreach (byte b in hashBytes)
                 {
@@ -188,7 +189,6 @@ namespace Tailgrab.Configuration
         {
             int processedCount = 0;
             TailgrabDBContext dbContext = _serviceRegistry.GetDBContext();
-            AvatarManagementService avatarService = _serviceRegistry.GetAvatarManager();
 
             using (System.IO.StringReader reader = new System.IO.StringReader(gistContent))
             {
@@ -205,8 +205,9 @@ namespace Tailgrab.Configuration
                     }
 
                     // Split by whitespace or comma to get the first column
-                    string[] columns = line.Split(new[] { ' ', '\t', ',' }, StringSplitOptions.RemoveEmptyEntries);
-                    
+                    string pattern = @",(?=(?:[^""]*""[^""]*"")*[^""]*$)";
+                    string[] columns = Regex.Split(line, pattern); //.Split(new[] { ' ', '\t', ',' }, StringSplitOptions.RemoveEmptyEntries);
+
                     if (columns.Length < 3)
                     {
                         logger.Warn($"Line {lineNumber}: Expected at least 3 columns (AvatarId, AvatarName, AlertType), but got {columns.Length}. Skipping line.");
@@ -216,8 +217,6 @@ namespace Tailgrab.Configuration
                     string avatarId = columns[0].Trim().Trim('"');
                     string avatarName = columns[1].Trim().Trim('"');
                     string avatarAlert = columns[2].Trim().Trim('"');
-                    
-                    logger.Info(columns);
 
                     if (string.IsNullOrWhiteSpace(avatarId))
                     {
@@ -227,10 +226,10 @@ namespace Tailgrab.Configuration
 
                     // Convert the alert type string to the AlertTypeEnum, defaulting to None if parsing fails
                     AlertTypeEnum alertType = AlertTypeEnum.None;
-                    if( Enum.TryParse<AlertTypeEnum>(avatarAlert, out alertType ))
+                    if (Enum.TryParse<AlertTypeEnum>(avatarAlert, out alertType))
                     {
                         // Declared and Defaulted above
-                    } 
+                    }
                     else
                     {
                         logger.Warn($"Line {lineNumber}: Invalid AlertType '{avatarAlert}' for Avatar ID '{avatarId}', defaulting to None.");

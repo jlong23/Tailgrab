@@ -1,6 +1,6 @@
+using Microsoft.EntityFrameworkCore;
 using System.Collections.Specialized;
 using System.ComponentModel;
-using Microsoft.EntityFrameworkCore;
 using Tailgrab.Common;
 
 namespace Tailgrab.PlayerManagement
@@ -44,7 +44,7 @@ namespace Tailgrab.PlayerManagement
             {
                 var db = _services.GetDBContext();
                 var query = db.AvatarInfos.AsQueryable();
-                
+
                 if (!string.IsNullOrWhiteSpace(_filterText))
                 {
                     if (_filterText.StartsWith("avtr_", StringComparison.OrdinalIgnoreCase))
@@ -56,7 +56,7 @@ namespace Tailgrab.PlayerManagement
                         query = query.Where(a => EF.Functions.Like(a.AvatarName, $"%{_filterText}%"));
                     }
                 }
-                
+
                 _count = query.Count();
             }
             catch
@@ -79,13 +79,13 @@ namespace Tailgrab.PlayerManagement
                     var db = _services.GetDBContext();
                     var skip = page * _pageSize;
                     var query = db.AvatarInfos.AsQueryable();
-                    
+
                     if (!string.IsNullOrWhiteSpace(_filterText))
                     {
                         var filterLower = _filterText.ToLower();
                         query = query.Where(a => a.AvatarName.ToLower().Contains(filterLower));
                     }
-                    
+
                     var items = query.OrderBy(a => a.AvatarName).Skip(skip).Take(_pageSize).ToList();
                     list = items.Select(a => new AvatarInfoViewModel(a)).ToList();
                     _pages[page] = list;
@@ -157,7 +157,7 @@ namespace Tailgrab.PlayerManagement
 
         public string AvatarId { get; set; }
         public string AvatarName { get; set; }
-        
+
         public AlertTypeEnum AlertType
         {
             get => _alertType;
@@ -170,7 +170,7 @@ namespace Tailgrab.PlayerManagement
                 }
             }
         }
-        
+
         public DateTime? UpdatedAt { get; set; }
 
         public AvatarInfoViewModel(Tailgrab.Models.AvatarInfo a)

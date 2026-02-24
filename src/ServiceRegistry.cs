@@ -29,10 +29,11 @@ namespace Tailgrab
 
             logger.Info("Starting dbContext...");
 
-            services.AddDbContext<TailgrabDBContext>(options => options.UseSqlite("Data Source=./data/avatars.sqlite"));
+            services.AddDbContext<TailgrabDBContext>(options => options.UseSqlite("Data Source=./data/tailgrab.db"));
             IServiceProvider serviceProvider = services.BuildServiceProvider();
 
             dbContext = serviceProvider.GetService<TailgrabDBContext>();
+            dbContext?.Database.EnsureCreated();
 
             logger.Info("Starting VR Chat API Client...");
             await vrcAPIClient.Initialize();

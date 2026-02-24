@@ -1,7 +1,6 @@
 ﻿using NLog;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Threading.Channels;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -42,8 +41,8 @@ namespace Tailgrab.PlayerManagement
 
 
         private PlayerViewModel? _selectedActive;
-        public PlayerViewModel? SelectedActive 
-        { 
+        public PlayerViewModel? SelectedActive
+        {
             get => _selectedActive;
             set
             {
@@ -160,7 +159,7 @@ namespace Tailgrab.PlayerManagement
         public List<KeyValuePair<string, string>> AlertSoundOptions { get; set; } = new List<KeyValuePair<string, string>>();
 
         public List<ReportReasonItem> ProfileReportReasonsOptions = new List<ReportReasonItem>
-        {        
+        {
             new ReportReasonItem("Sexual Content", "sexual"),
             new ReportReasonItem("Hateful Content", "hateful"),
             new ReportReasonItem("Gore and Violence", "gore"),
@@ -351,7 +350,7 @@ namespace Tailgrab.PlayerManagement
         }
 
         private void SetAlertKeyString(string alertKey, AlertTypeEnum alertType, string subType, object value)
-        { 
+        {
             string key = CommonConst.ConfigRegistryPath + "\\" + alertKey + "\\" + alertType.ToString();
 
             if (value is string stringValue && !string.IsNullOrEmpty(stringValue))
@@ -390,7 +389,7 @@ namespace Tailgrab.PlayerManagement
                     if (WorldId != currentSession.WorldId || InstanceId != currentSession.InstanceId)
                     {
                         WorldId = currentSession.WorldId ?? string.Empty;
-                        InstanceId = currentSession.InstanceId ?? string.Empty;                       
+                        InstanceId = currentSession.InstanceId ?? string.Empty;
                     }
 
                     // Update elapsed time
@@ -399,7 +398,7 @@ namespace Tailgrab.PlayerManagement
                     int minutes = elapsed.Minutes;
                     int seconds = elapsed.Seconds;
                     ElapsedTime = $"{hours:D3}:{minutes:D2}:{seconds:D2}";
-                } 
+                }
                 else
                 {
                     ElapsedTime = "000:00:00";
@@ -697,7 +696,7 @@ namespace Tailgrab.PlayerManagement
 
                 string indicator = sortDesc.Direction == ListSortDirection.Ascending ? " ▲" : " ▼";
                 clickedHeader.Content = headerText + indicator;
-                clickedHeader.Cursor = System.Windows.Input.Cursors.Hand;        
+                clickedHeader.Cursor = System.Windows.Input.Cursors.Hand;
             }
         }
 
@@ -802,10 +801,10 @@ namespace Tailgrab.PlayerManagement
         private bool ValidateProfileReportFields()
         {
             bool isValid = true;
-            
+
             // Clear any previous validation errors first
             ClearProfileReportValidationErrors();
-            
+
             // Validate User ID
             if (string.IsNullOrWhiteSpace(OverlayProfileReportUserIdTextBox.Text))
             {
@@ -814,7 +813,7 @@ namespace Tailgrab.PlayerManagement
                 OverlayProfileReportUserIdError.Visibility = Visibility.Visible;
                 isValid = false;
             }
-            
+
             return isValid;
         }
 
@@ -822,11 +821,11 @@ namespace Tailgrab.PlayerManagement
         {
             // Hide the overlay
             OverlayProfileReport.Visibility = Visibility.Collapsed;
-            
+
             // Clear the fields
             OverlayProfileReportUserIdTextBox.Text = string.Empty;
             OverlayProfileReportDescriptionTextBox.Text = string.Empty;
-            
+
             // Clear validation errors
             ClearProfileReportValidationErrors();
         }
@@ -853,7 +852,7 @@ namespace Tailgrab.PlayerManagement
                 bool success = await SubmitProfileReport(userId, category, reportReason, reportDescription);
 
                 // Show success message
-                if (!success)                
+                if (!success)
                 {
                     System.Windows.MessageBox.Show("Failed to submit report. Please try again later.", "Error",
                         System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
@@ -875,7 +874,7 @@ namespace Tailgrab.PlayerManagement
             catch (Exception ex)
             {
                 logger.Error(ex, "Failed to submit profile report");
-                System.Windows.MessageBox.Show($"Failed to submit report: {ex.Message}", 
+                System.Windows.MessageBox.Show($"Failed to submit report: {ex.Message}",
                     "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
             }
             finally
@@ -974,7 +973,7 @@ namespace Tailgrab.PlayerManagement
             {
                 try
                 {
-                    if(!string.IsNullOrEmpty(pvm.AIEval))
+                    if (!string.IsNullOrEmpty(pvm.AIEval))
                     {
                         ProfilePastReportDescription.Text = pvm.AIEval;
                         ProfilePastReportReason.SelectedIndex = 0;
@@ -1483,7 +1482,7 @@ namespace Tailgrab.PlayerManagement
             catch (Exception ex)
             {
                 logger.Error(ex, "Failed to open Report Inventory Item overlay");
-                System.Windows.MessageBox.Show($"Failed to open Report Inventory Item overlay: {ex.Message}", 
+                System.Windows.MessageBox.Show($"Failed to open Report Inventory Item overlay: {ex.Message}",
                     "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
             }
         }
@@ -1528,14 +1527,14 @@ namespace Tailgrab.PlayerManagement
         {
             // Hide the overlay
             ReportInventoryOverlay.Visibility = Visibility.Collapsed;
-            
+
             // Clear the fields
             OverlayUserIdTextBox.Text = string.Empty;
             OverlayInventoryIdTextBox.Text = string.Empty;
             OverlayCategoryTextBox.Text = string.Empty;
             OverlayReportDescriptionTextBox.Text = string.Empty;
             OverlayInventoryImagePreview.Source = null;
-            
+
             // Clear validation errors
             ClearOverlayValidationErrors();
         }
@@ -1546,7 +1545,7 @@ namespace Tailgrab.PlayerManagement
             OverlayUserIdTextBox.BorderBrush = System.Windows.SystemColors.ControlDarkBrush;
             OverlayUserIdTextBox.BorderThickness = new Thickness(1);
             OverlayUserIdError.Visibility = Visibility.Collapsed;
-            
+
             // Reset InventoryID field
             OverlayInventoryIdTextBox.BorderBrush = System.Windows.SystemColors.ControlDarkBrush;
             OverlayInventoryIdTextBox.BorderThickness = new Thickness(1);
@@ -1556,10 +1555,10 @@ namespace Tailgrab.PlayerManagement
         private bool ValidateOverlayFields()
         {
             bool isValid = true;
-            
+
             // Clear any previous validation errors first
             ClearOverlayValidationErrors();
-            
+
             // Validate User ID
             if (string.IsNullOrWhiteSpace(OverlayUserIdTextBox.Text))
             {
@@ -1568,7 +1567,7 @@ namespace Tailgrab.PlayerManagement
                 OverlayUserIdError.Visibility = Visibility.Visible;
                 isValid = false;
             }
-            
+
             // Validate Inventory ID
             if (string.IsNullOrWhiteSpace(OverlayInventoryIdTextBox.Text))
             {
@@ -1577,7 +1576,7 @@ namespace Tailgrab.PlayerManagement
                 OverlayInventoryIdError.Visibility = Visibility.Visible;
                 isValid = false;
             }
-            
+
             return isValid;
         }
 
@@ -1621,14 +1620,14 @@ namespace Tailgrab.PlayerManagement
                 OverlayCategoryTextBox.Text = string.Empty;
                 OverlayReportDescriptionTextBox.Text = string.Empty;
                 OverlayInventoryImagePreview.Source = null;
-                
+
                 // Clear validation errors
                 ClearOverlayValidationErrors();
             }
             catch (Exception ex)
             {
                 logger.Error(ex, "Failed to submit inventory report");
-                System.Windows.MessageBox.Show($"Failed to submit report: {ex.Message}", 
+                System.Windows.MessageBox.Show($"Failed to submit report: {ex.Message}",
                     "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
             }
             finally
@@ -1699,17 +1698,17 @@ namespace Tailgrab.PlayerManagement
                         imageUrls.Add(inventoryItem.Metadata.ImageUrl);
                     }
 
-                    if ( !string.IsNullOrEmpty(inventoryItem.ImageUrl))
+                    if (!string.IsNullOrEmpty(inventoryItem.ImageUrl))
                     {
                         imageUrls.Add(inventoryItem.ImageUrl);
                     }
 
-                    if( imageUrls.Count > 0)
+                    if (imageUrls.Count > 0)
                     {
                         // Load and display the image
                         LoadImage(imageUrls.First());
 
-                        await LoadImageEvaluation(inventoryId, userId, imageUrls );
+                        await LoadImageEvaluation(inventoryId, userId, imageUrls);
                     }
                 }
             }
@@ -1866,10 +1865,11 @@ namespace Tailgrab.PlayerManagement
                         db.SaveChanges();
                         vm.UpdatedAt = entity.UpdatedAt;
 
-                        if( vm.AlertType >= AlertTypeEnum.Nuisance )
+                        if (vm.AlertType >= AlertTypeEnum.Nuisance)
                         {
                             await _serviceRegistry.GetVRChatAPIClient().BlockAvatarGlobal(vm.AvatarId);
-                        } else
+                        }
+                        else
                         {
                             await _serviceRegistry.GetVRChatAPIClient().DeleteAvatarGlobal(vm.AvatarId);
                         }
@@ -2226,7 +2226,7 @@ namespace Tailgrab.PlayerManagement
             AlertMessages = p.AlertMessage;
             _AlertColor = p.AlertColor;
 
-            PopulateCollectionsFromPlayer(p);;
+            PopulateCollectionsFromPlayer(p); ;
         }
 
         public void UpdateFrom(Player p)
@@ -2248,7 +2248,7 @@ namespace Tailgrab.PlayerManagement
             if (AIEval != (p.AIEval ?? "Not Evaluated")) { AIEval = p.AIEval ?? "Not Evaluated"; changed = true; }
             if (IsWatched != p.IsWatched) { IsWatched = p.IsWatched; changed = true; }
             if (AlertMessages != p.AlertMessage) { AlertMessages = p.AlertMessage ?? string.Empty; changed = true; }
-            if (_AlertColor != p.AlertColor ) { _AlertColor = p.AlertColor; changed = true; }
+            if (_AlertColor != p.AlertColor) { _AlertColor = p.AlertColor; changed = true; }
 
             if (changed) OnPropertyChanged(string.Empty);
 
@@ -2318,7 +2318,7 @@ namespace Tailgrab.PlayerManagement
         public string AIEvaluation { get; set; }
         public string AIClass { get; set; }
         public string AuthorName { get; set; }
-        public PrintInfoViewModel(PlayerPrint p )
+        public PrintInfoViewModel(PlayerPrint p)
         {
             PrintId = p.PrintId;
             OwnerId = p.OwnerId;
@@ -2343,7 +2343,7 @@ namespace Tailgrab.PlayerManagement
         public string UserId { get; set; }
         public string InventoryId { get; set; }
         public DateTime SpawnedAt { get; set; }
-        public string ImageUrl { get; set; }       
+        public string ImageUrl { get; set; }
         public string InventoryType { get; set; }
         public string AIEvalutation { get; set; }
         public EmojiInfoViewModel(string userId, PlayerInventory i)

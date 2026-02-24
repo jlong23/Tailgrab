@@ -32,75 +32,75 @@ namespace Tailgrab.Clients.VRChat
             {
 
                 if (username is null || password is null || twoFactorSecret is null)
-            {
-                System.Windows.MessageBox.Show("VR Chat Web API Credentials are not set yet, use the Config / Secrets tab to update credenials and restart Tailgrab.", "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
-                return;
-            }
-
-            string cookiePath = Path.Combine(Directory.GetCurrentDirectory(), "cookies.json");
-
-            // Try to load cookies from disk and use them if they are present and not expired
-            List<Cookie>? loadedCookies = LoadValidCookiesFromFile(cookiePath);
-
-            VRChatClientBuilder builder = new VRChatClientBuilder()
-                .WithApplication(name: "Tailgrab", version: "1.1.0", contact: "jlong@rabbitearsvideoproduction.com");
-
-            if (loadedCookies != null && loadedCookies.Count > 0)
-            {
-                Console.WriteLine("Loaded valid cookies from disk, attempting to use them for authentication...");
-                // Try to call WithCookies via reflection (some SDKs expose it)
-                var withCookiesMethod = builder.GetType()
-                    .GetMethods()
-                    .FirstOrDefault(m => m.Name == "WithCookies" && m.GetParameters().Length == 1);
-
-                if (withCookiesMethod != null)
                 {
-                    var result = withCookiesMethod.Invoke(builder, new object[] { loadedCookies });
-                    if (result is VRChatClientBuilder cb)
+                    System.Windows.MessageBox.Show("VR Chat Web API Credentials are not set yet, use the Config / Secrets tab to update credenials and restart Tailgrab.", "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                    return;
+                }
+
+                string cookiePath = Path.Combine(Directory.GetCurrentDirectory(), "cookies.json");
+
+                // Try to load cookies from disk and use them if they are present and not expired
+                List<Cookie>? loadedCookies = LoadValidCookiesFromFile(cookiePath);
+
+                VRChatClientBuilder builder = new VRChatClientBuilder()
+                    .WithApplication(name: "Tailgrab", version: "1.1.0", contact: "jlong@rabbitearsvideoproduction.com");
+
+                if (loadedCookies != null && loadedCookies.Count > 0)
+                {
+                    Console.WriteLine("Loaded valid cookies from disk, attempting to use them for authentication...");
+                    // Try to call WithCookies via reflection (some SDKs expose it)
+                    var withCookiesMethod = builder.GetType()
+                        .GetMethods()
+                        .FirstOrDefault(m => m.Name == "WithCookies" && m.GetParameters().Length == 1);
+
+                    if (withCookiesMethod != null)
                     {
-                        builder = cb;
+                        var result = withCookiesMethod.Invoke(builder, new object[] { loadedCookies });
+                        if (result is VRChatClientBuilder cb)
+                        {
+                            builder = cb;
+                        }
+                        else
+                        {
+                            // fallback to username/password if return type not expected
+                            builder = builder.WithUsername(username).WithPassword(password);
+                        }
                     }
                     else
                     {
-                        // fallback to username/password if return type not expected
+                        // no WithCookies method; fall back to username/password
                         builder = builder.WithUsername(username).WithPassword(password);
                     }
                 }
                 else
                 {
-                    // no WithCookies method; fall back to username/password
+                    Console.WriteLine("No valid cookies found on disk, falling back to username/password authentication.");
                     builder = builder.WithUsername(username).WithPassword(password);
                 }
-            }
-            else
-            {
-                Console.WriteLine("No valid cookies found on disk, falling back to username/password authentication.");
-                builder = builder.WithUsername(username).WithPassword(password);
-            }
 
-            _vrchat = builder.Build();
+                _vrchat = builder.Build();
 
-            var response = await _vrchat.Authentication.GetCurrentUserAsync();
-            if (response.RequiresTwoFactorAuth.Contains("emailOtp"))
-            {
-                Console.WriteLine("An verification code was sent to your email address!");
-                Console.Write("Enter code: ");
-                //string code = Console.ReadLine();
-                string code = "1234";
-                var otpResponse = await _vrchat.Authentication.Verify2FAEmailCodeAsync(new TwoFactorEmailCode(code));
-            }
-            else if (response.RequiresTwoFactorAuth.Contains("totp"))
-            {
-                var totp = new Totp(Base32Encoding.ToBytes(twoFactorSecret));
-                string code = totp.ComputeTotp();
+                var response = await _vrchat.Authentication.GetCurrentUserAsync();
+                if (response.RequiresTwoFactorAuth.Contains("emailOtp"))
+                {
+                    Console.WriteLine("An verification code was sent to your email address!");
+                    Console.Write("Enter code: ");
+                    //string code = Console.ReadLine();
+                    string code = "1234";
+                    var otpResponse = await _vrchat.Authentication.Verify2FAEmailCodeAsync(new TwoFactorEmailCode(code));
+                }
+                else if (response.RequiresTwoFactorAuth.Contains("totp"))
+                {
+                    var totp = new Totp(Base32Encoding.ToBytes(twoFactorSecret));
+                    string code = totp.ComputeTotp();
 
-                var otpResponse = await _vrchat.Authentication.Verify2FAAsync(new TwoFactorAuthCode(code));
-            }
+                    var otpResponse = await _vrchat.Authentication.Verify2FAAsync(new TwoFactorAuthCode(code));
+                }
 
-            var currentUser = await _vrchat.Authentication.GetCurrentUserAsync();
-            logger.Info($"Logged in as \"{currentUser.DisplayName}\"");
+                var currentUser = await _vrchat.Authentication.GetCurrentUserAsync();
+                logger.Info($"Logged in as \"{currentUser.DisplayName}\"");
 
-            var cookies = _vrchat.GetCookies();
+                var cookies = _vrchat.GetCookies();
 
                 SaveCookiesToFile(cookiePath, cookies);
             }
@@ -227,7 +227,7 @@ namespace Tailgrab.Clients.VRChat
                 }
 
                 string url = $"{URI_VRC_BASE_API}/api/1/user/{userId}/inventory/{itemId}";
-                
+
                 // Create HTTP client with cookies
                 var handler = new HttpClientHandler
                 {
@@ -248,7 +248,7 @@ namespace Tailgrab.Clients.VRChat
 
                 var json = await response.Content.ReadAsStringAsync();
                 item = JsonConvert.DeserializeObject<VRChatInventoryItem>(json);
-                
+
                 if (item != null)
                 {
                     logger.Info($"Fetched inventory item: {item.Name} ({item.ItemType}) for user {userId}");
@@ -262,7 +262,7 @@ namespace Tailgrab.Clients.VRChat
             return item;
         }
 
-        public async Task<ImageReference?> GetImageReference(string inventoryId, string userId, List<string> imageUrlList )
+        public async Task<ImageReference?> GetImageReference(string inventoryId, string userId, List<string> imageUrlList)
         {
             try
             {
@@ -291,10 +291,10 @@ namespace Tailgrab.Clients.VRChat
                 string md5Hash = string.Empty;
                 List<string> imageList = new List<string>();
                 int imageCount = 0;
-                foreach ( string imageUrl in imageUrlList)
+                foreach (string imageUrl in imageUrlList)
                 {
                     byte[] contentBytes = await httpClient.GetByteArrayAsync(imageUrl);
-                    if( imageCount == 0)
+                    if (imageCount == 0)
                     {
                         md5Hash = Checksum.CreateMD5(contentBytes);
                     }
@@ -354,7 +354,7 @@ namespace Tailgrab.Clients.VRChat
                 logger.Error($"Error fetching avatar: {ex.Message}");
             }
 
-            return printInfo;               
+            return printInfo;
         }
 
         public List<AvatarModeration> GetAvatarModerations()
@@ -696,7 +696,7 @@ namespace Tailgrab.Clients.VRChat
         {
             [JsonProperty("type")]
             public string Type { get; set; } = string.Empty;
-            
+
             [JsonProperty("category")]
             public string Category { get; set; } = string.Empty;
 
@@ -718,7 +718,7 @@ namespace Tailgrab.Clients.VRChat
             [JsonProperty("instanceType")]
             public string InstanceType { get; set; } = string.Empty;
 
-            [JsonProperty("instanceAgeGated")]  
+            [JsonProperty("instanceAgeGated")]
             public bool InstanceAgeGated { get; set; }
 
             [JsonProperty("userInSameInstance")]
@@ -745,9 +745,9 @@ namespace Tailgrab.Clients.VRChat
             [JsonProperty("timestamp")]
             public string Timestamp { get; set; } = string.Empty;
             [JsonProperty("worldId")]
-            public string WorldId { get; set; } =  string.Empty;
+            public string WorldId { get; set; } = string.Empty;
             [JsonProperty("worldName")]
-            public string WorldName { get; set; }   = string.Empty;
+            public string WorldName { get; set; } = string.Empty;
             [JsonProperty("files")]
             public PrintFileInfo FileInfo { get; set; } = new PrintFileInfo();
         }

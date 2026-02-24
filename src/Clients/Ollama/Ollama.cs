@@ -1,10 +1,8 @@
 ﻿using ConcurrentPriorityQueue.Core;
-using Microsoft.EntityFrameworkCore;
 using NLog;
 using OllamaSharp;
 using OllamaSharp.Models;
 using System.Net.Http;
-using System.Numerics;
 using System.Text.RegularExpressions;
 using Tailgrab.Common;
 using Tailgrab.Models;
@@ -82,7 +80,7 @@ namespace Tailgrab.Clients.Ollama
             }
         }
 
-        
+
         public static async Task ProfileCheckTask(ConcurrentPriorityQueue<IHavePriority<int>, int> priorityQueue, ServiceRegistry serviceRegistry)
         {
             string? ollamaCloudKey = ConfigStore.LoadSecret(CommonConst.Registry_Ollama_API_Key);
@@ -90,7 +88,7 @@ namespace Tailgrab.Clients.Ollama
             if (ollamaCloudKey is null)
             {
                 System.Windows.MessageBox.Show("Ollama API Credentials are not set.\nThis is not nessasary for limited operation, the Profiles will not be profileText.\nOtherwise use the Config / Secrets tab to update credenials and restart Tailgrab.", "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
-            } 
+            }
             else
             {
                 string ollamaEndpoint = ConfigStore.LoadSecret(CommonConst.Registry_Ollama_API_Endpoint) ?? CommonConst.Default_Ollama_API_Endpoint;
@@ -110,7 +108,7 @@ namespace Tailgrab.Clients.Ollama
                 {
                     var result = priorityQueue.Dequeue();
                     if (result.IsSuccess && result.Value is QueuedProcess item && item.UserId != null)
-                    {                        
+                    {
                         try
                         {
                             TailgrabDBContext dBContext = serviceRegistry.GetDBContext();
@@ -168,7 +166,7 @@ namespace Tailgrab.Clients.Ollama
             logger.Debug($"Processing User Group subscription for userId: {item.UserId}");
             Player? player = serviceRegistry.GetPlayerManager().GetPlayerByUserId(item.UserId ?? string.Empty);
             if (player != null)
-            { 
+            {
                 AlertTypeEnum maxAlertType = AlertTypeEnum.None;
                 foreach (LimitedUserGroups group in userGroups)
                 {
@@ -210,13 +208,13 @@ namespace Tailgrab.Clients.Ollama
             return false;
         }
 
-        private async static void GetEvaluationFromCloud(OllamaApiClient ollamaApi, ServiceRegistry serviceRegistry, QueuedProcess item )
+        private async static void GetEvaluationFromCloud(OllamaApiClient ollamaApi, ServiceRegistry serviceRegistry, QueuedProcess item)
         {
             string? ollamaPrompt = ConfigStore.LoadSecret(CommonConst.Registry_Ollama_API_Prompt);
             GenerateRequest request = new GenerateRequest
             {
                 Model = ollamaApi.SelectedModel,
-                Prompt = string.Concat( ollamaPrompt ?? CommonConst.Default_Ollama_API_Prompt, item.UserBio ?? string.Empty ),
+                Prompt = string.Concat(ollamaPrompt ?? CommonConst.Default_Ollama_API_Prompt, item.UserBio ?? string.Empty),
                 Stream = false
             };
 
@@ -243,7 +241,7 @@ namespace Tailgrab.Clients.Ollama
                         player.UserBio = item.UserBio;
                         player.AIEval = response;
 
-                        ProfileViewUpdate( serviceRegistry, player );
+                        ProfileViewUpdate(serviceRegistry, player);
                     }
                 });
             }
@@ -282,12 +280,12 @@ namespace Tailgrab.Clients.Ollama
             }
         }
 
-        private static void ProfileViewUpdate( ServiceRegistry serviceRegistry, Player player )
+        private static void ProfileViewUpdate(ServiceRegistry serviceRegistry, Player player)
         {
             string? profileWatch = EvaluateProfile(player.AIEval);
             if (profileWatch != null)
             {
-                switch(profileWatch)
+                switch (profileWatch)
                 {
                     case "Harrassment & Bullying":
                         player.AddAlertMessage(AlertClassEnum.Profile, AlertTypeEnum.Nuisance, "Yellow", "Hate");
@@ -303,7 +301,7 @@ namespace Tailgrab.Clients.Ollama
                         break;
                 }
 
-                serviceRegistry.GetPlayerManager().AddPlayerEventByUserId(player.UserId ?? string.Empty, 
+                serviceRegistry.GetPlayerManager().AddPlayerEventByUserId(player.UserId ?? string.Empty,
                     PlayerEvent.EventType.ProfileWatch, $"User profile was flagged by the AI : {profileWatch}");
             }
             serviceRegistry.GetPlayerManager().OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Updated, player);

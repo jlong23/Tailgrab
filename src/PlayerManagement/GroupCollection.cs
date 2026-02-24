@@ -1,6 +1,6 @@
+using Microsoft.EntityFrameworkCore;
 using System.Collections.Specialized;
 using System.ComponentModel;
-using Microsoft.EntityFrameworkCore;
 using Tailgrab.Common;
 
 namespace Tailgrab.PlayerManagement
@@ -42,7 +42,7 @@ namespace Tailgrab.PlayerManagement
             {
                 var db = _services.GetDBContext();
                 var query = db.GroupInfos.AsQueryable();
-                
+
                 if (!string.IsNullOrWhiteSpace(_filterText))
                 {
                     if (_filterText.StartsWith("grp_", StringComparison.OrdinalIgnoreCase))
@@ -54,7 +54,7 @@ namespace Tailgrab.PlayerManagement
                         query = query.Where(g => EF.Functions.Like(g.GroupName, $"%{_filterText}%"));
                     }
                 }
-                
+
                 _count = query.Count();
             }
             catch
@@ -76,7 +76,7 @@ namespace Tailgrab.PlayerManagement
                     var db = _services.GetDBContext();
                     var skip = page * _pageSize;
                     var query = db.GroupInfos.AsQueryable();
-                    
+
                     if (!string.IsNullOrWhiteSpace(_filterText))
                     {
                         if (_filterText.StartsWith("grp_", StringComparison.OrdinalIgnoreCase))
@@ -88,7 +88,7 @@ namespace Tailgrab.PlayerManagement
                             query = query.Where(g => EF.Functions.Like(g.GroupName, $"%{_filterText}%"));
                         }
                     }
-                    
+
                     var items = query.OrderBy(a => a.GroupName).Skip(skip).Take(_pageSize).ToList();
                     list = items.Select(a => new GroupInfoViewModel(a)).ToList();
                     _pages[page] = list;
@@ -155,7 +155,7 @@ namespace Tailgrab.PlayerManagement
     public class GroupInfoViewModel : INotifyPropertyChanged
     {
         public string GroupId { get; set; }
-        public string GroupName { get; set; }        
+        public string GroupName { get; set; }
         private AlertTypeEnum _AlertType;
         public AlertTypeEnum AlertType
         {

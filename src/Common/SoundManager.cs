@@ -56,7 +56,7 @@ namespace Tailgrab.Common
             return new List<string>();
         }
 
-        public static void PlayAlertSound(string alertKey, AlertTypeEnum alertType )
+        public static void PlayAlertSound(string alertKey, AlertTypeEnum alertType)
         {
             string key = CommonConst.ConfigRegistryPath + "\\" + alertKey + "\\" + alertType.ToString();
             string soundSetting = ConfigStore.GetStoredKeyString(key, CommonConst.Sound_Alert_Key) ?? "Hand";

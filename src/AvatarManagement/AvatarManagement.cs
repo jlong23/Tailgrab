@@ -33,7 +33,7 @@ namespace Tailgrab.AvatarManagement
         public void AddAvatar(AvatarInfo avatar)
         {
             try
-            {                
+            {
                 _serviceRegistry.GetDBContext().AvatarInfos.Add(avatar);
                 _serviceRegistry.GetDBContext().SaveChanges();
             }
@@ -97,7 +97,7 @@ namespace Tailgrab.AvatarManagement
                 AvatarId = avatarId,
                 Priority = 1
             };
-        
+
             priorityQueue.Enqueue(queuedItem);
         }
 

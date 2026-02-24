@@ -9,11 +9,11 @@ using System.Windows;
 using System.Windows.Media;
 using Tailgrab;
 using Tailgrab.Clients.VRChat;
+using Tailgrab.Common;
 using Tailgrab.Configuration;
 using Tailgrab.LineHandler;
 using Tailgrab.Models;
 using Tailgrab.PlayerManagement;
-using Tailgrab.Common;
 
 
 public class FileTailer
@@ -283,7 +283,7 @@ public class FileTailer
         _serviceRegistry = new ServiceRegistry();
         _serviceRegistry.StartAllServices();
 
-        if ( upgrade )
+        if (upgrade)
         {
             UpgradeApplication(_serviceRegistry);
         }
@@ -291,7 +291,7 @@ public class FileTailer
         if (backup)
         {
             CreateDatabaseBackup();
-            
+
             // Exit application after creating backup
             return;
         }
@@ -302,12 +302,6 @@ public class FileTailer
             logger.Info($"Missing VRChat log directory at '{filePath}'");
             return;
         }
-
-        AvatarBosGistListManager avatarGistMgr = new AvatarBosGistListManager(_serviceRegistry);
-        _ = Task.Run(() => avatarGistMgr.ProcessAvatarGistList());
-
-        GroupBosGistListManager groupGistMgr = new GroupBosGistListManager(_serviceRegistry);
-        _ = Task.Run(() => groupGistMgr.ProcessGroupGistList());
 
         ConfigurationManager configurationManager = new ConfigurationManager(_serviceRegistry);
         configurationManager.LoadLineHandlersFromConfig(HandlerList);
@@ -321,6 +315,12 @@ public class FileTailer
         logger.Info($"Starting Amplitude Cache watcher for: '{ampPath}'");
         _ = Task.Run(() => WatchAmpCache(ampPath, _serviceRegistry));
 
+        AvatarBosGistListManager avatarGistMgr = new AvatarBosGistListManager(_serviceRegistry);
+        _ = Task.Run(() => avatarGistMgr.ProcessAvatarGistList());
+
+        GroupBosGistListManager groupGistMgr = new GroupBosGistListManager(_serviceRegistry);
+        _ = Task.Run(() => groupGistMgr.ProcessGroupGistList());
+
         //SyncAvatarModerations(_serviceRegistry);
 
         BuildAppWindow(_serviceRegistry);
@@ -331,10 +331,10 @@ public class FileTailer
     private static void UpgradeApplication(ServiceRegistry serviceRegistry)
     {
         logger.Warn($"Starting application upgrade process...");
-        
+
         // Migrate database schema while preserving data
         serviceRegistry.GetDBContext().Database.Migrate();
-        
+
         // Create missing registry items with default values
         InitializeMissingRegistryItems();
 
@@ -367,13 +367,13 @@ public class FileTailer
             }
 
             // Initialize Ollama API registry keys with defaults
-            SetDefaultIfMissing(Tailgrab.Common.CommonConst.Registry_Ollama_API_Endpoint, 
+            SetDefaultIfMissing(Tailgrab.Common.CommonConst.Registry_Ollama_API_Endpoint,
                 Tailgrab.Common.CommonConst.Default_Ollama_API_Endpoint);
-            SetDefaultIfMissing(Tailgrab.Common.CommonConst.Registry_Ollama_API_Model, 
+            SetDefaultIfMissing(Tailgrab.Common.CommonConst.Registry_Ollama_API_Model,
                 Tailgrab.Common.CommonConst.Default_Ollama_API_Model);
-            SetDefaultIfMissing(Tailgrab.Common.CommonConst.Registry_Ollama_API_Prompt, 
+            SetDefaultIfMissing(Tailgrab.Common.CommonConst.Registry_Ollama_API_Prompt,
                 Tailgrab.Common.CommonConst.Default_Ollama_API_Prompt);
-            SetDefaultIfMissing(Tailgrab.Common.CommonConst.Registry_Ollama_API_Image_Prompt, 
+            SetDefaultIfMissing(Tailgrab.Common.CommonConst.Registry_Ollama_API_Image_Prompt,
                 Tailgrab.Common.CommonConst.Default_Ollama_API_Image_Prompt);
 
             // Note: The following keys don't have default values and should be set by the user:
@@ -403,7 +403,7 @@ public class FileTailer
         {
             TailgrabDBContext dBContext = serviceRegistry.GetDBContext();
             VRChatClient vrcClient = serviceRegistry.GetVRChatAPIClient();
-            if( dBContext != null && vrcClient != null )
+            if (dBContext != null && vrcClient != null)
             {
                 List<VRChat.API.Model.AvatarModeration> moderations = vrcClient.GetAvatarModerations();
                 foreach (VRChat.API.Model.AvatarModeration mod in moderations)
@@ -682,17 +682,17 @@ public class FileTailer
         tabItemStyle.Setters.Add(new Setter(System.Windows.Controls.Control.ForegroundProperty, lightText));
         tabItemStyle.Setters.Add(new Setter(System.Windows.Controls.Control.BorderBrushProperty, darkControl));
         tabItemStyle.Setters.Add(new Setter(System.Windows.Controls.Control.PaddingProperty, new Thickness(8, 4, 8, 4)));
-        
+
         var tabSelectedTrigger = new Trigger { Property = System.Windows.Controls.TabItem.IsSelectedProperty, Value = true };
         tabSelectedTrigger.Setters.Add(new Setter(System.Windows.Controls.Control.BackgroundProperty, darkWindow));
         tabSelectedTrigger.Setters.Add(new Setter(System.Windows.Controls.Control.ForegroundProperty, accent));
         tabItemStyle.Triggers.Add(tabSelectedTrigger);
-        
+
         var tabMouseOverTrigger = new Trigger { Property = System.Windows.Controls.TabItem.IsMouseOverProperty, Value = true };
         tabMouseOverTrigger.Setters.Add(new Setter(System.Windows.Controls.Control.BackgroundProperty, new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(112, 112, 174))));
         tabMouseOverTrigger.Setters.Add(new Setter(System.Windows.Controls.Control.ForegroundProperty, new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0, 0, 0))));
         tabItemStyle.Triggers.Add(tabMouseOverTrigger);
-        
+
         app.Resources[typeof(System.Windows.Controls.TabItem)] = tabItemStyle;
 
         var groupBoxStyle = new Style(typeof(System.Windows.Controls.GroupBox));
@@ -759,7 +759,7 @@ public class FileTailer
         comboBoxStyle.Setters.Add(new Setter(System.Windows.Controls.Control.BackgroundProperty, darkControl));
         comboBoxStyle.Setters.Add(new Setter(System.Windows.Controls.Control.ForegroundProperty, lightText));
         comboBoxStyle.Setters.Add(new Setter(System.Windows.Controls.Control.BorderBrushProperty, accent));
-        comboBoxStyle.Setters.Add(new Setter(System.Windows.Controls.Control.TemplateProperty, 
+        comboBoxStyle.Setters.Add(new Setter(System.Windows.Controls.Control.TemplateProperty,
             (System.Windows.Controls.ControlTemplate)System.Windows.Markup.XamlReader.Parse(templateContent)));
         app.Resources[typeof(System.Windows.Controls.ComboBox)] = comboBoxStyle;
 
@@ -781,14 +781,14 @@ public class FileTailer
         comboBoxItemStyle.Triggers.Add(comboHighlightedTrigger);
 
         app.Resources[typeof(System.Windows.Controls.ComboBoxItem)] = comboBoxItemStyle;
-        
+
         // Style for the ComboBox toggle button
         var toggleButtonStyle = new Style(typeof(System.Windows.Controls.Primitives.ToggleButton));
         toggleButtonStyle.Setters.Add(new Setter(System.Windows.Controls.Control.BackgroundProperty, darkControl));
         toggleButtonStyle.Setters.Add(new Setter(System.Windows.Controls.Control.ForegroundProperty, lightText));
         toggleButtonStyle.Setters.Add(new Setter(System.Windows.Controls.Control.BorderBrushProperty, accent));
         app.Resources[typeof(System.Windows.Controls.Primitives.ToggleButton)] = toggleButtonStyle;
-        
+
         // Style for ComboBox Popup background
         var popupStyle = new Style(typeof(System.Windows.Controls.Primitives.Popup));
         popupStyle.Setters.Add(new Setter(System.Windows.Controls.Control.BackgroundProperty, darkWindow));

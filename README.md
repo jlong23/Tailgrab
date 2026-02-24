@@ -104,9 +104,9 @@ Avatars:
 SELECT 
 	'"' || AvatarId || '","' || AvatarName || '","' || 
 	CASE 
-		WHEN alertType = 1 THEN 'WATCH' 
-		WHEN alertType = 2 THEN 'NUISANCE' 
-		WHEN alertType = 3 THEN 'CRASHER' 
+		WHEN alertType = 1 THEN 'Watch' 
+		WHEN alertType = 2 THEN 'Nuisance' 
+		WHEN alertType = 3 THEN 'Crasher' 
 		ELSE 'NONE' 
 	END || '"' AS GISTLine 
 	FROM AvatarInfo 
@@ -116,7 +116,7 @@ SELECT
 
 My Avatars GIST Export URL:
 ```
-https://gist.githubusercontent.com/jlong23/b4d0d55eaafeffe40e3cffd3da0b2e3b/raw/205cc200bab4fcdb34dc2540c6759b0eae8627ab/TG_Avatar.txt
+https://gist.githubusercontent.com/jlong23/b4d0d55eaafeffe40e3cffd3da0b2e3b/raw/TG_Avatar.txt
 ```
 
 Groups: 
@@ -125,9 +125,9 @@ Groups:
 SELECT 
 	'"' || GroupId || '","' || GroupName || '","' || 
 	CASE 
-		WHEN alertType = 1 THEN 'WATCH' 
-		WHEN alertType = 2 THEN 'NUISANCE' 
-		WHEN alertType = 3 THEN 'CRASHER' 
+		WHEN alertType = 1 THEN 'Watch' 
+		WHEN alertType = 2 THEN 'Nuisance' 
+		WHEN alertType = 3 THEN 'Crasher' 
 		ELSE 'NONE' 
 	END || '"' AS GISTLine 
 	FROM GroupInfo 
@@ -137,7 +137,7 @@ SELECT
 
 My Groups GIST Export URL:
 ```
-https://gist.githubusercontent.com/jlong23/2b051df849cabb4da273eaf98225ae4e/raw/392b5926936a3139e7173bd4431a95ac3770be38/TG_Group.txt
+https://gist.githubusercontent.com/jlong23/2b051df849cabb4da273eaf98225ae4e/raw/TG_Group.txt
 ```
 
 ## Detail Documentation

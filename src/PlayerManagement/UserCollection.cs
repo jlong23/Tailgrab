@@ -53,7 +53,7 @@ namespace Tailgrab.PlayerManagement
                         query = query.Where(u => EF.Functions.Like(u.DisplayName, $"%{_filterText}%"));
                     }
                 }
-                
+
                 _count = query.Count();
             }
             catch
@@ -75,13 +75,13 @@ namespace Tailgrab.PlayerManagement
                     var db = _services.GetDBContext();
                     var skip = page * _pageSize;
                     var query = db.UserInfos.AsQueryable();
-                    
+
                     if (!string.IsNullOrWhiteSpace(_filterText))
                     {
                         var filterLower = _filterText.ToLower();
                         query = query.Where(u => u.DisplayName.ToLower().Contains(filterLower));
                     }
-                    
+
                     var items = query.OrderBy(a => a.DisplayName).Skip(skip).Take(_pageSize).ToList();
                     list = items.Select(a => new UserInfoViewModel(a)).ToList();
                     _pages[page] = list;

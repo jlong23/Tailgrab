@@ -3,10 +3,9 @@ using NLog;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
-using Tailgrab.AvatarManagement;
+using System.Text.RegularExpressions;
 using Tailgrab.Common;
 using Tailgrab.Models;
-using VRChat.API.Model;
 
 namespace Tailgrab.Configuration
 {
@@ -40,10 +39,10 @@ namespace Tailgrab.Configuration
             try
             {
                 logger.Info($"Downloading GIST content from: {gistUrl}");
-                
+
                 // Download the GIST content
                 string gistContent = await DownloadGistContentAsync(gistUrl);
-                
+
                 if (string.IsNullOrEmpty(gistContent))
                 {
                     logger.Warn("Downloaded GIST content is empty.");
@@ -56,7 +55,7 @@ namespace Tailgrab.Configuration
 
                 // Get the stored checksum from registry
                 string? storedChecksum = GetStoredChecksum();
-                
+
                 // Compare checksums
                 if (storedChecksum != null && storedChecksum.Equals(currentChecksum, StringComparison.OrdinalIgnoreCase))
                 {
@@ -68,7 +67,7 @@ namespace Tailgrab.Configuration
 
                 // Process the file line by line
                 int processedCount = await ProcessGroupIdsAsync(gistContent);
-                
+
                 logger.Info($"Processed {processedCount} Group IDs from GIST.");
 
                 // Save the new checksum to registry
@@ -102,7 +101,7 @@ namespace Tailgrab.Configuration
             {
                 byte[] inputBytes = Encoding.UTF8.GetBytes(content);
                 byte[] hashBytes = md5.ComputeHash(inputBytes);
-                
+
                 StringBuilder sb = new StringBuilder();
                 foreach (byte b in hashBytes)
                 {
@@ -189,7 +188,6 @@ namespace Tailgrab.Configuration
         {
             int processedCount = 0;
             TailgrabDBContext dbContext = _serviceRegistry.GetDBContext();
-            AvatarManagementService avatarService = _serviceRegistry.GetAvatarManager();
 
             using (System.IO.StringReader reader = new System.IO.StringReader(gistContent))
             {
@@ -206,8 +204,11 @@ namespace Tailgrab.Configuration
                     }
 
                     // Split by whitespace or comma to get the first column
-                    string[] columns = line.Split(new[] { ' ', '\t', ',' }, StringSplitOptions.RemoveEmptyEntries);
-                    
+                    //string[] columns = line.Split(new[] { ' ', '\t', ',' }, StringSplitOptions.RemoveEmptyEntries);
+                    string pattern = @",(?=(?:[^""]*""[^""]*"")*[^""]*$)";
+                    string[] columns = Regex.Split(line, pattern); //.Split(new[] { ' ', '\t', ',' }, StringSplitOptions.RemoveEmptyEntries);
+
+
                     if (columns.Length < 3)
                     {
                         logger.Warn($"Line {lineNumber}: Expected at least 3 columns (GroupId, GroupName, AlertType), but got {columns.Length}. Skipping line.");
@@ -217,8 +218,6 @@ namespace Tailgrab.Configuration
                     string groupId = columns[0].Trim().Trim('"');
                     string groupName = columns[1].Trim().Trim('"');
                     string groupAlert = columns[2].Trim().Trim('"');
-
-                    logger.Info(columns);
 
                     if (string.IsNullOrWhiteSpace(groupId))
                     {
@@ -240,7 +239,7 @@ namespace Tailgrab.Configuration
                     try
                     {
                         // Fetch the GroupInfo record
-                        GroupInfo? groupInfo = _serviceRegistry.GetPlayerManager().AddUpdateGroupFromVRC( groupId );
+                        GroupInfo? groupInfo = _serviceRegistry.GetPlayerManager().AddUpdateGroupFromVRC(groupId);
                         if (groupInfo == null)
                         {
                             logger.Debug($"Line {lineNumber}: Group ID '{groupId}' not found in database, skipping.");

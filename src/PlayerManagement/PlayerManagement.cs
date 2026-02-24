@@ -100,7 +100,7 @@ namespace Tailgrab.PlayerManagement
     {
         public string AvatarName { get; set; }
         public string? CreatedBy { get; set; }
-        public PlayerAvatar(string avatarName, string createdBy )
+        public PlayerAvatar(string avatarName, string createdBy)
         {
             AvatarName = avatarName;
             CreatedBy = createdBy;
@@ -131,7 +131,7 @@ namespace Tailgrab.PlayerManagement
         {
             get
             {
-                if ( _AlertMessage.Count() > 0)
+                if (_AlertMessage.Count() > 0)
                 {
                     return true;
                 }
@@ -143,7 +143,8 @@ namespace Tailgrab.PlayerManagement
         public string AlertColor { get; private set; } = "None";
         public AlertTypeEnum MaxAlertType { get; private set; } = AlertTypeEnum.None;
 
-        public string AlertMessage { 
+        public string AlertMessage
+        {
             get
             {
                 string message = "";
@@ -341,7 +342,7 @@ namespace Tailgrab.PlayerManagement
             try
             {
                 Player? player = GetPlayerByDisplayName(displayName);
-                if (player != null )
+                if (player != null)
                 {
                     PlayerChanged?.Invoke(null, new PlayerChangedEventArgs(changeType, player));
                 }
@@ -514,7 +515,7 @@ namespace Tailgrab.PlayerManagement
         public Player? AddPlayerEventByDisplayName(string displayName, PlayerEvent.EventType eventType, string eventDescription)
         {
 
-            if(userIdByDisplayName.TryGetValue(displayName, out string? userId))
+            if (userIdByDisplayName.TryGetValue(displayName, out string? userId))
             {
                 return AddPlayerEventByUserId(userId, eventType, eventDescription);
             }
@@ -567,7 +568,7 @@ namespace Tailgrab.PlayerManagement
             // Check Avatar IDs 
         }
 
-        public PlayerAvatar UpdatePlayerAvatar( string avatarName, string uploadedBy)
+        public PlayerAvatar UpdatePlayerAvatar(string avatarName, string uploadedBy)
         {
 
             if (PlayerAvatarByName.TryGetValue(avatarName, out PlayerAvatar? playerAvatar))
@@ -632,7 +633,7 @@ namespace Tailgrab.PlayerManagement
                     var ollamaClient = serviceRegistry.GetOllamaAPIClient();
                     if (ollamaClient != null)
                     {
-                        string? evaluated = await ollamaClient.ClassifyImageList(userId, inventoryId, new List<string>{ itemUrl, itemContent });
+                        string? evaluated = await ollamaClient.ClassifyImageList(userId, inventoryId, new List<string> { itemUrl, itemContent });
                         if (evaluated != null)
                         {
                             aiEvaluation = EvaluateImage(evaluated) ?? "OK";
@@ -721,7 +722,7 @@ namespace Tailgrab.PlayerManagement
                         string aiEvaluation = "OK";
                         var ollamaClient = serviceRegistry.GetOllamaAPIClient();
                         if (ollamaClient != null)
-                        {                            
+                        {
                             List<string> imageUrls = new List<string>();
                             imageUrls.Add(printInfo.Files.Image);
                             evaluated = await ollamaClient.ClassifyImageList(printInfo.OwnerId, printInfo.Id, imageUrls);
@@ -731,13 +732,13 @@ namespace Tailgrab.PlayerManagement
                                 logger.Info($"Ollama classification for inventory item {printInfo.Id}: {aiEvaluation}: {evaluated}");
                                 if (!aiEvaluation.Equals("OK"))
                                 {
-                                    player = AddPlayerEventByUserId(printInfo.OwnerId, PlayerEvent.EventType.Print, $"AI Evaluation: Print {printId} was classified {aiEvaluation}");                                    
+                                    player = AddPlayerEventByUserId(printInfo.OwnerId, PlayerEvent.EventType.Print, $"AI Evaluation: Print {printId} was classified {aiEvaluation}");
                                     player?.AddAlertMessage(AlertClassEnum.Print, AlertTypeEnum.Nuisance, "Yellow", $"{aiEvaluation}");
                                 }
                             }
                         }
                         player?.PrintData[printId] = new PlayerPrint(printInfo, evaluated ?? "Not Evaluated", aiEvaluation);
-                    }                    
+                    }
                 }
             }
         }
