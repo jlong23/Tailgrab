@@ -1,7 +1,12 @@
-﻿namespace Tailgrab.Common
+﻿using System.IO;
+
+namespace Tailgrab.Common
 {
     public static class CommonConst
     {
+
+        public static string APPLICATION_LOCAL_DATA_PATH = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Tailgrab" );
+        public const string APPLICATION_LOCAL_DATABASE = "tailgrab.db";
         public const string ApplicationName = "Tailgrab";
         public const string CompanyName = "DeviousFox";
         public const string ConfigRegistryPath = "Software\\DeviousFox\\Tailgrab\\Config";

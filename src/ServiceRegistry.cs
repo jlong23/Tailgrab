@@ -1,9 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using NLog;
+using System.IO;
 using Tailgrab.AvatarManagement;
 using Tailgrab.Clients.Ollama;
 using Tailgrab.Clients.VRChat;
+using Tailgrab.Common;
 using Tailgrab.Models;
 using Tailgrab.PlayerManagement;
 
@@ -25,29 +27,40 @@ namespace Tailgrab
 
         public async void StartAllServices()
         {
-            logger.Info("Starting all services...");
+            try
+            {
+                logger.Info("Starting all services...");
 
-            logger.Info("Starting dbContext...");
+                logger.Info("Starting dbContext...");
 
-            services.AddDbContext<TailgrabDBContext>(options => options.UseSqlite("Data Source=./data/tailgrab.db"));
-            IServiceProvider serviceProvider = services.BuildServiceProvider();
+                // Define directory: %LOCALAPPDATA%\YourAppName
+                string dbFolder = Path.Combine(CommonConst.APPLICATION_LOCAL_DATA_PATH, "data");
+                string dbPath = Path.Combine(dbFolder, CommonConst.APPLICATION_LOCAL_DATABASE);
 
-            dbContext = serviceProvider.GetService<TailgrabDBContext>();
-            dbContext?.Database.EnsureCreated();
+                services.AddDbContext<TailgrabDBContext>(options => options.UseSqlite($"Data Source={dbPath}"));
+                IServiceProvider serviceProvider = services.BuildServiceProvider();
 
-            logger.Info("Starting VR Chat API Client...");
-            await vrcAPIClient.Initialize();
+                dbContext = serviceProvider.GetService<TailgrabDBContext>();
+                dbContext?.Database.EnsureCreated();
 
-            logger.Info("Starting OLLama API Client...");
-            ollamaAPIClient = new OllamaClient(this);
+                logger.Info("Starting VR Chat API Client...");
+                await vrcAPIClient.Initialize();
 
-            logger.Info("Starting Avatar Manager...");
-            avatarManager = new AvatarManagementService(this);
+                logger.Info("Starting OLLama API Client...");
+                ollamaAPIClient = new OllamaClient(this);
 
-            logger.Info("Starting Player Manager...");
-            playerManager = new PlayerManager(this);
+                logger.Info("Starting Avatar Manager...");
+                avatarManager = new AvatarManagementService(this);
 
-            logger.Info("All services started.");
+                logger.Info("Starting Player Manager...");
+                playerManager = new PlayerManager(this);
+
+                logger.Info("All services started.");
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex);
+            }
         }
 
         public VRChatClient GetVRChatAPIClient()

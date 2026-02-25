@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
+using Tailgrab.Common;
 
 namespace Tailgrab.Models;
 
@@ -16,8 +17,12 @@ public class TailgrabContextFactory : IDesignTimeDbContextFactory<TailgrabDBCont
 {
     public TailgrabDBContext CreateDbContext(string[] args)
     {
+        // Define directory: %LOCALAPPDATA%\YourAppName
+        string dbFolder = Path.Combine(CommonConst.APPLICATION_LOCAL_DATA_PATH, "data");
+        string dbPath = Path.Combine(dbFolder, CommonConst.APPLICATION_LOCAL_DATABASE);
+
         var optionsBuilder = new DbContextOptionsBuilder<TailgrabDBContext>();
-        optionsBuilder.UseSqlite("Data Source=./Resources/tailgrab-dev.sqlite");
+        optionsBuilder.UseSqlite($"Data Source={dbPath}");
 
         return new TailgrabDBContext(optionsBuilder.Options);
     }
@@ -36,13 +41,11 @@ public partial class TailgrabDBContext : DbContext
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         // Define directory: %LOCALAPPDATA%\YourAppName
-        string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-        string dbFolder = Path.Combine(appDataPath, "Tailgrab", "data");
+        string dbFolder = Path.Combine(CommonConst.APPLICATION_LOCAL_DATA_PATH, "data");
+        string dbPath = Path.Combine(dbFolder, CommonConst.APPLICATION_LOCAL_DATABASE);
 
         // Ensure directory exists
         Directory.CreateDirectory(dbFolder);
-
-        string dbPath = Path.Combine(dbFolder, "tailgrab.db");
 
         // Configure SQLite
         optionsBuilder.UseSqlite($"Data Source={dbPath}");

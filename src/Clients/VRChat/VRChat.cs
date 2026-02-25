@@ -37,7 +37,8 @@ namespace Tailgrab.Clients.VRChat
                     return;
                 }
 
-                string cookiePath = Path.Combine(Directory.GetCurrentDirectory(), "cookies.json");
+                //string cookiePath = Path.Combine(Directory.GetCurrentDirectory(), "cookies.json");
+                string cookiePath = Path.Combine(CommonConst.APPLICATION_LOCAL_DATA_PATH, "cookies.json");
 
                 // Try to load cookies from disk and use them if they are present and not expired
                 List<Cookie>? loadedCookies = LoadValidCookiesFromFile(cookiePath);

@@ -2,6 +2,7 @@ using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 using Tailgrab.PlayerManagement;
+using Tailgrab.Common;
 
 namespace Tailgrab.LineHandler;
 
@@ -22,7 +23,8 @@ public class PenNetworkHandler : AbstractLineHandler
 
         logger.Info($"** Pen Network Id Handler:  Regular Expression: {Pattern}");
 
-        using (FileStream fs = new FileStream("./pen-network-id.csv", FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+        string penNetworkFilePath = Path.Combine(CommonConst.APPLICATION_LOCAL_DATA_PATH, "pen-network-id.csv");
+        using (FileStream fs = new FileStream(penNetworkFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
         using (StreamReader sr = new StreamReader(fs, Encoding.UTF8))
         {
             Console.WriteLine($"Loading Pen Network ID mappings...");

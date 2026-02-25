@@ -7,7 +7,6 @@ using System.Text;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Media;
-using Tailgrab;
 using Tailgrab.Clients.VRChat;
 using Tailgrab.Common;
 using Tailgrab.Configuration;
@@ -15,6 +14,7 @@ using Tailgrab.LineHandler;
 using Tailgrab.Models;
 using Tailgrab.PlayerManagement;
 
+namespace Tailgrab;
 
 public class FileTailer
 {
@@ -45,6 +45,104 @@ public class FileTailer
     static Logger logger = LogManager.GetCurrentClassLogger();
     static ServiceRegistry? _serviceRegistry;
 
+
+    /// <summary>
+    /// Watch the VRChat log directory by default and process logs.
+    /// Show the TailgrabPanel UI on the STA thread before continuing to watch files.
+    /// </summary>
+    [STAThread]
+    public static void Main(string[] args)
+    {
+        //Early in your program do something like this:
+        NLog.GlobalDiagnosticsContext.Set("StartTime", DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss"));
+        string configFilePath = Path.Combine(CommonConst.APPLICATION_LOCAL_DATA_PATH, "NLog.config");
+        LogManager.Setup().LoadConfigurationFromFile(configFilePath);
+
+        // Basic command line parsing:
+        // -l <FilePath>    : use explicit log folder/file path
+        // -clear           : remove application registry settings and exit
+        // -backup          : create a backup of the database and exit
+        string? explicitPath = null;
+        bool clearRegistry = false;
+        bool upgrade = false;
+        bool backup = false;
+        for (int i = 0; i < args.Length; i++)
+        {
+            var a = args[i];
+            if (string.Equals(a, "-l", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+            {
+                explicitPath = args[i + 1];
+                i++;
+            }
+            else if (string.Equals(a, "-clear", StringComparison.OrdinalIgnoreCase))
+            {
+                clearRegistry = true;
+            }
+            else if (string.Equals(a, "-backup", StringComparison.OrdinalIgnoreCase))
+            {
+                backup = true;
+            }
+            else if (string.Equals(a, "-upgrade", StringComparison.OrdinalIgnoreCase))
+            {
+                upgrade = true;
+            }
+        }
+
+        if (clearRegistry)
+        {
+            DeleteTailgrabRegistrySettings();
+
+            // Exit application after clearing settings
+            return;
+        }
+
+        _serviceRegistry = new ServiceRegistry();
+        _serviceRegistry.StartAllServices();
+
+        if (upgrade)
+        {
+            UpgradeApplication(_serviceRegistry);
+        }
+
+        if (backup)
+        {
+            CreateDatabaseBackup();
+
+            // Exit application after creating backup
+            return;
+        }
+
+        string filePath = GetLogsPath(args, explicitPath);
+        if (!Directory.Exists(filePath))
+        {
+            logger.Info($"Missing VRChat log directory at '{filePath}'");
+            return;
+        }
+
+        ConfigurationManager configurationManager = new ConfigurationManager(_serviceRegistry);
+        configurationManager.LoadLineHandlersFromConfig(HandlerList);
+
+        // Start the watcher task on a background thread so it doesn't block the STA UI thread
+        logger.Info($"Starting file watcher and showing UI for: '{filePath}'");
+        _ = Task.Run(() => WatchPath(filePath));
+
+        // Start the Amplitude Cache watcher task on a background thread
+        string ampPath = VRChatAmplitudePath + Path.DirectorySeparatorChar;
+        logger.Info($"Starting Amplitude Cache watcher for: '{ampPath}'");
+        _ = Task.Run(() => WatchAmpCache(ampPath, _serviceRegistry));
+
+        AvatarBosGistListManager avatarGistMgr = new AvatarBosGistListManager(_serviceRegistry);
+        _ = Task.Run(() => avatarGistMgr.ProcessAvatarGistList());
+
+        GroupBosGistListManager groupGistMgr = new GroupBosGistListManager(_serviceRegistry);
+        _ = Task.Run(() => groupGistMgr.ProcessGroupGistList());
+
+        //SyncAvatarModerations(_serviceRegistry);
+
+        BuildAppWindow(_serviceRegistry);
+
+        // When the window closes, allow Main to complete. The watcher task will be abandoned; if desired add cancellation.
+    }
 
     /// <summary>
     /// Threaded tailing of a file, reading new lines as they are added.
@@ -227,105 +325,6 @@ public class FileTailer
 
         // Keep the application running to monitor changes
         await Task.Delay(Timeout.Infinite);
-    }
-
-    /// <summary>
-    /// Watch the VRChat log directory by default and process logs.
-    /// Show the TailgrabPanel UI on the STA thread before continuing to watch files.
-    /// </summary>
-    [STAThread]
-    public static void Main(string[] args)
-    {
-        //Early in your program do something like this:
-        NLog.GlobalDiagnosticsContext.Set("StartTime", DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss"));
-
-
-        // Basic command line parsing:
-        // -l <FilePath>    : use explicit log folder/file path
-        // -clear           : remove application registry settings and exit
-        // -backup          : create a backup of the database and exit
-        string? explicitPath = null;
-        bool clearRegistry = false;
-        bool upgrade = false;
-        bool backup = false;
-        for (int i = 0; i < args.Length; i++)
-        {
-            var a = args[i];
-            if (string.Equals(a, "-l", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
-            {
-                explicitPath = args[i + 1];
-                i++;
-            }
-            else if (string.Equals(a, "-clear", StringComparison.OrdinalIgnoreCase))
-            {
-                clearRegistry = true;
-            }
-            else if (string.Equals(a, "-backup", StringComparison.OrdinalIgnoreCase))
-            {
-                backup = true;
-            }
-            else if (string.Equals(a, "-upgrade", StringComparison.OrdinalIgnoreCase))
-            {
-                upgrade = true;
-            }
-        }
-
-        if (clearRegistry)
-        {
-            DeleteTailgrabRegistrySettings();
-
-            // Exit application after clearing settings
-            return;
-        }
-
-        CreateResourceDirectory();
-
-        _serviceRegistry = new ServiceRegistry();
-        _serviceRegistry.StartAllServices();
-
-        if (upgrade)
-        {
-            UpgradeApplication(_serviceRegistry);
-        }
-
-        if (backup)
-        {
-            CreateDatabaseBackup();
-
-            // Exit application after creating backup
-            return;
-        }
-
-        string filePath = GetLogsPath(args, explicitPath);
-        if (!Directory.Exists(filePath))
-        {
-            logger.Info($"Missing VRChat log directory at '{filePath}'");
-            return;
-        }
-
-        ConfigurationManager configurationManager = new ConfigurationManager(_serviceRegistry);
-        configurationManager.LoadLineHandlersFromConfig(HandlerList);
-
-        // Start the watcher task on a background thread so it doesn't block the STA UI thread
-        logger.Info($"Starting file watcher and showing UI for: '{filePath}'");
-        _ = Task.Run(() => WatchPath(filePath));
-
-        // Start the Amplitude Cache watcher task on a background thread
-        string ampPath = VRChatAmplitudePath + Path.DirectorySeparatorChar;
-        logger.Info($"Starting Amplitude Cache watcher for: '{ampPath}'");
-        _ = Task.Run(() => WatchAmpCache(ampPath, _serviceRegistry));
-
-        AvatarBosGistListManager avatarGistMgr = new AvatarBosGistListManager(_serviceRegistry);
-        _ = Task.Run(() => avatarGistMgr.ProcessAvatarGistList());
-
-        GroupBosGistListManager groupGistMgr = new GroupBosGistListManager(_serviceRegistry);
-        _ = Task.Run(() => groupGistMgr.ProcessGroupGistList());
-
-        //SyncAvatarModerations(_serviceRegistry);
-
-        BuildAppWindow(_serviceRegistry);
-
-        // When the window closes, allow Main to complete. The watcher task will be abandoned; if desired add cancellation.
     }
 
     private static void UpgradeApplication(ServiceRegistry serviceRegistry)
@@ -520,33 +519,6 @@ public class FileTailer
         catch (Exception ex)
         {
             logger.Error(ex, "Failed to create database backup");
-        }
-    }
-
-    private static void CreateResourceDirectory()
-    {
-        // Ensure Resources/tailgrab.ico is present in the application folder. If missing, write a small embedded PNG as the icon file.
-        try
-        {
-            var dataDir = Path.Combine(AppContext.BaseDirectory, "data");
-            Directory.CreateDirectory(dataDir);
-
-            var resourcesDir = Path.Combine(AppContext.BaseDirectory, "Resources");
-            Directory.CreateDirectory(resourcesDir);
-
-            var iconPath = Path.Combine(resourcesDir, "tailgrab.ico");
-            if (!File.Exists(iconPath))
-            {
-                // A tiny 1x1 PNG (transparent). We'll write it to the .ico path so WPF can load it as an ImageSource.
-                var base64Png = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAAWgmWQ0AAAAASUVORK5CYII=";
-                var bytes = Convert.FromBase64String(base64Png);
-                File.WriteAllBytes(iconPath, bytes);
-                logger.Info($"Wrote placeholder icon to: {iconPath}");
-            }
-        }
-        catch (Exception ex)
-        {
-            logger.Warn(ex, "Failed to ensure Resources/tailgrab.ico exists");
         }
     }
 
