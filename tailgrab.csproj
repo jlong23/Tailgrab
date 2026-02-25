@@ -7,7 +7,7 @@
     <UseWindowsForms>true</UseWindowsForms>
     <UseWPF>true</UseWPF>
     <Nullable>enable</Nullable>
-    <ApplicationIcon>src\Resources\tailgrab_large.ico</ApplicationIcon>
+    <ApplicationIcon>src\Resources\tailgrab.ico</ApplicationIcon>
     
     <!-- Read build number from file -->
     <BuildNumberFile>$(MSBuildProjectDirectory)\BuildNumber.txt</BuildNumberFile>
@@ -17,6 +17,10 @@
     <AssemblyVersion>1.1.0.$(BuildNumber)</AssemblyVersion>
     <FileVersion>1.1.0.$(BuildNumber)</FileVersion>
     <InformationalVersion>1.1.0.$(BuildNumber)</InformationalVersion>
+    <PackageProjectUrl>https://github.com/jlong23/Tailgrab</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RepositoryUrl>https://github.com/jlong23/Tailgrab</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
   </PropertyGroup>
 
   <ItemGroup>
@@ -45,20 +49,6 @@
     <Content Remove="C:\Users\jlong\.nuget\packages\microsoft.codeanalysis.workspaces.msbuild\4.14.0\contentFiles\any\any\BuildHost-net472\tr\System.CommandLine.resources.dll" />
     <Content Remove="C:\Users\jlong\.nuget\packages\microsoft.codeanalysis.workspaces.msbuild\4.14.0\contentFiles\any\any\BuildHost-net472\zh-Hans\System.CommandLine.resources.dll" />
     <Content Remove="C:\Users\jlong\.nuget\packages\microsoft.codeanalysis.workspaces.msbuild\4.14.0\contentFiles\any\any\BuildHost-net472\zh-Hant\System.CommandLine.resources.dll" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Remove="src\Resources\tailgrab.ico" />
-    <None Remove="src\Resources\tailgrab.png" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Include="src\Resources\tailgrab.ico" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Include="src\Resources\tailgrab.png" />
-    <EmbeddedResource Include="src\Resources\tailgrab.ico" />
   </ItemGroup>
 
   <ItemGroup>
@@ -115,6 +105,24 @@
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <TargetPath>sounds\%(RecursiveDir)%(Filename)%(Extension)</TargetPath>
     </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="src\Resources\tailgrab.ico">
+		<CopyToOutputDirectory>PreserverNewest</CopyToOutputDirectory>
+		<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+		<TargetPath>%(Filename)%(Extension)</TargetPath>
+	</Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Update="src\Resources\tailgrab.ico">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
   <!-- Increment build number for Release builds and Publish -->
