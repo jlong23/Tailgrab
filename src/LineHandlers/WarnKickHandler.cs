@@ -31,8 +31,12 @@ public class WarnKickHandler : AbstractLineHandler
             {
                 logger.Info($"{COLOR_PREFIX}User Moderation : {userName} to {action}{COLOR_RESET.GetAnsiEscape()}");
             }
-
-            _serviceRegistry.GetPlayerManager().AddPlayerEventByDisplayName(userName, PlayerEvent.EventType.Moderation, $"User has been {action}.");
+            
+            Player? player = _serviceRegistry.GetPlayerManager().AddPlayerEventByDisplayName(userName, PlayerEvent.EventType.Moderation, $"User has been {action}.");
+            if (player != null)
+            {
+                player.AddAlertMessage(AlertClassEnum.Profile, AlertTypeEnum.Nuisance, "Yellow", action);
+            }
 
             ExecuteActions();
             return true;
