@@ -1,4 +1,5 @@
 using NLog;
+using System.Security.Cryptography.Pkcs;
 using System.Text;
 using Tailgrab.Clients.VRChat;
 using Tailgrab.Common;
@@ -148,6 +149,16 @@ namespace Tailgrab.PlayerManagement
             get
             {
                 string message = "";
+
+                _AlertMessage.Sort((p1, p2 ) =>
+                {
+                    int result = p2.AlertType.CompareTo(p1.AlertType);
+                    if (result == 0)
+                    {
+                        result = p2.Timestamp.CompareTo(p1.Timestamp);
+                    }
+                    return result;
+                });
 
                 foreach (AlertMessage alert in _AlertMessage)
                 {
