@@ -3,7 +3,7 @@ VRChat Log Parser and Automation tool to help moderators manage trouble makers i
 
 Tailgrab will read the VRChat Local Game Log files in real time, parse them for events and then trigger actions based on the configuration of the application.  The application is designed to be flexible and allow for a wide range of actions to be triggered based on the events that are parsed from the VRChat logs and alert the user to elements that may be less than honest.
 
-[<img src="./docs/tailgrab_application.png" width="400" />](./tailgrab_application.png)
+[<img src="./docs/tailgrab_application.png" width="400" />](./docs/tailgrab_application.png)
 
 ## Features
 - Shows a live feed of user in the current instance with their VRChat Avatar and UserID
