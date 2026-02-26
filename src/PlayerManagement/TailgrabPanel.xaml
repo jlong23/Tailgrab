@@ -1357,12 +1357,75 @@ Title="Tailgrab Player Panel"
                                 </StackPanel>
                             </Grid>
                         </TabItem>
+                        <TabItem Header="Migration">
+                            <Grid Margin="12">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <TextBlock Grid.Row="0" 
+                                           Text="Import Avatar Database" 
+                                           FontSize="16" 
+                                           FontWeight="Bold" 
+                                           Margin="0,0,0,16"
+                                           Foreground="White"/>
+
+                                <!-- File Selection Section -->
+                                <GroupBox Header="Select prior version avatars.sqlite File" Grid.Row="1" Margin="0,0,0,12">
+                                    <Grid Margin="8">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <Label Grid.Row="0" Grid.Column="0" 
+                                               Content="File Path:" 
+                                               VerticalAlignment="Center" 
+                                               Margin="0,0,8,0"/>
+                                        <TextBox Grid.Row="0" Grid.Column="1" 
+                                                 Name="MigrationFilePathTextBox" 
+                                                 IsReadOnly="True" 
+                                                 VerticalAlignment="Center"
+                                                 Margin="0,0,8,0"/>
+                                        <Button Grid.Row="0" Grid.Column="2" 
+                                                Content="Browse..." 
+                                                Click="MigrationBrowse_Click" 
+                                                Width="100"
+                                                Padding="4,2"/>
+                                    </Grid>
+                                </GroupBox>
+
+                                <!-- Spacer -->
+                                <Grid Grid.Row="2"/>
+
+                                <!-- Action Buttons -->
+                                <StackPanel Grid.Row="3" 
+                                            Orientation="Horizontal" 
+                                            HorizontalAlignment="Center" 
+                                            Margin="0,12,0,0">
+                                    <Button Name="MigrationCancelButton" 
+                                            Content="Cancel" 
+                                            Width="120" 
+                                            Margin="0,0,12,0" 
+                                            Click="MigrationCancel_Click"/>
+                                    <Button Name="MigrationSubmitButton" 
+                                            Content="Submit" 
+                                            Width="120" 
+                                            Click="MigrationSubmit_Click"/>
+                                </StackPanel>
+                            </Grid>
+                        </TabItem>
                     </TabControl>
                 </TabItem>
-
             </TabControl>
-
-
         </Grid>
 
         <!-- Status Bar -->
