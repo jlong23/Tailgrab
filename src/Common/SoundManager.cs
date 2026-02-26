@@ -26,8 +26,7 @@ namespace Tailgrab.Common
         {
             try
             {
-                var baseDir = AppContext.BaseDirectory ?? Directory.GetCurrentDirectory();
-                var soundsDir = Path.Combine(baseDir, "sounds");
+                var soundsDir = Path.Combine(CommonConst.APPLICATION_LOCAL_DATA_PATH, "sounds");
                 if (Directory.Exists(soundsDir))
                 {
 
@@ -100,8 +99,7 @@ namespace Tailgrab.Common
             // Treat as filename under ./sounds
             try
             {
-                var baseDir = AppContext.BaseDirectory ?? Directory.GetCurrentDirectory();
-                var soundsDir = Path.Combine(baseDir, "sounds");
+                var soundsDir = Path.Combine(CommonConst.APPLICATION_LOCAL_DATA_PATH, "sounds");
 
                 string candidate = name;
                 // If an absolute or relative path was passed, respect it
