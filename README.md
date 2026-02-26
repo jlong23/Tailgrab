@@ -162,3 +162,4 @@ https://gist.githubusercontent.com/jlong23/2b051df849cabb4da273eaf98225ae4e/raw/
 
 [Config Tab, Alerts](./docs/Config_Alerts.md) Configure Alert Levels sounds and highlight colors.
 
+[Config Tab, Migrations](./docs/Config_Migrations.md) Migrate V1.0.9 Database to the new database.
