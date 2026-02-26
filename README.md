@@ -20,8 +20,17 @@ Tailgrab will read the VRChat Local Game Log files in real time, parse them for 
 
 ## Installation
 
-> [!NOTE]
-> I am learing how to build a Installer for the appliction, but for now you will need to download the latest release and extract the zip file to a location of your choice on your Windows machine.  Then you can run the ```tailgrab.exe``` application to start monitoring your VRChat instance.
+> [!IMPORTANT]
+> The new way is using the Installer/Uninstaller.  This will move all your configuration and data files to the new location of ```{UserProfile}/AppData/Local/Tailgrab/```; 
+> if you have made changes to the:
+>   - ```./config.json```
+>	- ```NLog.config``` -- Note that there is a change for logging write by 'Session Start Time'
+>	- ```pen-network-id.csv``` 
+> Then they will need to be move to the new location of ```{UserProfile}/AppData/Local/Tailgrab/``` after the installation.  
+>	- If you have made changes to the ```./sounds/*``` you will need to move to the sounds to the ```{UserProfile}/AppData/Local/Tailgrab/sounds/``` after the installation.
+>   - There is new settings for alert sounds per type and severity, so you may want to configure those in the Config->Alerts.
+>	- The database file structure has changed in the new version, so there is a new Config->Migration Tab to load all the old data from the old database file to the new database file.  You can run this migration after you have moved your old database file to the new location and pointed the application to it in the Config->Secrets Tab.  Once you have run the migration, you may want to set the severity of all your existing Avatar and Group entries to the new Alert Levels that have been added in the new version, as the old version only had a single 'Alert' level for Avatars and Groups.  You can do this in bulk with an SQL update statement like ```UPDATE AvatarInfo SET alertType = 1 WHERE alertType > 0;``` for Avatars and ```UPDATE GroupInfo SET alertType = 1 WHERE alertType > 0;``` for Groups, this will set all your existing entries to the new 'Watch' level, you can then go through and adjust the levels as needed for your use case.
+> Don't forget to save on each page and restart the application.
 
 ### New Install
 
@@ -45,6 +54,30 @@ Tailgrab will read the VRChat Local Game Log files in real time, parse them for 
 1. Run the ```tailgrab.exe -upgrade``` application to start any database upgrades.
 1. Configure any new Secrets and other configuration values that may be needed for new features added since your last version.
 1. Restart the application with ```tailgrab.exe``` to start monitoring your VRChat instance with the new version of TailGrab.
+
+
+### Where is everything now
+
+The Application Folder is now under ```\Program Files (x86)\Devious Fox Enterprises\Tailgrab```; this is where the application executable and all the support DLLs are stored.  You can use the Uninstaller to remove the application as needed.
+
+Your configuration and data files are now stored under ```{UserProfile}/AppData/Local/Tailgrab/```; 
+
+```
+...\AppData\
+      Local\
+         Tailgrab\
+            config.json
+            pen-network-id.csv
+            NLog.config
+            sounds\
+               alert_sound.wav
+               alert_sound_2.wav
+               alert_sound_3.wav
+            data\
+               tailgrab.db
+			logs\
+               tailgrab_2026-02-28_12-00-00.log
+```
 
 ## Configuration
 [Application Config](./docs/Config_Application.md) for details on how to configure the application to connect to API services.
@@ -74,11 +107,11 @@ This will remove all stored configuration and secret values from the Windows Reg
 
 By default TailGrab will look for VRChat log files in the default location of:
 
-```YourUserHome\AppData\LocalLow\VRChat\VRChat\```
+```<YourUserHome>\AppData\LocalLow\VRChat\VRChat\```
 
 This can be overridden by passing the full path to the VRChat log files as the first argument to the application.
 
-```.\\tailgrab.exe D:\MyVRChatLogs\```
+```.\tailgrab.exe -l D:\MyVRChatLogs\```
 
 ### Watching TailGrab Application Logs
 
