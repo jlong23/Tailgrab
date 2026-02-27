@@ -163,27 +163,27 @@ namespace Tailgrab.PlayerManagement
                     if (elapsed.TotalDays >= 365)
                     {
                         double years = elapsed.TotalDays / 365.25; // Account for leap years
-                        return $"{years:F1}y";
+                        return $"{years:F1}Y";
                     }
                     else if( elapsed.TotalDays >= 30)
                     {
                         double months = elapsed.TotalDays / 30.44; // Average days per month
-                        return $"{months:F1}m";
+                        return $"{months:F1}M";
                     }
                     else if (elapsed.TotalDays >= 7)
                     {
                         double weeks = elapsed.TotalDays / 7;
-                        return $"{weeks:F1}w";
+                        return $"{weeks:F1}W";
                     }
                     else if (elapsed.TotalDays >= 1)
                     {
                         double days = elapsed.TotalDays;
-                        return $"{days:F1}d";
+                        return $"{days:F1}D";
                     }
                     else if (elapsed.TotalDays < 1)
                     {
                         double hours = elapsed.Hours;
-                        return $"{hours:F1}h";
+                        return $"{hours:F1}H";
                     }
                 }
                 catch
