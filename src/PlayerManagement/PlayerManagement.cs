@@ -1,5 +1,5 @@
 using NLog;
-using System.Security.Cryptography.Pkcs;
+using System.ComponentModel;
 using System.Text;
 using Tailgrab.Clients.VRChat;
 using Tailgrab.Common;
@@ -108,8 +108,15 @@ namespace Tailgrab.PlayerManagement
         }
     }
 
-    public class Player
+    public class Player : INotifyPropertyChanged
     {
+        public event PropertyChangedEventHandler? PropertyChanged;
+
+        protected virtual void OnPropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
         public string UserId { get; set; }
         public string DisplayName { get; set; }
         public string AvatarName { get; set; }
@@ -125,7 +132,69 @@ namespace Tailgrab.PlayerManagement
         public Dictionary<string, PlayerPrint> PrintData = new Dictionary<string, PlayerPrint>();
         public string? UserBio { get; set; }
         public string? AIEval { get; set; }
+
         public List<AlertMessage> _AlertMessage = new List<AlertMessage>();
+
+        private DateOnly? _dateJoined;
+        public DateOnly? DateJoined
+        {
+            get => _dateJoined;
+            set
+            {
+                if (_dateJoined != value)
+                {
+                    _dateJoined = value;
+                    OnPropertyChanged(nameof(DateJoined));
+                    OnPropertyChanged(nameof(ProfileElapsedTime));
+                }
+            }
+        }
+
+        public string ProfileElapsedTime
+        {
+            get
+            {
+                try
+                {
+                    DateTime joinDate = DateTime.Parse(_dateJoined.ToString() ?? new DateTime().ToString());
+                    TimeSpan elapsed = DateTime.Now - joinDate;
+
+                    // If >= 1 year, show years
+                    if (elapsed.TotalDays >= 365)
+                    {
+                        double years = elapsed.TotalDays / 365.25; // Account for leap years
+                        return $"{years:F1}y";
+                    }
+                    else if( elapsed.TotalDays >= 30)
+                    {
+                        double months = elapsed.TotalDays / 30.44; // Average days per month
+                        return $"{months:F1}m";
+                    }
+                    else if (elapsed.TotalDays >= 7)
+                    {
+                        double weeks = elapsed.TotalDays / 7;
+                        return $"{weeks:F1}w";
+                    }
+                    else if (elapsed.TotalDays >= 1)
+                    {
+                        double days = elapsed.TotalDays;
+                        return $"{days:F1}d";
+                    }
+                    else if (elapsed.TotalDays < 1)
+                    {
+                        double hours = elapsed.Hours;
+                        return $"{hours:F1}h";
+                    }
+                }
+                catch
+                {
+                    return "N/A";
+                }
+
+                return "N/A";
+            }
+        }
+
 
         // This goes away with the new alert system, but for now it is used to track if any of the watch types are active for a player
         public bool IsWatched
@@ -751,6 +820,52 @@ namespace Tailgrab.PlayerManagement
                         player?.PrintData[printId] = new PlayerPrint(printInfo, evaluated ?? "Not Evaluated", aiEvaluation);
                     }
                 }
+            }
+        }
+
+
+
+        public Player? UpdatePlayerUserFromVRCProfile(User profile, string profileHash)
+        {
+            if (profile != null)
+            {
+                TailgrabDBContext dbContext = serviceRegistry.GetDBContext();
+                Player? player = GetPlayerByUserId(profile.Id);
+                if (player != null)
+                {
+                    player.DateJoined = profile.DateJoined;
+                    logger.Info($"Updated UserInfo for user {profile.DisplayName} (ID: {profile.Id}) with DateJoined: {profile.DateJoined} and ProfileHash: {profileHash}; {player.ProfileElapsedTime}");
+                }
+
+                // Update or create UserInfo record with elapsed time
+                UserInfo? user = dbContext.UserInfos.Find(profile.Id);
+                if (user != null)
+                {
+                    user.DateJoined = profile.DateJoined;
+                    user.UpdatedAt = DateTime.UtcNow;
+                    user.LastProfileChecksum = profileHash;
+                    dbContext.UserInfos.Update(user);
+                }
+                else
+                {
+                    user = new UserInfo();
+                    user.DisplayName = profile.DisplayName;
+                    user.UserId = profile.Id;
+                    user.CreatedAt = DateTime.UtcNow;
+                    user.UpdatedAt = DateTime.UtcNow;
+                    user.DateJoined = profile.DateJoined;
+                    user.LastProfileChecksum = profileHash;
+                    dbContext.Add(user);
+                }
+                dbContext.SaveChanges();
+
+
+                return player;
+            }
+            else
+            {
+                logger.Warn($"Attempted to update player user info from VRC profile, but profile was null");
+                return null;
             }
         }
 

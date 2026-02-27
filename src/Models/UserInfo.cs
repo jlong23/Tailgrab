@@ -2,7 +2,6 @@
 #nullable disable
 using System;
 using System.Collections.Generic;
-using VRChat.API.Model;
 
 namespace Tailgrab.Models;
 
@@ -18,6 +17,10 @@ public partial class UserInfo
 
     public DateTime UpdatedAt { get; set; }
 
+    public DateOnly DateJoined { get; set; }
+
+    public string LastProfileChecksum { get; set; }
+
     public UserInfo()
     {
         CreatedAt = DateTime.UtcNow;
@@ -25,6 +28,6 @@ public partial class UserInfo
 
     public override string ToString()
     {
-        return $"UserInfo: {UserId}, DisplayName: {DisplayName}, ElapsedMinutes: {ElapsedMinutes}, CreatedAt: {CreatedAt}, UpdatedAt: {UpdatedAt}";
+        return $"UserInfo: UserId={UserId}, DisplayName={DisplayName}, ElapsedMinutes={ElapsedMinutes}, CreatedAt={CreatedAt}, UpdatedAt={UpdatedAt}, DateJoined={DateJoined}, LastProfileChecksum={LastProfileChecksum}";
     }
 }

@@ -114,9 +114,11 @@ namespace Tailgrab.Clients.Ollama
                             TailgrabDBContext dBContext = serviceRegistry.GetDBContext();
                             User profile = serviceRegistry.GetVRChatAPIClient().GetProfile(item.UserId);
                             List<LimitedUserGroups> userGroups = serviceRegistry.GetVRChatAPIClient().GetProfileGroups(item.UserId);
+
                             string fullProfile = $"DisplayName: {profile.DisplayName}\nStatusDesc: {profile.StatusDescription}\nPronowns: {profile.Pronouns}\nProfileBio: {profile.Bio}\n";
                             item.UserBio = fullProfile;
 
+                            serviceRegistry.GetPlayerManager().UpdatePlayerUserFromVRCProfile(profile, item.MD5Hash);
                             await GetUserGroupInformation(serviceRegistry, dBContext, userGroups, item);
 
                             // Wait for a short period before checking the queue again

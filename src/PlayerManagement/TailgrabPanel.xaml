@@ -88,7 +88,18 @@ Title="Tailgrab Player Panel"
                                         </GridViewColumn.Header>
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate>
-                                                <TextBlock Text="{Binding DisplayName}" TextWrapping="NoWrap"/>
+                                                <TextBlock Text="{Binding DisplayName}" />
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    
+                                    <GridViewColumn Width="50">
+                                        <GridViewColumn.Header>
+                                            <GridViewColumnHeader Content="Age" Tag="Age" Click="GridViewColumnHeader_Click"/>
+                                        </GridViewColumn.Header>
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding ProfileElapsedTime, Mode=OneWay}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
@@ -138,9 +149,9 @@ Title="Tailgrab Player Panel"
                                     </GridViewColumn>
 
                                     <!-- Actions column -->
-                                    <GridViewColumn Width="80">
+                                    <GridViewColumn Width="60">
                                         <GridViewColumn.Header>
-                                            <GridViewColumnHeader Content="Copy Profile" />
+                                            <GridViewColumnHeader Content="Copy" />
                                         </GridViewColumn.Header>
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate>
@@ -150,13 +161,13 @@ Title="Tailgrab Player Panel"
                                     </GridViewColumn>
 
                                     <!-- Actions column -->
-                                    <GridViewColumn Width="80">
+                                    <GridViewColumn Width="70">
                                         <GridViewColumn.Header>
-                                            <GridViewColumnHeader Content="Profile Rpt" />
+                                            <GridViewColumnHeader Content="Rpt" />
                                         </GridViewColumn.Header>
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate>
-                                                <Button Content="Report" Click="ReportPlayer_Click" Padding="4,2" ToolTip="{Binding AIEval}"/>
+                                                <Button Content="Report" Click="ReportPlayer_Click" Padding="4,2"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
@@ -252,8 +263,7 @@ Title="Tailgrab Player Panel"
                                         <Label Content="Report Reason:" FontWeight="Bold" Foreground="#FFE6E6E6"/>
                                         <ComboBox Name="OverlayProfileReportReasonComboBox" 
                                               DisplayMemberPath="DisplayName"
-                                              SelectedValuePath="Value"
-                                              SelectedIndex="0"/>
+                                              SelectedValuePath="Value"/>
                                     </StackPanel>
 
                                     <!-- Report Description -->
@@ -353,6 +363,17 @@ Title="Tailgrab Player Panel"
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
 
+                                    <GridViewColumn Width="50">
+                                        <GridViewColumn.Header>
+                                            <GridViewColumnHeader Content="Age" Tag="Age" Click="GridViewColumnHeader_Click"/>
+                                        </GridViewColumn.Header>
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding ProfileElapsedTime, Mode=OneWay}"/>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+
                                     <GridViewColumn Width="110">
                                         <GridViewColumn.Header>
                                             <GridViewColumnHeader Content="Avatar Name" Tag="AvatarName" Click="GridViewColumnHeader_Click"/>
@@ -398,9 +419,9 @@ Title="Tailgrab Player Panel"
                                     </GridViewColumn>
 
                                     <!-- Actions column -->
-                                    <GridViewColumn Width="80">
+                                    <GridViewColumn Width="60">
                                         <GridViewColumn.Header>
-                                            <GridViewColumnHeader Content="Copy Profile" />
+                                            <GridViewColumnHeader Content="Copy" />
                                         </GridViewColumn.Header>
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate>
@@ -410,9 +431,9 @@ Title="Tailgrab Player Panel"
                                     </GridViewColumn>
 
                                     <!-- Actions column -->
-                                    <GridViewColumn Width="80">
+                                    <GridViewColumn Width="70">
                                         <GridViewColumn.Header>
-                                            <GridViewColumnHeader Content="Profile Rpt" />
+                                            <GridViewColumnHeader Content="Rpt" />
                                         </GridViewColumn.Header>
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate>
@@ -498,8 +519,7 @@ Title="Tailgrab Player Panel"
                                         <Label Content="Report Reason:" FontWeight="Bold" Foreground="#FFE6E6E6"/>
                                         <ComboBox Name="ProfilePastReportReason" 
                                               DisplayMemberPath="DisplayName"
-                                              SelectedValuePath="Value"
-                                              SelectedIndex="0"/>
+                                              SelectedValuePath="Value"/>
                                     </StackPanel>
 
                                     <!-- Report Description -->
@@ -702,8 +722,7 @@ Title="Tailgrab Player Panel"
                                             <Label Content="Report Reason:" FontWeight="Bold" Foreground="#FFE6E6E6"/>
                                             <ComboBox Name="PrintOverlayReportReasonComboBox" 
                                                   DisplayMemberPath="DisplayName"
-                                                  SelectedValuePath="Value"
-                                                  SelectedIndex="0"/>
+                                                  SelectedValuePath="Value"/>
                                         </StackPanel>
 
                                         <!-- Report Description -->
@@ -923,8 +942,7 @@ Title="Tailgrab Player Panel"
                                             <Label Content="Report Reason:" FontWeight="Bold" Foreground="#FFE6E6E6"/>
                                             <ComboBox Name="OverlayReportReasonComboBox" 
                                                   DisplayMemberPath="DisplayName"
-                                                  SelectedValuePath="Value"
-                                                  SelectedIndex="0"/>
+                                                  SelectedValuePath="Value"/>
                                         </StackPanel>
 
                                         <!-- Report Description -->
@@ -1101,7 +1119,7 @@ Title="Tailgrab Player Panel"
                                         <DataGridTextColumn Header="Display Name" Binding="{Binding DisplayName}" SortMemberPath="DisplayName" Width="*" />
                                         <DataGridTextColumn Header="User ID" Binding="{Binding UserId}" SortMemberPath="UserId" Width="300" />
                                         <!-- DataGridTextColumn Header="Elapsed Minutes" Binding="{Binding ElapsedMinutes, StringFormat=N1}" SortMemberPath="ElapsedMinutes" Width="120" -->
-                                        <DataGridTextColumn Header="Elapsed Time" Binding="{Binding ElapsedMinutes, Converter={StaticResource MinutesToHoursMinutesConverter}}" SortMemberPath="ElapsedMinutes" Width="120">
+                                        <DataGridTextColumn Header="Elapsed Time (hh:mm)" Binding="{Binding ElapsedMinutes, Converter={StaticResource MinutesToHoursMinutesConverter}}" SortMemberPath="ElapsedMinutes" Width="120">
                                                 <DataGridTextColumn.ElementStyle>
                                                 <Style TargetType="TextBlock">
                                                     <Setter Property="HorizontalAlignment" Value="Right" />

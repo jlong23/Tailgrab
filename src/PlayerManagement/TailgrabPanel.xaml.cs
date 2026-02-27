@@ -2248,6 +2248,7 @@ namespace Tailgrab.PlayerManagement
         public string InstanceEndTime { get; private set; }
         public string Profile { get; private set; }
         public string AIEval { get; private set; }
+        public string ProfileElapsedTime { get; private set; } = "N/A";
         public bool IsWatched { get; set; } = false;
         public string History { get; set; } = string.Empty;
         public string AlertMessages { get; set; } = string.Empty;
@@ -2282,6 +2283,7 @@ namespace Tailgrab.PlayerManagement
             InstanceEndTime = p.InstanceEndTime.HasValue ? p.InstanceEndTime.Value.ToString("u") : string.Empty;
             Profile = p.UserBio ?? string.Empty;
             AIEval = p.AIEval ?? "Not Evaluated";
+            ProfileElapsedTime = p.ProfileElapsedTime;
             IsWatched = p.IsWatched;
             AlertMessages = p.AlertMessage;
             _AlertColor = p.AlertColor;
@@ -2306,6 +2308,7 @@ namespace Tailgrab.PlayerManagement
             if (InstanceEndTime != end) { InstanceEndTime = end; changed = true; }
             if (Profile != (p.UserBio ?? string.Empty)) { Profile = p.UserBio ?? string.Empty; changed = true; }
             if (AIEval != (p.AIEval ?? "Not Evaluated")) { AIEval = p.AIEval ?? "Not Evaluated"; changed = true; }
+            if (ProfileElapsedTime != p.ProfileElapsedTime) { ProfileElapsedTime = p.ProfileElapsedTime; changed = true; }
             if (IsWatched != p.IsWatched) { IsWatched = p.IsWatched; changed = true; }
             if (AlertMessages != p.AlertMessage) { AlertMessages = p.AlertMessage ?? string.Empty; changed = true; }
             if (_AlertColor != p.AlertColor) { _AlertColor = p.AlertColor; changed = true; }

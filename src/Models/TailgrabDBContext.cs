@@ -99,7 +99,6 @@ public partial class TailgrabDBContext : DbContext
             entity.ToTable("UserInfo");
 
             entity.Property(e => e.CreatedAt).IsRequired();
-            entity.Property(e => e.ElapsedMinutes).HasColumnName("elapsedHours");
         });
 
         modelBuilder.Entity<ImageEvaluation>(entity =>
