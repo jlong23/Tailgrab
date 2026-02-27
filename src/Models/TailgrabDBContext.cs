@@ -351,13 +351,21 @@ public partial class TailgrabDBContext : DbContext
     {
         string connectionString = $"Data Source={Path.Combine(AppContext.BaseDirectory, "data", "avatars.sqlite")}";
         string query = $"SELECT Count() FROM {tableName}";
+        try
+        {
+            using var connection = new SqliteConnection(connectionString);
+            connection.Open();
 
-        using var connection = new SqliteConnection(connectionString);
-        connection.Open();
+            using var command = new SqliteCommand(query, connection);
 
-        using var command = new SqliteCommand(query, connection);
+            return Convert.ToInt32(command.ExecuteScalar());
+        }
+        catch (Exception ex)
+        {
+            logger.Error(ex, $"Error reading {tableName} data for record count");
+            return 0;
+        }
 
-        return Convert.ToInt32(command.ExecuteScalar());
     }
 
     private Int32 MigrateAvatarInfo(string dataDir)
