@@ -13,12 +13,12 @@ namespace Tailgrab.Configuration
     public class AvatarBosGistListManager
     {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
-        private readonly ServiceRegistry _serviceRegistry;
+        private readonly AvatarManagementService avatarManager;
         private readonly HttpClient _httpClient;
 
-        public AvatarBosGistListManager(ServiceRegistry serviceRegistry)
+        public AvatarBosGistListManager(AvatarManagementService avatarManagement)
         {
-            _serviceRegistry = serviceRegistry ?? throw new ArgumentNullException(nameof(serviceRegistry));
+            avatarManager = avatarManagement;
             _httpClient = new HttpClient();
         }
 
@@ -188,7 +188,6 @@ namespace Tailgrab.Configuration
         private async Task<int> ProcessAvatarIdsAsync(string gistContent)
         {
             int processedCount = 0;
-            TailgrabDBContext dbContext = _serviceRegistry.GetDBContext();
 
             using (System.IO.StringReader reader = new System.IO.StringReader(gistContent))
             {
@@ -237,7 +236,7 @@ namespace Tailgrab.Configuration
 
                     QueuedAvatarWatch watchItem = new QueuedAvatarWatch(1, avatarId, alertType, lineNumber);
 
-                    _serviceRegistry.GetAvatarManager().EnqueueWatchAvatarForCheck(watchItem);
+                    avatarManager.EnqueueWatchAvatarForCheck(watchItem);
                     processedCount++;
                 }
             }

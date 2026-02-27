@@ -6,18 +6,21 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Tailgrab.Common;
 using Tailgrab.Models;
+using Tailgrab.PlayerManagement;
 
 namespace Tailgrab.Configuration
 {
     public class GroupBosGistListManager
     {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
-        private readonly ServiceRegistry _serviceRegistry;
         private readonly HttpClient _httpClient;
+        private readonly TailgrabDBContext dbContext;
+        private readonly PlayerManager playerManager;
 
-        public GroupBosGistListManager(ServiceRegistry serviceRegistry)
+        public GroupBosGistListManager(TailgrabDBContext tailgrabDBContext, PlayerManager management)
         {
-            _serviceRegistry = serviceRegistry ?? throw new ArgumentNullException(nameof(serviceRegistry));
+            dbContext = tailgrabDBContext;
+            playerManager = management;
             _httpClient = new HttpClient();
         }
 
@@ -187,7 +190,6 @@ namespace Tailgrab.Configuration
         private async Task<int> ProcessGroupIdsAsync(string gistContent)
         {
             int processedCount = 0;
-            TailgrabDBContext dbContext = _serviceRegistry.GetDBContext();
 
             using (System.IO.StringReader reader = new System.IO.StringReader(gistContent))
             {
@@ -239,7 +241,7 @@ namespace Tailgrab.Configuration
                     try
                     {
                         // Fetch the GroupInfo record
-                        GroupInfo? groupInfo = _serviceRegistry.GetPlayerManager().AddUpdateGroupFromVRC(groupId);
+                        GroupInfo? groupInfo = playerManager.AddUpdateGroupFromVRC(groupId);
                         if (groupInfo == null)
                         {
                             logger.Debug($"Line {lineNumber}: Group ID '{groupId}' not found in database, skipping.");

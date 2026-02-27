@@ -126,18 +126,12 @@ public class FileTailer
 
         // Start the watcher task on a background thread so it doesn't block the STA UI thread
         logger.Info($"Starting file watcher and showing UI for: '{filePath}'");
-        _ = Task.Run(() => WatchPath(filePath));
+        _ = Task.Run(() => WatchPath(filePath, _serviceRegistry));
 
         // Start the Amplitude Cache watcher task on a background thread
         string ampPath = VRChatAmplitudePath + Path.DirectorySeparatorChar;
         logger.Info($"Starting Amplitude Cache watcher for: '{ampPath}'");
         _ = Task.Run(() => WatchAmpCache(ampPath, _serviceRegistry));
-
-        AvatarBosGistListManager avatarGistMgr = new AvatarBosGistListManager(_serviceRegistry);
-        _ = Task.Run(() => avatarGistMgr.ProcessAvatarGistList());
-
-        GroupBosGistListManager groupGistMgr = new GroupBosGistListManager(_serviceRegistry);
-        _ = Task.Run(() => groupGistMgr.ProcessGroupGistList());
 
         //SyncAvatarModerations(_serviceRegistry);
 
@@ -221,7 +215,7 @@ public class FileTailer
     /// <summary>
     /// Watch and dispatch File Tailing.
     /// </summary>
-    public static async Task WatchPath(string path)
+    public static async Task WatchPath(string path, ServiceRegistry _serviceRegistry)
     {
         LogWatcher.Path = Path.GetDirectoryName(path)!;
         LogWatcher.Filter = Path.GetFileName("output_log*.txt");
@@ -270,7 +264,6 @@ public class FileTailer
         {
             /* ignore errors */
         }
-
 
         // Keep the application running to monitor changes
         await Task.Delay(Timeout.Infinite);

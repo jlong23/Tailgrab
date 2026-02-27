@@ -6,6 +6,7 @@ using Tailgrab.AvatarManagement;
 using Tailgrab.Clients.Ollama;
 using Tailgrab.Clients.VRChat;
 using Tailgrab.Common;
+using Tailgrab.Configuration;
 using Tailgrab.Models;
 using Tailgrab.PlayerManagement;
 
@@ -41,7 +42,12 @@ namespace Tailgrab
                 IServiceProvider serviceProvider = services.BuildServiceProvider();
 
                 dbContext = serviceProvider.GetService<TailgrabDBContext>();
-                dbContext?.Database.EnsureCreated();
+                if (dbContext == null)
+                {
+                    System.Windows.MessageBox.Show("Failed to initialize database context. Please check the application logs for details.", "Initialization Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                    throw new InvalidOperationException("TailgrabDBContext could not be resolved from the service provider.");
+                }
+                dbContext.Database.EnsureCreated();
 
                 logger.Info("Starting VR Chat API Client...");
                 await vrcAPIClient.Initialize();
@@ -54,6 +60,16 @@ namespace Tailgrab
 
                 logger.Info("Starting Player Manager...");
                 playerManager = new PlayerManager(this);
+
+                logger.Info("Starting Avatar GIST Manager...");
+                AvatarBosGistListManager avatarGistMgr = new AvatarBosGistListManager(avatarManager);
+                _ = Task.Run(() => avatarGistMgr.ProcessAvatarGistList());
+
+                logger.Info("Starting Group GIST Manager...");
+                GroupBosGistListManager groupGistMgr = new GroupBosGistListManager(dbContext, playerManager);
+                _ = Task.Run(() => groupGistMgr.ProcessGroupGistList());
+
+
 
                 logger.Info("All services started.");
             }

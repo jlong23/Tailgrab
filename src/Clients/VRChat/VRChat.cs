@@ -49,60 +49,76 @@ namespace Tailgrab.Clients.VRChat
                 if (loadedCookies != null && loadedCookies.Count > 0)
                 {
                     logger.Info("Loaded valid cookies from disk, attempting to use them for authentication...");
-                    // Try to call WithCookies via reflection (some SDKs expose it)
-                    var withCookiesMethod = builder.GetType()
-                        .GetMethods()
-                        .FirstOrDefault(m => m.Name == "WithCookies" && m.GetParameters().Length == 1);
+                    //// Try to call WithCookies via reflection (some SDKs expose it)
+                    //var withCookiesMethod = builder.GetType()
+                    //    .GetMethods()
+                    //    .FirstOrDefault(m => m.Name == "WithCookies" && m.GetParameters().Length == 1);
 
-                    if (withCookiesMethod != null)
+                    //if (withCookiesMethod != null)
+                    //{
+                    //    var result = withCookiesMethod.Invoke(builder, new object[] { loadedCookies });
+                    //    if (result is VRChatClientBuilder cb)
+                    //    {
+                    //        builder = cb;
+                    //    }
+                    //    else
+                    //    {
+                    //        // fallback to username/password if return type not expected
+                    //        builder = builder.WithUsername(username).WithPassword(password);
+                    //    }
+                    //}
+                    //else
+                    //{
+                    //    // no WithCookies method; fall back to username/password
+                    //    builder = builder.WithUsername(username).WithPassword(password);
+                    //}
+
+                    string authCookieValue = string.Empty;
+                    string twoFactorCookieValue = string.Empty;
+                    foreach (var cookie in loadedCookies)
                     {
-                        var result = withCookiesMethod.Invoke(builder, new object[] { loadedCookies });
-                        if (result is VRChatClientBuilder cb)
+                        if (cookie.Name == "auth")
                         {
-                            builder = cb;
+                            authCookieValue = cookie.Value;
                         }
-                        else
+                        else if (cookie.Name == "twoFactorAuth")
                         {
-                            // fallback to username/password if return type not expected
-                            builder = builder.WithUsername(username).WithPassword(password);
+                            twoFactorCookieValue = cookie.Value;
                         }
                     }
-                    else
-                    {
-                        // no WithCookies method; fall back to username/password
-                        builder = builder.WithUsername(username).WithPassword(password);
-                    }
+                    _vrchat = builder.WithAuthCookie(authCookieValue, twoFactorCookieValue).Build();
                 }
                 else
                 {
                     logger.Info("No valid cookies found on disk, falling back to username/password authentication.");
-                    builder = builder.WithUsername(username).WithPassword(password);
+                    _vrchat = builder.WithUsername(username).WithPassword(password).Build();
                 }
-
-                _vrchat = builder.Build();
 
                 var response = await _vrchat.Authentication.GetCurrentUserAsync();
-                if (response.RequiresTwoFactorAuth.Contains("emailOtp"))
+                if (response != null && response is CurrentUser ) 
                 {
-                    logger.Info("An verification code was sent to your email address!");
-                    logger.Info("Enter code: ");
-                    //string code = Console.ReadLine();
-                    string code = "1234";
-                    var otpResponse = await _vrchat.Authentication.Verify2FAEmailCodeAsync(new TwoFactorEmailCode(code));
+                    if (response.RequiresTwoFactorAuth != null && response.RequiresTwoFactorAuth.Contains("emailOtp"))
+                    {
+                        logger.Info("An verification code was sent to your email address!");
+                        logger.Info("Enter code: ");
+                        //string code = Console.ReadLine();
+                        string code = "1234";
+                        var otpResponse = await _vrchat.Authentication.Verify2FAEmailCodeAsync(new TwoFactorEmailCode(code));
+                    }
+                    else if (response.RequiresTwoFactorAuth != null && response.RequiresTwoFactorAuth.Contains("totp"))
+                    {
+                        var totp = new Totp(Base32Encoding.ToBytes(twoFactorSecret));
+                        string code = totp.ComputeTotp();
+
+                        var otpResponse = await _vrchat.Authentication.Verify2FAAsync(new TwoFactorAuthCode(code));
+                    }
+
+                    var currentUser = await _vrchat.Authentication.GetCurrentUserAsync();
+                    logger.Info($"Logged in as \"{currentUser.DisplayName}\"");
+                    var cookies = _vrchat.GetCookies();
+
+                    SaveCookiesToFile(cookiePath, cookies);
                 }
-                else if (response.RequiresTwoFactorAuth.Contains("totp"))
-                {
-                    var totp = new Totp(Base32Encoding.ToBytes(twoFactorSecret));
-                    string code = totp.ComputeTotp();
-
-                    var otpResponse = await _vrchat.Authentication.Verify2FAAsync(new TwoFactorAuthCode(code));
-                }
-
-                var currentUser = await _vrchat.Authentication.GetCurrentUserAsync();
-                logger.Info($"Logged in as \"{currentUser.DisplayName}\"");
-                var cookies = _vrchat.GetCookies();
-
-                SaveCookiesToFile(cookiePath, cookies);
             }
             catch (Exception ex)
             {
