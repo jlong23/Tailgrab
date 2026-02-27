@@ -45,6 +45,8 @@ public class FileTailer
     static Logger logger = LogManager.GetCurrentClassLogger();
     static ServiceRegistry? _serviceRegistry;
 
+    // At the class level, add a dictionary to track active tail tasks
+    static Dictionary<string, FileTailStatus> ActiveTailTasks = new Dictionary<string, FileTailStatus>();
 
     /// <summary>
     /// Watch the VRChat log directory by default and process logs.
@@ -147,19 +149,19 @@ public class FileTailer
     /// <summary>
     /// Threaded tailing of a file, reading new lines as they are added.
     /// </summary>
-    public static async Task TailFileAsync(string filePath)
+    public static async Task<FileTailStatus> TailFileAsync(string filePath)
     {
         if (OpenedFiles.Contains(filePath))
         {
-            return;
+            return null;
         }
 
+        var status = new FileTailStatus(filePath);
         logger.Info($"Tailing file: {filePath}");
 
         using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
         using (StreamReader sr = new StreamReader(fs, Encoding.UTF8))
         {
-
             // Start at the end of the file
             long lastMaxOffset = fs.Length;
             fs.Seek(lastMaxOffset, SeekOrigin.Begin);
@@ -167,7 +169,7 @@ public class FileTailer
             OpenedFiles.Add(filePath);
             WatchedFiles[filePath] = new FileWatchItem(lastMaxOffset);
 
-            while (true)
+            while (!status.IsCancellationRequested)
             {
                 // If the file size hasn't changed, wait
                 if (fs.Length == lastMaxOffset)
@@ -178,18 +180,21 @@ public class FileTailer
                         if (WatchedFiles[filePath].ElapsedTime >= 9000) // If we've been watching this file for 15 minutes without changes
                         {
                             logger.Info($"Timeout waiting for new lines in '{filePath}'");
-                            return;
+                            break;
                         }
                     }
 
-                    await Task.Delay(100); // Adjust delay as needed
+                    await Task.Delay(100, status.CancellationSource.Token).ConfigureAwait(false);
                     continue;
                 }
 
                 // Read and display new lines
                 string? line;
-                while ((line = await sr.ReadLineAsync()) != null)
+                while ((line = await sr.ReadLineAsync().ConfigureAwait(false)) != null)
                 {
+                    if (status.IsCancellationRequested)
+                        break;
+
                     foreach (ILineHandler handler in HandlerList)
                     {
                         if (handler.HandleLine(line))
@@ -197,6 +202,8 @@ public class FileTailer
                             break;
                         }
                     }
+
+                    status.IncrementLinesProcessed();
                 }
 
                 // Update the offset to the new end of the file
@@ -206,6 +213,9 @@ public class FileTailer
                 WatchedFiles.Remove(filePath);
             }
         }
+
+        logger.Info($"Stopped tailing file: {filePath}. Total lines processed: {status.LinesProcessed}");
+        return status;
     }
 
     /// <summary>
@@ -219,12 +229,20 @@ public class FileTailer
 
         LogWatcher.Created += async (source, e) =>
         {
-            await TailFileAsync(e.FullPath);
+            var status = await TailFileAsync(e.FullPath);
+            if (status != null)
+            {
+                ActiveTailTasks[e.FullPath] = status;
+            }
         };
 
         LogWatcher.Changed += async (source, e) =>
         {
-            await TailFileAsync(e.FullPath);
+            var status = await TailFileAsync(e.FullPath);
+            if (status != null)
+            {
+                ActiveTailTasks[e.FullPath] = status;
+            }
         };
 
         LogWatcher.EnableRaisingEvents = true;
@@ -238,7 +256,14 @@ public class FileTailer
             foreach (var f in existing)
             {
                 logger.Debug($"Found File to Tail: {f}");
-                _ = Task.Run(() => TailFileAsync(f));
+                _ = Task.Run(async () =>
+                {
+                    var status = await TailFileAsync(f);
+                    if (status != null)
+                    {
+                        ActiveTailTasks[f] = status;
+                    }
+                });
             }
         }
         catch
@@ -803,4 +828,35 @@ public class FileWatchItem
         StartingSize = startingSize;
         ElapsedTime = 0;
     }
+}
+
+public class FileTailStatus
+{
+    public string FilePath { get; }
+    public int LinesProcessed { get; private set; }
+    public DateTime? LastLineProcessedTime { get; private set; }
+    public DateTime StartTime { get; }
+    public CancellationTokenSource CancellationSource { get; }
+
+    public FileTailStatus(string filePath)
+    {
+        FilePath = filePath;
+        LinesProcessed = 0;
+        LastLineProcessedTime = null;
+        StartTime = DateTime.Now;
+        CancellationSource = new CancellationTokenSource();
+    }
+
+    public void IncrementLinesProcessed()
+    {
+        LinesProcessed++;
+        LastLineProcessedTime = DateTime.Now;
+    }
+
+    public void RequestCancellation()
+    {
+        CancellationSource.Cancel();
+    }
+
+    public bool IsCancellationRequested => CancellationSource.Token.IsCancellationRequested;
 }
