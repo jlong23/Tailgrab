@@ -9,6 +9,9 @@ Title="Tailgrab Player Panel"
         WindowStartupLocation="CenterOwner"
         UseLayoutRounding="True"
         TextOptions.TextFormattingMode="Display">
+    <Window.Resources>
+        <local:MinutesToHoursMinutesConverter x:Key="MinutesToHoursMinutesConverter"/>
+    </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
@@ -1046,9 +1049,6 @@ Title="Tailgrab Player Panel"
 
                                 <DataGrid Name="GroupDbGrid" Grid.Row="1" AutoGenerateColumns="False" CanUserSortColumns="True" IsReadOnly="False" ItemsSource="{Binding GroupDbView}" CellEditEnding="GroupDbGrid_CellEditEnding" Grid.ColumnSpan="2">
                                     <DataGrid.Columns>
-                                        <DataGridTextColumn Header="Group Name" Binding="{Binding GroupName}" SortMemberPath="GroupName" Width="*" />
-                                        <DataGridTextColumn Header="Group ID" Binding="{Binding GroupId}" SortMemberPath="GroupId" Width="300" />
-                                        <!-- IsBOS as template column: display Yes/No, edit with ComboBox -->
                                         <DataGridTemplateColumn Header="Alert" SortMemberPath="IsBos" Width="120">
                                             <DataGridTemplateColumn.CellTemplate>
                                                 <DataTemplate>
@@ -1063,6 +1063,8 @@ Title="Tailgrab Player Panel"
                                                 </DataTemplate>
                                             </DataGridTemplateColumn.CellEditingTemplate>
                                         </DataGridTemplateColumn>
+                                        <DataGridTextColumn Header="Group Name" Binding="{Binding GroupName}" SortMemberPath="GroupName" Width="*" />
+                                        <DataGridTextColumn Header="Group ID" Binding="{Binding GroupId}" SortMemberPath="GroupId" Width="300" />
                                         <DataGridTextColumn Header="Last Updated" Binding="{Binding UpdatedAt, StringFormat={}{0:u}}" SortMemberPath="UpdatedAt" Width="200" IsReadOnly="True" />
                                         <DataGridTemplateColumn Header="Browser" Width="80">
                                             <DataGridTemplateColumn.CellTemplate>
@@ -1098,8 +1100,9 @@ Title="Tailgrab Player Panel"
                                     <DataGrid.Columns>
                                         <DataGridTextColumn Header="Display Name" Binding="{Binding DisplayName}" SortMemberPath="DisplayName" Width="*" />
                                         <DataGridTextColumn Header="User ID" Binding="{Binding UserId}" SortMemberPath="UserId" Width="300" />
-                                        <DataGridTextColumn Header="Elapsed Minutes" Binding="{Binding ElapsedMinutes, StringFormat=N1}" SortMemberPath="ElapsedMinutes" Width="120">
-                                            <DataGridTextColumn.ElementStyle>
+                                        <!-- DataGridTextColumn Header="Elapsed Minutes" Binding="{Binding ElapsedMinutes, StringFormat=N1}" SortMemberPath="ElapsedMinutes" Width="120" -->
+                                        <DataGridTextColumn Header="Elapsed Time" Binding="{Binding ElapsedMinutes, Converter={StaticResource MinutesToHoursMinutesConverter}}" SortMemberPath="ElapsedMinutes" Width="120">
+                                                <DataGridTextColumn.ElementStyle>
                                                 <Style TargetType="TextBlock">
                                                     <Setter Property="HorizontalAlignment" Value="Right" />
                                                     <Setter Property="TextAlignment" Value="Right" />
@@ -1357,7 +1360,7 @@ Title="Tailgrab Player Panel"
                                 </StackPanel>
                             </Grid>
                         </TabItem>
-                        <TabItem Header="Migration">
+                        <TabItem Header="Migration" IsEnabled="False">
                             <Grid Margin="12">
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/>
