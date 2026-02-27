@@ -48,7 +48,7 @@ namespace Tailgrab.Clients.VRChat
 
                 if (loadedCookies != null && loadedCookies.Count > 0)
                 {
-                    Console.WriteLine("Loaded valid cookies from disk, attempting to use them for authentication...");
+                    logger.Info("Loaded valid cookies from disk, attempting to use them for authentication...");
                     // Try to call WithCookies via reflection (some SDKs expose it)
                     var withCookiesMethod = builder.GetType()
                         .GetMethods()
@@ -75,7 +75,7 @@ namespace Tailgrab.Clients.VRChat
                 }
                 else
                 {
-                    Console.WriteLine("No valid cookies found on disk, falling back to username/password authentication.");
+                    logger.Info("No valid cookies found on disk, falling back to username/password authentication.");
                     builder = builder.WithUsername(username).WithPassword(password);
                 }
 
@@ -84,8 +84,8 @@ namespace Tailgrab.Clients.VRChat
                 var response = await _vrchat.Authentication.GetCurrentUserAsync();
                 if (response.RequiresTwoFactorAuth.Contains("emailOtp"))
                 {
-                    Console.WriteLine("An verification code was sent to your email address!");
-                    Console.Write("Enter code: ");
+                    logger.Info("An verification code was sent to your email address!");
+                    logger.Info("Enter code: ");
                     //string code = Console.ReadLine();
                     string code = "1234";
                     var otpResponse = await _vrchat.Authentication.Verify2FAEmailCodeAsync(new TwoFactorEmailCode(code));
@@ -100,14 +100,13 @@ namespace Tailgrab.Clients.VRChat
 
                 var currentUser = await _vrchat.Authentication.GetCurrentUserAsync();
                 logger.Info($"Logged in as \"{currentUser.DisplayName}\"");
-
                 var cookies = _vrchat.GetCookies();
 
                 SaveCookiesToFile(cookiePath, cookies);
             }
             catch (Exception ex)
             {
-                logger.Error($"Failed to Log Into VRC and to save cookies': {ex.Message}");
+                logger.Error(ex, $"Failed to Log Into VRC and to save cookies': {ex.Message}");
                 System.Windows.MessageBox.Show($"Failed to Log Into VRChat Web API, check logs for details. Error: {ex.Message}", "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
             }
         }
