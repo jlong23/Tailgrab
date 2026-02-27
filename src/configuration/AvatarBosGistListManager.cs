@@ -235,65 +235,11 @@ namespace Tailgrab.Configuration
                         logger.Warn($"Line {lineNumber}: Invalid AlertType '{avatarAlert}' for Avatar ID '{avatarId}', defaulting to None.");
                     }
 
-                    try
-                    {
-                        // Fetch the AvatarInfo record
-                        AvatarInfo? avatarInfo = await dbContext.AvatarInfos.FindAsync(avatarId);
-                        AvatarManagementService.FetchUpdateAvatarData(_serviceRegistry, dbContext, avatarId, avatarInfo);
-                        avatarInfo = await dbContext.AvatarInfos.FindAsync(avatarId);
+                    QueuedAvatarWatch watchItem = new QueuedAvatarWatch(1, avatarId, alertType, lineNumber);
 
-                        if (avatarInfo == null)
-                        {
-                            logger.Debug($"Line {lineNumber}: Avatar ID '{avatarId}' not found in database/vrc, skipping.");
-                            continue;
-                        }
-
-                        // Set the alert type to Watch if it is currently None
-                        if (avatarInfo.AlertType == AlertTypeEnum.None)
-                        {
-
-                            avatarInfo.AlertType = alertType;
-                            avatarInfo.UpdatedAt = DateTime.UtcNow;
-                            dbContext.AvatarInfos.Update(avatarInfo);
-
-                            if (avatarInfo.AlertType >= AlertTypeEnum.Nuisance)
-                            {
-                                await _serviceRegistry.GetVRChatAPIClient().BlockAvatarGlobal(avatarInfo.AvatarId);
-                            }
-                            else
-                            {
-                                await _serviceRegistry.GetVRChatAPIClient().DeleteAvatarGlobal(avatarInfo.AvatarId);
-                            }
-
-                            processedCount++;
-                            logger.Debug($"Line {lineNumber}: Set Watch State for Avatar ID '{avatarId}'");
-
-                        }
-                        else
-                        {
-                            logger.Debug($"Line {lineNumber}: Avatar ID '{avatarId}' already has Has an Alert, skipping.");
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        logger.Error(ex, $"Line {lineNumber}: Error processing avatar ID '{avatarId}'");
-                    }
-
-                    // Throttle processing to avoid overwhelming the API
-                    await Task.Delay(1000);
+                    _serviceRegistry.GetAvatarManager().EnqueueWatchAvatarForCheck(watchItem);
+                    processedCount++;
                 }
-            }
-
-            // Save all changes to the database
-            try
-            {
-                await dbContext.SaveChangesAsync();
-                logger.Info($"Successfully saved {processedCount} changes to the database.");
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex, "Failed to save changes to the database.");
-                throw;
             }
 
             return processedCount;
