@@ -161,7 +161,7 @@ Title="Tailgrab Player Panel"
                                     </GridViewColumn>
 
                                     <!-- Actions column -->
-                                    <GridViewColumn Width="70">
+                                    <GridViewColumn Width="60">
                                         <GridViewColumn.Header>
                                             <GridViewColumnHeader Content="Rpt" />
                                         </GridViewColumn.Header>
@@ -431,7 +431,7 @@ Title="Tailgrab Player Panel"
                                     </GridViewColumn>
 
                                     <!-- Actions column -->
-                                    <GridViewColumn Width="70">
+                                    <GridViewColumn Width="60">
                                         <GridViewColumn.Header>
                                             <GridViewColumnHeader Content="Rpt" />
                                         </GridViewColumn.Header>
