@@ -119,7 +119,7 @@ The TailGrab application will log it's internal operations to the ```{UserProfil
 
 If you want to watch the application logs in real time, you can use a tool like ```tail``` from Git Bash or ```Get-Content``` from Powershell session with the log filename.
 
-```Get-Content -Path $HOME\AppData\Local\Tailgrab\logs\tailgrab_*.log -wait```
+```Get-Content -Path (Get-ChildItem -Path $HOME\AppData\Local\Tailgrab\logs\ -File | Sort-Object LastWriteTime -Descending | Select-Object -First 1).FullName -Wait -Tail 20```
 
 ### Bulk Editing of Database Files
 
