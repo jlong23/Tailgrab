@@ -17,6 +17,8 @@ public partial class ProfileEvaluation
 
     public DateTime LastDateTime { get; set; }
 
+    public bool IsIgnored { get; set; } = false;
+
     public ProfileEvaluation()
     {
         LastDateTime = DateTime.UtcNow;
@@ -24,6 +26,6 @@ public partial class ProfileEvaluation
 
     public override string ToString()
     {
-        return $"ProfileEvaluation: {Md5checksum}, ProfileText: {ProfileText}, Evaluation: {Evaluation}, LastDateTime: {LastDateTime}";
+        return $"ProfileEvaluation: Md5checksum={Md5checksum}, LastDateTime={LastDateTime}, IsIgnored={IsIgnored}";
     }
 }

@@ -347,7 +347,7 @@ namespace Tailgrab.Clients.Ollama
         }
 
         #region Image Classification
-        internal async Task<string?> ClassifyImageList(string userId, string assetId, List<string> imageUrlList)
+        internal async Task<ImageEvaluation?> ClassifyImageList(string userId, string assetId, List<string> imageUrlList)
         {
             logger.Debug($"Classifying image from Asset: {assetId} URI: {imageUrlList.ToArray()}");
 
@@ -392,16 +392,16 @@ namespace Tailgrab.Clients.Ollama
                                 var response = await ollamaApi.GenerateAsync(request).StreamToEndAsync();
 
                                 logger.Debug($"Image classified for InventoryId: {imageReference.InventoryId} as {response?.Response}");
-                                SaveImageEvaluation(imageReference, response?.Response);
+                                imageEvaluation = SaveImageEvaluation(imageReference, response?.Response);
 
-                                return response?.Response;
+                                return imageEvaluation;
                             }
                         }
                     }
                     else
                     {
                         logger.Debug($"Image already classified for AssetId : {imageReference.InventoryId}");
-                        return System.Text.Encoding.UTF8.GetString(imageEvaluation.Evaluation);
+                        return imageEvaluation;
                     }
                 }
             }
@@ -422,10 +422,11 @@ namespace Tailgrab.Clients.Ollama
                 logger.Debug($"Image already reviewed for InventoryId: {imageReference.InventoryId}");
                 return evaluated;
             }
+
             return null;
         }
 
-        private void SaveImageEvaluation(ImageReference imageReference, string? response)
+        private ImageEvaluation? SaveImageEvaluation(ImageReference imageReference, string? response)
         {
             if (response != null)
             {
@@ -435,12 +436,16 @@ namespace Tailgrab.Clients.Ollama
                     UserId = imageReference.UserId,
                     Md5checksum = imageReference.Md5Hash,
                     Evaluation = System.Text.Encoding.UTF8.GetBytes(response ?? string.Empty),
-                    LastDateTime = DateTime.UtcNow
+                    LastDateTime = DateTime.UtcNow,
+                    IsIgnored = false
                 };
                 TailgrabDBContext dBContext = _serviceRegistry.GetDBContext();
                 dBContext.Add(evaluation);
                 dBContext.SaveChanges();
+                return evaluation;
             }
+
+            return null;
         }
         #endregion
     }

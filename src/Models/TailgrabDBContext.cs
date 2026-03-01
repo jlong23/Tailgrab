@@ -90,6 +90,7 @@ public partial class TailgrabDBContext : DbContext
             entity.ToTable("ProfileEvaluation");
 
             entity.Property(e => e.Md5checksum).HasColumnName("MD5Checksum");
+            entity.Property(e => e.IsIgnored).HasColumnName("isIgnored");
         });
 
         modelBuilder.Entity<UserInfo>(entity =>
@@ -108,6 +109,7 @@ public partial class TailgrabDBContext : DbContext
             entity.ToTable("ImageEvaluation");
 
             entity.Property(e => e.Md5checksum).HasColumnName("MD5Checksum");
+            entity.Property(e => e.IsIgnored).HasColumnName("isIgnored");
         });
 
         OnModelCreatingPartial(modelBuilder);

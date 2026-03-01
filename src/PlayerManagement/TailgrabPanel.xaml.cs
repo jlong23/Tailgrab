@@ -1376,11 +1376,11 @@ namespace Tailgrab.PlayerManagement
                     // Call Ollama to classify the image
                     PrintOverlayReportDescriptionTextBox.Text = "Loading AI evaluation...";
 
-                    string? classification = await _serviceRegistry.GetOllamaAPIClient().ClassifyImageList(userId, inventoryId, imageUrlList);
+                    ImageEvaluation? classification = await _serviceRegistry.GetOllamaAPIClient().ClassifyImageList(userId, inventoryId, imageUrlList);
 
-                    if (!string.IsNullOrEmpty(classification))
+                    if (classification != null)
                     {
-                        PrintOverlayReportDescriptionTextBox.Text = classification;
+                        PrintOverlayReportDescriptionTextBox.Text = System.Text.Encoding.UTF8.GetString(classification.Evaluation);
                         logger.Debug($"Generated new image evaluation for inventory ID: {inventoryId}");
                     }
                     else
@@ -1740,11 +1740,11 @@ namespace Tailgrab.PlayerManagement
                     // Call Ollama to classify the image
                     OverlayReportDescriptionTextBox.Text = "Loading AI evaluation...";
 
-                    string? classification = await _serviceRegistry.GetOllamaAPIClient().ClassifyImageList(userId, inventoryId, imageUrlList);
+                    ImageEvaluation? classification = await _serviceRegistry.GetOllamaAPIClient().ClassifyImageList(userId, inventoryId, imageUrlList);
 
-                    if (!string.IsNullOrEmpty(classification))
+                    if (classification != null)
                     {
-                        OverlayReportDescriptionTextBox.Text = classification;
+                        OverlayReportDescriptionTextBox.Text = System.Text.Encoding.UTF8.GetString(classification.Evaluation);
                         logger.Debug($"Generated new image evaluation for inventory ID: {inventoryId}");
                     }
                     else

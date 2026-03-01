@@ -92,14 +92,14 @@ Title="Tailgrab Player Panel"
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
-                                    
+
                                     <GridViewColumn Width="50">
                                         <GridViewColumn.Header>
-                                            <GridViewColumnHeader Content="Age" Tag="Age" Click="GridViewColumnHeader_Click"/>
+                                            <GridViewColumnHeader Content="Age" Tag="Age" Click="GridViewColumnHeader_Click" HorizontalContentAlignment="Center"/>
                                         </GridViewColumn.Header>
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate>
-                                                <TextBlock Text="{Binding ProfileElapsedTime, Mode=OneWay}"/>
+                                                <TextBlock Text="{Binding ProfileElapsedTime, Mode=OneWay}" Width="50" TextAlignment="Right"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
@@ -365,11 +365,11 @@ Title="Tailgrab Player Panel"
 
                                     <GridViewColumn Width="50">
                                         <GridViewColumn.Header>
-                                            <GridViewColumnHeader Content="Age" Tag="Age" Click="GridViewColumnHeader_Click"/>
+                                            <GridViewColumnHeader Content="Age" Tag="Age" Click="GridViewColumnHeader_Click" HorizontalContentAlignment="Center"/>
                                         </GridViewColumn.Header>
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate>
-                                                <TextBlock Text="{Binding ProfileElapsedTime, Mode=OneWay}"/>
+                                                <TextBlock Text="{Binding ProfileElapsedTime, Mode=OneWay}" Width="50" TextAlignment="Right"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
@@ -1120,7 +1120,7 @@ Title="Tailgrab Player Panel"
                                         <DataGridTextColumn Header="User ID" Binding="{Binding UserId}" SortMemberPath="UserId" Width="300" />
                                         <!-- DataGridTextColumn Header="Elapsed Minutes" Binding="{Binding ElapsedMinutes, StringFormat=N1}" SortMemberPath="ElapsedMinutes" Width="120" -->
                                         <DataGridTextColumn Header="Elapsed Time (hh:mm)" Binding="{Binding ElapsedMinutes, Converter={StaticResource MinutesToHoursMinutesConverter}}" SortMemberPath="ElapsedMinutes" Width="120">
-                                                <DataGridTextColumn.ElementStyle>
+                                            <DataGridTextColumn.ElementStyle>
                                                 <Style TargetType="TextBlock">
                                                     <Setter Property="HorizontalAlignment" Value="Right" />
                                                     <Setter Property="TextAlignment" Value="Right" />

@@ -688,7 +688,8 @@ namespace Tailgrab.PlayerManagement
                 string itemUrl = "";
                 string itemContent = "";
                 string inventoryType = "Unknown Type";
-                string aiEvaluation = "OK";
+                string aiClassification = "OK";
+                string evaluatedText = "Not Evaluated";
 
                 try
                 {
@@ -713,20 +714,21 @@ namespace Tailgrab.PlayerManagement
                     var ollamaClient = serviceRegistry.GetOllamaAPIClient();
                     if (ollamaClient != null)
                     {
-                        string? evaluated = await ollamaClient.ClassifyImageList(userId, inventoryId, new List<string> { itemUrl, itemContent });
+                        ImageEvaluation? evaluated = await ollamaClient.ClassifyImageList(userId, inventoryId, new List<string> { itemUrl, itemContent });
                         if (evaluated != null)
                         {
-                            aiEvaluation = EvaluateImage(evaluated) ?? "OK";
-                            logger.Info($"Ollama classification for inventory item {inventoryId}: {aiEvaluation}: {evaluated}");
-                            if (!aiEvaluation.Equals("OK"))
+                            evaluatedText = System.Text.Encoding.UTF8.GetString(evaluated.Evaluation);
+                            aiClassification = EvaluateImageClass(evaluatedText) ?? "OK";
+                            logger.Info($"Ollama classification for inventory item {inventoryId}: {aiClassification}: {evaluatedText}");
+                            if (!aiClassification.Equals("OK") && !evaluated.IsIgnored)
                             {
-                                AddPlayerEventByUserId(userId, PlayerEvent.EventType.Emoji, $"AI Evaluation: Spawned Item {itemName} ({inventoryId}) was classified {evaluated}");
-                                player.AddAlertMessage(AlertClassEnum.EmojiSticker, AlertTypeEnum.Nuisance, "Yellow", $"{aiEvaluation}");
+                                AddPlayerEventByUserId(userId, PlayerEvent.EventType.Emoji, $"AI Evaluation: Spawned Item {itemName} ({inventoryId}) was classified {aiClassification}");
+                                player.AddAlertMessage(AlertClassEnum.EmojiSticker, AlertTypeEnum.Nuisance, "Yellow", $"{aiClassification}");
                             }
                         }
                     }
 
-                    PlayerInventory inventory = new PlayerInventory(inventoryId, itemName, itemContent, inventoryType, aiEvaluation);
+                    PlayerInventory inventory = new PlayerInventory(inventoryId, itemName, itemContent, inventoryType, aiClassification);
                     player.Inventory.Add(inventory);
 
                     AddPlayerEventByUserId(userId, PlayerEvent.EventType.Emoji, $"Spawned Item: {itemName} ({inventoryId})");
@@ -735,7 +737,7 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
-        private static string? EvaluateImage(string? imageEvaluation)
+        private static string? EvaluateImageClass(string? imageEvaluation)
         {
             if (string.IsNullOrEmpty(imageEvaluation))
             {
@@ -798,8 +800,9 @@ namespace Tailgrab.PlayerManagement
                     if (player != null)
                     {
                         logger.Info($"Fetched print info for print {printId} owned by {player.DisplayName} (ID: {printInfo.OwnerId})");
-                        string? evaluated = string.Empty;
-                        string aiEvaluation = "OK";
+                        ImageEvaluation? evaluated = null;
+                        string evaluatedText = "Not Evaluated";
+                        string aiClassification = "OK";
                         var ollamaClient = serviceRegistry.GetOllamaAPIClient();
                         if (ollamaClient != null)
                         {
@@ -808,16 +811,18 @@ namespace Tailgrab.PlayerManagement
                             evaluated = await ollamaClient.ClassifyImageList(printInfo.OwnerId, printInfo.Id, imageUrls);
                             if (evaluated != null)
                             {
-                                aiEvaluation = EvaluateImage(evaluated) ?? "OK";
-                                logger.Info($"Ollama classification for inventory item {printInfo.Id}: {aiEvaluation}: {evaluated}");
-                                if (!aiEvaluation.Equals("OK"))
+                                evaluatedText = System.Text.Encoding.UTF8.GetString(evaluated.Evaluation);
+                                aiClassification = EvaluateImageClass(System.Text.Encoding.UTF8.GetString( evaluated.Evaluation)) ?? "OK";
+                                logger.Info($"Ollama classification for inventory item {printInfo.Id}: {aiClassification}: {evaluatedText}");
+                                if (!aiClassification.Equals("OK") && !evaluated.IsIgnored)
                                 {
-                                    player = AddPlayerEventByUserId(printInfo.OwnerId, PlayerEvent.EventType.Print, $"AI Evaluation: Print {printId} was classified {aiEvaluation}");
-                                    player?.AddAlertMessage(AlertClassEnum.Print, AlertTypeEnum.Nuisance, "Yellow", $"{aiEvaluation}");
+                                    player = AddPlayerEventByUserId(printInfo.OwnerId, PlayerEvent.EventType.Print, $"AI Evaluation: Print {printId} was classified {aiClassification}");
+                                    player?.AddAlertMessage(AlertClassEnum.Print, AlertTypeEnum.Nuisance, "Yellow", $"{aiClassification}");
                                 }
                             }
                         }
-                        player?.PrintData[printId] = new PlayerPrint(printInfo, evaluated ?? "Not Evaluated", aiEvaluation);
+
+                        player?.PrintData[printId] = new PlayerPrint(printInfo, evaluatedText, aiClassification);
                     }
                 }
             }
