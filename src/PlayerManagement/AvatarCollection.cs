@@ -157,6 +157,8 @@ namespace Tailgrab.PlayerManagement
 
         public string AvatarId { get; set; }
         public string AvatarName { get; set; }
+        public string UserName { get; set; }
+        public DateTime? UpdatedAt { get; set; }
 
         public AlertTypeEnum AlertType
         {
@@ -171,14 +173,13 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
-        public DateTime? UpdatedAt { get; set; }
-
         public AvatarInfoViewModel(Tailgrab.Models.AvatarInfo a)
         {
             AvatarId = a.AvatarId;
             AvatarName = a.AvatarName;
             UpdatedAt = a.UpdatedAt;
             AlertType = a.AlertType;
+            UserName = a.UserName ?? "Unknown";
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
