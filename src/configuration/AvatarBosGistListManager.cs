@@ -234,9 +234,11 @@ namespace Tailgrab.Configuration
                         logger.Warn($"Line {lineNumber}: Invalid AlertType '{avatarAlert}' for Avatar ID '{avatarId}', defaulting to None.");
                     }
 
-                    QueuedAvatarWatch watchItem = new QueuedAvatarWatch(1, avatarId, alertType, lineNumber);
-
-                    avatarManager.EnqueueWatchAvatarForCheck(watchItem);
+                    AvatarInfo? info = avatarManager.GetAvatarById(avatarId);
+                    if (info == null || info.AlertType == AlertTypeEnum.None) {
+                        QueuedAvatarWatch watchItem = new QueuedAvatarWatch(1, avatarId, alertType, lineNumber);
+                        avatarManager.EnqueueWatchAvatarForCheck(watchItem);
+                    }
                     processedCount++;
                 }
             }
