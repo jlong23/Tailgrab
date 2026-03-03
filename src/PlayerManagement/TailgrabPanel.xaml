@@ -93,18 +93,18 @@ Title="Tailgrab Player Panel"
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
 
-                                    <GridViewColumn Width="50">
+                                    <GridViewColumn Width="60">
                                         <GridViewColumn.Header>
                                             <GridViewColumnHeader Content="Age" Tag="Age" Click="GridViewColumnHeader_Click" HorizontalContentAlignment="Center"/>
                                         </GridViewColumn.Header>
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate>
-                                                <TextBlock Text="{Binding ProfileElapsedTime, Mode=OneWay}" Width="50" TextAlignment="Right"/>
+                                                <TextBlock Text="{Binding ProfileElapsedTime, Mode=OneWay}" Width="40" TextAlignment="Right"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
 
-                                    <GridViewColumn Width="110">
+                                    <GridViewColumn Width="180">
                                         <GridViewColumn.Header>
                                             <GridViewColumnHeader Content="Avatar Name" Tag="AvatarName" Click="GridViewColumnHeader_Click"/>
                                         </GridViewColumn.Header>
@@ -115,20 +115,9 @@ Title="Tailgrab Player Panel"
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
 
-                                    <GridViewColumn Width="90">
-                                        <GridViewColumn.Header>
-                                            <GridViewColumnHeader Name="ActivePlayerInstanceStart"  Content="Pen Activity" Tag="PenActivity" Click="GridViewColumnHeader_Click"/>
-                                        </GridViewColumn.Header>
-                                        <GridViewColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <TextBlock Text="{Binding PenActivity}" />
-                                            </DataTemplate>
-                                        </GridViewColumn.CellTemplate>
-                                    </GridViewColumn>
-
                                     <GridViewColumn Width="160">
                                         <GridViewColumn.Header>
-                                            <GridViewColumnHeader Content="Instance Start ▼" Tag="InstanceStartTime" Click="GridViewColumnHeader_Click"/>
+                                            <GridViewColumnHeader Name="ActivePlayerInstanceStart" Content="Instance Start ▼" Tag="InstanceStartTime" Click="GridViewColumnHeader_Click"/>
                                         </GridViewColumn.Header>
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate>
@@ -363,35 +352,24 @@ Title="Tailgrab Player Panel"
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
 
-                                    <GridViewColumn Width="50">
+                                    <GridViewColumn Width="60">
                                         <GridViewColumn.Header>
                                             <GridViewColumnHeader Content="Age" Tag="Age" Click="GridViewColumnHeader_Click" HorizontalContentAlignment="Center"/>
                                         </GridViewColumn.Header>
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate>
-                                                <TextBlock Text="{Binding ProfileElapsedTime, Mode=OneWay}" Width="50" TextAlignment="Right"/>
+                                                <TextBlock Text="{Binding ProfileElapsedTime, Mode=OneWay}" Width="40" TextAlignment="Right"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
 
-                                    <GridViewColumn Width="110">
+                                    <GridViewColumn Width="180">
                                         <GridViewColumn.Header>
                                             <GridViewColumnHeader Content="Avatar Name" Tag="AvatarName" Click="GridViewColumnHeader_Click"/>
                                         </GridViewColumn.Header>
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate>
                                                 <TextBlock Text="{Binding AvatarName}" />
-                                            </DataTemplate>
-                                        </GridViewColumn.CellTemplate>
-                                    </GridViewColumn>
-
-                                    <GridViewColumn Width="90">
-                                        <GridViewColumn.Header>
-                                            <GridViewColumnHeader Content="Pen Activity" Tag="PenActivity" Click="GridViewColumnHeader_Click"/>
-                                        </GridViewColumn.Header>
-                                        <GridViewColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <TextBlock Text="{Binding PenActivity}" />
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
