@@ -290,7 +290,7 @@ namespace Tailgrab.AvatarManagement
             }
 
             // Throttle processing to avoid overwhelming the API
-            await Task.Delay(1000);
+            await Task.Delay(3000);
         }
 
 
@@ -334,7 +334,7 @@ namespace Tailgrab.AvatarManagement
                         {
                             AvatarId = avatarData.Id,
                             UserId = avatarData.AuthorId,
-                            UserName = avatarData.Name,
+                            UserName = avatarData.AuthorName,
                             AvatarName = avatarData.Name,
                             ImageUrl = avatarData.ImageUrl,
                             CreatedAt = avatarData.CreatedAt,

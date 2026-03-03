@@ -1900,6 +1900,7 @@ namespace Tailgrab.PlayerManagement
                         {
                             AvatarId = avatar.Id,
                             UserId = avatar.AuthorId ?? string.Empty,
+                            UserName = avatar.AuthorName ?? string.Empty,
                             AvatarName = avatar.Name ?? string.Empty,
                             ImageUrl = avatar.ImageUrl ?? string.Empty,
                             CreatedAt = avatar.CreatedAt,
