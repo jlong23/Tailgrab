@@ -61,6 +61,8 @@ namespace Tailgrab
                 logger.Info("Starting Player Manager...");
                 playerManager = new PlayerManager(this);
 
+                playerManager.SyncAvatarModerations();
+
                 logger.Info("Starting Avatar GIST Manager...");
                 AvatarBosGistListManager avatarGistMgr = new AvatarBosGistListManager(avatarManager);
                 _ = Task.Run(() => avatarGistMgr.ProcessAvatarGistList());

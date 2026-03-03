@@ -1,6 +1,7 @@
 using NLog;
 using System.ComponentModel;
 using System.Text;
+using Tailgrab.AvatarManagement;
 using Tailgrab.Clients.VRChat;
 using Tailgrab.Common;
 using Tailgrab.LineHandler;
@@ -920,6 +921,35 @@ namespace Tailgrab.PlayerManagement
             }
 
             return null;
+        }
+
+        public void SyncAvatarModerations()
+        {
+            try
+            {
+                TailgrabDBContext dBContext = serviceRegistry.GetDBContext();
+                VRChatClient vrcClient = serviceRegistry.GetVRChatAPIClient();
+                if (dBContext != null && vrcClient != null)
+                {
+                    int lineNumber = 0;
+                    List<VRChat.API.Model.AvatarModeration> moderations = vrcClient.GetAvatarModerations();
+                    foreach (VRChat.API.Model.AvatarModeration mod in moderations)
+                    {
+                        logger.Debug($"Processing Avatar Moderation for Avatar ID {mod.TargetAvatarId} with Status {mod.AvatarModerationType} and CreatedAt {mod.Created}");
+                        if (mod != null && mod.AvatarModerationType.Equals(AvatarModerationType.Block))
+                        {
+
+                            lineNumber++;
+                            QueuedModeratedAvatarWatch watchItem = new QueuedModeratedAvatarWatch(2, mod.TargetAvatarId, AlertTypeEnum.Nuisance, lineNumber);
+                            serviceRegistry.GetAvatarManager().EnqueueModeratedAvatarForCheck(watchItem);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to clear the database");
+            }
         }
     }
 }

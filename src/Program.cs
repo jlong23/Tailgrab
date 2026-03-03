@@ -414,55 +414,6 @@ public class FileTailer
         }
     }
 
-    private static void SyncAvatarModerations(ServiceRegistry serviceRegistry)
-    {
-        try
-        {
-            TailgrabDBContext dBContext = serviceRegistry.GetDBContext();
-            VRChatClient vrcClient = serviceRegistry.GetVRChatAPIClient();
-            if (dBContext != null && vrcClient != null)
-            {
-                List<VRChat.API.Model.AvatarModeration> moderations = vrcClient.GetAvatarModerations();
-                foreach (VRChat.API.Model.AvatarModeration mod in moderations)
-                {
-                    AvatarInfo? existing = dBContext.AvatarInfos.FirstOrDefault(a => a.AvatarId == mod.TargetAvatarId);
-                    if (existing != null)
-                    {
-                        if (existing.AlertType > AlertTypeEnum.Watch)
-                        {
-                            logger.Debug($"Avatar {existing.AvatarId} is already marked as BOS in the database. Skipping update.");
-                            continue; // already marked as BOS, no update needed
-                        }
-
-                        logger.Debug($"Marking Avatar {existing.AvatarId} is as BOS in the database.");
-                        existing.AlertType = AlertTypeEnum.Watch;
-                        existing.UpdatedAt = mod.Created;
-                        dBContext.SaveChanges();
-
-                    }
-                    else
-                    {
-                        dBContext.AvatarInfos.Add(new AvatarInfo
-                        {
-                            AvatarName = "From Moderation API",
-                            AvatarId = mod.TargetAvatarId,
-                            AlertType = AlertTypeEnum.Watch,
-                            CreatedAt = mod.Created,
-                            UpdatedAt = mod.Created
-                        });
-                        dBContext.SaveChanges();
-
-                        logger.Debug($"Adding missing Avatar {mod.TargetAvatarId} is as BOS in the database.");
-                    }
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            logger.Error(ex, "Failed to clear the database");
-        }
-    }
-
     private static string GetLogsPath(string[] args, string? explicitPath)
     {
         string filePath = explicitPath ?? (VRChatAppDataPath + Path.DirectorySeparatorChar);
