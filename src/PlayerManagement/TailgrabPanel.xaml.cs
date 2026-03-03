@@ -352,6 +352,14 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
+        private void TestSound_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is System.Windows.Controls.Button button && button.Tag is string soundName)
+            {
+                SoundManager.PlaySound(soundName);
+            }
+        }
+
         private void SetAlertKeyString(string alertKey, AlertTypeEnum alertType, string subType, object value)
         {
             string key = CommonConst.ConfigRegistryPath + "\\" + alertKey + "\\" + alertType.ToString();

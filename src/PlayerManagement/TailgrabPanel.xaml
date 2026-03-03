@@ -11,6 +11,7 @@ Title="Tailgrab Player Panel"
         TextOptions.TextFormattingMode="Display">
     <Window.Resources>
         <local:MinutesToHoursMinutesConverter x:Key="MinutesToHoursMinutesConverter"/>
+        <local:SoundNotNoneConverter x:Key="SoundNotNoneConverter"/>
     </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
@@ -1255,6 +1256,13 @@ Title="Tailgrab Player Panel"
                                             <Label Content="Warn:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
                                             <ComboBox Name="AvatarWarnSound" ItemsSource="{Binding DataContext.AlertSoundOptions, RelativeSource={RelativeSource AncestorType=Window}}"
                                                           SelectedValuePath="Value" DisplayMemberPath="Key" Margin="2,2,2,2" Width="200"/>
+                                            <Button Content="🔊" Padding="6,2" Margin="4,2,0,2" ToolTip="Test Sound" Click="TestSound_Click" Tag="{Binding ElementName=AvatarWarnSound, Path=SelectedValue}">
+                                                <Button.IsEnabled>
+                                                    <MultiBinding Converter="{StaticResource SoundNotNoneConverter}">
+                                                        <Binding ElementName="AvatarWarnSound" Path="SelectedValue"/>
+                                                    </MultiBinding>
+                                                </Button.IsEnabled>
+                                            </Button>
 
                                             <Label Content="Color:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
                                             <ComboBox Name="AvatarWarnColor" ItemsSource="{Binding DataContext.AlertColorOptions, RelativeSource={RelativeSource AncestorType=Window}}"
@@ -1265,6 +1273,13 @@ Title="Tailgrab Player Panel"
                                             <Label Content="Nuisance:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
                                             <ComboBox Name="AvatarNuisanceSound" ItemsSource="{Binding DataContext.AlertSoundOptions, RelativeSource={RelativeSource AncestorType=Window}}"
                                                           SelectedValuePath="Value" DisplayMemberPath="Key" Margin="2,2,2,2" Width="200"/>
+                                            <Button Content="🔊" Padding="6,2" Margin="4,2,0,2" ToolTip="Test Sound" Click="TestSound_Click" Tag="{Binding ElementName=AvatarNuisanceSound, Path=SelectedValue}">
+                                                <Button.IsEnabled>
+                                                    <MultiBinding Converter="{StaticResource SoundNotNoneConverter}">
+                                                        <Binding ElementName="AvatarNuisanceSound" Path="SelectedValue"/>
+                                                    </MultiBinding>
+                                                </Button.IsEnabled>
+                                            </Button>
 
                                             <Label Content="Color:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
                                             <ComboBox Name="AvatarNuisanceColor" ItemsSource="{Binding DataContext.AlertColorOptions, RelativeSource={RelativeSource AncestorType=Window}}"
@@ -1275,6 +1290,13 @@ Title="Tailgrab Player Panel"
                                             <Label Content="Crasher:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
                                             <ComboBox Name="AvatarCrasherSound" ItemsSource="{Binding DataContext.AlertSoundOptions, RelativeSource={RelativeSource AncestorType=Window}}"
                                                           SelectedValuePath="Value" DisplayMemberPath="Key" Margin="2,2,2,2" Width="200"/>
+                                            <Button Content="🔊" Padding="6,2" Margin="4,2,0,2" ToolTip="Test Sound" Click="TestSound_Click" Tag="{Binding ElementName=AvatarCrasherSound, Path=SelectedValue}">
+                                                <Button.IsEnabled>
+                                                    <MultiBinding Converter="{StaticResource SoundNotNoneConverter}">
+                                                        <Binding ElementName="AvatarCrasherSound" Path="SelectedValue"/>
+                                                    </MultiBinding>
+                                                </Button.IsEnabled>
+                                            </Button>
 
                                             <Label Content="Color:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
                                             <ComboBox Name="AvatarCrasherColor" ItemsSource="{Binding DataContext.AlertColorOptions, RelativeSource={RelativeSource AncestorType=Window}}"
@@ -1288,6 +1310,13 @@ Title="Tailgrab Player Panel"
                                             <Label Content="Warn:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
                                             <ComboBox Name="GroupWarnSound" ItemsSource="{Binding DataContext.AlertSoundOptions, RelativeSource={RelativeSource AncestorType=Window}}"
                                                           SelectedValuePath="Value" DisplayMemberPath="Key" Margin="2,2,2,2" Width="200"/>
+                                            <Button Content="🔊" Padding="6,2" Margin="4,2,0,2" ToolTip="Test Sound" Click="TestSound_Click" Tag="{Binding ElementName=GroupWarnSound, Path=SelectedValue}">
+                                                <Button.IsEnabled>
+                                                    <MultiBinding Converter="{StaticResource SoundNotNoneConverter}">
+                                                        <Binding ElementName="GroupWarnSound" Path="SelectedValue"/>
+                                                    </MultiBinding>
+                                                </Button.IsEnabled>
+                                            </Button>
 
                                             <Label Content="Color:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
                                             <ComboBox Name="GroupWarnColor" ItemsSource="{Binding DataContext.AlertColorOptions, RelativeSource={RelativeSource AncestorType=Window}}"
@@ -1298,6 +1327,13 @@ Title="Tailgrab Player Panel"
                                             <Label Content="Nuisance:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
                                             <ComboBox Name="GroupNuisanceSound" ItemsSource="{Binding DataContext.AlertSoundOptions, RelativeSource={RelativeSource AncestorType=Window}}"
                                                           SelectedValuePath="Value" DisplayMemberPath="Key" Margin="2,2,2,2" Width="200"/>
+                                            <Button Content="🔊" Padding="6,2" Margin="4,2,0,2" ToolTip="Test Sound" Click="TestSound_Click" Tag="{Binding ElementName=GroupNuisanceSound, Path=SelectedValue}">
+                                                <Button.IsEnabled>
+                                                    <MultiBinding Converter="{StaticResource SoundNotNoneConverter}">
+                                                        <Binding ElementName="GroupNuisanceSound" Path="SelectedValue"/>
+                                                    </MultiBinding>
+                                                </Button.IsEnabled>
+                                            </Button>
 
                                             <Label Content="Color:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
                                             <ComboBox Name="GroupNuisanceColor" ItemsSource="{Binding DataContext.AlertColorOptions, RelativeSource={RelativeSource AncestorType=Window}}"
@@ -1308,6 +1344,13 @@ Title="Tailgrab Player Panel"
                                             <Label Content="Crasher:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
                                             <ComboBox Name="GroupCrasherSound" ItemsSource="{Binding DataContext.AlertSoundOptions, RelativeSource={RelativeSource AncestorType=Window}}"
                                                           SelectedValuePath="Value" DisplayMemberPath="Key" Margin="2,2,2,2" Width="200"/>
+                                            <Button Content="🔊" Padding="6,2" Margin="4,2,0,2" ToolTip="Test Sound" Click="TestSound_Click" Tag="{Binding ElementName=GroupCrasherSound, Path=SelectedValue}">
+                                                <Button.IsEnabled>
+                                                    <MultiBinding Converter="{StaticResource SoundNotNoneConverter}">
+                                                        <Binding ElementName="GroupCrasherSound" Path="SelectedValue"/>
+                                                    </MultiBinding>
+                                                </Button.IsEnabled>
+                                            </Button>
 
                                             <Label Content="Color:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
                                             <ComboBox Name="GroupCrasherColor" ItemsSource="{Binding DataContext.AlertColorOptions, RelativeSource={RelativeSource AncestorType=Window}}"
@@ -1321,6 +1364,13 @@ Title="Tailgrab Player Panel"
                                             <Label Content="Warn:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
                                             <ComboBox Name="ProfileWarnSound" ItemsSource="{Binding DataContext.AlertSoundOptions, RelativeSource={RelativeSource AncestorType=Window}}"
                                                           SelectedValuePath="Value" DisplayMemberPath="Key" Margin="2,2,2,2" Width="200"/>
+                                            <Button Content="🔊" Padding="6,2" Margin="4,2,0,2" ToolTip="Test Sound" Click="TestSound_Click" Tag="{Binding ElementName=ProfileWarnSound, Path=SelectedValue}">
+                                                <Button.IsEnabled>
+                                                    <MultiBinding Converter="{StaticResource SoundNotNoneConverter}">
+                                                        <Binding ElementName="ProfileWarnSound" Path="SelectedValue"/>
+                                                    </MultiBinding>
+                                                </Button.IsEnabled>
+                                            </Button>
 
                                             <Label Content="Color:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
                                             <ComboBox Name="ProfileWarnColor" ItemsSource="{Binding DataContext.AlertColorOptions, RelativeSource={RelativeSource AncestorType=Window}}"
@@ -1331,6 +1381,13 @@ Title="Tailgrab Player Panel"
                                             <Label Content="Nuisance:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
                                             <ComboBox Name="ProfileNuisanceSound" ItemsSource="{Binding DataContext.AlertSoundOptions, RelativeSource={RelativeSource AncestorType=Window}}"
                                                           SelectedValuePath="Value" DisplayMemberPath="Key" Margin="2,2,2,2" Width="200"/>
+                                            <Button Content="🔊" Padding="6,2" Margin="4,2,0,2" ToolTip="Test Sound" Click="TestSound_Click" Tag="{Binding ElementName=ProfileNuisanceSound, Path=SelectedValue}">
+                                                <Button.IsEnabled>
+                                                    <MultiBinding Converter="{StaticResource SoundNotNoneConverter}">
+                                                        <Binding ElementName="ProfileNuisanceSound" Path="SelectedValue"/>
+                                                    </MultiBinding>
+                                                </Button.IsEnabled>
+                                            </Button>
 
                                             <Label Content="Color:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
                                             <ComboBox Name="ProfileNuisanceColor" ItemsSource="{Binding DataContext.AlertColorOptions, RelativeSource={RelativeSource AncestorType=Window}}"
@@ -1341,6 +1398,13 @@ Title="Tailgrab Player Panel"
                                             <Label Content="Crasher:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
                                             <ComboBox Name="ProfileCrasherSound" ItemsSource="{Binding DataContext.AlertSoundOptions, RelativeSource={RelativeSource AncestorType=Window}}"
                                                           SelectedValuePath="Value" DisplayMemberPath="Key" Margin="2,2,2,2" Width="200"/>
+                                            <Button Content="🔊" Padding="6,2" Margin="4,2,0,2" ToolTip="Test Sound" Click="TestSound_Click" Tag="{Binding ElementName=ProfileCrasherSound, Path=SelectedValue}">
+                                                <Button.IsEnabled>
+                                                    <MultiBinding Converter="{StaticResource SoundNotNoneConverter}">
+                                                        <Binding ElementName="ProfileCrasherSound" Path="SelectedValue"/>
+                                                    </MultiBinding>
+                                                </Button.IsEnabled>
+                                            </Button>
 
                                             <Label Content="Color:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
                                             <ComboBox Name="ProfileCrasherColor" ItemsSource="{Binding DataContext.AlertColorOptions, RelativeSource={RelativeSource AncestorType=Window}}"
