@@ -942,8 +942,12 @@ namespace Tailgrab.PlayerManagement
                         {
 
                             lineNumber++;
-                            QueuedModeratedAvatarWatch watchItem = new QueuedModeratedAvatarWatch(2, mod.TargetAvatarId, AlertTypeEnum.Nuisance, lineNumber);
-                            serviceRegistry.GetAvatarManager().EnqueueModeratedAvatarForCheck(watchItem);
+                            AvatarInfo? existingAvatar = dBContext.AvatarInfos.Find(mod.TargetAvatarId);
+                            if (existingAvatar == null || existingAvatar.AlertType < AlertTypeEnum.Nuisance )
+                            {
+                                QueuedModeratedAvatarWatch watchItem = new QueuedModeratedAvatarWatch(2, mod.TargetAvatarId, AlertTypeEnum.Nuisance, lineNumber);
+                                serviceRegistry.GetAvatarManager().EnqueueModeratedAvatarForCheck(watchItem);
+                            }
                         }
                     }
                 }
