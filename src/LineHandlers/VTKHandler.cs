@@ -33,7 +33,7 @@ public class VTKHandler : AbstractLineHandler
             Player? player = _serviceRegistry.GetPlayerManager().AddPlayerEventByDisplayName(userName, PlayerEvent.EventType.Moderation, "Vote kick initiated against player.");
             if (player != null)
             {
-                player.AddAlertMessage(AlertClassEnum.Profile, AlertTypeEnum.Nuisance, "Yellow", $"VTK");
+                player.AddAlertMessage(AlertClassEnum.Profile, AlertTypeEnum.Nuisance, $"VTK");
             }
             
             ExecuteActions();

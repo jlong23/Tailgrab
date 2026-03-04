@@ -136,6 +136,36 @@ namespace Tailgrab.PlayerManagement
 
         public List<AlertMessage> _AlertMessage = new List<AlertMessage>();
 
+        public string AlertMessage
+        {
+            get
+            {
+                string message = "";
+
+                _AlertMessage.Sort((p1, p2) =>
+                {
+                    int result = p2.AlertType.CompareTo(p1.AlertType);
+                    if (result == 0)
+                    {
+                        result = p2.Timestamp.CompareTo(p1.Timestamp);
+                    }
+                    return result;
+                });
+
+                foreach (AlertMessage alert in _AlertMessage)
+                {
+                    message += $"[{alert.AlertClass}/{alert.AlertType}] {alert.Message}; ";
+                }
+
+                return message;
+            }
+        }
+
+        public string AlertColor { get; private set; } = "None";
+
+        public AlertTypeEnum MaxAlertType { get; private set; } = AlertTypeEnum.None;
+
+
         private DateOnly? _dateJoined;
         public DateOnly? DateJoined
         {
@@ -211,34 +241,6 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
-        public string AlertColor { get; private set; } = "None";
-        public AlertTypeEnum MaxAlertType { get; private set; } = AlertTypeEnum.None;
-
-        public string AlertMessage
-        {
-            get
-            {
-                string message = "";
-
-                _AlertMessage.Sort((p1, p2 ) =>
-                {
-                    int result = p2.AlertType.CompareTo(p1.AlertType);
-                    if (result == 0)
-                    {
-                        result = p2.Timestamp.CompareTo(p1.Timestamp);
-                    }
-                    return result;
-                });
-
-                foreach (AlertMessage alert in _AlertMessage)
-                {
-                    message += $"[{alert.AlertClass}/{alert.AlertType}] {alert.Message}; ";
-                }
-
-                return message;
-            }
-        }
-
         public Player(string userId, string displayName, SessionInfo session)
         {
             UserId = userId;
@@ -250,9 +252,10 @@ namespace Tailgrab.PlayerManagement
         }
 
 
-        public void AddAlertMessage(AlertClassEnum alertClass, AlertTypeEnum alertType, string color, string message)
+        public void AddAlertMessage(AlertClassEnum alertClass, AlertTypeEnum alertType, string message)
         {
-            AlertMessage newAlert = new AlertMessage(alertClass, alertType, color, message);
+            string alertColor = PlayerManager.GetAlertColor(alertClass, alertType);
+            AlertMessage newAlert = new AlertMessage(alertClass, alertType, alertColor, message);
             _AlertMessage.Add(newAlert);
 
             foreach (AlertMessage alert in _AlertMessage)
@@ -630,7 +633,7 @@ namespace Tailgrab.PlayerManagement
                     if (watchedAvatar.AlertType > AlertTypeEnum.None)
                     {
                         player = AddPlayerEventByDisplayName(displayName, PlayerEvent.EventType.AvatarWatch, $"User has used a watched Avatar : {avatarName} alertType: {watchedAvatar.AlertType.ToString()}");
-                        player?.AddAlertMessage(AlertClassEnum.Avatar, watchedAvatar.AlertType, watchedAvatar.AlertType == AlertTypeEnum.Crasher ? "Red" : "Yellow", $"{avatarName}");
+                        player?.AddAlertMessage(AlertClassEnum.Avatar, watchedAvatar.AlertType, $"{avatarName}");
                     }
                 }
                 if (player != null)
@@ -724,7 +727,7 @@ namespace Tailgrab.PlayerManagement
                             if (!aiClassification.Equals("OK") && !evaluated.IsIgnored)
                             {
                                 AddPlayerEventByUserId(userId, PlayerEvent.EventType.Emoji, $"AI Evaluation: Spawned Item {itemName} ({inventoryId}) was classified {aiClassification}");
-                                player.AddAlertMessage(AlertClassEnum.EmojiSticker, AlertTypeEnum.Nuisance, "Yellow", $"{aiClassification}");
+                                player.AddAlertMessage(AlertClassEnum.EmojiSticker, AlertTypeEnum.Nuisance, $"{aiClassification}");
                             }
                         }
                     }
@@ -818,7 +821,7 @@ namespace Tailgrab.PlayerManagement
                                 if (!aiClassification.Equals("OK") && !evaluated.IsIgnored)
                                 {
                                     player = AddPlayerEventByUserId(printInfo.OwnerId, PlayerEvent.EventType.Print, $"AI Evaluation: Print {printId} was classified {aiClassification}");
-                                    player?.AddAlertMessage(AlertClassEnum.Print, AlertTypeEnum.Nuisance, "Yellow", $"{aiClassification}");
+                                    player?.AddAlertMessage(AlertClassEnum.Print, AlertTypeEnum.Nuisance, $"{aiClassification}");
                                 }
                             }
                         }
@@ -828,7 +831,6 @@ namespace Tailgrab.PlayerManagement
                 }
             }
         }
-
 
 
         public Player? UpdatePlayerUserFromVRCProfile(User profile, string profileHash)
@@ -951,5 +953,25 @@ namespace Tailgrab.PlayerManagement
                 logger.Error(ex, "Failed to clear the database");
             }
         }
+
+        #region Alert Color Management
+        public static string GetAlertColor(AlertClassEnum alertClass, AlertTypeEnum alertType)
+        {
+            string alertKey = alertClass switch
+            {
+                AlertClassEnum.Avatar => CommonConst.Avatar_Alert_Key,
+                AlertClassEnum.Group => CommonConst.Group_Alert_Key,
+                AlertClassEnum.Profile => CommonConst.Profile_Alert_Key,
+                AlertClassEnum.Print => CommonConst.Profile_Alert_Key,
+                AlertClassEnum.EmojiSticker => CommonConst.Profile_Alert_Key,
+                _ => CommonConst.Profile_Alert_Key
+
+            };
+
+            string key = CommonConst.ConfigRegistryPath + "\\" + alertKey + "\\" + alertType.ToString();
+            return ConfigStore.GetStoredKeyString(key, CommonConst.Color_Alert_Key) ?? "None";
+        }
+
+        #endregion
     }
 }

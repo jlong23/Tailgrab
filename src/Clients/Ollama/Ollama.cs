@@ -195,7 +195,7 @@ namespace Tailgrab.Clients.Ollama
                         if (groupInfo.AlertType > AlertTypeEnum.None)
                         {
                             player = serviceRegistry.GetPlayerManager().AddPlayerEventByUserId(item.UserId ?? string.Empty, PlayerEvent.EventType.GroupWatch, $"User is member of group: {groupInfo.GroupName} with alert level {groupInfo.AlertType}");
-                            player?.AddAlertMessage(AlertClassEnum.Group, groupInfo.AlertType, "Yellow", groupInfo.GroupName);
+                            player?.AddAlertMessage(AlertClassEnum.Group, groupInfo.AlertType, groupInfo.GroupName);
                             maxAlertType = maxAlertType < groupInfo.AlertType ? groupInfo.AlertType : maxAlertType;
                         }
                     }
@@ -290,15 +290,15 @@ namespace Tailgrab.Clients.Ollama
                 switch (profileWatch)
                 {
                     case "Harrassment & Bullying":
-                        player.AddAlertMessage(AlertClassEnum.Profile, AlertTypeEnum.Nuisance, "Yellow", "Hate");
+                        player.AddAlertMessage(AlertClassEnum.Profile, AlertTypeEnum.Nuisance, "Hate");
                         SoundManager.PlayAlertSound(CommonConst.Profile_Alert_Key, AlertTypeEnum.Nuisance);
                         break;
                     case "Explicit Sexual":
-                        player.AddAlertMessage(AlertClassEnum.Profile, AlertTypeEnum.Nuisance, "Yellow", "Sexual");
+                        player.AddAlertMessage(AlertClassEnum.Profile, AlertTypeEnum.Nuisance, "Sexual");
                         SoundManager.PlayAlertSound(CommonConst.Profile_Alert_Key, AlertTypeEnum.Nuisance);
                         break;
                     case "Self Harm":
-                        player.AddAlertMessage(AlertClassEnum.Profile, AlertTypeEnum.Watch, "Yellow", "Self-Harm");
+                        player.AddAlertMessage(AlertClassEnum.Profile, AlertTypeEnum.Watch, "Self-Harm");
                         SoundManager.PlayAlertSound(CommonConst.Profile_Alert_Key, AlertTypeEnum.Watch);
                         break;
                 }

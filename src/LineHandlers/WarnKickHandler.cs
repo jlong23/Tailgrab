@@ -35,7 +35,7 @@ public class WarnKickHandler : AbstractLineHandler
             Player? player = _serviceRegistry.GetPlayerManager().AddPlayerEventByDisplayName(userName, PlayerEvent.EventType.Moderation, $"User has been {action}.");
             if (player != null)
             {
-                player.AddAlertMessage(AlertClassEnum.Profile, AlertTypeEnum.Nuisance, "Yellow", action);
+                player.AddAlertMessage(AlertClassEnum.Profile, AlertTypeEnum.Nuisance, action);
             }
 
             ExecuteActions();
