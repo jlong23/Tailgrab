@@ -7,8 +7,7 @@ Tailgrab will read the VRChat Local Game Log files in real time, parse them for 
 
 ## Features
 - Shows a live feed of user in the current instance with their VRChat Avatar and UserID
-- When in Furry Hideout, shows user's usage of Furry Hideout Pens
-- Quick view of the user's historical avatar, pen, print, emoji and sticker usage in the current instance.
+- Quick view of the user's historical avatar, print, emoji and sticker usage in the current instance.
 - AI powered insights on user Profile, Sticker, Emoji and Print content.
 - Quick reporting of User's Profile to the in game moderation instance
 - Quick reporting of User's Images to the in game moderation instance
@@ -29,8 +28,28 @@ Tailgrab will read the VRChat Local Game Log files in real time, parse them for 
 > Then they will need to be move to the new location of ```{UserProfile}/AppData/Local/Tailgrab/``` after the installation.  
 >	- If you have made changes to the ```./sounds/*``` you will need to move to the sounds to the ```{UserProfile}/AppData/Local/Tailgrab/sounds/``` after the installation.
 >   - There is new settings for alert sounds per type and severity, so you may want to configure those in the Config->Alerts.
->	- The database file structure has changed in the new version, so there is a new Config->Migration Tab to load all the old data from the old database file to the new database file.  You can run this migration after you have moved your old database file to the new location and pointed the application to it in the Config->Secrets Tab.  Once you have run the migration, you may want to set the severity of all your existing Avatar and Group entries to the new Alert Levels that have been added in the new version, as the old version only had a single 'Alert' level for Avatars and Groups.  You can do this in bulk with an SQL update statement like ```UPDATE AvatarInfo SET alertType = 1 WHERE alertType > 0;``` for Avatars and ```UPDATE GroupInfo SET alertType = 1 WHERE alertType > 0;``` for Groups, this will set all your existing entries to the new 'Watch' level, you can then go through and adjust the levels as needed for your use case.
-> Don't forget to save on each page and restart the application.
+>
+> **Don't forget to save on each page and restart the application.**
+>
+>	- The database file structure has changed in the new version, install the application and set up your new settings, then close the application and run the command line migration tool to load all the old data from the old database file to the new database file.  
+> ```
+> .\migration.exe D:\dev\TailGrab\bin\Release\net10.0-windows\win-x64\publish\data\avatars.sqlite
+> Successfully validated database at: D:\dev\TailGrab\bin\Release\net10.0-windows\win-x64\publish\data\avatars.sqlite
+> Migration to V1.1.0
+> Database path: C:\Users\{user}\AppData\Local\Tailgrab\data\tailgrab.db
+> Database connection successful!
+> Table 'AvatarInfo' has 19607 records.
+> Migrated 0 records from 'AvatarInfo' to new database.
+> Table 'GroupInfo' has 73529 records.
+> Migrated 57616 records from 'GroupInfo' to new database.
+> Table 'UserInfo' has 13608 records.
+> Migrated 13345 records from 'UserInfo' to new database.
+> Table 'ProfileEvaluation' has 9764 records.
+> Migrated 9674 records from 'ProfileEvaluation' to new database.
+> Table 'ImageEvaluation' has 705 records.
+> `Migrated 675 records from 'ImageEvaluation' to new database.
+> ```
+>
 
 ### New Install
 
