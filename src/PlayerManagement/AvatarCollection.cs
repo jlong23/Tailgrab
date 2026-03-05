@@ -1,6 +1,7 @@
+using Microsoft.EntityFrameworkCore;
 using System.Collections.Specialized;
 using System.ComponentModel;
-using Microsoft.EntityFrameworkCore;
+using Tailgrab.Common;
 
 namespace Tailgrab.PlayerManagement
 {
@@ -43,7 +44,7 @@ namespace Tailgrab.PlayerManagement
             {
                 var db = _services.GetDBContext();
                 var query = db.AvatarInfos.AsQueryable();
-                
+
                 if (!string.IsNullOrWhiteSpace(_filterText))
                 {
                     if (_filterText.StartsWith("avtr_", StringComparison.OrdinalIgnoreCase))
@@ -55,7 +56,7 @@ namespace Tailgrab.PlayerManagement
                         query = query.Where(a => EF.Functions.Like(a.AvatarName, $"%{_filterText}%"));
                     }
                 }
-                
+
                 _count = query.Count();
             }
             catch
@@ -78,13 +79,13 @@ namespace Tailgrab.PlayerManagement
                     var db = _services.GetDBContext();
                     var skip = page * _pageSize;
                     var query = db.AvatarInfos.AsQueryable();
-                    
+
                     if (!string.IsNullOrWhiteSpace(_filterText))
                     {
                         var filterLower = _filterText.ToLower();
                         query = query.Where(a => a.AvatarName.ToLower().Contains(filterLower));
                     }
-                    
+
                     var items = query.OrderBy(a => a.AvatarName).Skip(skip).Take(_pageSize).ToList();
                     list = items.Select(a => new AvatarInfoViewModel(a)).ToList();
                     _pages[page] = list;
@@ -152,38 +153,34 @@ namespace Tailgrab.PlayerManagement
 
     public class AvatarInfoViewModel : INotifyPropertyChanged
     {
+        private AlertTypeEnum _alertType;
+
         public string AvatarId { get; set; }
         public string AvatarName { get; set; }
-        private bool _isBos;
-        public bool IsBos
+        public string UserName { get; set; }
+        public DateTime? UpdatedAt { get; set; }
+
+        public AlertTypeEnum AlertType
         {
-            get => _isBos;
+            get => _alertType;
             set
             {
-                if (_isBos != value)
+                if (_alertType != value)
                 {
-                    _isBos = value;
-                    IsBosText = BoolToYesNo(_isBos);
-                    OnPropertyChanged(nameof(IsBos));
-                    OnPropertyChanged(nameof(IsBosText));
+                    _alertType = value;
+                    OnPropertyChanged(nameof(AlertType));
                 }
             }
         }
-
-        public string IsBosText { get; set; }
-        public DateTime? UpdatedAt { get; set; }
 
         public AvatarInfoViewModel(Tailgrab.Models.AvatarInfo a)
         {
             AvatarId = a.AvatarId;
             AvatarName = a.AvatarName;
-            IsBos = a.IsBos;
             UpdatedAt = a.UpdatedAt;
-            IsBosText = BoolToYesNo(IsBos);
+            AlertType = a.AlertType;
+            UserName = a.UserName ?? "Unknown";
         }
-
-        // Convert boolean to YES/NO string for display
-        public static string BoolToYesNo(bool value) => value ? "YES" : "NO";
 
         public event PropertyChangedEventHandler? PropertyChanged;
         protected void OnPropertyChanged(string propertyName)

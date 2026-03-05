@@ -1,6 +1,7 @@
 ﻿using ConcurrentPriorityQueue.Core;
 using Microsoft.EntityFrameworkCore;
 using NLog;
+using Polly;
 using Tailgrab.Clients.Ollama;
 using Tailgrab.Common;
 using Tailgrab.Models;
@@ -33,7 +34,7 @@ namespace Tailgrab.AvatarManagement
         public void AddAvatar(AvatarInfo avatar)
         {
             try
-            {                
+            {
                 _serviceRegistry.GetDBContext().AvatarInfos.Add(avatar);
                 _serviceRegistry.GetDBContext().SaveChanges();
             }
@@ -87,20 +88,26 @@ namespace Tailgrab.AvatarManagement
             {
                 if ((DateTime.UtcNow - dateTime).TotalMinutes < 60)
                 {
-                    logger.Debug($"Skipping adding avatar {avatarId} as it was recently processed.");
                     return;
                 }
             }
             recentlyProcessedAvatars.Add(avatarId, DateTime.UtcNow);
 
-            var queuedItem = new QueuedAvatarProcess
-            {
-                AvatarId = avatarId,
-                Priority = 1
-            };
-        
+            var queuedItem = new QueuedAvatarProcess(5, avatarId);
+
             priorityQueue.Enqueue(queuedItem);
         }
+
+        public void EnqueueWatchAvatarForCheck(QueuedAvatarWatch watch)
+        {
+            priorityQueue.Enqueue(watch);
+        }
+
+        public void EnqueueModeratedAvatarForCheck(QueuedModeratedAvatarWatch watch)
+        {
+            priorityQueue.Enqueue(watch);
+        }
+
 
         public void GetAvatarsFromUser(string userId, string avatarName)
         {
@@ -129,7 +136,8 @@ namespace Tailgrab.AvatarManagement
                                 ImageUrl = avatar.ImageUrl,
                                 CreatedAt = avatar.CreatedAt,
                                 UpdatedAt = DateTime.UtcNow,
-                                IsBos = false
+                                AlertType = AlertTypeEnum.None,
+                                UserName = avatar.AuthorName
                             };
 
                             AddAvatar(avatarInfo);
@@ -137,6 +145,7 @@ namespace Tailgrab.AvatarManagement
                         else
                         {
                             dbAvatarInfo.UserId = avatar.AuthorId;
+                            dbAvatarInfo.UserName = avatar.AuthorName;
                             dbAvatarInfo.AvatarName = avatar.Name;
                             dbAvatarInfo.ImageUrl = avatar.ImageUrl;
                             dbAvatarInfo.CreatedAt = avatar.CreatedAt;
@@ -156,22 +165,23 @@ namespace Tailgrab.AvatarManagement
             _serviceRegistry.GetDBContext().Database.ExecuteSqlRaw("VACUUM;");
         }
 
-        internal bool CheckAvatarByName(string avatarName)
+        internal AvatarInfo? CheckAvatarByName(string avatarName)
         {
             var bannedAvatars = _serviceRegistry.GetDBContext().AvatarInfos
-                                         .Where(b => b.AvatarName != null && b.AvatarName.Equals(avatarName) && b.IsBos)
-                                         .OrderBy(b => b.CreatedAt)
+                                         .Where(b => b.AvatarName != null && b.AvatarName.Equals(avatarName) && b.AlertType > 0)
+                                         .OrderByDescending(b => b.AlertType)
                                          .ToList();
 
             if (bannedAvatars.Count > 0)
             {
-                string? soundSetting = ConfigStore.LoadSecret(Common.Common.Registry_Alert_Avatar) ?? "Hand";
-                SoundManager.PlaySound(soundSetting);
+                // Play alert sound based on the highest alert type found for the avatar
+                AlertTypeEnum maxAlertType = bannedAvatars[0].AlertType;
+                SoundManager.PlayAlertSound(CommonConst.Avatar_Alert_Key, maxAlertType);
 
-                return true;
+                return bannedAvatars[0];
             }
 
-            return false;
+            return null;
         }
 
         public static async Task AvatarCheckTask(ConcurrentPriorityQueue<IHavePriority<int>, int> priorityQueue, ServiceRegistry serviceRegistry)
@@ -184,38 +194,19 @@ namespace Tailgrab.AvatarManagement
                 while (true)
                 {
                     var result = priorityQueue.Dequeue();
-                    if (result.IsSuccess && result.Value is QueuedAvatarProcess item && item.AvatarId != null)
+                    if( result.IsSuccess )
                     {
-                        try
+                        if (result.Value is QueuedAvatarProcess item && item.AvatarId != null)
                         {
-                            AvatarInfo? dbAvatarInfo = dBContext.AvatarInfos.Find(item.AvatarId);
-                            bool updateNeeded = false;
-                            if (dbAvatarInfo == null)
-                            {
-                                updateNeeded = true;
-                            }
-                            else if (!dbAvatarInfo.IsBos &&
-                                (!dbAvatarInfo.UpdatedAt.HasValue || dbAvatarInfo.UpdatedAt.Value >= DateTime.UtcNow.AddHours(-24)))
-                            {
-                                updateNeeded = true;
-                            }
-
-                            if (updateNeeded)
-                            {
-                                Avatar? avatarData = FetchUpdateAvatarData(serviceRegistry, dBContext, item.AvatarId, dbAvatarInfo);
-
-                                if (avatarData == null && dbAvatarInfo == null)
-                                {
-                                    CreateAvatarInfoForPrivate(dBContext, item.AvatarId);
-                                }
-
-                                // Wait for a short period before checking the queue again
-                                await Task.Delay(1000);
-                            }
+                            await UpdateAmpAvatarRecord(serviceRegistry, dBContext, item.AvatarId);
                         }
-                        catch (Exception ex)
+                        else if (result.Value is QueuedAvatarWatch item2)
                         {
-                            logger.Error(ex, $"Error fetching user profile for userId: {item.AvatarId}");
+                            await UpdateWatchedAvatarRecord(serviceRegistry, dBContext, item2);
+                        }
+                        else if (result.Value is QueuedModeratedAvatarWatch item3)
+                        {
+                            await UpdateModeratedAvatarRecord(serviceRegistry, dBContext, item3);
                         }
                     }
                     else
@@ -229,6 +220,126 @@ namespace Tailgrab.AvatarManagement
             }
         }
 
+        private static async Task UpdateAmpAvatarRecord(ServiceRegistry serviceRegistry, TailgrabDBContext dBContext, string avatarId)
+        {
+            try
+            {
+                AvatarInfo? dbAvatarInfo = dBContext.AvatarInfos.Find(avatarId);
+                bool updateNeeded = false;
+                if (dbAvatarInfo == null)
+                {
+                    updateNeeded = true;
+                }
+                else if (dbAvatarInfo.AlertType == AlertTypeEnum.None &&
+                    (!dbAvatarInfo.UpdatedAt.HasValue || dbAvatarInfo.UpdatedAt.Value >= DateTime.UtcNow.AddHours(-2)))
+                {
+                    updateNeeded = true;
+                }
+
+                if (updateNeeded)
+                {
+                    // Adds and Updates avatar info in the database, if it doesn't exist or was last updated more than 2 hours ago
+                    Avatar? avatarData = FetchUpdateAvatarData(serviceRegistry, dBContext, avatarId, dbAvatarInfo);
+
+                    if (avatarData == null && dbAvatarInfo == null)
+                    {
+                        // Private Avatar
+                        CreateAvatarInfoForPrivate(dBContext, avatarId);
+                    }
+
+                    // Wait for a short period before checking the queue again
+                    await Task.Delay(1000);
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, $"Error fetching user profile for userId: {avatarId}");
+            }
+        }
+
+
+        private static async Task UpdateModeratedAvatarRecord(ServiceRegistry _serviceRegistry, TailgrabDBContext dbContext, QueuedModeratedAvatarWatch watch)
+        {
+            try
+            {
+                // Fetch the AvatarInfo record
+                AvatarInfo? avatarInfo = await dbContext.AvatarInfos.FindAsync(watch.AvatarId);
+                AvatarManagementService.FetchUpdateAvatarData(_serviceRegistry, dbContext, watch.AvatarId, avatarInfo);
+                avatarInfo = await dbContext.AvatarInfos.FindAsync(watch.AvatarId);
+
+                if (avatarInfo == null)
+                {
+                    logger.Debug($"Line {watch.LineNumber}: Avatar ID '{watch.AvatarId}' not found in database/vrc, skipping.");
+                }
+                else if (avatarInfo.AlertType == AlertTypeEnum.None)
+                {
+                    avatarInfo.AlertType = AlertTypeEnum.Nuisance;
+                    avatarInfo.UpdatedAt = DateTime.UtcNow;
+                    dbContext.AvatarInfos.Update(avatarInfo);
+                    dbContext.SaveChanges();
+                }
+                else
+                {
+                    logger.Debug($"Line {watch.LineNumber}: Avatar ID '{watch.AvatarId}' already has Has an Alert, skipping.");
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, $"Line {watch.LineNumber}: Error processing avatar ID '{watch.AvatarId}'");
+            }
+
+            // Throttle processing to avoid overwhelming the API
+            await Task.Delay(1000);
+        }
+
+        private static async Task UpdateWatchedAvatarRecord(ServiceRegistry _serviceRegistry, TailgrabDBContext dbContext, QueuedAvatarWatch watch)
+        {
+            try
+            {
+                // Fetch the AvatarInfo record
+                AvatarInfo? avatarInfo = await dbContext.AvatarInfos.FindAsync(watch.AvatarId);
+                AvatarManagementService.FetchUpdateAvatarData(_serviceRegistry, dbContext, watch.AvatarId, avatarInfo);
+                avatarInfo = await dbContext.AvatarInfos.FindAsync(watch.AvatarId);
+
+                if (avatarInfo == null)
+                {
+                    logger.Debug($"Line {watch.LineNumber}: Avatar ID '{watch.AvatarId}' not found in database/vrc, skipping.");
+                } 
+                else if (avatarInfo.AlertType == AlertTypeEnum.None)
+                {
+
+                    avatarInfo.AlertType = watch.AlertType;
+                    avatarInfo.UpdatedAt = DateTime.UtcNow;
+                    dbContext.AvatarInfos.Update(avatarInfo);
+                    dbContext.SaveChanges();
+
+                    if (avatarInfo.AlertType >= AlertTypeEnum.Nuisance)
+                    {
+                        await _serviceRegistry.GetVRChatAPIClient().BlockAvatarGlobal(avatarInfo.AvatarId);
+                    }
+                    else
+                    {
+                        await _serviceRegistry.GetVRChatAPIClient().DeleteAvatarGlobal(avatarInfo.AvatarId);
+                    }
+
+                    logger.Debug($"Line {watch.LineNumber}: Set Watch State for Avatar ID '{watch.AvatarId}'");
+
+                }
+                else
+                {
+                    logger.Debug($"Line {watch.LineNumber}: Avatar ID '{watch.AvatarId}' already has Has an Alert, skipping.");
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, $"Line {watch.LineNumber}: Error processing avatar ID '{watch.AvatarId}'");
+            }
+
+            // Throttle processing to avoid overwhelming the API
+            await Task.Delay(3000);
+        }
+
+
         private static void CreateAvatarInfoForPrivate(TailgrabDBContext dBContext, string AvatarId)
         {
             var avatarInfo = new AvatarInfo
@@ -238,8 +349,7 @@ namespace Tailgrab.AvatarManagement
                 AvatarName = $"Unknown Avatar {AvatarId}",
                 ImageUrl = "",
                 CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow,
-                IsBos = false
+                UpdatedAt = DateTime.UtcNow
             };
 
             try
@@ -270,11 +380,11 @@ namespace Tailgrab.AvatarManagement
                         {
                             AvatarId = avatarData.Id,
                             UserId = avatarData.AuthorId,
+                            UserName = avatarData.AuthorName,
                             AvatarName = avatarData.Name,
                             ImageUrl = avatarData.ImageUrl,
                             CreatedAt = avatarData.CreatedAt,
-                            UpdatedAt = DateTime.UtcNow,
-                            IsBos = false
+                            UpdatedAt = DateTime.UtcNow
                         };
 
                         try
@@ -298,6 +408,7 @@ namespace Tailgrab.AvatarManagement
                         }
 
                         dbAvatarInfo.UserId = avatarData.AuthorId;
+                        dbAvatarInfo.UserName = avatarData.AuthorName;
                         dbAvatarInfo.AvatarName = avatarData.Name;
                         dbAvatarInfo.ImageUrl = avatarData.ImageUrl;
                         dbAvatarInfo.CreatedAt = avatarData.CreatedAt;
@@ -326,10 +437,53 @@ namespace Tailgrab.AvatarManagement
 
     internal class QueuedAvatarProcess : IHavePriority<int>
     {
+        public QueuedAvatarProcess(int priority, string avatarId)
+        {
+            Priority = priority;
+            AvatarId = avatarId;
+        }
+
         public int Priority { get; set; }
 
-        public string? AvatarId { get; set; }
+        public string AvatarId { get; set; }
     }
 
 
+    public class QueuedAvatarWatch : IHavePriority<int>
+    {
+        public QueuedAvatarWatch( int priority, string avatarId, AlertTypeEnum alertType, int lineNumber)
+        {
+            Priority = priority;
+            AvatarId = avatarId;
+            AlertType = alertType;
+            LineNumber = lineNumber;
+        }
+
+        public int Priority { get; set; }
+
+        public string AvatarId { get; set; }
+
+        public AlertTypeEnum AlertType { get; set; }
+
+        public int LineNumber { get; set; }
+    }
+
+    public class QueuedModeratedAvatarWatch : IHavePriority<int>
+    {
+        public QueuedModeratedAvatarWatch(int priority, string avatarId, AlertTypeEnum alertType, int lineNumber)
+        {
+            Priority = priority;
+            AvatarId = avatarId;
+            AlertType = alertType;
+            LineNumber = lineNumber;
+        }
+
+        public int Priority { get; set; }
+
+        public string AvatarId { get; set; }
+
+        public AlertTypeEnum AlertType { get; set; }
+
+        public int LineNumber { get; set; }
+    }
 }

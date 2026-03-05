@@ -1,6 +1,7 @@
+using Microsoft.EntityFrameworkCore;
 using System.Collections.Specialized;
 using System.ComponentModel;
-using Microsoft.EntityFrameworkCore;
+using Tailgrab.Common;
 
 namespace Tailgrab.PlayerManagement
 {
@@ -41,7 +42,7 @@ namespace Tailgrab.PlayerManagement
             {
                 var db = _services.GetDBContext();
                 var query = db.GroupInfos.AsQueryable();
-                
+
                 if (!string.IsNullOrWhiteSpace(_filterText))
                 {
                     if (_filterText.StartsWith("grp_", StringComparison.OrdinalIgnoreCase))
@@ -53,7 +54,7 @@ namespace Tailgrab.PlayerManagement
                         query = query.Where(g => EF.Functions.Like(g.GroupName, $"%{_filterText}%"));
                     }
                 }
-                
+
                 _count = query.Count();
             }
             catch
@@ -75,7 +76,7 @@ namespace Tailgrab.PlayerManagement
                     var db = _services.GetDBContext();
                     var skip = page * _pageSize;
                     var query = db.GroupInfos.AsQueryable();
-                    
+
                     if (!string.IsNullOrWhiteSpace(_filterText))
                     {
                         if (_filterText.StartsWith("grp_", StringComparison.OrdinalIgnoreCase))
@@ -87,7 +88,7 @@ namespace Tailgrab.PlayerManagement
                             query = query.Where(g => EF.Functions.Like(g.GroupName, $"%{_filterText}%"));
                         }
                     }
-                    
+
                     var items = query.OrderBy(a => a.GroupName).Skip(skip).Take(_pageSize).ToList();
                     list = items.Select(a => new GroupInfoViewModel(a)).ToList();
                     _pages[page] = list;
@@ -155,36 +156,28 @@ namespace Tailgrab.PlayerManagement
     {
         public string GroupId { get; set; }
         public string GroupName { get; set; }
-        private bool _isBos;
-        public bool IsBos
+        private AlertTypeEnum _AlertType;
+        public AlertTypeEnum AlertType
         {
-            get => _isBos;
+            get => _AlertType;
             set
             {
-                if (_isBos != value)
+                if (_AlertType != value)
                 {
-                    _isBos = value;
-                    IsBosText = BoolToYesNo(_isBos);
-                    OnPropertyChanged(nameof(IsBos));
-                    OnPropertyChanged(nameof(IsBosText));
+                    _AlertType = value;
+                    OnPropertyChanged(nameof(AlertType));
                 }
             }
         }
-
-        public string IsBosText { get; set; }
         public DateTime? UpdatedAt { get; set; }
 
         public GroupInfoViewModel(Tailgrab.Models.GroupInfo a)
         {
             GroupId = a.GroupId;
             GroupName = a.GroupName;
-            IsBos = a.IsBos;
+            AlertType = a.AlertType;
             UpdatedAt = a.UpdatedAt;
-            IsBosText = BoolToYesNo(IsBos);
         }
-
-        // Convert boolean to YES/NO string for display
-        public static string BoolToYesNo(bool value) => value ? "YES" : "NO";
 
         public event PropertyChangedEventHandler? PropertyChanged;
         protected void OnPropertyChanged(string propertyName)

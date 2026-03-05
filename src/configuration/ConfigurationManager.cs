@@ -27,23 +27,15 @@ namespace Tailgrab.Configuration
 
         public string GetConfigFilePath()
         {
-            string userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-            string configDirectory = Path.Combine(userProfile, ".tailgrab");
-            if (!Directory.Exists(configDirectory))
-            {
-                Directory.CreateDirectory(configDirectory);
-            }
-
-            return Path.Combine(configDirectory, "config.json");
+            return Path.Combine(CommonConst.APPLICATION_LOCAL_DATA_PATH, "config.json");
         }
 
-        public List<LineHandlerConfig> LoadConfig(string? configFilePath = null)
+        public List<LineHandlerConfig> LoadConfig()
         {
             logger.Debug("** Loading Configuration file");
 
             // Resolve path: prefer explicit, then local repo config.json, then user config path
-            string path = configFilePath
-                ?? (File.Exists("config.json") ? Path.GetFullPath("config.json") : GetConfigFilePath());
+            string path = (File.Exists("config.json") ? Path.GetFullPath("config.json") : GetConfigFilePath());
 
             if (!File.Exists(path))
             {

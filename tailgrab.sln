@@ -4,16 +4,30 @@ VisualStudioVersion = 18.2.11430.68
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "tailgrab", "tailgrab.csproj", "{910B279B-72B3-3CFC-4BFE-5A237E51A72C}"
 EndProject
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "Tailgrab Install", "..\Tailgrab Install\Tailgrab Install.vdproj", "{793BC8C4-7D9E-1942-44B6-88CE35D69FDB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
 		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{910B279B-72B3-3CFC-4BFE-5A237E51A72C}.Debug|Any CPU.ActiveCfg = Release|Any CPU
 		{910B279B-72B3-3CFC-4BFE-5A237E51A72C}.Debug|Any CPU.Build.0 = Release|Any CPU
+		{910B279B-72B3-3CFC-4BFE-5A237E51A72C}.Debug|x64.ActiveCfg = Debug|x64
+		{910B279B-72B3-3CFC-4BFE-5A237E51A72C}.Debug|x64.Build.0 = Debug|x64
 		{910B279B-72B3-3CFC-4BFE-5A237E51A72C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{910B279B-72B3-3CFC-4BFE-5A237E51A72C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{910B279B-72B3-3CFC-4BFE-5A237E51A72C}.Release|x64.ActiveCfg = Release|Any CPU
+		{910B279B-72B3-3CFC-4BFE-5A237E51A72C}.Release|x64.Build.0 = Release|Any CPU
+		{793BC8C4-7D9E-1942-44B6-88CE35D69FDB}.Debug|Any CPU.ActiveCfg = Debug
+		{793BC8C4-7D9E-1942-44B6-88CE35D69FDB}.Debug|x64.ActiveCfg = Debug
+		{793BC8C4-7D9E-1942-44B6-88CE35D69FDB}.Debug|x64.Build.0 = Debug
+		{793BC8C4-7D9E-1942-44B6-88CE35D69FDB}.Release|Any CPU.ActiveCfg = Release
+		{793BC8C4-7D9E-1942-44B6-88CE35D69FDB}.Release|x64.ActiveCfg = Release
+		{793BC8C4-7D9E-1942-44B6-88CE35D69FDB}.Release|x64.Build.0 = Release
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

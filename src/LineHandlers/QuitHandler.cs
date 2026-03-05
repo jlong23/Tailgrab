@@ -26,17 +26,13 @@ public class QuitHandler : AbstractLineHandler
             string totalTime = m.Groups[VRC_TOTALSEC].Value;
 
             // Create a TimeSpan object from the total number of seconds
-            //TimeSpan time = TimeSpan.FromSeconds(int.Parse(totalTime));
-
-            // Access the individual components (Hours, Minutes, Seconds)
-            //int hours = time.Hours;
-            //int minutes = time.Minutes;
-            //int seconds = time.Seconds;
+            TimeSpan time = TimeSpan.FromSeconds(Double.Parse(totalTime));
 
             if (LogOutput)
             {
                 //string formattedTime = string.Format("{0:D2}:{1:D2}:{2:D2}", time.Hours, time.Minutes, time.Seconds);
-                logger.Info($"{COLOR_PREFIX}Application Stop :  {totalTime} seconds{COLOR_RESET.GetAnsiEscape()}");
+                //logger.Info($"{COLOR_PREFIX}Application Stop :  {totalTime} seconds{COLOR_RESET.GetAnsiEscape()}");
+                logger.Info($"{COLOR_PREFIX}Application Stop :  {time} {COLOR_RESET.GetAnsiEscape()}");
             }
 
             _serviceRegistry.GetPlayerManager().ClearAllPlayers(this);

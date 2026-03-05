@@ -3,7 +3,9 @@ using NLog;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 using Tailgrab.AvatarManagement;
+using Tailgrab.Common;
 using Tailgrab.Models;
 
 namespace Tailgrab.Configuration
@@ -11,12 +13,12 @@ namespace Tailgrab.Configuration
     public class AvatarBosGistListManager
     {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
-        private readonly ServiceRegistry _serviceRegistry;
+        private readonly AvatarManagementService avatarManager;
         private readonly HttpClient _httpClient;
 
-        public AvatarBosGistListManager(ServiceRegistry serviceRegistry)
+        public AvatarBosGistListManager(AvatarManagementService avatarManagement)
         {
-            _serviceRegistry = serviceRegistry ?? throw new ArgumentNullException(nameof(serviceRegistry));
+            avatarManager = avatarManagement;
             _httpClient = new HttpClient();
         }
 
@@ -38,10 +40,10 @@ namespace Tailgrab.Configuration
             try
             {
                 logger.Info($"Downloading GIST content from: {gistUrl}");
-                
+
                 // Download the GIST content
                 string gistContent = await DownloadGistContentAsync(gistUrl);
-                
+
                 if (string.IsNullOrEmpty(gistContent))
                 {
                     logger.Warn("Downloaded GIST content is empty.");
@@ -54,7 +56,7 @@ namespace Tailgrab.Configuration
 
                 // Get the stored checksum from registry
                 string? storedChecksum = GetStoredChecksum();
-                
+
                 // Compare checksums
                 if (storedChecksum != null && storedChecksum.Equals(currentChecksum, StringComparison.OrdinalIgnoreCase))
                 {
@@ -66,7 +68,7 @@ namespace Tailgrab.Configuration
 
                 // Process the file line by line
                 int processedCount = await ProcessAvatarIdsAsync(gistContent);
-                
+
                 logger.Info($"Processed {processedCount} avatar IDs from GIST.");
 
                 // Save the new checksum to registry
@@ -100,7 +102,7 @@ namespace Tailgrab.Configuration
             {
                 byte[] inputBytes = Encoding.UTF8.GetBytes(content);
                 byte[] hashBytes = md5.ComputeHash(inputBytes);
-                
+
                 StringBuilder sb = new StringBuilder();
                 foreach (byte b in hashBytes)
                 {
@@ -114,7 +116,7 @@ namespace Tailgrab.Configuration
         {
             try
             {
-                using (RegistryKey? key = Registry.CurrentUser.OpenSubKey(Common.Common.ConfigRegistryPath))
+                using (RegistryKey? key = Registry.CurrentUser.OpenSubKey(Common.CommonConst.ConfigRegistryPath))
                 {
                     if (key == null)
                     {
@@ -122,7 +124,7 @@ namespace Tailgrab.Configuration
                         return null;
                     }
 
-                    string? value = key.GetValue(Common.Common.Registry_Avatar_Checksum) as string;
+                    string? value = key.GetValue(Common.CommonConst.Registry_Avatar_Checksum) as string;
                     if (string.IsNullOrEmpty(value))
                     {
                         logger.Debug("No checksum stored in registry.");
@@ -143,7 +145,7 @@ namespace Tailgrab.Configuration
         {
             try
             {
-                using (RegistryKey? key = Registry.CurrentUser.OpenSubKey(Common.Common.ConfigRegistryPath))
+                using (RegistryKey? key = Registry.CurrentUser.OpenSubKey(Common.CommonConst.ConfigRegistryPath))
                 {
                     if (key == null)
                     {
@@ -151,7 +153,7 @@ namespace Tailgrab.Configuration
                         return null;
                     }
 
-                    string? value = key.GetValue(Common.Common.Registry_Avatar_Gist) as string;
+                    string? value = key.GetValue(Common.CommonConst.Registry_Avatar_Gist) as string;
                     if (string.IsNullOrEmpty(value))
                     {
                         logger.Debug("No Avatar GIST Uri stored in registry.");
@@ -172,9 +174,9 @@ namespace Tailgrab.Configuration
         {
             try
             {
-                using (RegistryKey key = Registry.CurrentUser.CreateSubKey(Common.Common.ConfigRegistryPath))
+                using (RegistryKey key = Registry.CurrentUser.CreateSubKey(Common.CommonConst.ConfigRegistryPath))
                 {
-                    key.SetValue(Common.Common.Registry_Avatar_Checksum, checksum, RegistryValueKind.String);
+                    key.SetValue(Common.CommonConst.Registry_Avatar_Checksum, checksum, RegistryValueKind.String);
                 }
             }
             catch (Exception ex)
@@ -186,8 +188,6 @@ namespace Tailgrab.Configuration
         private async Task<int> ProcessAvatarIdsAsync(string gistContent)
         {
             int processedCount = 0;
-            TailgrabDBContext dbContext = _serviceRegistry.GetDBContext();
-            AvatarManagementService avatarService = _serviceRegistry.GetAvatarManager();
 
             using (System.IO.StringReader reader = new System.IO.StringReader(gistContent))
             {
@@ -204,15 +204,18 @@ namespace Tailgrab.Configuration
                     }
 
                     // Split by whitespace or comma to get the first column
-                    string[] columns = line.Split(new[] { ' ', '\t', ',' }, StringSplitOptions.RemoveEmptyEntries);
-                    
-                    if (columns.Length == 0)
+                    string pattern = @",(?=(?:[^""]*""[^""]*"")*[^""]*$)";
+                    string[] columns = Regex.Split(line, pattern); //.Split(new[] { ' ', '\t', ',' }, StringSplitOptions.RemoveEmptyEntries);
+
+                    if (columns.Length < 3)
                     {
+                        logger.Warn($"Line {lineNumber}: Expected at least 3 columns (AvatarId, AvatarName, AlertType), but got {columns.Length}. Skipping line.");
                         continue;
                     }
 
                     string avatarId = columns[0].Trim().Trim('"');
-                    logger.Info(avatarId);
+                    string avatarName = columns[1].Trim().Trim('"');
+                    string avatarAlert = columns[2].Trim().Trim('"');
 
                     if (string.IsNullOrWhiteSpace(avatarId))
                     {
@@ -220,53 +223,24 @@ namespace Tailgrab.Configuration
                         continue;
                     }
 
-                    try
+                    // Convert the alert type string to the AlertTypeEnum, defaulting to None if parsing fails
+                    AlertTypeEnum alertType = AlertTypeEnum.None;
+                    if (Enum.TryParse<AlertTypeEnum>(avatarAlert, out alertType))
                     {
-                        // Fetch the AvatarInfo record
-                        AvatarInfo? avatarInfo = await dbContext.AvatarInfos.FindAsync(avatarId);
-                        AvatarManagementService.FetchUpdateAvatarData(_serviceRegistry, dbContext, avatarId, avatarInfo);
-                        avatarInfo = await dbContext.AvatarInfos.FindAsync(avatarId);
-
-                        if (avatarInfo == null)
-                        {
-                            logger.Debug($"Line {lineNumber}: Avatar ID '{avatarId}' not found in database, skipping.");
-                            continue;
-                        }
-
-                        // Set IsBOS to true
-                        if (!avatarInfo.IsBos)
-                        {
-                            avatarInfo.IsBos = true;
-                            avatarInfo.UpdatedAt = DateTime.UtcNow;
-                            dbContext.AvatarInfos.Update(avatarInfo);
-                            processedCount++;
-                            logger.Debug($"Line {lineNumber}: Set IsBOS=true for Avatar ID '{avatarId}'");
-                        }
-                        else
-                        {
-                            logger.Debug($"Line {lineNumber}: Avatar ID '{avatarId}' already has IsBOS=true, skipping.");
-                        }
+                        // Declared and Defaulted above
                     }
-                    catch (Exception ex)
+                    else
                     {
-                        logger.Error(ex, $"Line {lineNumber}: Error processing avatar ID '{avatarId}'");
+                        logger.Warn($"Line {lineNumber}: Invalid AlertType '{avatarAlert}' for Avatar ID '{avatarId}', defaulting to None.");
                     }
 
-                    // Throttle processing to avoid overwhelming the API
-                    await Task.Delay(1000);
+                    AvatarInfo? info = avatarManager.GetAvatarById(avatarId);
+                    if (info == null || info.AlertType == AlertTypeEnum.None) {
+                        QueuedAvatarWatch watchItem = new QueuedAvatarWatch(1, avatarId, alertType, lineNumber);
+                        avatarManager.EnqueueWatchAvatarForCheck(watchItem);
+                    }
+                    processedCount++;
                 }
-            }
-
-            // Save all changes to the database
-            try
-            {
-                await dbContext.SaveChangesAsync();
-                logger.Info($"Successfully saved {processedCount} changes to the database.");
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex, "Failed to save changes to the database.");
-                throw;
             }
 
             return processedCount;

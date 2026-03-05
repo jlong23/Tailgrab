@@ -2,7 +2,6 @@ namespace Tailgrab.LineHandler;
 
 using System.Text.RegularExpressions;
 using Tailgrab.Common;
-using Tailgrab.PlayerManagement;
 
 public class AvatarChangeHandler : AbstractLineHandler
 {

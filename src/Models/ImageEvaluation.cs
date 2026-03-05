@@ -13,6 +13,7 @@ public partial class ImageEvaluation
     public string Md5checksum { get; set; }
     public byte[] Evaluation { get; set; }
     public DateTime LastDateTime { get; set; }
+    public bool IsIgnored { get; set; } = false;
 
     public ImageEvaluation()
     {
@@ -21,6 +22,6 @@ public partial class ImageEvaluation
 
     public override string ToString()
     {
-        return $"InventoryId: {InventoryId}, UserId: {UserId}, Md5checksum: {Md5checksum}, Evaluation: {BitConverter.ToString(Evaluation)}, LastDateTime: {LastDateTime}";
+        return $"ImageEvaluation: InventoryId={InventoryId}, UserId={UserId}, Md5checksum={Md5checksum}, LastDateTime={LastDateTime}, IsIgnored={IsIgnored}";
     }
 }

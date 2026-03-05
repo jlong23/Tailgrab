@@ -9,15 +9,9 @@ Below the Tab, the panel there is a search box that allows you to filter the lis
 
 Below that the list of active players in the instance. You can click on a player to view their profile and historical activity on the two bottom text boxes. The left box shows the player's profile and AI Evaluation, while the right box shows the historical avatar; emoji, sticker and print usage.  The Column Header when clicked will sort the column; the default is "Instance Start" Decending.
 
-The _**Code**_ column indicates an alert state for the player. If there are no alerts, the column will be blank.  Any player that has any alert will be highlighted yellow.
+The _**Alerts**_ column indicates an alert state for the player. If there are no alerts, the column will be blank.  Any player that has any alert will be highlighted accoring to the sevarity of the alert.
 
-| Code | Alert Type |
-| --- | --- |
-| A | Avatar Alert |
-| B | Bio/Profile Alert |
-| G | Group Alert |
-| P | Print Alert |
-| E | Emoji/Sticker Alert |
+Format of the alerts contains [{Classification}/{Alert Type}] {Reason} where Classification is either "Profile", "Avatar", "Group", "Print" or "Emoji/Sticker".  Alert Type is the severity level of the alert you assigned in the configuration areas.  Prints, Stickers and Emojis are only flagged when there is a Ollama Key and the evaluation is done successfuly with the supplied prompt.
 
 The Copy Profile button allows you to copy the player's profile information to your clipboard, while the Report Profile button allows you to report the player for any inappropriate content using the VR Chat in-game reporting system. When you click the Report Profile button, it will open the a dialog mimicing the VR Chat reporting page as a model dialog with the player's information and reporting values pre-filled. 
 

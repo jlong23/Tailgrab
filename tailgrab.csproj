@@ -3,14 +3,29 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0-windows</TargetFramework>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier> <!-- or win-x86 for 32-bit -->
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWindowsForms>true</UseWindowsForms>
     <UseWPF>true</UseWPF>
     <Nullable>enable</Nullable>
-    <AssemblyVersion>1.0.9.1722</AssemblyVersion> <!-- Explicitly set the build number -->
-    <FileVersion>1.0.9.1722</FileVersion>
-    <InformationalVersion>1.0.9.1722</InformationalVersion>
-    <ApplicationIcon>src\Resources\tailgrab_large.ico</ApplicationIcon>    
+    <ApplicationIcon>src\Resources\tailgrab.ico</ApplicationIcon>
+    
+    <!-- Read build number from file -->
+    <BuildNumberFile>$(MSBuildProjectDirectory)\BuildNumber.txt</BuildNumberFile>
+    <BuildNumber>$([System.IO.File]::ReadAllText('$(BuildNumberFile)').Trim())</BuildNumber>
+    
+    <!-- Version properties using build number -->
+    <AssemblyVersion>1.1.0.$(BuildNumber)</AssemblyVersion>
+    <FileVersion>1.1.0.$(BuildNumber)</FileVersion>
+    <InformationalVersion>1.1.0.$(BuildNumber)</InformationalVersion>
+    <PackageProjectUrl>https://github.com/jlong23/Tailgrab</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RepositoryUrl>https://github.com/jlong23/Tailgrab</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
 
   <ItemGroup>
@@ -39,20 +54,6 @@
     <Content Remove="C:\Users\jlong\.nuget\packages\microsoft.codeanalysis.workspaces.msbuild\4.14.0\contentFiles\any\any\BuildHost-net472\tr\System.CommandLine.resources.dll" />
     <Content Remove="C:\Users\jlong\.nuget\packages\microsoft.codeanalysis.workspaces.msbuild\4.14.0\contentFiles\any\any\BuildHost-net472\zh-Hans\System.CommandLine.resources.dll" />
     <Content Remove="C:\Users\jlong\.nuget\packages\microsoft.codeanalysis.workspaces.msbuild\4.14.0\contentFiles\any\any\BuildHost-net472\zh-Hant\System.CommandLine.resources.dll" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Remove="src\Resources\tailgrab.ico" />
-    <None Remove="src\Resources\tailgrab.png" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Include="src\Resources\tailgrab.ico" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Include="src\Resources\tailgrab.png" />
-    <EmbeddedResource Include="src\Resources\tailgrab.ico" />
   </ItemGroup>
 
   <ItemGroup>
@@ -110,5 +111,37 @@
       <TargetPath>sounds\%(RecursiveDir)%(Filename)%(Extension)</TargetPath>
     </Content>
   </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="src\Resources\tailgrab.ico">
+		<CopyToOutputDirectory>PreserverNewest</CopyToOutputDirectory>
+		<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+		<TargetPath>%(Filename)%(Extension)</TargetPath>
+	</Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
+
+  <!-- Increment build number for Release builds and Publish -->
+  <Target Name="IncrementBuildNumber" BeforeTargets="BeforeBuild" Condition="'$(Configuration)' == 'Release' Or '$(PublishProtocol)' != ''">
+    <PropertyGroup>
+      <CurrentBuildNumber>$([System.IO.File]::ReadAllText('$(BuildNumberFile)').Trim())</CurrentBuildNumber>
+      <NewBuildNumber>$([MSBuild]::Add($(CurrentBuildNumber), 1))</NewBuildNumber>
+    </PropertyGroup>
+    <Message Text="Incrementing build number from $(CurrentBuildNumber) to $(NewBuildNumber)" Importance="high" />
+    <WriteLinesToFile File="$(BuildNumberFile)" Lines="$(NewBuildNumber)" Overwrite="true" />
+    <!-- Force re-evaluation of BuildNumber property -->
+    <PropertyGroup>
+      <BuildNumber>$(NewBuildNumber)</BuildNumber>
+      <AssemblyVersion>1.1.0.$(BuildNumber)</AssemblyVersion>
+      <FileVersion>1.1.0.$(BuildNumber)</FileVersion>
+      <InformationalVersion>1.1.0.$(BuildNumber)</InformationalVersion>
+    </PropertyGroup>
+  </Target>
 
 </Project>

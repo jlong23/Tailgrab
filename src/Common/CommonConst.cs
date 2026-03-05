@@ -1,7 +1,12 @@
-﻿namespace Tailgrab.Common
+﻿using System.IO;
+
+namespace Tailgrab.Common
 {
-    public static class Common
+    public static class CommonConst
     {
+
+        public static string APPLICATION_LOCAL_DATA_PATH = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Tailgrab" );
+        public const string APPLICATION_LOCAL_DATABASE = "tailgrab.db";
         public const string ApplicationName = "Tailgrab";
         public const string CompanyName = "DeviousFox";
         public const string ConfigRegistryPath = "Software\\DeviousFox\\Tailgrab\\Config";
@@ -17,7 +22,7 @@
         public const string Registry_Ollama_API_Prompt = "OLLAMA_API_PROMPT";
         public const string Registry_Ollama_API_Image_Prompt = "OLLAMA_API_PROMPT_IMAGE";
         public const string Registry_Ollama_API_Model = "OLLAMA_API_Model";
-        public const string Default_Ollama_API_Prompt = "From the following block of text, classify the contents into a single class from the following classes;\r\n'OK' - Where as all text content can be considered PG13;\r\n'Explicit Sexual' - Where as any of the text contained describes sexual acts or intent. Flagged words Bussy, Fagot, Dih;\r\n'Harassment & Bullying' - Where the text is describing acts of trolling or bullying users on Religion, Sexual Orientation or Race. Flagged words of base nigg* and variations of that spelling to hide racism.\r\n'Self Harm' - Any part of the text where it explicitly describes destructive behaviours.\r\nIf there is not enough information to determine the class, use a default of OK. When replying, return a single line for the Classification and a carriage return, then place the reasoning on subsequent lines, translate any foreign language to English: \n";
+        public const string Default_Ollama_API_Prompt = "From the following block of text, classify the contents into a single class from the following classes; 'OK' - Where as all text content can be considered PG13; 'Explicit Sexual' - Where as any of the text contained describes sexual acts or intent. Flagged words Bussy, Fagot, Dih; 18+ and 21+ age requirements do not indicate sexual intent. 'Harassment & Bullying' - Where the text is describing acts of trolling or bullying users on Religion, Sexual Orientation or Race. Flagged words of base nigg* and variations of that spelling to hide racism. 'Self Harm' - Any part of the text where it explicitly describes destructive behaviours. If there is not enough information to determine the class, use a default of OK. When replying, return a single line for the Classification and a carriage return, then place the reasoning on subsequent lines, translate any foreign language to English:\n";
         public const string Default_Ollama_API_Image_Prompt = "From the attached image, reply with a single classification of, 'OK', 'Sexual Content', 'Gore' or 'Racism'. In the following line, give the reasoning for the classifcation.";
         public const string Default_Ollama_API_Endpoint = "https://ollama.com";
         public const string Default_Ollama_API_Model = "gemma3:27b";
@@ -34,5 +39,12 @@
         // Avatar Gist related registry keys
         public const string Registry_Avatar_Checksum = "GIST_AVATAR_LIST_CHECKSUM";
         public const string Registry_Avatar_Gist = "GIST_AVATAR_LIST_URL";
+
+        public const string Avatar_Alert_Key = "Avatar";
+        public const string Group_Alert_Key = "Group";
+        public const string Profile_Alert_Key = "Profile";
+        public const string Sound_Alert_Key = "Sound";
+        public const string Color_Alert_Key = "Color";
+
     }
 }

@@ -30,8 +30,12 @@ public class VTKHandler : AbstractLineHandler
                 logger.Info($"{COLOR_PREFIX}VTK : {userName}{COLOR_RESET.GetAnsiEscape()}");
             }
 
-            _serviceRegistry.GetPlayerManager().AddPlayerEventByDisplayName(userName, PlayerEvent.EventType.Moderation, "Vote kick initiated against player.");
-
+            Player? player = _serviceRegistry.GetPlayerManager().AddPlayerEventByDisplayName(userName, PlayerEvent.EventType.Moderation, "Vote kick initiated against player.");
+            if (player != null)
+            {
+                player.AddAlertMessage(AlertClassEnum.Profile, AlertTypeEnum.Nuisance, $"VTK");
+            }
+            
             ExecuteActions();
             return true;
         }

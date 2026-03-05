@@ -1,8 +1,7 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.VisualBasic.ApplicationServices;
 using NLog;
+using System.ComponentModel;
 using System.Text;
-using System.Windows;
+using Tailgrab.AvatarManagement;
 using Tailgrab.Clients.VRChat;
 using Tailgrab.Common;
 using Tailgrab.LineHandler;
@@ -66,9 +65,10 @@ namespace Tailgrab.PlayerManagement
         public DateTime CreatedAt { get; set; }
         public string PrintUrl { get; set; }
         public string AIEvaluation { get; set; }
+        public string AIClass { get; set; }
         public string AuthorName { get; set; }
 
-        public PlayerPrint(VRChat.API.Model.Print p, string aiEvaluation)
+        public PlayerPrint(VRChat.API.Model.Print p, string aiEvaluation, string aiClassification)
         {
             PrintId = p.Id;
             OwnerId = p.OwnerId;
@@ -77,11 +77,47 @@ namespace Tailgrab.PlayerManagement
             PrintUrl = p.Files.Image;
             AuthorName = p.AuthorName;
             AIEvaluation = aiEvaluation;
+            AIClass = aiClassification;
         }
     }
 
-    public class Player
+    public class AlertMessage
     {
+        public AlertClassEnum AlertClass { get; set; }
+        public AlertTypeEnum AlertType { get; set; }
+        public string Color { get; set; }
+        public string Message { get; set; }
+        public DateTime Timestamp { get; set; }
+        public AlertMessage(AlertClassEnum alertClass, AlertTypeEnum alertType, string color, string message)
+        {
+            AlertClass = alertClass;
+            AlertType = alertType;
+            Color = color;
+            Message = message;
+            Timestamp = DateTime.Now;
+        }
+    }
+
+    public class PlayerAvatar
+    {
+        public string AvatarName { get; set; }
+        public string? CreatedBy { get; set; }
+        public PlayerAvatar(string avatarName, string createdBy)
+        {
+            AvatarName = avatarName;
+            CreatedBy = createdBy;
+        }
+    }
+
+    public class Player : INotifyPropertyChanged
+    {
+        public event PropertyChangedEventHandler? PropertyChanged;
+
+        protected virtual void OnPropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
         public string UserId { get; set; }
         public string DisplayName { get; set; }
         public string AvatarName { get; set; }
@@ -97,11 +133,106 @@ namespace Tailgrab.PlayerManagement
         public Dictionary<string, PlayerPrint> PrintData = new Dictionary<string, PlayerPrint>();
         public string? UserBio { get; set; }
         public string? AIEval { get; set; }
+
+        public List<AlertMessage> _AlertMessage = new List<AlertMessage>();
+
+        public string AlertMessage
+        {
+            get
+            {
+                string message = "";
+
+                _AlertMessage.Sort((p1, p2) =>
+                {
+                    int result = p2.AlertType.CompareTo(p1.AlertType);
+                    if (result == 0)
+                    {
+                        result = p2.Timestamp.CompareTo(p1.Timestamp);
+                    }
+                    return result;
+                });
+
+                foreach (AlertMessage alert in _AlertMessage)
+                {
+                    message += $"[{alert.AlertClass}/{alert.AlertType}] {alert.Message}; ";
+                }
+
+                return message;
+            }
+        }
+
+        public string AlertColor { get; private set; } = "None";
+
+        public AlertTypeEnum MaxAlertType { get; private set; } = AlertTypeEnum.None;
+
+
+        private DateOnly? _dateJoined;
+        public DateOnly? DateJoined
+        {
+            get => _dateJoined;
+            set
+            {
+                if (_dateJoined != value)
+                {
+                    _dateJoined = value;
+                    OnPropertyChanged(nameof(DateJoined));
+                    OnPropertyChanged(nameof(ProfileElapsedTime));
+                }
+            }
+        }
+
+        public string ProfileElapsedTime
+        {
+            get
+            {
+                try
+                {
+                    DateTime joinDate = DateTime.Parse(_dateJoined.ToString() ?? new DateTime().ToString());
+                    TimeSpan elapsed = DateTime.Now - joinDate;
+
+                    // If >= 1 year, show years
+                    if (elapsed.TotalDays >= 365)
+                    {
+                        double years = elapsed.TotalDays / 365.25; // Account for leap years
+                        return $"{years:F1}Y";
+                    }
+                    else if( elapsed.TotalDays >= 30)
+                    {
+                        double months = elapsed.TotalDays / 30.44; // Average days per month
+                        return $"{months:F1}M";
+                    }
+                    else if (elapsed.TotalDays >= 7)
+                    {
+                        double weeks = elapsed.TotalDays / 7;
+                        return $"{weeks:F1}W";
+                    }
+                    else if (elapsed.TotalDays >= 1)
+                    {
+                        double days = elapsed.TotalDays;
+                        return $"{days:F1}D";
+                    }
+                    else if (elapsed.TotalDays < 1)
+                    {
+                        double hours = elapsed.Hours;
+                        return $"{hours:F1}H";
+                    }
+                }
+                catch
+                {
+                    return "N/A";
+                }
+
+                return "N/A";
+            }
+        }
+
+
+        // This goes away with the new alert system, but for now it is used to track if any of the watch types are active for a player
         public bool IsWatched
         {
             get
             {
-                if (IsAvatarWatch || IsGroupWatch || IsProfileWatch || IsEmojiWatch || IsPrintWatch)
+                if (_AlertMessage.Count() > 0)
                 {
                     return true;
                 }
@@ -109,44 +240,6 @@ namespace Tailgrab.PlayerManagement
                 return false;
             }
         }
-
-        public string WatchCode
-        {
-            get
-            {
-                string code = "";
-
-                if (IsAvatarWatch)
-                {
-                    code += "A";
-                }
-                if (IsGroupWatch)
-                {
-                    code += "G";
-                }
-                if (IsProfileWatch)
-                {
-                    code += "B";
-                }
-                if (IsEmojiWatch)
-                {
-                    code += "E";
-                }
-                if (IsPrintWatch)
-                {
-                    code += "B";
-                }
-
-                return code;
-            }
-        }
-
-        public bool IsAvatarWatch { get; set; } = false;
-        public bool IsGroupWatch { get; set; } = false;
-        public bool IsProfileWatch { get; set; } = false;
-        public bool IsEmojiWatch { get; set; } = false;
-        public bool IsPrintWatch { get; set; } = false;
-
 
         public Player(string userId, string displayName, SessionInfo session)
         {
@@ -156,6 +249,23 @@ namespace Tailgrab.PlayerManagement
             PenActivity = "";
             InstanceStartTime = DateTime.Now;
             Session = session;
+        }
+
+
+        public void AddAlertMessage(AlertClassEnum alertClass, AlertTypeEnum alertType, string message)
+        {
+            string alertColor = PlayerManager.GetAlertColor(alertClass, alertType);
+            AlertMessage newAlert = new AlertMessage(alertClass, alertType, alertColor, message);
+            _AlertMessage.Add(newAlert);
+
+            foreach (AlertMessage alert in _AlertMessage)
+            {
+                if (alert.AlertType > MaxAlertType)
+                {
+                    MaxAlertType = alert.AlertType;
+                    AlertColor = alert.Color;
+                }
+            }
         }
 
         public void AddEvent(PlayerEvent playerEvent)
@@ -258,6 +368,7 @@ namespace Tailgrab.PlayerManagement
         private static Dictionary<int, string> userIdByNetworkId = new Dictionary<int, string>();
         private static Dictionary<string, string> userIdByDisplayName = new Dictionary<string, string>();
         private static Dictionary<string, string> avatarByDisplayName = new Dictionary<string, string>();
+        private static Dictionary<string, PlayerAvatar> PlayerAvatarByName = new Dictionary<string, PlayerAvatar>();
 
         public static readonly AnsiColor COLOR_PREFIX_LEAVE = AnsiColor.Yellow;
         public static readonly AnsiColor COLOR_PREFIX_JOIN = AnsiColor.Green;
@@ -315,7 +426,7 @@ namespace Tailgrab.PlayerManagement
             try
             {
                 Player? player = GetPlayerByDisplayName(displayName);
-                if (player != null )
+                if (player != null)
                 {
                     PlayerChanged?.Invoke(null, new PlayerChangedEventArgs(changeType, player));
                 }
@@ -393,13 +504,14 @@ namespace Tailgrab.PlayerManagement
                 TimeSpan timeDifference = (TimeSpan)(player.InstanceEndTime - player.InstanceStartTime);
                 logger.Debug($"{displayName} session time: {timeDifference.TotalMinutes} minutes");
                 TailgrabDBContext dBContext = serviceRegistry.GetDBContext();
+
+                // Update or create UserInfo record with elapsed time
                 UserInfo? user = dBContext.UserInfos.Find(player.UserId);
                 if (user == null)
                 {
                     user = new UserInfo();
                     user.DisplayName = player.DisplayName;
                     user.UserId = player.UserId;
-                    user.IsBos = 0;
                     user.CreatedAt = DateTime.Now;
                     user.UpdatedAt = DateTime.Now;
                     user.ElapsedMinutes = timeDifference.TotalMinutes;
@@ -462,6 +574,7 @@ namespace Tailgrab.PlayerManagement
             userIdByNetworkId.Clear();
             playersByUserId.Clear();
             userIdByDisplayName.Clear();
+            PlayerAvatarByName.Clear();
 
             // Also a global cleared notification (consumers may want to reset)
             OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Cleared, new Player("", "", CurrentSession) { InstanceStartTime = DateTime.MinValue });
@@ -486,7 +599,7 @@ namespace Tailgrab.PlayerManagement
         public Player? AddPlayerEventByDisplayName(string displayName, PlayerEvent.EventType eventType, string eventDescription)
         {
 
-            if(userIdByDisplayName.TryGetValue(displayName, out string? userId))
+            if (userIdByDisplayName.TryGetValue(displayName, out string? userId))
             {
                 return AddPlayerEventByUserId(userId, eventType, eventDescription);
             }
@@ -510,28 +623,49 @@ namespace Tailgrab.PlayerManagement
         {
             avatarByDisplayName[displayName] = avatarName;
 
-            bool watchedAvatar = serviceRegistry.GetAvatarManager().CheckAvatarByName(avatarName);
-            if (watchedAvatar)
-            {
-                logger.Info($"{COLOR_PREFIX_LEAVE.GetAnsiEscape()}Watched Avatar Detected for Player {displayName}: {avatarName}{COLOR_RESET.GetAnsiEscape()}");
-            }
-
-            Player? player = GetPlayerByDisplayName(displayName);
+            Player? player = AddPlayerEventByDisplayName(displayName, PlayerEvent.EventType.AvatarWatch, $"User switched to Avatar : {avatarName}"); ;
             if (player != null)
             {
-                player.IsAvatarWatch = watchedAvatar;
-                player.AvatarName = avatarName;
-                AddPlayerEventByDisplayName(displayName ?? string.Empty, PlayerEvent.EventType.AvatarWatch, $"User switched to Avatar : {avatarName}");
-
-                if (watchedAvatar)
+                AvatarInfo? watchedAvatar = serviceRegistry.GetAvatarManager().CheckAvatarByName(avatarName);
+                if (watchedAvatar != null)
                 {
-                    player.PenActivity = $"AV: {avatarName}";
-                    AddPlayerEventByDisplayName(displayName ?? string.Empty, PlayerEvent.EventType.AvatarWatch, $"User has used a watched Avatar : {avatarName}");
-
+                    logger.Info($"{COLOR_PREFIX_LEAVE.GetAnsiEscape()}Watched Avatar Detected for Player {displayName}: {avatarName} with AlertType {watchedAvatar.AlertType.ToString()}{COLOR_RESET.GetAnsiEscape()}");
+                    if (watchedAvatar.AlertType > AlertTypeEnum.None)
+                    {
+                        player = AddPlayerEventByDisplayName(displayName, PlayerEvent.EventType.AvatarWatch, $"User has used a watched Avatar : {avatarName} alertType: {watchedAvatar.AlertType.ToString()}");
+                        player?.AddAlertMessage(AlertClassEnum.Avatar, watchedAvatar.AlertType, $"{avatarName}");
+                    }
                 }
-
-                OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Updated, player);
+                if (player != null)
+                {
+                    player.AvatarName = avatarName;
+                    OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Updated, player);
+                }
             }
+        }
+
+        public void UnpackAvatar(string avatarName, string uploadedBy)
+        {
+            PlayerAvatar playerAvatar = UpdatePlayerAvatar(avatarName, uploadedBy);
+
+            //
+            // Check Avatar IDs 
+        }
+
+        public PlayerAvatar UpdatePlayerAvatar(string avatarName, string uploadedBy)
+        {
+
+            if (PlayerAvatarByName.TryGetValue(avatarName, out PlayerAvatar? playerAvatar))
+            {
+                return playerAvatar;
+            }
+            else
+            {
+                playerAvatar = new PlayerAvatar(avatarName, uploadedBy);
+                PlayerAvatarByName[avatarName] = playerAvatar;
+
+            }
+            return playerAvatar;
         }
 
         private void PrintPlayerInfo(Player player)
@@ -558,7 +692,8 @@ namespace Tailgrab.PlayerManagement
                 string itemUrl = "";
                 string itemContent = "";
                 string inventoryType = "Unknown Type";
-                string aiEvaluation = "OK";
+                string aiClassification = "OK";
+                string evaluatedText = "Not Evaluated";
 
                 try
                 {
@@ -583,21 +718,21 @@ namespace Tailgrab.PlayerManagement
                     var ollamaClient = serviceRegistry.GetOllamaAPIClient();
                     if (ollamaClient != null)
                     {
-                        string? evaluated = await ollamaClient.ClassifyImageList(userId, inventoryId, new List<string>{ itemUrl, itemContent });
+                        ImageEvaluation? evaluated = await ollamaClient.ClassifyImageList(userId, inventoryId, new List<string> { itemUrl, itemContent });
                         if (evaluated != null)
                         {
-                            aiEvaluation = EvaluatImage(evaluated) ?? "OK";
-                            logger.Info($"Ollama classification for inventory item {inventoryId}: {aiEvaluation}: {evaluated}");
-                            if (!aiEvaluation.Equals("OK"))
+                            evaluatedText = System.Text.Encoding.UTF8.GetString(evaluated.Evaluation);
+                            aiClassification = EvaluateImageClass(evaluatedText) ?? "OK";
+                            logger.Info($"Ollama classification for inventory item {inventoryId}: {aiClassification}: {evaluatedText}");
+                            if (!aiClassification.Equals("OK") && !evaluated.IsIgnored)
                             {
-                                AddPlayerEventByUserId(userId, PlayerEvent.EventType.Emoji, $"AI Evaluation: Spawned Item {itemName} ({inventoryId}) was classified {evaluated}");
-                                player.PenActivity = $"EM: {aiEvaluation}";
-                                player.IsEmojiWatch = true;
+                                AddPlayerEventByUserId(userId, PlayerEvent.EventType.Emoji, $"AI Evaluation: Spawned Item {itemName} ({inventoryId}) was classified {aiClassification}");
+                                player.AddAlertMessage(AlertClassEnum.EmojiSticker, AlertTypeEnum.Nuisance, $"{aiClassification}");
                             }
                         }
                     }
 
-                    PlayerInventory inventory = new PlayerInventory(inventoryId, itemName, itemUrl, inventoryType, aiEvaluation);
+                    PlayerInventory inventory = new PlayerInventory(inventoryId, itemName, itemContent, inventoryType, aiClassification);
                     player.Inventory.Add(inventory);
 
                     AddPlayerEventByUserId(userId, PlayerEvent.EventType.Emoji, $"Spawned Item: {itemName} ({inventoryId})");
@@ -606,7 +741,7 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
-        private static string? EvaluatImage(string? imageEvaluation)
+        private static string? EvaluateImageClass(string? imageEvaluation)
         {
             if (string.IsNullOrEmpty(imageEvaluation))
             {
@@ -665,34 +800,80 @@ namespace Tailgrab.PlayerManagement
                 Print? printInfo = serviceRegistry.GetVRChatAPIClient().GetPrintInfo(printId);
                 if (printInfo != null)
                 {
-                    if (playersByUserId.TryGetValue(printInfo.OwnerId, out Player? player))
+                    Player? player = AddPlayerEventByUserId(printInfo.OwnerId, PlayerEvent.EventType.Print, $"Dropped Print {printId}");
+                    if (player != null)
                     {
-                        string? evaluated = string.Empty;
+                        logger.Info($"Fetched print info for print {printId} owned by {player.DisplayName} (ID: {printInfo.OwnerId})");
+                        ImageEvaluation? evaluated = null;
+                        string evaluatedText = "Not Evaluated";
+                        string aiClassification = "OK";
                         var ollamaClient = serviceRegistry.GetOllamaAPIClient();
                         if (ollamaClient != null)
                         {
-                            string aiEvaluation = "OK";
                             List<string> imageUrls = new List<string>();
                             imageUrls.Add(printInfo.Files.Image);
                             evaluated = await ollamaClient.ClassifyImageList(printInfo.OwnerId, printInfo.Id, imageUrls);
                             if (evaluated != null)
                             {
-                                aiEvaluation = EvaluatImage(evaluated) ?? "OK";
-                                logger.Info($"Ollama classification for inventory item {printInfo.Id}: {aiEvaluation}: {evaluated}");
-                                if( !aiEvaluation.Equals("OK"))
+                                evaluatedText = System.Text.Encoding.UTF8.GetString(evaluated.Evaluation);
+                                aiClassification = EvaluateImageClass(System.Text.Encoding.UTF8.GetString( evaluated.Evaluation)) ?? "OK";
+                                logger.Info($"Ollama classification for inventory item {printInfo.Id}: {aiClassification}: {evaluatedText}");
+                                if (!aiClassification.Equals("OK") && !evaluated.IsIgnored)
                                 {
-                                    AddPlayerEventByUserId(printInfo.OwnerId, PlayerEvent.EventType.Print, $"AI Evaluation: Print {printId} was classified {evaluated}");
-                                    player.PenActivity = "PR: " + aiEvaluation;
-                                    player.IsPrintWatch = true;
-                                }                               
+                                    player = AddPlayerEventByUserId(printInfo.OwnerId, PlayerEvent.EventType.Print, $"AI Evaluation: Print {printId} was classified {aiClassification}");
+                                    player?.AddAlertMessage(AlertClassEnum.Print, AlertTypeEnum.Nuisance, $"{aiClassification}");
+                                }
                             }
                         }
 
-                        player.PrintData[printId] = new PlayerPrint( printInfo, evaluated ?? "Not Evaluated" );
-                        logger.Info($"Added Print {printId} for Player {player.DisplayName} (ID: {printInfo.OwnerId})");
+                        player?.PrintData[printId] = new PlayerPrint(printInfo, evaluatedText, aiClassification);
                     }
-                    AddPlayerEventByUserId(printInfo.OwnerId, PlayerEvent.EventType.Print, $"Dropped Print {printId}");
                 }
+            }
+        }
+
+
+        public Player? UpdatePlayerUserFromVRCProfile(User profile, string profileHash)
+        {
+            if (profile != null)
+            {
+                TailgrabDBContext dbContext = serviceRegistry.GetDBContext();
+                Player? player = GetPlayerByUserId(profile.Id);
+                if (player != null)
+                {
+                    player.DateJoined = profile.DateJoined;
+                    logger.Info($"Updated UserInfo for user {profile.DisplayName} (ID: {profile.Id}) with DateJoined: {profile.DateJoined} and ProfileHash: {profileHash}; {player.ProfileElapsedTime}");
+                }
+
+                // Update or create UserInfo record with elapsed time
+                UserInfo? user = dbContext.UserInfos.Find(profile.Id);
+                if (user != null)
+                {
+                    user.DateJoined = profile.DateJoined;
+                    user.UpdatedAt = DateTime.UtcNow;
+                    user.LastProfileChecksum = profileHash;
+                    dbContext.UserInfos.Update(user);
+                }
+                else
+                {
+                    user = new UserInfo();
+                    user.DisplayName = profile.DisplayName;
+                    user.UserId = profile.Id;
+                    user.CreatedAt = DateTime.UtcNow;
+                    user.UpdatedAt = DateTime.UtcNow;
+                    user.DateJoined = profile.DateJoined;
+                    user.LastProfileChecksum = profileHash;
+                    dbContext.Add(user);
+                }
+                dbContext.SaveChanges();
+
+
+                return player;
+            }
+            else
+            {
+                logger.Warn($"Attempted to update player user info from VRC profile, but profile was null");
+                return null;
             }
         }
 
@@ -716,8 +897,7 @@ namespace Tailgrab.PlayerManagement
                             GroupId = group.Id,
                             GroupName = group.Name ?? string.Empty,
                             CreatedAt = group.CreatedAt,
-                            UpdatedAt = DateTime.UtcNow,
-                            IsBos = false
+                            UpdatedAt = DateTime.UtcNow
                         };
 
                         dbContext.GroupInfos.Add(newEntity);
@@ -744,5 +924,58 @@ namespace Tailgrab.PlayerManagement
 
             return null;
         }
+
+        public void SyncAvatarModerations()
+        {
+            try
+            {
+                TailgrabDBContext dBContext = serviceRegistry.GetDBContext();
+                VRChatClient vrcClient = serviceRegistry.GetVRChatAPIClient();
+                if (dBContext != null && vrcClient != null)
+                {
+                    int lineNumber = 0;
+                    List<VRChat.API.Model.AvatarModeration> moderations = vrcClient.GetAvatarModerations();
+                    foreach (VRChat.API.Model.AvatarModeration mod in moderations)
+                    {
+                        logger.Debug($"Processing Avatar Moderation for Avatar ID {mod.TargetAvatarId} with Status {mod.AvatarModerationType} and CreatedAt {mod.Created}");
+                        if (mod != null && mod.AvatarModerationType.Equals(AvatarModerationType.Block))
+                        {
+
+                            lineNumber++;
+                            AvatarInfo? existingAvatar = dBContext.AvatarInfos.Find(mod.TargetAvatarId);
+                            if (existingAvatar == null || existingAvatar.AlertType < AlertTypeEnum.Nuisance )
+                            {
+                                QueuedModeratedAvatarWatch watchItem = new QueuedModeratedAvatarWatch(2, mod.TargetAvatarId, AlertTypeEnum.Nuisance, lineNumber);
+                                serviceRegistry.GetAvatarManager().EnqueueModeratedAvatarForCheck(watchItem);
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to clear the database");
+            }
+        }
+
+        #region Alert Color Management
+        public static string GetAlertColor(AlertClassEnum alertClass, AlertTypeEnum alertType)
+        {
+            string alertKey = alertClass switch
+            {
+                AlertClassEnum.Avatar => CommonConst.Avatar_Alert_Key,
+                AlertClassEnum.Group => CommonConst.Group_Alert_Key,
+                AlertClassEnum.Profile => CommonConst.Profile_Alert_Key,
+                AlertClassEnum.Print => CommonConst.Profile_Alert_Key,
+                AlertClassEnum.EmojiSticker => CommonConst.Profile_Alert_Key,
+                _ => CommonConst.Profile_Alert_Key
+
+            };
+
+            string key = CommonConst.ConfigRegistryPath + "\\" + alertKey + "\\" + alertType.ToString();
+            return ConfigStore.GetStoredKeyString(key, CommonConst.Color_Alert_Key) ?? "None";
+        }
+
+        #endregion
     }
 }

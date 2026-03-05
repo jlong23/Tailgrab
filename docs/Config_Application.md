@@ -17,7 +17,7 @@ The fields are your Web User Name and Password for VRChat, and the 2 Factor Auth
 
 **Password** - This is your VRChat Password you use to log in to the VRChat website.
 
-**2FA Key** - This is the 2 Factor Authentication Key that is generated when you set up 2 Factor Authentication on your VRChat account, this is used to generate the 2FA codes that are required to authenticate with the VRChat API.
+**2FA Key** - This is the [2 Factor Authentication Key](https://docs.vrchat.com/docs/setup-2fa) that is generated when you set up 2 Factor Authentication on your VRChat account, this is used to generate the 2FA codes that are required to authenticate with the VRChat API.  You can see the Key on setup when you see the QRCode there is a link **enter the key manually**; copy this code to a note for entry into Tailgrab.  Lastpass Authenticator allows you to view this code with the edit site button.
 
 > [!IMPORTANT]
 > VRChat's API is not officially supported for third party applications, and may change/break at any time; User credentials are stored in an encrypted format in the Windows Registry and used only to gather needed information about users in the instance you are in.
@@ -114,20 +114,9 @@ The default prompt is designed to look for potential PG13 violation, but you can
 | Harassment & Bullying | Any content that would be considered trolling based on Religion, Race  or Sexual Orientation |
 | Self Harm | Any content that could be considered a cry for help |
 
-> [!TIP]
 
+> [!TIP]
 > The Classification names are set, but how you word the prompt can get the AI to be as leinent or as strict as you want, you can also add more classifications if you want, just make sure to include them in the prompt and have the AI respond with the classification on the first line of the response for the application to parse it correctly.  You can also use the reasoning section to give you more context on why the AI classified it a certain way, this can be helpful when you are on the fence about a user and want to make a judgement call on whether to report them or not.
 
 > [!NOTE]
-
 > The system puts the Prompt plus attached copy of the Image thumbnail for evaluation:
-
-## Alert Sounds
-
-Based on the three areas of interest, you can customize the alert sounds that are player.  The first set are windows default alert sounds while the application will add any sound file (WAV, MP3 or OGG) that exist under the application installed directory under ```./sounds```
-
-**Avatar Alert** - This sound is played when an Avatar is detected in the instance that is on the Ban On Sight list.
-
-**Group Alert** - This sound is played when a user in the instance is detected to be in a Group that is on the Ban On Sight list.
-
-**Profile Alert** - This sound is played when a user in the instance has a profile that is evaluated by the AI services to be of concern based on your custom prompt criteria.

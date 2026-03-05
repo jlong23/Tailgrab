@@ -2,6 +2,7 @@
 #nullable disable
 using System;
 using System.Collections.Generic;
+using Tailgrab.Common;
 
 namespace Tailgrab.Models;
 
@@ -17,9 +18,11 @@ public partial class AvatarInfo
 
     public DateTime? UpdatedAt { get; set; }
 
-    public bool IsBos { get; set; }
+    public AlertTypeEnum AlertType { get; set; } = AlertTypeEnum.None;
 
     public string ImageUrl { get; set; }
+
+    public string UserName { get; set; }
 
     public AvatarInfo()
     {
@@ -28,6 +31,6 @@ public partial class AvatarInfo
 
     public override string ToString()
     {
-        return $"GroupId: {AvatarId}, UserId: {UserId}, GroupName: {AvatarName}, CreatedAt: {CreatedAt}, UpdatedAt: {UpdatedAt}, IsBOS: {IsBos}";
+        return $"AvatarInfo: AvatarId={AvatarId}, UserId={UserId}, AvatarName={AvatarName}, CreatedAt={CreatedAt}, UpdatedAt={UpdatedAt}, AlertType={AlertType}, ImageUrl={ImageUrl}, UserName={UserName}";
     }
 }

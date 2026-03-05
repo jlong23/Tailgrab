@@ -16,7 +16,7 @@ namespace Tailgrab.Common
     public static class SoundManager
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-        private static readonly string[] allSystemSounds = { "Asterisk", "Beep", "Exclamation", "Warning", "Hand", "Error", "Question" };
+        private static readonly string[] allSystemSounds = { "*NONE", "Asterisk", "Beep", "Exclamation", "Warning", "Hand", "Error", "Question" };
 
         /// <summary>
         /// Enumerate available sound base filenames (without extension) from the ./sounds directory.
@@ -26,34 +26,40 @@ namespace Tailgrab.Common
         {
             try
             {
-                var baseDir = AppContext.BaseDirectory ?? Directory.GetCurrentDirectory();
-                var soundsDir = Path.Combine(baseDir, "sounds");
-                if (!Directory.Exists(soundsDir))
+                var soundsDir = Path.Combine(CommonConst.APPLICATION_LOCAL_DATA_PATH, "sounds");
+                if (Directory.Exists(soundsDir))
                 {
-                    return new List<string>();
+
+                    var exts = new[] { ".wav", ".mp3", ".ogg" };
+                    var files = Directory.EnumerateFiles(soundsDir)
+                        .Where(f => exts.Contains(Path.GetExtension(f), StringComparer.OrdinalIgnoreCase))
+                        .Select(f => Path.GetFileNameWithoutExtension(f))
+                        .Where(n => !string.IsNullOrWhiteSpace(n))
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
+                        .ToList();
+
+                    files = allSystemSounds
+                        .Concat(files)
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .ToList();
+
+                    return files;
                 }
-
-                var exts = new[] { ".wav", ".mp3", ".ogg" };
-                var files = Directory.EnumerateFiles(soundsDir)
-                    .Where(f => exts.Contains(Path.GetExtension(f), StringComparer.OrdinalIgnoreCase))
-                    .Select(f => Path.GetFileNameWithoutExtension(f))
-                    .Where(n => !string.IsNullOrWhiteSpace(n))
-                    .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
-                    .ToList();
-
-                files = allSystemSounds
-                    .Concat(files)
-                    .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .ToList();
-
-                return files;
             }
             catch (Exception ex)
             {
                 Logger.Warn(ex, "Failed to enumerate sounds directory");
-                return new List<string>();
             }
+
+            return new List<string>();
+        }
+
+        public static void PlayAlertSound(string alertKey, AlertTypeEnum alertType)
+        {
+            string key = CommonConst.ConfigRegistryPath + "\\" + alertKey + "\\" + alertType.ToString();
+            string soundSetting = ConfigStore.GetStoredKeyString(key, CommonConst.Sound_Alert_Key) ?? "Hand";
+            PlaySound(soundSetting);
         }
 
         /// <summary>
@@ -93,8 +99,7 @@ namespace Tailgrab.Common
             // Treat as filename under ./sounds
             try
             {
-                var baseDir = AppContext.BaseDirectory ?? Directory.GetCurrentDirectory();
-                var soundsDir = Path.Combine(baseDir, "sounds");
+                var soundsDir = Path.Combine(CommonConst.APPLICATION_LOCAL_DATA_PATH, "sounds");
 
                 string candidate = name;
                 // If an absolute or relative path was passed, respect it

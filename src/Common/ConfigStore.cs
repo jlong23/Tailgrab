@@ -18,7 +18,7 @@ namespace Tailgrab.Common
             var protectedBytes = ProtectedData.Protect(bytes, null, DataProtectionScope.CurrentUser);
             var base64 = Convert.ToBase64String(protectedBytes);
 
-            using (var key = Registry.CurrentUser.CreateSubKey(Common.ConfigRegistryPath))
+            using (var key = Registry.CurrentUser.CreateSubKey(CommonConst.ConfigRegistryPath))
             {
                 key.SetValue(name, base64, RegistryValueKind.String);
             }
@@ -28,7 +28,7 @@ namespace Tailgrab.Common
         {
             if (name == null) throw new ArgumentNullException(nameof(name));
 
-            using (var key = Registry.CurrentUser.OpenSubKey(Common.ConfigRegistryPath))
+            using (var key = Registry.CurrentUser.OpenSubKey(CommonConst.ConfigRegistryPath))
             {
                 if (key == null) return null;
                 var base64 = key.GetValue(name) as string;
@@ -48,18 +48,23 @@ namespace Tailgrab.Common
 
         public static void DeleteSecret(string name)
         {
-            using (var key = Registry.CurrentUser.OpenSubKey(Common.ConfigRegistryPath, writable: true))
+            using (var key = Registry.CurrentUser.OpenSubKey(CommonConst.ConfigRegistryPath, writable: true))
             {
                 if (key == null) return;
                 key.DeleteValue(name, throwOnMissingValue: false);
             }
         }
 
-        public static string? GetStoredUri(string keyName)
+        public static string? GetStoredKeyString(string keyName)
+        {
+            return GetStoredKeyString(CommonConst.ConfigRegistryPath, keyName);
+        }
+
+        public static string? GetStoredKeyString(string keyPath, string keyName)
         {
             try
             {
-                using (RegistryKey? key = Registry.CurrentUser.OpenSubKey(Common.ConfigRegistryPath))
+                using (RegistryKey? key = Registry.CurrentUser.OpenSubKey(keyPath))
                 {
                     if (key == null)
                     {
@@ -84,11 +89,16 @@ namespace Tailgrab.Common
             }
         }
 
-        public static void PutStoredUri(string keyName, string keyValue)
+        public static void PutStoredKeyString(string keyName, string keyValue)
+        {
+            PutStoredKeyString(CommonConst.ConfigRegistryPath, keyName, keyValue);
+        }
+
+        public static void PutStoredKeyString(string keyPath, string keyName, string keyValue)
         {
             try
             {
-                using (RegistryKey key = Registry.CurrentUser.CreateSubKey(Common.ConfigRegistryPath))
+                using (RegistryKey key = Registry.CurrentUser.CreateSubKey(keyPath))
                 {
                     key.SetValue(keyName, keyValue, RegistryValueKind.String);
                 }
@@ -98,5 +108,15 @@ namespace Tailgrab.Common
                 logger.Error(ex, $"Failed to save value to registry. {keyName}");
             }
         }
+
+        public static void RemoveStoredKeyString(string keyPath, string keyName)
+        {
+            using (var key = Registry.CurrentUser.OpenSubKey(keyPath, writable: true))
+            {
+                if (key == null) return;
+                key.DeleteValue(keyName, throwOnMissingValue: false);
+            }
+        }
+
     }
 }

@@ -3,20 +3,24 @@ using NLog;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
-using Tailgrab.AvatarManagement;
+using System.Text.RegularExpressions;
+using Tailgrab.Common;
 using Tailgrab.Models;
+using Tailgrab.PlayerManagement;
 
 namespace Tailgrab.Configuration
 {
     public class GroupBosGistListManager
     {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
-        private readonly ServiceRegistry _serviceRegistry;
         private readonly HttpClient _httpClient;
+        private readonly TailgrabDBContext dbContext;
+        private readonly PlayerManager playerManager;
 
-        public GroupBosGistListManager(ServiceRegistry serviceRegistry)
+        public GroupBosGistListManager(TailgrabDBContext tailgrabDBContext, PlayerManager management)
         {
-            _serviceRegistry = serviceRegistry ?? throw new ArgumentNullException(nameof(serviceRegistry));
+            dbContext = tailgrabDBContext;
+            playerManager = management;
             _httpClient = new HttpClient();
         }
 
@@ -38,10 +42,10 @@ namespace Tailgrab.Configuration
             try
             {
                 logger.Info($"Downloading GIST content from: {gistUrl}");
-                
+
                 // Download the GIST content
                 string gistContent = await DownloadGistContentAsync(gistUrl);
-                
+
                 if (string.IsNullOrEmpty(gistContent))
                 {
                     logger.Warn("Downloaded GIST content is empty.");
@@ -54,7 +58,7 @@ namespace Tailgrab.Configuration
 
                 // Get the stored checksum from registry
                 string? storedChecksum = GetStoredChecksum();
-                
+
                 // Compare checksums
                 if (storedChecksum != null && storedChecksum.Equals(currentChecksum, StringComparison.OrdinalIgnoreCase))
                 {
@@ -66,7 +70,7 @@ namespace Tailgrab.Configuration
 
                 // Process the file line by line
                 int processedCount = await ProcessGroupIdsAsync(gistContent);
-                
+
                 logger.Info($"Processed {processedCount} Group IDs from GIST.");
 
                 // Save the new checksum to registry
@@ -100,7 +104,7 @@ namespace Tailgrab.Configuration
             {
                 byte[] inputBytes = Encoding.UTF8.GetBytes(content);
                 byte[] hashBytes = md5.ComputeHash(inputBytes);
-                
+
                 StringBuilder sb = new StringBuilder();
                 foreach (byte b in hashBytes)
                 {
@@ -114,7 +118,7 @@ namespace Tailgrab.Configuration
         {
             try
             {
-                using (RegistryKey? key = Registry.CurrentUser.OpenSubKey(Common.Common.ConfigRegistryPath))
+                using (RegistryKey? key = Registry.CurrentUser.OpenSubKey(Common.CommonConst.ConfigRegistryPath))
                 {
                     if (key == null)
                     {
@@ -122,7 +126,7 @@ namespace Tailgrab.Configuration
                         return null;
                     }
 
-                    string? value = key.GetValue(Common.Common.Registry_Group_Checksum) as string;
+                    string? value = key.GetValue(Common.CommonConst.Registry_Group_Checksum) as string;
                     if (string.IsNullOrEmpty(value))
                     {
                         logger.Debug("No checksum stored in registry.");
@@ -143,7 +147,7 @@ namespace Tailgrab.Configuration
         {
             try
             {
-                using (RegistryKey? key = Registry.CurrentUser.OpenSubKey(Common.Common.ConfigRegistryPath))
+                using (RegistryKey? key = Registry.CurrentUser.OpenSubKey(Common.CommonConst.ConfigRegistryPath))
                 {
                     if (key == null)
                     {
@@ -151,7 +155,7 @@ namespace Tailgrab.Configuration
                         return null;
                     }
 
-                    string? value = key.GetValue(Common.Common.Registry_Group_Gist) as string;
+                    string? value = key.GetValue(Common.CommonConst.Registry_Group_Gist) as string;
                     if (string.IsNullOrEmpty(value))
                     {
                         logger.Debug("No Avatar GIST Uri stored in registry.");
@@ -172,9 +176,9 @@ namespace Tailgrab.Configuration
         {
             try
             {
-                using (RegistryKey key = Registry.CurrentUser.CreateSubKey(Common.Common.ConfigRegistryPath))
+                using (RegistryKey key = Registry.CurrentUser.CreateSubKey(Common.CommonConst.ConfigRegistryPath))
                 {
-                    key.SetValue(Common.Common.Registry_Group_Checksum, checksum, RegistryValueKind.String);
+                    key.SetValue(Common.CommonConst.Registry_Group_Checksum, checksum, RegistryValueKind.String);
                 }
             }
             catch (Exception ex)
@@ -186,8 +190,6 @@ namespace Tailgrab.Configuration
         private async Task<int> ProcessGroupIdsAsync(string gistContent)
         {
             int processedCount = 0;
-            TailgrabDBContext dbContext = _serviceRegistry.GetDBContext();
-            AvatarManagementService avatarService = _serviceRegistry.GetAvatarManager();
 
             using (System.IO.StringReader reader = new System.IO.StringReader(gistContent))
             {
@@ -204,15 +206,20 @@ namespace Tailgrab.Configuration
                     }
 
                     // Split by whitespace or comma to get the first column
-                    string[] columns = line.Split(new[] { ' ', '\t', ',' }, StringSplitOptions.RemoveEmptyEntries);
-                    
-                    if (columns.Length == 0)
+                    //string[] columns = line.Split(new[] { ' ', '\t', ',' }, StringSplitOptions.RemoveEmptyEntries);
+                    string pattern = @",(?=(?:[^""]*""[^""]*"")*[^""]*$)";
+                    string[] columns = Regex.Split(line, pattern); //.Split(new[] { ' ', '\t', ',' }, StringSplitOptions.RemoveEmptyEntries);
+
+
+                    if (columns.Length < 3)
                     {
+                        logger.Warn($"Line {lineNumber}: Expected at least 3 columns (GroupId, GroupName, AlertType), but got {columns.Length}. Skipping line.");
                         continue;
                     }
 
                     string groupId = columns[0].Trim().Trim('"');
-                    logger.Info(groupId);
+                    string groupName = columns[1].Trim().Trim('"');
+                    string groupAlert = columns[2].Trim().Trim('"');
 
                     if (string.IsNullOrWhiteSpace(groupId))
                     {
@@ -220,10 +227,21 @@ namespace Tailgrab.Configuration
                         continue;
                     }
 
+                    // Convert the alert type string to the AlertTypeEnum, defaulting to None if parsing fails
+                    AlertTypeEnum alertType = AlertTypeEnum.None;
+                    if (Enum.TryParse<AlertTypeEnum>(groupAlert, out alertType))
+                    {
+                        // Declared and Defaulted above
+                    }
+                    else
+                    {
+                        logger.Warn($"Line {lineNumber}: Invalid AlertType '{groupAlert}' for Group ID '{groupId}', defaulting to None.");
+                    }
+
                     try
                     {
                         // Fetch the GroupInfo record
-                        GroupInfo? groupInfo = _serviceRegistry.GetPlayerManager().AddUpdateGroupFromVRC( groupId );
+                        GroupInfo? groupInfo = playerManager.AddUpdateGroupFromVRC(groupId);
                         if (groupInfo == null)
                         {
                             logger.Debug($"Line {lineNumber}: Group ID '{groupId}' not found in database, skipping.");
@@ -231,17 +249,17 @@ namespace Tailgrab.Configuration
                         }
 
                         // Set IsBOS to true
-                        if (!groupInfo.IsBos)
+                        if (groupInfo.AlertType == AlertTypeEnum.None)
                         {
-                            groupInfo.IsBos = true;
+                            groupInfo.AlertType = alertType;
                             groupInfo.UpdatedAt = DateTime.UtcNow;
                             dbContext.GroupInfos.Update(groupInfo);
                             processedCount++;
-                            logger.Debug($"Line {lineNumber}: Set IsBOS=true for Group ID '{groupId}'");
+                            logger.Debug($"Line {lineNumber}: Set AlertType for Group ID '{groupId}'");
                         }
                         else
                         {
-                            logger.Debug($"Line {lineNumber}: Group ID '{groupId}' already has IsBOS=true, skipping.");
+                            logger.Debug($"Line {lineNumber}: Group ID '{groupId}' already has AlertType, skipping.");
                         }
                     }
                     catch (Exception ex)

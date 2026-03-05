@@ -50,14 +50,14 @@ namespace Tailgrab.Actions
             WindowTitle = windowTitle;
             Keys = keys;
 
-            logger.Warn($"Added KeystrokesAction: Window Title: '{WindowTitle}' with Keys: {Keys}.");
+            logger.Info($"Added KeystrokesAction: Window Title: '{WindowTitle}' with Keys: {Keys}.");
         }
 
         public void PerformAction()
         {
             if (WindowTitle == null || Keys == null)
             {
-                logger.Warn($"KeystrokesAction: Window Title: '{WindowTitle}' or Keys: {Keys} not supplied.");
+                logger.Info($"KeystrokesAction: Window Title: '{WindowTitle}' or Keys: {Keys} not supplied.");
                 return;
             }
 
@@ -66,7 +66,7 @@ namespace Tailgrab.Actions
                 var procs = Process.GetProcessesByName(WindowTitle);
                 if (procs == null || procs.Length == 0)
                 {
-                    logger.Warn($"KeystrokesAction: Process: '{WindowTitle}' not found.");
+                    logger.Info($"KeystrokesAction: Process: '{WindowTitle}' not found.");
                     return;
                 }
 
@@ -79,13 +79,13 @@ namespace Tailgrab.Actions
 
                 if (hWnd == IntPtr.Zero)
                 {
-                    logger.Warn($"KeystrokesAction: Process: '{WindowTitle}' Could not find a main window for the process.");
+                    logger.Info($"KeystrokesAction: Process: '{WindowTitle}' Could not find a main window for the process.");
                     return;
                 }
 
                 if (!BringWindowToForeground(hWnd))
                 {
-                    logger.Warn($"KeystrokesAction: Process: '{WindowTitle}' Could not bring the window to the foreground.");
+                    logger.Info($"KeystrokesAction: Process: '{WindowTitle}' Could not bring the window to the foreground.");
                     return;
                 }
 
@@ -252,7 +252,7 @@ namespace Tailgrab.Actions
             OscTypeValue = type;
             Value = value;
 
-            logger.Warn($"Added OSCAction: Parameter: '{ParameterName}'; Type: {OscTypeValue}; Value: {Value}.");
+            logger.Info($"Added OSCAction: Parameter: '{ParameterName}'; Type: {OscTypeValue}; Value: {Value}.");
 
         }
 
@@ -305,7 +305,7 @@ namespace Tailgrab.Actions
             Volume = volume;
             Rate = rate;
 
-            logger.Warn($"Added TTSAction: Parameter: '{Text}'; Volume: {Volume}; Rate: {Rate}.");
+            logger.Info($"Added TTSAction: Parameter: '{Text}'; Volume: {Volume}; Rate: {Rate}.");
 
         }
 

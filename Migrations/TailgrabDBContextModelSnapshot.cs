@@ -22,6 +22,9 @@ namespace tailgrab.Migrations
                     b.Property<string>("AvatarId")
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("AlertType")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("AvatarName")
                         .HasColumnType("TEXT");
 
@@ -31,14 +34,13 @@ namespace tailgrab.Migrations
                     b.Property<string>("ImageUrl")
                         .HasColumnType("TEXT");
 
-                    b.Property<bool>("IsBos")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("IsBOS");
-
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("UserId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UserName")
                         .HasColumnType("TEXT");
 
                     b.HasKey("AvatarId");
@@ -51,16 +53,15 @@ namespace tailgrab.Migrations
                     b.Property<string>("GroupId")
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("AlertType")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT")
                         .HasColumnName("createDate");
 
                     b.Property<string>("GroupName")
                         .HasColumnType("TEXT");
-
-                    b.Property<bool>("IsBos")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("IsBOS");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("TEXT")
@@ -78,6 +79,10 @@ namespace tailgrab.Migrations
 
                     b.Property<byte[]>("Evaluation")
                         .HasColumnType("BLOB");
+
+                    b.Property<bool>("IsIgnored")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("isIgnored");
 
                     b.Property<DateTime>("LastDateTime")
                         .HasColumnType("TEXT");
@@ -103,6 +108,10 @@ namespace tailgrab.Migrations
                     b.Property<byte[]>("Evaluation")
                         .HasColumnType("BLOB");
 
+                    b.Property<bool>("IsIgnored")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("isIgnored");
+
                     b.Property<DateTime>("LastDateTime")
                         .HasColumnType("TEXT");
 
@@ -122,16 +131,17 @@ namespace tailgrab.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
+                    b.Property<DateOnly>("DateJoined")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("DisplayName")
                         .HasColumnType("TEXT");
 
                     b.Property<double>("ElapsedMinutes")
-                        .HasColumnType("REAL")
-                        .HasColumnName("elapsedHours");
+                        .HasColumnType("REAL");
 
-                    b.Property<int>("IsBos")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("IsBOS");
+                    b.Property<string>("LastProfileChecksum")
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("TEXT");
