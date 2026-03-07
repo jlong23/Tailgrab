@@ -68,6 +68,7 @@ namespace Tailgrab.Configuration
             catch (Exception ex)
             {
                 logger.Error(ex, $"Failed to read or parse configuration file '{path}'.");
+                System.Windows.MessageBox.Show($"Error loading configuration file: {ex.Message}; Correct config.json and restart application", "Configuration Load Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
                 return new List<LineHandlerConfig>();
             }
         }
