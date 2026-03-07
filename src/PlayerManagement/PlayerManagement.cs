@@ -165,7 +165,6 @@ namespace Tailgrab.PlayerManagement
 
         public AlertTypeEnum MaxAlertType { get; private set; } = AlertTypeEnum.None;
 
-
         private DateOnly? _dateJoined;
         public DateOnly? DateJoined
         {
@@ -241,6 +240,22 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
+
+        private bool _isFriend = false;
+        public bool IsFriend { 
+            get
+            {
+                return _isFriend;
+            }
+            set 
+            { 
+                if( value == true)
+                {
+                    AlertColor = "Friend";
+                }
+                _isFriend = value;
+            } }
+
         public Player(string userId, string displayName, SessionInfo session)
         {
             UserId = userId;
@@ -263,7 +278,10 @@ namespace Tailgrab.PlayerManagement
                 if (alert.AlertType > MaxAlertType)
                 {
                     MaxAlertType = alert.AlertType;
-                    AlertColor = alert.Color;
+                    if( _isFriend == false)
+                    {
+                        AlertColor = alert.Color;
+                    }
                 }
             }
         }

@@ -2263,8 +2263,8 @@ namespace Tailgrab.PlayerManagement
         public string AlertMessages { get; set; } = string.Empty;
         public ObservableCollection<PrintInfoViewModel> Prints { get; private set; } = new ObservableCollection<PrintInfoViewModel>();
         public ObservableCollection<EmojiInfoViewModel> Emojis { get; private set; } = new ObservableCollection<EmojiInfoViewModel>();
-
         private string _AlertColor = "Normal";
+        private bool IsFriend {  get; set; }
 
         public string HighlightClass
         {
@@ -2296,6 +2296,7 @@ namespace Tailgrab.PlayerManagement
             IsWatched = p.IsWatched;
             AlertMessages = p.AlertMessage;
             _AlertColor = p.AlertColor;
+            IsFriend = p.IsFriend;
 
             PopulateCollectionsFromPlayer(p); ;
         }
@@ -2321,6 +2322,7 @@ namespace Tailgrab.PlayerManagement
             if (IsWatched != p.IsWatched) { IsWatched = p.IsWatched; changed = true; }
             if (AlertMessages != p.AlertMessage) { AlertMessages = p.AlertMessage ?? string.Empty; changed = true; }
             if (_AlertColor != p.AlertColor) { _AlertColor = p.AlertColor; changed = true; }
+            if (IsFriend != p.IsFriend) { IsFriend = p.IsFriend; changed = true; }
 
             if (changed) OnPropertyChanged(string.Empty);
 

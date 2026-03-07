@@ -48,6 +48,10 @@ Title="Tailgrab Player Panel"
                                             <Setter Property="Background" Value="#FF1E1E1E" />
                                             <Setter Property="Foreground" Value="#FFE6E6E6" />
                                         </DataTrigger>
+                                        <DataTrigger Binding="{Binding HighlightClass}" Value="Friend">
+                                            <Setter Property="Background" Value="#FF1E1E1E" />
+                                            <Setter Property="Foreground" Value="LightGreen" />
+                                        </DataTrigger>
                                         <DataTrigger Binding="{Binding HighlightClass}" Value="Yellow">
                                             <Setter Property="Background" Value="Yellow" />
                                             <Setter Property="Foreground" Value="Black" />
@@ -305,6 +309,10 @@ Title="Tailgrab Player Panel"
                                         <DataTrigger Binding="{Binding HighlightClass}" Value="Normal">
                                             <Setter Property="Background" Value="#FF1E1E1E" />
                                             <Setter Property="Foreground" Value="#FFE6E6E6" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding HighlightClass}" Value="Friend">
+                                            <Setter Property="Background" Value="#FF1E1E1E" />
+                                            <Setter Property="Foreground" Value="LightGreen" />
                                         </DataTrigger>
                                         <DataTrigger Binding="{Binding HighlightClass}" Value="Yellow">
                                             <Setter Property="Background" Value="Yellow" />

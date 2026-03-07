@@ -20,6 +20,7 @@ namespace Tailgrab.Clients.Ollama
         public int Priority { get; set; }
         public string? UserId { get; set; }
         public string? UserBio { get; set; }
+        public bool IsFriend { get; set; }
 
         public string MD5Hash
         {
@@ -116,6 +117,7 @@ namespace Tailgrab.Clients.Ollama
                             List<LimitedUserGroups> userGroups = serviceRegistry.GetVRChatAPIClient().GetProfileGroups(item.UserId);
 
                             string fullProfile = $"DisplayName: {profile.DisplayName}\nStatusDesc: {profile.StatusDescription}\nPronowns: {profile.Pronouns}\nProfileBio: {profile.Bio}\n";
+                            item.IsFriend = profile.IsFriend;
                             item.UserBio = fullProfile;
 
                             serviceRegistry.GetPlayerManager().UpdatePlayerUserFromVRCProfile(profile, item.MD5Hash);
@@ -139,7 +141,7 @@ namespace Tailgrab.Clients.Ollama
                                     }
                                     else
                                     {
-                                        GetEvaluationFromStore(serviceRegistry, evaluated, item.UserId);
+                                        GetEvaluationFromStore(serviceRegistry, evaluated, item);
                                     }
                                 }
                             }
@@ -242,6 +244,7 @@ namespace Tailgrab.Clients.Ollama
                     {
                         player.UserBio = item.UserBio;
                         player.AIEval = response;
+                        player.IsFriend = item.IsFriend;
 
                         ProfileViewUpdate(serviceRegistry, player);
                     }
@@ -256,23 +259,25 @@ namespace Tailgrab.Clients.Ollama
             await Task.Delay(5000);
         }
 
-        private static void GetEvaluationFromStore(ServiceRegistry serviceRegistry, ProfileEvaluation evaluated, string? userId)
+        private static void GetEvaluationFromStore(ServiceRegistry serviceRegistry, ProfileEvaluation evaluated, QueuedProcess item)
         {
-            if (userId != null)
+            if (item != null && item.UserId != null)
             {
 
-                Player? player = serviceRegistry.GetPlayerManager().GetPlayerByUserId(userId ?? string.Empty);
+                Player? player = serviceRegistry.GetPlayerManager().GetPlayerByUserId(item.UserId);
                 if (player != null)
                 {
                     player.AIEval = System.Text.Encoding.UTF8.GetString(evaluated.Evaluation);
                     player.UserBio = System.Text.Encoding.UTF8.GetString(evaluated.ProfileText);
+                    player.IsFriend = item.IsFriend;
+
 
                     ProfileViewUpdate(serviceRegistry, player);
-                    logger.Debug($"User profile already processed for userId: {userId}");
+                    logger.Debug($"User profile already processed for userId: {item.UserId}");
                 }
                 else
                 {
-                    logger.Debug($"User profile lookup fails for userId: {userId}");
+                    logger.Debug($"User profile lookup fails for userId: {item.UserId}");
                 }
 
             }
