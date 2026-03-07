@@ -1054,7 +1054,7 @@ Title="Tailgrab Player Panel"
 
                                 <DataGrid Name="GroupDbGrid" Grid.Row="1" AutoGenerateColumns="False" CanUserSortColumns="True" IsReadOnly="False" ItemsSource="{Binding GroupDbView}" CellEditEnding="GroupDbGrid_CellEditEnding" Grid.ColumnSpan="2">
                                     <DataGrid.Columns>
-                                        <DataGridTemplateColumn Header="Alert" SortMemberPath="IsBos" Width="120">
+                                        <DataGridTemplateColumn Header="Alert" SortMemberPath="AlertType" Width="120">
                                             <DataGridTemplateColumn.CellTemplate>
                                                 <DataTemplate>
                                                     <TextBlock Text="{Binding AlertType}" Foreground="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" />
@@ -1150,6 +1150,7 @@ Title="Tailgrab Player Panel"
                                     <RowDefinition Height="Auto" />
                                     <RowDefinition Height="Auto" />
                                     <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
                                     <RowDefinition Height="*" />
                                 </Grid.RowDefinitions>
 
@@ -1227,7 +1228,31 @@ Title="Tailgrab Player Panel"
                                     </Grid>
                                 </GroupBox>
 
-                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,12,0,0" Grid.Row="3">
+                                <GroupBox Header="Behaviors" Margin="0,6,0,6" Grid.Row="3">
+                                    <Grid Margin="6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+
+                                        <Label Grid.Row="0" Grid.Column="0" Content="Insert Discovered Public Avatars:" VerticalAlignment="Center"/>
+                                        <CheckBox Grid.Row="0" Grid.Column="1" Name="DiscoveredAvatarCaching" VerticalAlignment="Center" Margin="6,2" ToolTip="When enabled, Tailgrab will collect avatars from the AmpCache, public and private and include them into your private list."/>
+                                        
+                                        <Label Grid.Row="0" Grid.Column="2" Content="Insert Moderated Public Avatars:" VerticalAlignment="Center"/>
+                                        <CheckBox Grid.Row="0" Grid.Column="3" Name="ModeratedAvatarCaching" VerticalAlignment="Center" Margin="6,2" ToolTip="When enabled, Tailgrab will download your account's avatar moderation and add public avatars that do not exist into your list as 'Nuisance' avatars.  Will not include the private avatar moderations."/>
+
+                                        <Label Grid.Row="1" Grid.Column="0" Content="Insert Discovered Groups:" VerticalAlignment="Center"/>
+                                        <CheckBox Grid.Row="1" Grid.Column="1" Name="DiscoveredGroupCaching" VerticalAlignment="Center" Margin="6,2" ToolTip="When enabled, will include the Group Entries into your group list for flipping the severity."/>
+                                    </Grid>
+                                </GroupBox>
+
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,12,0,0" Grid.Row="4">
                                     <Button Content="Save Config" Click="SaveConfig_Click" Width="120" />
                                 </StackPanel>
                             </Grid>

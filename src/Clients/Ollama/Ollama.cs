@@ -167,6 +167,7 @@ namespace Tailgrab.Clients.Ollama
 
         private async static Task<bool> GetUserGroupInformation(ServiceRegistry serviceRegistry, TailgrabDBContext dBContext, List<LimitedUserGroups> userGroups, QueuedProcess item)
         {
+            bool saveGroups = ConfigStore.GetStoredKeyBool(CommonConst.Registry_Discovered_Group_Caching, true);
             logger.Debug($"Processing User Group subscription for userId: {item.UserId}");
             Player? player = serviceRegistry.GetPlayerManager().GetPlayerByUserId(item.UserId ?? string.Empty);
             if (player != null)
@@ -177,19 +178,23 @@ namespace Tailgrab.Clients.Ollama
                     GroupInfo? groupInfo = dBContext.GroupInfos.Find(group.GroupId);
                     if (groupInfo == null)
                     {
-                        groupInfo = new GroupInfo
+                        if( saveGroups )
                         {
-                            GroupId = group.GroupId,
-                            GroupName = group.Name,
-                            AlertType = AlertTypeEnum.None,
-                            CreatedAt = DateTime.UtcNow,
-                            UpdatedAt = DateTime.UtcNow
-                        };
-                        dBContext.GroupInfos.Add(groupInfo);
-                        dBContext.SaveChanges();
+                            groupInfo = new GroupInfo
+                            {
+                                GroupId = group.GroupId,
+                                GroupName = group.Name,
+                                AlertType = AlertTypeEnum.None,
+                                CreatedAt = DateTime.UtcNow,
+                                UpdatedAt = DateTime.UtcNow
+                            };
+                            dBContext.GroupInfos.Add(groupInfo);
+                            dBContext.SaveChanges();
+                        }
                     }
                     else
                     {
+                        // We will update the group name on each lookup in case it changes, but not reset the alert level as that is user defined
                         groupInfo.GroupName = group.Name;
                         dBContext.GroupInfos.Update(groupInfo);
                         dBContext.SaveChanges();
@@ -201,6 +206,7 @@ namespace Tailgrab.Clients.Ollama
                             maxAlertType = maxAlertType < groupInfo.AlertType ? groupInfo.AlertType : maxAlertType;
                         }
                     }
+
                 }
 
                 if (player != null && player.IsWatched)

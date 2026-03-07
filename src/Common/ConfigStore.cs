@@ -59,6 +59,10 @@ namespace Tailgrab.Common
         {
             return GetStoredKeyString(CommonConst.ConfigRegistryPath, keyName);
         }
+        public static bool GetStoredKeyBool(string keyName, bool defaultValue)
+        {
+            return GetStoredKeyBool(CommonConst.ConfigRegistryPath, keyName, defaultValue);
+        }
 
         public static string? GetStoredKeyString(string keyPath, string keyName)
         {
@@ -88,10 +92,44 @@ namespace Tailgrab.Common
                 return null;
             }
         }
+        public static bool GetStoredKeyBool(string keyPath, string keyName, bool defaultValue )
+        {
+            try
+            {
+                using (RegistryKey? key = Registry.CurrentUser.OpenSubKey(keyPath))
+                {
+                    if (key == null)
+                    {
+                        logger.Debug($"Registry key does not exist {keyName}");
+                        return defaultValue;
+                    }
+
+                    string? value = key.GetValue(keyName) as string;
+                    if (string.IsNullOrEmpty(value))
+                    {
+                        logger.Debug($"No Value stored in registry. {keyName}");
+                        return defaultValue;
+                    }
+
+                    bool.TryParse(value, out bool result);
+                    return result;
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to read value from registry.");
+                return defaultValue;
+            }
+        }
 
         public static void PutStoredKeyString(string keyName, string keyValue)
         {
             PutStoredKeyString(CommonConst.ConfigRegistryPath, keyName, keyValue);
+        }
+
+        public static void PutStoredKeyBool(string keyName, bool keyValue)
+        {
+            PutStoredKeyBool(CommonConst.ConfigRegistryPath, keyName, keyValue);
         }
 
         public static void PutStoredKeyString(string keyPath, string keyName, string keyValue)
@@ -108,6 +146,21 @@ namespace Tailgrab.Common
                 logger.Error(ex, $"Failed to save value to registry. {keyName}");
             }
         }
+        public static void PutStoredKeyBool(string keyPath, string keyName, bool keyValue)
+        {
+            try
+            {
+                using (RegistryKey key = Registry.CurrentUser.CreateSubKey(keyPath))
+                {
+                    key.SetValue(keyName, keyValue, RegistryValueKind.String);
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, $"Failed to save value to registry. {keyName}");
+            }
+        }
+
 
         public static void RemoveStoredKeyString(string keyPath, string keyName)
         {

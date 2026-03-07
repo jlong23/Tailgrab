@@ -272,6 +272,12 @@ public class FileTailer
 
     public static async Task ProcessAmplitudeCache(string filePath, ServiceRegistry ServiceRegistryInstance)
     {
+        bool saveAvatars = ConfigStore.GetStoredKeyBool(CommonConst.Registry_Discovered_Avatar_Caching, true);
+        if (!saveAvatars) {  
+              logger.Info($"Ignoring changes in Amplitude cache at '{filePath}'. Due to Discover Avatar Flag...");
+              return;
+        }
+
         // Resolve path: prefer explicit, then local repo config.json, then user config path
         if (!File.Exists(filePath))
         {
