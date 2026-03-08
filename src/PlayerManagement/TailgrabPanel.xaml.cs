@@ -2273,7 +2273,6 @@ namespace Tailgrab.PlayerManagement
         public string AlertMessages { get; set; } = string.Empty;
         public ObservableCollection<PrintInfoViewModel> Prints { get; private set; } = new ObservableCollection<PrintInfoViewModel>();
         public ObservableCollection<EmojiInfoViewModel> Emojis { get; private set; } = new ObservableCollection<EmojiInfoViewModel>();
-        private string _AlertColor = "Normal";
         private bool IsFriend {  get; set; }
 
         private string _AlertColor = "Normal";
