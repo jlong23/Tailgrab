@@ -138,9 +138,9 @@
     <!-- Force re-evaluation of BuildNumber property -->
     <PropertyGroup>
       <BuildNumber>$(NewBuildNumber)</BuildNumber>
-      <AssemblyVersion>1.1.0.$(BuildNumber)</AssemblyVersion>
-      <FileVersion>1.1.0.$(BuildNumber)</FileVersion>
-      <InformationalVersion>1.1.0.$(BuildNumber)</InformationalVersion>
+      <AssemblyVersion>1.1.1.$(BuildNumber)</AssemblyVersion>
+      <FileVersion>1.1.1.$(BuildNumber)</FileVersion>
+      <InformationalVersion>1.1.1.$(BuildNumber)</InformationalVersion>
     </PropertyGroup>
   </Target>
 
