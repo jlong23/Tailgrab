@@ -2276,6 +2276,8 @@ namespace Tailgrab.PlayerManagement
         private string _AlertColor = "Normal";
         private bool IsFriend {  get; set; }
 
+        private string _AlertColor = "Normal";
+
         public string HighlightClass
         {
             get
