@@ -48,6 +48,7 @@ namespace Tailgrab
                     throw new InvalidOperationException("TailgrabDBContext could not be resolved from the service provider.");
                 }
                 dbContext.Database.EnsureCreated();
+                dbContext.UpgradeDatabase();
 
                 logger.Info("Starting VR Chat API Client...");
                 await vrcAPIClient.Initialize();
@@ -61,7 +62,11 @@ namespace Tailgrab
                 logger.Info("Starting Player Manager...");
                 playerManager = new PlayerManager(this);
 
-                playerManager.SyncAvatarModerations();
+                bool saveAvatars = ConfigStore.GetStoredKeyBool(CommonConst.Registry_Moderated_Avatar_Caching, true);
+                if (saveAvatars)
+                {
+                    playerManager.SyncAvatarModerations();
+                }
 
                 logger.Info("Starting Avatar GIST Manager...");
                 AvatarBosGistListManager avatarGistMgr = new AvatarBosGistListManager(avatarManager);
@@ -70,8 +75,6 @@ namespace Tailgrab
                 logger.Info("Starting Group GIST Manager...");
                 GroupBosGistListManager groupGistMgr = new GroupBosGistListManager(dbContext, playerManager);
                 _ = Task.Run(() => groupGistMgr.ProcessGroupGistList());
-
-
 
                 logger.Info("All services started.");
             }

@@ -46,5 +46,8 @@ namespace Tailgrab.Common
         public const string Sound_Alert_Key = "Sound";
         public const string Color_Alert_Key = "Color";
 
+        public const string Registry_Discovered_Avatar_Caching = "DISCOVERED_AVATAR_CACHING";
+        public const string Registry_Moderated_Avatar_Caching = "MODERATED_AVATAR_CACHING";
+        public const string Registry_Discovered_Group_Caching = "DISCOVERED_GROUP_CACHING";
     }
 }

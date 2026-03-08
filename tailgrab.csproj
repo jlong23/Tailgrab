@@ -18,9 +18,9 @@
     <BuildNumber>$([System.IO.File]::ReadAllText('$(BuildNumberFile)').Trim())</BuildNumber>
     
     <!-- Version properties using build number -->
-    <AssemblyVersion>1.1.0.$(BuildNumber)</AssemblyVersion>
-    <FileVersion>1.1.0.$(BuildNumber)</FileVersion>
-    <InformationalVersion>1.1.0.$(BuildNumber)</InformationalVersion>
+    <AssemblyVersion>1.1.1.$(BuildNumber)</AssemblyVersion>
+    <FileVersion>1.1.1.$(BuildNumber)</FileVersion>
+    <InformationalVersion>1.1.1.$(BuildNumber)</InformationalVersion>
     <PackageProjectUrl>https://github.com/jlong23/Tailgrab</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/jlong23/Tailgrab</RepositoryUrl>
@@ -138,9 +138,9 @@
     <!-- Force re-evaluation of BuildNumber property -->
     <PropertyGroup>
       <BuildNumber>$(NewBuildNumber)</BuildNumber>
-      <AssemblyVersion>1.1.0.$(BuildNumber)</AssemblyVersion>
-      <FileVersion>1.1.0.$(BuildNumber)</FileVersion>
-      <InformationalVersion>1.1.0.$(BuildNumber)</InformationalVersion>
+      <AssemblyVersion>1.1.1.$(BuildNumber)</AssemblyVersion>
+      <FileVersion>1.1.1.$(BuildNumber)</FileVersion>
+      <InformationalVersion>1.1.1.$(BuildNumber)</InformationalVersion>
     </PropertyGroup>
   </Target>
 

@@ -261,8 +261,14 @@ namespace Tailgrab.PlayerManagement
                 ProfileNuisanceColor.SelectedValue = GetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Color_Alert_Key) ?? "Yellow";
                 ProfileCrasherColor.SelectedValue = GetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Color_Alert_Key) ?? "Red";
 
+                DiscoveredAvatarCaching.IsChecked = ConfigStore.GetStoredKeyBool(CommonConst.Registry_Discovered_Avatar_Caching, true);
+                ModeratedAvatarCaching.IsChecked = ConfigStore.GetStoredKeyBool(CommonConst.Registry_Moderated_Avatar_Caching, true);
+                DiscoveredGroupCaching.IsChecked = ConfigStore.GetStoredKeyBool(CommonConst.Registry_Discovered_Group_Caching, true);
+
             }
             catch { }
+
+
             #endregion
 
             // Initial load of Avatars, Groups and Users
@@ -308,6 +314,10 @@ namespace Tailgrab.PlayerManagement
 
                 ConfigStore.PutStoredKeyString(Common.CommonConst.Registry_Avatar_Gist, avatarGistUrl.Text);
                 ConfigStore.PutStoredKeyString(CommonConst.Registry_Group_Gist, groupGistUrl.Text);
+
+                ConfigStore.PutStoredKeyBool(CommonConst.Registry_Discovered_Avatar_Caching, DiscoveredAvatarCaching.IsChecked == true);
+                ConfigStore.PutStoredKeyBool(CommonConst.Registry_Moderated_Avatar_Caching, ModeratedAvatarCaching.IsChecked == true);
+                ConfigStore.PutStoredKeyBool(CommonConst.Registry_Discovered_Group_Caching, DiscoveredGroupCaching.IsChecked == true);
 
                 System.Windows.MessageBox.Show("Configuration saved. Restart the Applicaton for all changes to take affect.", "Config", MessageBoxButton.OK, MessageBoxImage.Information);
             }
@@ -2263,6 +2273,7 @@ namespace Tailgrab.PlayerManagement
         public string AlertMessages { get; set; } = string.Empty;
         public ObservableCollection<PrintInfoViewModel> Prints { get; private set; } = new ObservableCollection<PrintInfoViewModel>();
         public ObservableCollection<EmojiInfoViewModel> Emojis { get; private set; } = new ObservableCollection<EmojiInfoViewModel>();
+        private bool IsFriend {  get; set; }
 
         private string _AlertColor = "Normal";
 
@@ -2296,6 +2307,7 @@ namespace Tailgrab.PlayerManagement
             IsWatched = p.IsWatched;
             AlertMessages = p.AlertMessage;
             _AlertColor = p.AlertColor;
+            IsFriend = p.IsFriend;
 
             PopulateCollectionsFromPlayer(p); ;
         }
@@ -2321,6 +2333,7 @@ namespace Tailgrab.PlayerManagement
             if (IsWatched != p.IsWatched) { IsWatched = p.IsWatched; changed = true; }
             if (AlertMessages != p.AlertMessage) { AlertMessages = p.AlertMessage ?? string.Empty; changed = true; }
             if (_AlertColor != p.AlertColor) { _AlertColor = p.AlertColor; changed = true; }
+            if (IsFriend != p.IsFriend) { IsFriend = p.IsFriend; changed = true; }
 
             if (changed) OnPropertyChanged(string.Empty);
 

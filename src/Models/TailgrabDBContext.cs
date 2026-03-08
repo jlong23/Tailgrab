@@ -71,6 +71,10 @@ public partial class TailgrabDBContext : DbContext
             entity.HasKey(e => e.AvatarId);
 
             entity.ToTable("AvatarInfo");
+
+            entity.HasIndex(a => a.AvatarName);
+            entity.HasIndex(a => a.UserName);
+            entity.HasIndex(a => a.AlertType);
         });
 
         modelBuilder.Entity<GroupInfo>(entity =>
@@ -81,6 +85,9 @@ public partial class TailgrabDBContext : DbContext
 
             entity.Property(e => e.CreatedAt).HasColumnName("createDate");
             entity.Property(e => e.UpdatedAt).HasColumnName("updateDate");
+
+            entity.HasIndex(g => g.GroupName);
+            entity.HasIndex(g => g.AlertType);
         });
 
         modelBuilder.Entity<ProfileEvaluation>(entity =>
@@ -119,11 +126,18 @@ public partial class TailgrabDBContext : DbContext
 
     public void UpgradeDatabase()
     {
+        // CREATE INDEX ix_avtr_aname ON AvatarInfo(AvatarName);
+        // CREATE INDEX ix_avtr_uname ON AvatarInfo(UserName);
+        // CREATE INDEX ix_avtr_alert ON AvatarInfo(alertType);
+        // CREATE INDEX ix_grp_gname ON GroupInfo(groupName);
+        // CREATE INDEX ix_grp_alert ON GroupInfo(alertType);
+
         ExecuteSqlTransaction(
-            "ALTER TABLE AvatarInfo ADD COLUMN alertType INTEGER NOT NULL DEFAULT 0",
-            "UPDATE AvatarInfo SET alertType = 1 WHERE IsBOS = 1",
-            "ALTER TABLE GroupInfo ADD COLUMN alertType INTEGER NOT NULL DEFAULT 0",
-            "UPDATE GroupInfo SET alertType = 1 WHERE IsBOS = 1"
+            "CREATE INDEX IF NOT EXISTS ix_avtr_aname ON AvatarInfo(AvatarName)",
+            "CREATE INDEX IF NOT EXISTS ix_avtr_uname ON AvatarInfo(UserName)",
+            "CREATE INDEX IF NOT EXISTS ix_avtr_alert ON AvatarInfo(alertType)",
+            "CREATE INDEX IF NOT EXISTS ix_grp_gname ON GroupInfo(groupName)",
+            "CREATE INDEX IF NOT EXISTS ix_grp_alert ON GroupInfo(alertType)"
         );
     }
 
@@ -135,18 +149,18 @@ public partial class TailgrabDBContext : DbContext
     private void ExecuteSqlTransaction(params string[] sqlStatements)
     {
         using var transaction = Database.BeginTransaction();
-        try
+        foreach (var sql in sqlStatements)
         {
-            foreach (var sql in sqlStatements)
+            try
             {
                 Database.ExecuteSqlRaw(sql);
             }
-            transaction.Commit();
-        }
-        catch
-        {
-            transaction.Rollback();
-            throw;
+            catch
+            {
+                logger.Error($"Error executing SQL transaction. Rolling back changes. {sql}");
+                transaction.Rollback();
+                throw;
+            }
         }
     }
 
