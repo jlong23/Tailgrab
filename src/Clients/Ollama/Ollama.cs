@@ -300,7 +300,7 @@ namespace Tailgrab.Clients.Ollama
             {
                 switch (profileWatch)
                 {
-                    case "Harrassment & Bullying":
+                    case "Harassment & Bullying": 
                         player.AddAlertMessage(AlertClassEnum.Profile, AlertTypeEnum.Nuisance, "Hate");
                         SoundManager.PlayAlertSound(CommonConst.Profile_Alert_Key, AlertTypeEnum.Nuisance);
                         break;
@@ -331,9 +331,9 @@ namespace Tailgrab.Clients.Ollama
             {
                 return "Explicit Sexual";
             }
-            else if (CheckLines(profileText, "Harrassment & Bullying"))
+            else if (CheckLines(profileText, "Harassment & Bullying"))
             {
-                return "Harrassment & Bullying";
+                return "Harassment & Bullying";
             }
             else if (CheckLines(profileText, "Self Harm"))
             {
