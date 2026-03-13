@@ -2,7 +2,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using NLog;
 using System.IO;
-using Tailgrab.AvatarManagement;
 using Tailgrab.Clients.Ollama;
 using Tailgrab.Clients.VRChat;
 using Tailgrab.Common;
@@ -16,7 +15,6 @@ namespace Tailgrab
     {
         TailgrabDBContext? dbContext = null;
         VRChatClient vrcAPIClient = new VRChatClient();
-        AvatarManagementService? avatarManager = null;
         PlayerManager? playerManager = null;
         OllamaClient? ollamaAPIClient = null;
         static Logger logger = LogManager.GetCurrentClassLogger();
@@ -56,9 +54,6 @@ namespace Tailgrab
                 logger.Info("Starting OLLama API Client...");
                 ollamaAPIClient = new OllamaClient(this);
 
-                logger.Info("Starting Avatar Manager...");
-                avatarManager = new AvatarManagementService(this);
-
                 logger.Info("Starting Player Manager...");
                 playerManager = new PlayerManager(this);
 
@@ -69,7 +64,7 @@ namespace Tailgrab
                 }
 
                 logger.Info("Starting Avatar GIST Manager...");
-                AvatarBosGistListManager avatarGistMgr = new AvatarBosGistListManager(avatarManager);
+                AvatarBosGistListManager avatarGistMgr = new AvatarBosGistListManager();
                 _ = Task.Run(() => avatarGistMgr.ProcessAvatarGistList());
 
                 logger.Info("Starting Group GIST Manager...");
@@ -116,15 +111,6 @@ namespace Tailgrab
                 throw new InvalidOperationException("Ollama API Client has not been initialized. Call StartAllServices() first.");
             }
             return ollamaAPIClient;
-        }
-
-        public AvatarManagementService GetAvatarManager()
-        {
-            if (avatarManager == null)
-            {
-                throw new InvalidOperationException("Avatar Manager has not been initialized. Call StartAllServices() first.");
-            }
-            return avatarManager;
         }
     }
 }

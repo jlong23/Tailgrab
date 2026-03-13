@@ -12,21 +12,29 @@
     <UseWPF>true</UseWPF>
     <Nullable>enable</Nullable>
     <ApplicationIcon>src\Resources\tailgrab.ico</ApplicationIcon>
-    
+
     <!-- Read build number from file -->
     <BuildNumberFile>$(MSBuildProjectDirectory)\BuildNumber.txt</BuildNumberFile>
     <BuildNumber>$([System.IO.File]::ReadAllText('$(BuildNumberFile)').Trim())</BuildNumber>
-    
-    <!-- Version properties using build number -->
-    <AssemblyVersion>1.1.1.$(BuildNumber)</AssemblyVersion>
-    <FileVersion>1.1.1.$(BuildNumber)</FileVersion>
-    <InformationalVersion>1.1.1.$(BuildNumber)</InformationalVersion>
+    <VersionNumberFile>$(MSBuildProjectDirectory)\BuildVersion.txt</VersionNumberFile>
+	<VersionNumber>$([System.IO.File]::ReadAllText('$(VersionNumberFile)').Trim())</VersionNumber>
+
+	  <!-- Version properties using build number -->
+    <AssemblyVersion>$(VersionNumber).$(BuildNumber)</AssemblyVersion>
+    <FileVersion>$(VersionNumber).$(BuildNumber)</FileVersion>
+    <InformationalVersion>$(VersionNumber).$(BuildNumber)</InformationalVersion>
     <PackageProjectUrl>https://github.com/jlong23/Tailgrab</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/jlong23/Tailgrab</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>Tailgrab.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
 
   <ItemGroup>
     <Content Remove="C:\Users\jlong\.nuget\packages\microsoft.codeanalysis.workspaces.msbuild\4.14.0\contentFiles\any\any\BuildHost-net472\cs\System.CommandLine.resources.dll" />
@@ -121,6 +129,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="Tailgrab.Tests\Tailgrab.Tests.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Update="README.md">
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
@@ -138,9 +150,9 @@
     <!-- Force re-evaluation of BuildNumber property -->
     <PropertyGroup>
       <BuildNumber>$(NewBuildNumber)</BuildNumber>
-      <AssemblyVersion>1.1.1.$(BuildNumber)</AssemblyVersion>
-      <FileVersion>1.1.1.$(BuildNumber)</FileVersion>
-      <InformationalVersion>1.1.1.$(BuildNumber)</InformationalVersion>
+      <AssemblyVersion>$(VersionNumber).$(BuildNumber)</AssemblyVersion>
+      <FileVersion>$(VersionNumber).$(BuildNumber)</FileVersion>
+      <InformationalVersion>$(VersionNumber).$(BuildNumber)</InformationalVersion>
     </PropertyGroup>
   </Target>
 

@@ -1457,6 +1457,76 @@ Title="Tailgrab Player Panel"
                                 </StackPanel>
                             </Grid>
                         </TabItem>
+                        <TabItem Header="Open Logs">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+
+                                <ListView Name="OpenLogsListView" ItemsSource="{Binding OpenLogsView}" Grid.Row="0">
+                                    <ListView.View>
+                                        <GridView>
+                                            <GridViewColumn Width="400">
+                                                <GridViewColumn.Header>
+                                                    <GridViewColumnHeader Content="Filename" Tag="FileName" Click="GridViewColumnHeader_Click"/>
+                                                </GridViewColumn.Header>
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding FileName}" ToolTip="{Binding FilePath}" />
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+
+                                            <GridViewColumn Width="180">
+                                                <GridViewColumn.Header>
+                                                    <GridViewColumnHeader Content="Opened" Tag="StartTime" Click="GridViewColumnHeader_Click"/>
+                                                </GridViewColumn.Header>
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding StartTime, StringFormat={}{0:u}}" />
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+
+                                            <GridViewColumn Width="180">
+                                                <GridViewColumn.Header>
+                                                    <GridViewColumnHeader Content="Last Line Processed" Tag="LastLineProcessedTime" Click="GridViewColumnHeader_Click"/>
+                                                </GridViewColumn.Header>
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding LastLineProcessedTimeFormatted}" />
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+
+                                            <GridViewColumn Width="120">
+                                                <GridViewColumn.Header>
+                                                    <GridViewColumnHeader Content="Lines Processed" Tag="LinesProcessed" Click="GridViewColumnHeader_Click"/>
+                                                </GridViewColumn.Header>
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding LinesProcessed, StringFormat=N0}" Width="100"
+                                                                   HorizontalAlignment="Right" 
+                                                                   TextAlignment="Right"/>
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+
+                                            <GridViewColumn Width="80">
+                                                <GridViewColumn.Header>
+                                                    <GridViewColumnHeader Content="Action" />
+                                                </GridViewColumn.Header>
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <Button Content="Cancel" Click="CancelTailTask_Click" Padding="4,2" Tag="{Binding}"/>
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+                                        </GridView>
+                                    </ListView.View>
+                                </ListView>
+                            </Grid>
+                        </TabItem>
                         <TabItem Header="Migration" IsEnabled="False">
                             <Grid Margin="12">
                                 <Grid.RowDefinitions>

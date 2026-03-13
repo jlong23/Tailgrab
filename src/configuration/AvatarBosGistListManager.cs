@@ -4,21 +4,19 @@ using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
-using Tailgrab.AvatarManagement;
 using Tailgrab.Common;
 using Tailgrab.Models;
+using Tailgrab.PlayerManagement;
 
 namespace Tailgrab.Configuration
 {
     public class AvatarBosGistListManager
     {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
-        private readonly AvatarManagementService avatarManager;
         private readonly HttpClient _httpClient;
 
-        public AvatarBosGistListManager(AvatarManagementService avatarManagement)
+        public AvatarBosGistListManager()
         {
-            avatarManager = avatarManagement;
             _httpClient = new HttpClient();
         }
 
@@ -234,10 +232,10 @@ namespace Tailgrab.Configuration
                         logger.Warn($"Line {lineNumber}: Invalid AlertType '{avatarAlert}' for Avatar ID '{avatarId}', defaulting to None.");
                     }
 
-                    AvatarInfo? info = avatarManager.GetAvatarById(avatarId);
+                    AvatarInfo? info = PlayerManager.GetAvatarById(avatarId);
                     if (info == null || info.AlertType == AlertTypeEnum.None) {
                         QueuedAvatarWatch watchItem = new QueuedAvatarWatch(1, avatarId, alertType, lineNumber);
-                        avatarManager.EnqueueWatchAvatarForCheck(watchItem);
+                        PlayerManager.EnqueueWatchAvatarForCheck(watchItem);
                     }
                     processedCount++;
                 }

@@ -146,7 +146,7 @@ namespace Tailgrab.Clients.Ollama
                                 }
                             }
 
-                            serviceRegistry.GetPlayerManager().OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Updated, profile.DisplayName);
+                            PlayerManager.OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Updated, profile.DisplayName);
                         }
                         catch (Exception ex)
                         {
@@ -169,7 +169,7 @@ namespace Tailgrab.Clients.Ollama
         {
             bool saveGroups = ConfigStore.GetStoredKeyBool(CommonConst.Registry_Discovered_Group_Caching, true);
             logger.Debug($"Processing User Group subscription for userId: {item.UserId}");
-            Player? player = serviceRegistry.GetPlayerManager().GetPlayerByUserId(item.UserId ?? string.Empty);
+            Player? player = PlayerManager.GetPlayerByUserId(item.UserId ?? string.Empty);
             if (player != null)
             {
                 AlertTypeEnum maxAlertType = AlertTypeEnum.None;
@@ -201,7 +201,7 @@ namespace Tailgrab.Clients.Ollama
 
                         if (groupInfo.AlertType > AlertTypeEnum.None)
                         {
-                            player = serviceRegistry.GetPlayerManager().AddPlayerEventByUserId(item.UserId ?? string.Empty, PlayerEvent.EventType.GroupWatch, $"User is member of group: {groupInfo.GroupName} with alert level {groupInfo.AlertType}");
+                            player = PlayerManager.AddPlayerEventByUserId(item.UserId ?? string.Empty, PlayerEvent.EventType.GroupWatch, $"User is member of group: {groupInfo.GroupName} with alert level {groupInfo.AlertType}");
                             player?.AddAlertMessage(AlertClassEnum.Group, groupInfo.AlertType, groupInfo.GroupName);
                             maxAlertType = maxAlertType < groupInfo.AlertType ? groupInfo.AlertType : maxAlertType;
                         }
@@ -245,7 +245,7 @@ namespace Tailgrab.Clients.Ollama
                     dBContext.Add(evaluation);
                     dBContext.SaveChanges();
 
-                    Player? player = serviceRegistry.GetPlayerManager().GetPlayerByUserId(item.UserId ?? string.Empty);
+                    Player? player = PlayerManager.GetPlayerByUserId(item.UserId ?? string.Empty);
                     if (player != null)
                     {
                         player.UserBio = item.UserBio;
@@ -270,7 +270,7 @@ namespace Tailgrab.Clients.Ollama
             if (item != null && item.UserId != null)
             {
 
-                Player? player = serviceRegistry.GetPlayerManager().GetPlayerByUserId(item.UserId);
+                Player? player = PlayerManager.GetPlayerByUserId(item.UserId);
                 if (player != null)
                 {
                     player.AIEval = System.Text.Encoding.UTF8.GetString(evaluated.Evaluation);
@@ -314,10 +314,10 @@ namespace Tailgrab.Clients.Ollama
                         break;
                 }
 
-                serviceRegistry.GetPlayerManager().AddPlayerEventByUserId(player.UserId ?? string.Empty,
+                PlayerManager.AddPlayerEventByUserId(player.UserId ?? string.Empty,
                     PlayerEvent.EventType.ProfileWatch, $"User profile was flagged by the AI : {profileWatch}");
             }
-            serviceRegistry.GetPlayerManager().OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Updated, player);
+            PlayerManager.OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Updated, player);
         }
 
         private static string? EvaluateProfile(string? profileText)

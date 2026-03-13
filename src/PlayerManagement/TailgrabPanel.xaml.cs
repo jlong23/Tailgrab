@@ -26,10 +26,11 @@ namespace Tailgrab.PlayerManagement
         private readonly DispatcherTimer fallbackTimer;
         private readonly DispatcherTimer statusBarTimer;
 
-        public ObservableCollection<PlayerViewModel> ActivePlayers { get; } = new ObservableCollection<PlayerViewModel>();
-        public ObservableCollection<PlayerViewModel> PastPlayers { get; } = new ObservableCollection<PlayerViewModel>();
-        public ObservableCollection<PlayerViewModel> PrintPlayers { get; } = new ObservableCollection<PlayerViewModel>();
-        public ObservableCollection<PlayerViewModel> EmojiPlayers { get; } = new ObservableCollection<PlayerViewModel>();
+        public ObservableCollection<PlayerViewModel> ActivePlayers { get; } = [];
+        public ObservableCollection<PlayerViewModel> PastPlayers { get; } = [];
+        public ObservableCollection<PlayerViewModel> PrintPlayers { get; } = [];
+        public ObservableCollection<PlayerViewModel> EmojiPlayers { get; } = [];
+        public ObservableCollection<TailTaskViewModel> OpenLogs { get; } = [];
         public AvatarVirtualizingCollection AvatarDbItems { get; private set; }
         public GroupVirtualizingCollection GroupDbItems { get; private set; }
         public UserVirtualizingCollection UserDbItems { get; private set; }
@@ -41,6 +42,7 @@ namespace Tailgrab.PlayerManagement
         public ICollectionView PastView { get; }
         public ICollectionView PrintView { get; }
         public ICollectionView EmojiView { get; }
+        public ICollectionView OpenLogsView { get; }
 
 
         private PlayerViewModel? _selectedActive;
@@ -143,32 +145,32 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
-        public List<KeyValuePair<string, AlertTypeEnum>> AlertTypeOptions { get; } = new List<KeyValuePair<string, AlertTypeEnum>>
-        {
+        public List<KeyValuePair<string, AlertTypeEnum>> AlertTypeOptions { get; } =
+        [
             new KeyValuePair<string, AlertTypeEnum>("None", AlertTypeEnum.None),
             new KeyValuePair<string, AlertTypeEnum>("Watch", AlertTypeEnum.Watch),
             new KeyValuePair<string, AlertTypeEnum>("Nuisance", AlertTypeEnum.Nuisance),
             new KeyValuePair<string, AlertTypeEnum>("Crasher", AlertTypeEnum.Crasher)
-        };
+        ];
 
-        public List<KeyValuePair<string, string>> AlertColorOptions { get; } = new List<KeyValuePair<string, string>>
-        {
+        public List<KeyValuePair<string, string>> AlertColorOptions { get; } = 
+        [
             new KeyValuePair<string, string>("*NONE", "Normal"),
             new KeyValuePair<string, string>("Yellow", "Yellow"),
             new KeyValuePair<string, string>("Purple", "Purple"),
             new KeyValuePair<string, string>("Red", "Red"),
-        };
+        ];
 
-        public List<KeyValuePair<string, string>> AlertSoundOptions { get; set; } = new List<KeyValuePair<string, string>>();
+        public List<KeyValuePair<string, string>> AlertSoundOptions { get; set; } = [];
 
-        public List<ReportReasonItem> ProfileReportReasonsOptions = new List<ReportReasonItem>
-        {
+        public List<ReportReasonItem> ProfileReportReasonsOptions =
+        [
             new ReportReasonItem("Sexual Content", "sexual"),
             new ReportReasonItem("Hateful Content", "hateful"),
             new ReportReasonItem("Gore and Violence", "gore"),
             new ReportReasonItem("Child Exploitation", "child"),
             new ReportReasonItem("Other", "other")
-        };
+        ];
 
 
         public TailgrabPanel(ServiceRegistry serviceRegistry)
@@ -190,6 +192,9 @@ namespace Tailgrab.PlayerManagement
 
             PrintView = CollectionViewSource.GetDefaultView(PrintPlayers);
             EmojiView = CollectionViewSource.GetDefaultView(EmojiPlayers);
+
+            OpenLogsView = CollectionViewSource.GetDefaultView(OpenLogs);
+            OpenLogsView.SortDescriptions.Add(new SortDescription("StartTime", ListSortDirection.Descending));
 
             AvatarDbItems = new AvatarVirtualizingCollection(_serviceRegistry);
             AvatarDbView = CollectionViewSource.GetDefaultView(AvatarDbItems);
@@ -235,7 +240,7 @@ namespace Tailgrab.PlayerManagement
             try
             {
                 var sounds = SoundManager.GetAvailableSounds();
-                AlertSoundOptions = sounds.Select(s => new KeyValuePair<string, string>(s, s)).ToList();
+                AlertSoundOptions = [.. sounds.Select(s => new KeyValuePair<string, string>(s, s))];
 
                 // Avatar Alerts
                 AvatarWarnSound.SelectedValue = GetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Watch, CommonConst.Sound_Alert_Key) ?? "*NONE";
@@ -370,7 +375,7 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
-        private void SetAlertKeyString(string alertKey, AlertTypeEnum alertType, string subType, object value)
+        private static void SetAlertKeyString(string alertKey, AlertTypeEnum alertType, string subType, object value)
         {
             string key = CommonConst.ConfigRegistryPath + "\\" + alertKey + "\\" + alertType.ToString();
 
@@ -385,7 +390,7 @@ namespace Tailgrab.PlayerManagement
 
         }
 
-        private string? GetAlertKeyString(string alertKey, AlertTypeEnum alertType, string subType)
+        private static string? GetAlertKeyString(string alertKey, AlertTypeEnum alertType, string subType)
         {
             string key = CommonConst.ConfigRegistryPath + "\\" + alertKey + "\\" + alertType.ToString();
 
@@ -396,11 +401,13 @@ namespace Tailgrab.PlayerManagement
         {
             try
             {
-                var avatarManager = _serviceRegistry.GetAvatarManager();
                 var ollamaClient = _serviceRegistry.GetOllamaAPIClient();
 
-                AvatarQueueLength = avatarManager?.GetQueueCount() ?? 0;
+                AvatarQueueLength = PlayerManager.GetQueueCount();
                 OllamaQueueLength = ollamaClient?.GetQueueSize() ?? 0;
+
+                // Update Open Logs collection
+                RefreshOpenLogs();
 
                 // Update session info
                 var currentSession = PlayerManager.CurrentSession;
@@ -414,7 +421,7 @@ namespace Tailgrab.PlayerManagement
                     }
 
                     // Update elapsed time
-                    var elapsed = DateTime.Now - currentSession.startDateTime;
+                    var elapsed = DateTime.Now - currentSession.StartDateTime;
                     int hours = (int)elapsed.TotalHours;
                     int minutes = elapsed.Minutes;
                     int seconds = elapsed.Seconds;
@@ -436,7 +443,7 @@ namespace Tailgrab.PlayerManagement
             // Ensure collections reflect PlayerManager state
             try
             {
-                var players = _serviceRegistry.GetPlayerManager().GetAllPlayers().ToList();
+                var players = PlayerManager.GetAllPlayers().ToList();
                 UpdateCollectionsFromSnapshot(players);
             }
             catch { }
@@ -566,7 +573,7 @@ namespace Tailgrab.PlayerManagement
         private void PurgePastOlderThan(int minutes)
         {
             var olderThan = DateTime.Now.AddMinutes(minutes);
-            List<PlayerViewModel> toRemove = new List<PlayerViewModel>();
+            List<PlayerViewModel> toRemove = [];
             foreach (PlayerViewModel oldPlayer in PastPlayers)
             {
                 if (!string.IsNullOrEmpty(oldPlayer.InstanceEndTime))
@@ -663,7 +670,7 @@ namespace Tailgrab.PlayerManagement
             return null;
         }
 
-        private void ToggleSort(ICollectionView view, string property)
+        private static void ToggleSort(ICollectionView view, string property)
         {
             // If already sorted on property, flip direction. Otherwise set ascending.
             var existing = view.SortDescriptions.FirstOrDefault(sd => sd.PropertyName == property);
@@ -684,7 +691,7 @@ namespace Tailgrab.PlayerManagement
             view.Refresh();
         }
 
-        private void UpdateHeaderSortIndicator(GridViewColumnHeader clickedHeader, ICollectionView view, string property)
+        private static void UpdateHeaderSortIndicator(GridViewColumnHeader clickedHeader, ICollectionView view, string property)
         {
             // Clear indicators on sibling headers in same ListView
             var lv = FindAncestor<System.Windows.Controls.ListView>(clickedHeader);
@@ -784,7 +791,7 @@ namespace Tailgrab.PlayerManagement
                 try
                 {
                     // Get the player from PlayerManager
-                    Player? player = _serviceRegistry.GetPlayerManager().GetPlayerByUserId(userId);
+                    Player? player = PlayerManager.GetPlayerByUserId(userId);
 
                     if (player != null && !string.IsNullOrEmpty(player.AIEval))
                     {
@@ -907,17 +914,21 @@ namespace Tailgrab.PlayerManagement
         // Reusable method to submit profile report - can be called from other places in the future if needed
         private async Task<bool> SubmitProfileReport(string userId, string category, string reportReason, string reportDescription)
         {
-            ModerationReportPayload rpt = new ModerationReportPayload();
-            rpt.Type = "user";
-            rpt.Category = "profile";
-            rpt.Reason = reportReason;
-            rpt.ContentId = userId;
-            rpt.Description = reportDescription;
+            ModerationReportPayload rpt = new()
+            {
+                Type = "user",
+                Category = "profile",
+                Reason = reportReason,
+                ContentId = userId,
+                Description = reportDescription
+            };
 
-            ModerationReportDetails rptDtls = new ModerationReportDetails();
-            rptDtls.InstanceType = "Group Public";
-            rptDtls.InstanceAgeGated = false;
-            rpt.Details = new List<ModerationReportDetails>() { rptDtls };
+            ModerationReportDetails rptDtls = new()
+            {
+                InstanceType = "Group Public",
+                InstanceAgeGated = false
+            };
+            rpt.Details = [rptDtls];
 
             bool success = await _serviceRegistry.GetVRChatAPIClient().SubmitModerationReportAsync(rpt);
             if (success)
@@ -1305,18 +1316,22 @@ namespace Tailgrab.PlayerManagement
 
         private async Task<bool> SubmitPrintReport(string userId, string printId, string category, string reportReason, string reportDescription)
         {
-            ModerationReportPayload rpt = new ModerationReportPayload();
-            rpt.Type = category;
-            rpt.Category = category;
-            rpt.Reason = reportReason;
-            rpt.ContentId = printId;
-            rpt.Description = reportDescription;
+            ModerationReportPayload rpt = new()
+            {
+                Type = category,
+                Category = category,
+                Reason = reportReason,
+                ContentId = printId,
+                Description = reportDescription
+            };
 
-            ModerationReportDetails rptDtls = new ModerationReportDetails();
-            rptDtls.InstanceType = "Group Public";
-            rptDtls.InstanceAgeGated = false;
-            rptDtls.HolderId = userId;
-            rpt.Details = new List<ModerationReportDetails>() { rptDtls };
+            ModerationReportDetails rptDtls = new()
+            {
+                InstanceType = "Group Public",
+                InstanceAgeGated = false,
+                HolderId = userId
+            };
+            rpt.Details = [rptDtls];
 
             bool success = await _serviceRegistry.GetVRChatAPIClient().SubmitModerationReportAsync(rpt);
             if (success)
@@ -1353,7 +1368,7 @@ namespace Tailgrab.PlayerManagement
                     PrintOverlayUserIdTextBox.Text = printInfo.OwnerId;
                     PrintOverlayInventoryIdTextBox.Text = printInfo.Id;
 
-                    List<string> imageUrls = new List<string>();
+                    List<string> imageUrls = [];
 
                     if (!string.IsNullOrEmpty(printInfo.Files.Image))
                     {
@@ -1448,13 +1463,13 @@ namespace Tailgrab.PlayerManagement
         //
         // Emoji Handlers
         #region Emoji handlers
-        public List<ReportReasonItem> ReportReasons { get; } = new List<ReportReasonItem>
-        {
+        public List<ReportReasonItem> ReportReasons { get; } =
+        [
             new ReportReasonItem("Sexual Content", "sexual"),
             new ReportReasonItem("Hateful Content", "hateful"),
             new ReportReasonItem("Gore and Violence", "gore"),
             new ReportReasonItem("Other", "other")
-        };
+        ];
 
         private void EmojiApplyFilter_Click(object sender, RoutedEventArgs e)
         {
@@ -1659,18 +1674,22 @@ namespace Tailgrab.PlayerManagement
 
         private async Task<bool> SubmitInventoryReport(string userId, string inventoryId, string category, string reportReason, string reportDescription)
         {
-            ModerationReportPayload rpt = new ModerationReportPayload();
-            rpt.Type = category.ToLower();
-            rpt.Category = category.ToLower();
-            rpt.Reason = reportReason;
-            rpt.ContentId = inventoryId;
-            rpt.Description = reportDescription;
+            ModerationReportPayload rpt = new()
+            {
+                Type = category.ToLower(),
+                Category = category.ToLower(),
+                Reason = reportReason,
+                ContentId = inventoryId,
+                Description = reportDescription
+            };
 
-            ModerationReportDetails rptDtls = new ModerationReportDetails();
-            rptDtls.InstanceType = "Group Public";
-            rptDtls.InstanceAgeGated = false;
-            rptDtls.HolderId = userId;
-            rpt.Details = new List<ModerationReportDetails>() { rptDtls };
+            ModerationReportDetails rptDtls = new()
+            {
+                InstanceType = "Group Public",
+                InstanceAgeGated = false,
+                HolderId = userId
+            };
+            rpt.Details = [rptDtls];
 
             bool success = await _serviceRegistry.GetVRChatAPIClient().SubmitModerationReportAsync(rpt);
             if (success)
@@ -1712,7 +1731,7 @@ namespace Tailgrab.PlayerManagement
                         OverlayCategoryTextBox.Text = "Unknown";
                     }
 
-                    List<string> imageUrls = new List<string>();
+                    List<string> imageUrls = [];
 
                     if (!string.IsNullOrEmpty(inventoryItem.Metadata?.ImageUrl))
                     {
@@ -2158,6 +2177,59 @@ namespace Tailgrab.PlayerManagement
         #endregion
 
         //
+        // Open Logs UI handlers
+        #region Open Logs handlers
+        private void RefreshOpenLogs()
+        {
+            try
+            {
+                var activeTasks = FileTailer.GetActiveTailTasks();
+
+                // Remove tasks that are no longer active
+                var toRemove = OpenLogs.Where(vm => !activeTasks.ContainsKey(vm.FilePath)).ToList();
+                foreach (var item in toRemove)
+                {
+                    OpenLogs.Remove(item);
+                }
+
+                // Add or update tasks
+                foreach (var kvp in activeTasks)
+                {
+                    var existing = OpenLogs.FirstOrDefault(vm => vm.FilePath == kvp.Key);
+                    if (existing == null)
+                    {
+                        OpenLogs.Add(new TailTaskViewModel(kvp.Value));
+                    }
+                    else
+                    {
+                        existing.UpdateFromStatus(kvp.Value);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                logger?.Error(ex, "Failed to refresh open logs");
+            }
+        }
+
+        private void CancelTailTask_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (sender is System.Windows.Controls.Button button && button.Tag is TailTaskViewModel viewModel)
+                {
+                    viewModel.RequestCancellation();
+                    logger.Info($"Cancellation requested for: {viewModel.FilePath}");
+                }
+            }
+            catch (Exception ex)
+            {
+                logger?.Error(ex, "Failed to cancel tail task");
+            }
+        }
+        #endregion
+
+        //
         // Migration UI handlers
         #region Migration handlers
         private void MigrationBrowse_Click(object sender, RoutedEventArgs e)
@@ -2204,7 +2276,7 @@ namespace Tailgrab.PlayerManagement
 
             MigrationStatus status = _serviceRegistry.GetDBContext().MigrateOldVersion(filePath);
 
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new();
             foreach (var msg in status.Messages)
             {
                 sb.AppendLine(msg);
@@ -2271,8 +2343,8 @@ namespace Tailgrab.PlayerManagement
         public bool IsWatched { get; set; } = false;
         public string History { get; set; } = string.Empty;
         public string AlertMessages { get; set; } = string.Empty;
-        public ObservableCollection<PrintInfoViewModel> Prints { get; private set; } = new ObservableCollection<PrintInfoViewModel>();
-        public ObservableCollection<EmojiInfoViewModel> Emojis { get; private set; } = new ObservableCollection<EmojiInfoViewModel>();
+        public ObservableCollection<PrintInfoViewModel> Prints { get; private set; } = [];
+        public ObservableCollection<EmojiInfoViewModel> Emojis { get; private set; } = [];
         private bool IsFriend {  get; set; }
 
         private string _AlertColor = "Normal";
@@ -2393,26 +2465,63 @@ namespace Tailgrab.PlayerManagement
         }
     }
 
-    public class PrintInfoViewModel : INotifyPropertyChanged
+    public class PrintInfoViewModel(PlayerPrint p) : INotifyPropertyChanged
     {
-        public string PrintId { get; set; }
-        public string OwnerId { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public DateTime Timestamp { get; set; }
-        public string PrintUrl { get; set; }
-        public string AIEvaluation { get; set; }
-        public string AIClass { get; set; }
-        public string AuthorName { get; set; }
-        public PrintInfoViewModel(PlayerPrint p)
+        public string PrintId { get; set; } = p.PrintId;
+        public string OwnerId { get; set; } = p.OwnerId;
+        public DateTime CreatedAt { get; set; } = p.CreatedAt;
+        public DateTime Timestamp { get; set; } = p.Timestamp;
+        public string PrintUrl { get; set; } = p.PrintUrl;
+        public string AIEvaluation { get; set; } = p.AIEvaluation;
+        public string AIClass { get; set; } = p.AIClass;
+        public string AuthorName { get; set; } = p.AuthorName;
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+
+        protected void OnPropertyChanged(string propertyName)
         {
-            PrintId = p.PrintId;
-            OwnerId = p.OwnerId;
-            CreatedAt = p.CreatedAt;
-            Timestamp = p.Timestamp;
-            PrintUrl = p.PrintUrl;
-            AuthorName = p.AuthorName;
-            AIEvaluation = p.AIEvaluation;
-            AIClass = p.AIClass;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+    }
+
+    public class EmojiInfoViewModel(string userId, PlayerInventory i)
+    {
+        public string UserId { get; set; } = userId;
+        public string InventoryId { get; set; } = i.InventoryId;
+        public DateTime SpawnedAt { get; set; } = i.SpawnedAt;
+        public string ImageUrl { get; set; } = i.ItemUrl;
+        public string InventoryType { get; set; } = i.InventoryType;
+        public string AIEvalutation { get; set; } = i.AIEvaluation;
+    }
+
+    public class TailTaskViewModel : INotifyPropertyChanged
+    {
+        private readonly FileTailStatus _status;
+
+        public string FilePath => _status.FilePath;
+        public string FileName => Path.GetFileName(_status.FilePath);
+        public DateTime StartTime => _status.StartTime;
+        public int LinesProcessed => _status.LinesProcessed;
+        public DateTime? LastLineProcessedTime => _status.LastLineProcessedTime;
+
+        public string LastLineProcessedTimeFormatted => 
+            LastLineProcessedTime.HasValue ? LastLineProcessedTime.Value.ToString("u") : "N/A";
+
+        public TailTaskViewModel(FileTailStatus status)
+        {
+            _status = status;
+        }
+
+        public void UpdateFromStatus(FileTailStatus status)
+        {
+            OnPropertyChanged(nameof(LinesProcessed));
+            OnPropertyChanged(nameof(LastLineProcessedTime));
+            OnPropertyChanged(nameof(LastLineProcessedTimeFormatted));
+        }
+
+        public void RequestCancellation()
+        {
+            _status.RequestCancellation();
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
@@ -2423,35 +2532,10 @@ namespace Tailgrab.PlayerManagement
         }
     }
 
-    public class EmojiInfoViewModel
+    public class ReportReasonItem(string displayName, string value)
     {
-        public string UserId { get; set; }
-        public string InventoryId { get; set; }
-        public DateTime SpawnedAt { get; set; }
-        public string ImageUrl { get; set; }
-        public string InventoryType { get; set; }
-        public string AIEvalutation { get; set; }
-        public EmojiInfoViewModel(string userId, PlayerInventory i)
-        {
-            UserId = userId;
-            InventoryId = i.InventoryId;
-            SpawnedAt = i.SpawnedAt;
-            ImageUrl = i.ItemUrl;
-            InventoryType = i.InventoryType;
-            AIEvalutation = i.AIEvaluation;
-        }
-    }
-
-    public class ReportReasonItem
-    {
-        public string DisplayName { get; set; }
-        public string Value { get; set; }
-
-        public ReportReasonItem(string displayName, string value)
-        {
-            DisplayName = displayName;
-            Value = value;
-        }
+        public string DisplayName { get; set; } = displayName;
+        public string Value { get; set; } = value;
     }
     #endregion
 }

@@ -2,6 +2,7 @@ namespace Tailgrab.LineHandler;
 
 using System.Text.RegularExpressions;
 using Tailgrab.Common;
+using Tailgrab.PlayerManagement;
 
 public class StickerHandler : AbstractLineHandler
 {
@@ -24,7 +25,6 @@ public class StickerHandler : AbstractLineHandler
         Match m = regex.Match(line);
         if (m.Success)
         {
-            string timestamp = m.Groups[VRC_DATETIME].Value;
             string fileURL = m.Groups[VRC_FILEURL].Value;
             string userName = m.Groups[VRC_DISPLAYNAME].Value;
             string userId = m.Groups[VRC_USERID].Value;
@@ -32,7 +32,7 @@ public class StickerHandler : AbstractLineHandler
             {
                 logger.Info($"{COLOR_PREFIX}{userName} ({userId}) - {fileURL}{COLOR_RESET.GetAnsiEscape()}");
             }
-            _serviceRegistry.GetPlayerManager().AddStickerEvent(userName, userId, fileURL);
+            PlayerManager.AddStickerEvent(userName, fileURL);
 
             ExecuteActions();
             return true;
