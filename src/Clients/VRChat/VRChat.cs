@@ -16,11 +16,15 @@ namespace Tailgrab.Clients.VRChat
     public class VRChatClient
     {
         private const string URI_VRC_BASE_API = "https://api.vrchat.cloud";
-        public static string UserAgent = "Tailgrab/1.1.0";
-        public static Logger logger = LogManager.GetCurrentClassLogger();
+        private const string APP_NAME = "Tailgrab";
+        private const string API_VERSION = "1.1.2";
+        private const string APP_CONTACT = "jlong@rabbitearsvideoproduction.com";
+        private const string UserAgent = $"{APP_NAME}/{API_VERSION}";
+        private static Logger logger = LogManager.GetCurrentClassLogger();
 
         private IVRChat? _vrchat;
 
+        #region Authentication
         public async Task Initialize()
         {
             string? username = ConfigStore.LoadSecret(CommonConst.Registry_VRChat_Web_UserName);
@@ -37,87 +41,38 @@ namespace Tailgrab.Clients.VRChat
                     return;
                 }
 
-                //string cookiePath = Path.Combine(Directory.GetCurrentDirectory(), "cookies.json");
-                string cookiePath = Path.Combine(CommonConst.APPLICATION_LOCAL_DATA_PATH, "cookies.json");
-
-                // Try to load cookies from disk and use them if they are present and not expired
-                List<Cookie>? loadedCookies = LoadValidCookiesFromFile(cookiePath);
-
-                VRChatClientBuilder builder = new VRChatClientBuilder()
-                    .WithApplication(name: "Tailgrab", version: "1.1.0", contact: "jlong@rabbitearsvideoproduction.com");
-
-                if (loadedCookies != null && loadedCookies.Count > 0)
+                if (LoginVRChat() && _vrchat != null)
                 {
-                    logger.Info("Loaded valid cookies from disk, attempting to use them for authentication...");
-                    //// Try to call WithCookies via reflection (some SDKs expose it)
-                    //var withCookiesMethod = builder.GetType()
-                    //    .GetMethods()
-                    //    .FirstOrDefault(m => m.Name == "WithCookies" && m.GetParameters().Length == 1);
-
-                    //if (withCookiesMethod != null)
-                    //{
-                    //    var result = withCookiesMethod.Invoke(builder, new object[] { loadedCookies });
-                    //    if (result is VRChatClientBuilder cb)
-                    //    {
-                    //        builder = cb;
-                    //    }
-                    //    else
-                    //    {
-                    //        // fallback to username/password if return type not expected
-                    //        builder = builder.WithUsername(username).WithPassword(password);
-                    //    }
-                    //}
-                    //else
-                    //{
-                    //    // no WithCookies method; fall back to username/password
-                    //    builder = builder.WithUsername(username).WithPassword(password);
-                    //}
-
-                    string authCookieValue = string.Empty;
-                    string twoFactorCookieValue = string.Empty;
-                    foreach (var cookie in loadedCookies)
+                    var response = await _vrchat.Authentication.GetCurrentUserAsync();
+                    if (response != null && response is not null)
                     {
-                        if (cookie.Name == "auth")
+                        if (response.RequiresTwoFactorAuth != null && response.RequiresTwoFactorAuth.Contains("emailOtp"))
                         {
-                            authCookieValue = cookie.Value;
+                            logger.Warn("An verification code was sent to your email address!");
+                            logger.Warn("Prompt user for code: ");
+
+                            string code = Microsoft.VisualBasic.Interaction.InputBox("Please enter EMail OTP code (6 digits)");
+                            var otpResponse = await _vrchat.Authentication.Verify2FAEmailCodeAsync(new TwoFactorEmailCode(code));
                         }
-                        else if (cookie.Name == "twoFactorAuth")
+                        else if (response.RequiresTwoFactorAuth != null && response.RequiresTwoFactorAuth.Contains("totp"))
                         {
-                            twoFactorCookieValue = cookie.Value;
+                            var totp = new Totp(Base32Encoding.ToBytes(twoFactorSecret));
+                            string code = totp.ComputeTotp();
+
+                            var otpResponse = await _vrchat.Authentication.Verify2FAAsync(new TwoFactorAuthCode(code));
                         }
+
+                        var currentUser = await _vrchat.Authentication.GetCurrentUserAsync();
+                        logger.Info($"Logged in as \"{currentUser.DisplayName}\"");
+
+                        var cookies = _vrchat.GetCookies();
+                        PersistCookies(cookies);
                     }
-                    _vrchat = builder.WithAuthCookie(authCookieValue, twoFactorCookieValue).Build();
-                }
-                else
+                } else
                 {
-                    logger.Info("No valid cookies found on disk, falling back to username/password authentication.");
-                    _vrchat = builder.WithUsername(username).WithPassword(password).Build();
-                }
-
-                var response = await _vrchat.Authentication.GetCurrentUserAsync();
-                if (response != null && response is CurrentUser ) 
-                {
-                    if (response.RequiresTwoFactorAuth != null && response.RequiresTwoFactorAuth.Contains("emailOtp"))
-                    {
-                        logger.Info("An verification code was sent to your email address!");
-                        logger.Info("Enter code: ");
-                        //string code = Console.ReadLine();
-                        string code = "1234";
-                        var otpResponse = await _vrchat.Authentication.Verify2FAEmailCodeAsync(new TwoFactorEmailCode(code));
-                    }
-                    else if (response.RequiresTwoFactorAuth != null && response.RequiresTwoFactorAuth.Contains("totp"))
-                    {
-                        var totp = new Totp(Base32Encoding.ToBytes(twoFactorSecret));
-                        string code = totp.ComputeTotp();
-
-                        var otpResponse = await _vrchat.Authentication.Verify2FAAsync(new TwoFactorAuthCode(code));
-                    }
-
-                    var currentUser = await _vrchat.Authentication.GetCurrentUserAsync();
-                    logger.Info($"Logged in as \"{currentUser.DisplayName}\"");
-                    var cookies = _vrchat.GetCookies();
-
-                    SaveCookiesToFile(cookiePath, cookies);
+                    logger.Warn("Unable to login to VRChat ");
+                    System.Windows.MessageBox.Show("VR Chat Web API failed to log in, check the log file and restart Tailgrab.", "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                    return;
                 }
             }
             catch (Exception ex)
@@ -127,37 +82,134 @@ namespace Tailgrab.Clients.VRChat
             }
         }
 
-        private static List<Cookie>? LoadValidCookiesFromFile(string filePath)
+        private bool LoginVRChat()
         {
-            if (!System.IO.File.Exists(filePath))
-                return null;
+            // Try to load cookies from disk and use them if they are present and not expired
+            List<Cookie>? loadedCookies = LoadCookies();
 
-            try
+            VRChatClientBuilder builder = new VRChatClientBuilder()
+                .WithApplication(name: APP_NAME, version: API_VERSION, contact: APP_CONTACT);
+
+            if (loadedCookies != null && loadedCookies.Count > 0)
             {
-                var json = System.IO.File.ReadAllText(filePath);
-                var dtoList = JsonConvert.DeserializeObject<List<SerializableCookie>>(json);
-                if (dtoList == null || dtoList.Count == 0)
-                    return null;
+                logger.Info("Loaded valid cookies from disk, attempting to use them for authentication...");
 
-                // If any cookie has an Expires value set and is expired, treat the whole set as invalid
-                DateTime now = DateTime.UtcNow;
-                foreach (var dto in dtoList)
+                string authCookieValue = string.Empty;
+                string twoFactorCookieValue = string.Empty;
+                foreach (var cookie in loadedCookies)
                 {
-                    if (dto.Expires != DateTime.MinValue && dto.Expires.ToUniversalTime() <= now)
+                    if (cookie.Name == "auth")
                     {
-                        return null;
+                        authCookieValue = cookie.Value;
+                    }
+                    else if (cookie.Name == "twoFactorAuth")
+                    {
+                        twoFactorCookieValue = cookie.Value;
                     }
                 }
-
-                var cookies = dtoList.Select(d => d.ToCookie()).ToList();
-                return cookies;
+                _vrchat = builder.WithAuthCookie(authCookieValue, twoFactorCookieValue).Build();
+                return true;
             }
-            catch
+            else
             {
-                return null;
+                string? username = ConfigStore.LoadSecret(CommonConst.Registry_VRChat_Web_UserName);
+                string? password = ConfigStore.LoadSecret(CommonConst.Registry_VRChat_Web_Password);
+                if (username != null && password != null)
+                {
+                    logger.Info("No valid cookies found on disk, falling back to username/password authentication.");
+                    _vrchat = builder.WithUsername(username).WithPassword(password).Build();
+                    return true;
+                }
             }
+
+            return false;
         }
 
+        #endregion
+
+        public List<AvatarModeration> GetAvatarModerations()
+        {
+            List<AvatarModeration> moderations = [];
+            try
+            {
+                if (_vrchat != null)
+                {
+                    moderations = _vrchat.Authentication.GetGlobalAvatarModerations();
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error($"Error fetching avatar moderations: {ex.Message}");
+            }
+            return moderations;
+        }
+
+        public async Task<bool> BlockAvatarGlobal(string avatarId)
+        {
+            try
+            {
+                if (_vrchat == null)
+                {
+                    logger.Info($"Failed Block avatar {avatarId} globally, not logged in.");
+                    return false;
+                }
+
+                // Create HTTP client with cookies
+                using HttpClient httpClient = CreateHttpClientWithCookies();
+
+                AvatarModerationItem rpt = new()
+                {
+                    TargetAvatarId = avatarId,
+                    AvatarModerationType = "block"
+                };
+
+                HttpResponseMessage response = await httpClient.PostAsJsonAsync($"{URI_VRC_BASE_API}/api/1/auth/user/avatarmoderations?targetAvatarId={avatarId}&avatarModerationType=block", rpt);
+                string responseContent = await response.Content.ReadAsStringAsync();
+                logger.Debug($"Response from Block avatar {avatarId} globally: {responseContent}");
+                logger.Info($"Submitted Block avatar {avatarId} globally.");
+                response.EnsureSuccessStatusCode();
+
+                return response.IsSuccessStatusCode;
+            }
+            catch (Exception ex)
+            {
+                logger.Error($"Error setting avatar moderation status: {ex.Message}");
+            }
+
+            return false;
+        }
+
+        public async Task<bool> DeleteAvatarGlobal(string avatarId)
+        {
+            try
+            {
+                if (_vrchat == null)
+                {
+                    logger.Info($"Failed Unblock avatar {avatarId} globally, not logged in.");
+                    return false;
+                }
+
+                // Create HTTP client with cookies
+                using HttpClient httpClient = CreateHttpClientWithCookies();
+
+                HttpResponseMessage response = await httpClient.DeleteAsync($"{URI_VRC_BASE_API}/api/1/auth/user/avatarmoderations?targetAvatarId={avatarId}&avatarModerationType=block");
+                string responseContent = await response.Content.ReadAsStringAsync();
+                logger.Debug($"Response from Block avatar {avatarId} globally: {responseContent}");
+                logger.Info($"Submitted Block avatar {avatarId} globally.");
+                response.EnsureSuccessStatusCode();
+
+                return response.IsSuccessStatusCode;
+            }
+            catch (Exception ex)
+            {
+                logger.Error($"Error setting avatar moderation status: {ex.Message}");
+            }
+
+            return false;
+        }
+
+
+        #region Avatar Management
         public Avatar? GetAvatarById(string avatarId)
         {
             Avatar? avatar = null;
@@ -178,7 +230,7 @@ namespace Tailgrab.Clients.VRChat
 
         public List<Avatar> GetAvatarsByUserId(string userId)
         {
-            List<Avatar> avatars = new List<Avatar>();
+            List<Avatar> avatars = [];
             try
             {
                 if (_vrchat != null)
@@ -193,11 +245,12 @@ namespace Tailgrab.Clients.VRChat
 
             return avatars;
         }
+        #endregion
 
-
+        #region Profile Management
         public User GetProfile(string userId)
         {
-            User profile = new User();
+            User profile = new ();
             try
             {
                 if (_vrchat != null)
@@ -215,7 +268,7 @@ namespace Tailgrab.Clients.VRChat
 
         public List<LimitedUserGroups> GetProfileGroups(string userId)
         {
-            List<LimitedUserGroups> groups = new List<LimitedUserGroups>();
+            List<LimitedUserGroups> groups = [];
             try
             {
                 if (_vrchat != null)
@@ -245,19 +298,7 @@ namespace Tailgrab.Clients.VRChat
                 string url = $"{URI_VRC_BASE_API}/api/1/user/{userId}/inventory/{itemId}";
 
                 // Create HTTP client with cookies
-                var handler = new HttpClientHandler
-                {
-                    CookieContainer = new CookieContainer()
-                };
-
-                var cookies = _vrchat.GetCookies();
-                foreach (var cookie in cookies)
-                {
-                    handler.CookieContainer.Add(new Uri(URI_VRC_BASE_API), cookie);
-                }
-
-                using var httpClient = new HttpClient(handler);
-                httpClient.DefaultRequestHeaders.Add("User-Agent", UserAgent);
+                using HttpClient httpClient = CreateHttpClientWithCookies();
 
                 var response = await httpClient.GetAsync(url);
                 response.EnsureSuccessStatusCode();
@@ -277,7 +318,9 @@ namespace Tailgrab.Clients.VRChat
 
             return item;
         }
+        #endregion
 
+        #region Image Assets
         public async Task<ImageReference?> GetImageReference(string inventoryId, string userId, List<string> imageUrlList)
         {
             try
@@ -289,23 +332,11 @@ namespace Tailgrab.Clients.VRChat
                 }
 
                 // Create HTTP client with cookies
-                var handler = new HttpClientHandler
-                {
-                    CookieContainer = new CookieContainer()
-                };
-
-                var cookies = _vrchat.GetCookies();
-                foreach (var cookie in cookies)
-                {
-                    handler.CookieContainer.Add(new Uri(URI_VRC_BASE_API), cookie);
-                }
-
-                using HttpClient httpClient = new HttpClient(handler);
-                httpClient.DefaultRequestHeaders.Add("User-Agent", UserAgent);
+                using HttpClient httpClient = CreateHttpClientWithCookies();
 
                 // Download the image
                 string md5Hash = string.Empty;
-                List<string> imageList = new List<string>();
+                List<string> imageList = [];
                 int imageCount = 0;
                 foreach (string imageUrl in imageUrlList)
                 {
@@ -318,7 +349,7 @@ namespace Tailgrab.Clients.VRChat
                     imageList.Add(contentB64);
                 }
 
-                ImageReference iref = new ImageReference
+                ImageReference iref = new ()
                 {
                     Base64Data = imageList,
                     Md5Hash = md5Hash,
@@ -335,7 +366,9 @@ namespace Tailgrab.Clients.VRChat
                 return null;
             }
         }
+        #endregion
 
+        #region Print Management
         public Print? GetPrintInfo(string fileURL)
         {
             Print? printInfo = null;
@@ -354,140 +387,10 @@ namespace Tailgrab.Clients.VRChat
 
             return printInfo;
         }
+        #endregion
 
-        public Inventory? GetInventoryInfo(string fileURL)
-        {
-            Inventory? printInfo = null;
-            try
-            {
-                if (_vrchat != null)
-                {
-                    printInfo = _vrchat.Inventory.GetInventory();
-                }
-            }
-            catch (Exception ex)
-            {
-                logger.Error($"Error fetching avatar: {ex.Message}");
-            }
-
-            return printInfo;
-        }
-
-        public List<AvatarModeration> GetAvatarModerations()
-        {
-            List<AvatarModeration> moderations = new List<AvatarModeration>();
-            try
-            {
-                if (_vrchat != null)
-                {
-                    moderations = _vrchat.Authentication.GetGlobalAvatarModerations();
-                }
-            }
-            catch (Exception ex)
-            {
-                logger.Error($"Error fetching avatar moderations: {ex.Message}");
-            }
-            return moderations;
-        }
-
-        public async Task<bool> BlockAvatarGlobal(string avatarId)
-        {
-            try
-            {
-                if (_vrchat == null)
-                {
-                    logger.Info($"Failed Block avatar {avatarId} globally, not logged in.");
-                    return false;
-                }
-
-                // Create HTTP client with cookies
-                var handler = new HttpClientHandler
-                {
-                    CookieContainer = new CookieContainer()
-                };
-
-                var cookies = _vrchat.GetCookies();
-                foreach (var cookie in cookies)
-                {
-                    handler.CookieContainer.Add(new Uri(URI_VRC_BASE_API), cookie);
-                }
-
-                using HttpClient httpClient = new HttpClient(handler);
-                httpClient.DefaultRequestHeaders.Add("User-Agent", UserAgent);
-
-                AvatarModerationItem rpt = new AvatarModerationItem
-                {
-                    TargetAvatarId = avatarId,
-                    AvatarModerationType = "block"
-                };
-
-                HttpResponseMessage response = await httpClient.PostAsJsonAsync($"{URI_VRC_BASE_API}/api/1/auth/user/avatarmoderations?targetAvatarId={avatarId}&avatarModerationType=block", rpt);
-                string responseContent = await response.Content.ReadAsStringAsync();
-                logger.Debug($"Response from Block avatar {avatarId} globally: {responseContent}");
-                logger.Info($"Submitted Block avatar {avatarId} globally.");
-                response.EnsureSuccessStatusCode();
-
-                return response.IsSuccessStatusCode;
-            }
-            catch (Exception ex)
-            {
-                logger.Error($"Error setting avatar moderation status: {ex.Message}");
-            }
-
-            return false;
-        }
-
-
-        public async Task<bool> DeleteAvatarGlobal(string avatarId)
-        {
-            try
-            {
-                if (_vrchat == null)
-                {
-                    logger.Info($"Failed Unblock avatar {avatarId} globally, not logged in.");
-                    return false;
-                }
-
-                // Create HTTP client with cookies
-                var handler = new HttpClientHandler
-                {
-                    CookieContainer = new CookieContainer()
-                };
-
-                var cookies = _vrchat.GetCookies();
-                foreach (var cookie in cookies)
-                {
-                    handler.CookieContainer.Add(new Uri(URI_VRC_BASE_API), cookie);
-                }
-
-                using HttpClient httpClient = new HttpClient(handler);
-                httpClient.DefaultRequestHeaders.Add("User-Agent", UserAgent);
-
-                HttpResponseMessage response = await httpClient.DeleteAsync($"{URI_VRC_BASE_API}/api/1/auth/user/avatarmoderations?targetAvatarId={avatarId}&avatarModerationType=block");
-                string responseContent = await response.Content.ReadAsStringAsync();
-                logger.Debug($"Response from Block avatar {avatarId} globally: {responseContent}");
-                logger.Info($"Submitted Block avatar {avatarId} globally.");
-                response.EnsureSuccessStatusCode();
-
-                return response.IsSuccessStatusCode;
-            }
-            catch (Exception ex)
-            {
-                logger.Error($"Error setting avatar moderation status: {ex.Message}");
-            }
-
-            return false;
-        }
-
-
-        private static void SaveCookiesToFile(string filePath, List<Cookie> cookies)
-        {
-            var dtoList = cookies.Select(c => SerializableCookie.FromCookie(c)).ToList();
-            var json = JsonConvert.SerializeObject(dtoList, Formatting.Indented);
-            System.IO.File.WriteAllText(filePath, json);
-        }
-
-        internal Group? getGroupById(string id)
+        #region Group Management
+        internal Group? GetGroupById(string id)
         {
             Group? group = null;
             try
@@ -504,7 +407,9 @@ namespace Tailgrab.Clients.VRChat
 
             return group;
         }
+        #endregion
 
+        #region Moderation Management
         internal async Task<bool> SubmitModerationReportAsync(ModerationReportPayload rpt)
         {
             try
@@ -516,19 +421,8 @@ namespace Tailgrab.Clients.VRChat
                 }
 
                 // Create HTTP client with cookies
-                var handler = new HttpClientHandler
-                {
-                    CookieContainer = new CookieContainer()
-                };
-
-                var cookies = _vrchat.GetCookies();
-                foreach (var cookie in cookies)
-                {
-                    handler.CookieContainer.Add(new Uri(URI_VRC_BASE_API), cookie);
-                }
-
-                using HttpClient httpClient = new HttpClient(handler);
-                httpClient.DefaultRequestHeaders.Add("User-Agent", UserAgent);
+                // Create HTTP client with cookies
+                using HttpClient httpClient = CreateHttpClientWithCookies();
 
                 // Submit the moderation report
                 HttpResponseMessage response = await httpClient.PostAsJsonAsync($"{URI_VRC_BASE_API}/api/1/moderationReports", rpt);
@@ -546,6 +440,77 @@ namespace Tailgrab.Clients.VRChat
                 return false;
             }
         }
+        #endregion
+
+        #region Cookie Persistence
+        private static List<Cookie>? LoadCookies()
+        {
+            string filePath = Path.Combine(CommonConst.APPLICATION_LOCAL_DATA_PATH, "cookies.json");
+
+            if (!System.IO.File.Exists(filePath))
+                return null;
+
+            try
+            {
+                var json = System.IO.File.ReadAllText(filePath);
+                var dtoList = JsonConvert.DeserializeObject<List<SerializableCookie>>(json);
+                if (dtoList == null || dtoList.Count == 0)
+                    return null;
+
+                // If any cookie has an Expires value set and is expired, treat the whole set as invalid
+                DateTime now = DateTime.UtcNow;
+                foreach (var dto in dtoList)
+                {
+                    logger.Debug($"Loaded cookie: {dto.Name}, Expires: {dto.Expires}");
+
+                    if (dto.Expires != DateTime.MinValue && dto.Expires.ToUniversalTime() <= now)
+                    {
+                        return null;
+                    }
+                }
+
+                var cookies = dtoList.Select(d => d.ToCookie()).ToList();
+                return cookies;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static void PersistCookies(List<Cookie> cookies)
+        {
+            string filePath = Path.Combine(CommonConst.APPLICATION_LOCAL_DATA_PATH, "cookies.json");
+
+            var dtoList = cookies.Select(c => SerializableCookie.FromCookie(c)).ToList();
+            var json = JsonConvert.SerializeObject(dtoList, Formatting.Indented);
+            System.IO.File.WriteAllText(filePath, json);
+        }
+
+        private HttpClient CreateHttpClientWithCookies()
+        {
+            if (_vrchat == null)
+            {
+                logger.Error("VRChat client not initialized, cannot create HTTP client with cookies.");
+                throw new InvalidOperationException("VRChat client not initialized");
+            }
+
+            var handler = new HttpClientHandler
+            {
+                CookieContainer = new CookieContainer()
+            };
+
+            var cookies = _vrchat.GetCookies();
+            foreach (var cookie in cookies)
+            {
+                handler.CookieContainer.Add(new Uri(URI_VRC_BASE_API), cookie);
+            }
+            HttpClient httpClient = new(handler);
+            httpClient.DefaultRequestHeaders.Add("User-Agent", UserAgent);
+
+            return httpClient;
+        }
+        #endregion
 
         #region Non Public Helper Types
         private class SerializableCookie
@@ -636,7 +601,7 @@ namespace Tailgrab.Clients.VRChat
             public string FirstAncestorHolderId { get; set; } = string.Empty;
 
             [JsonProperty("collections")]
-            public List<string> Collections { get; set; } = new List<string>();
+            public List<string> Collections { get; set; } = [];
 
             [JsonProperty("created_at")]
             public DateTime CreatedAt { get; set; }
@@ -651,22 +616,22 @@ namespace Tailgrab.Clients.VRChat
             public DateTime TemplateUpdatedAt { get; set; }
 
             [JsonProperty("defaultAttributes")]
-            public Dictionary<string, object> DefaultAttributes { get; set; } = new Dictionary<string, object>();
+            public Dictionary<string, object> DefaultAttributes { get; set; } = [];
 
             [JsonProperty("userAttributes")]
-            public Dictionary<string, object> UserAttributes { get; set; } = new Dictionary<string, object>();
+            public Dictionary<string, object> UserAttributes { get; set; } = [];
 
             [JsonProperty("equipSlot")]
             public string EquipSlot { get; set; } = string.Empty;
 
             [JsonProperty("equipSlots")]
-            public List<string> EquipSlots { get; set; } = new List<string>();
+            public List<string> EquipSlots { get; set; } = [];
 
             [JsonProperty("expiryDate")]
             public DateTime? ExpiryDate { get; set; }
 
             [JsonProperty("flags")]
-            public List<string> Flags { get; set; } = new List<string>();
+            public List<string> Flags { get; set; } = [];
 
             [JsonProperty("isArchived")]
             public bool IsArchived { get; set; }
@@ -681,7 +646,7 @@ namespace Tailgrab.Clients.VRChat
             public bool Quantifiable { get; set; }
 
             [JsonProperty("tags")]
-            public List<string> Tags { get; set; } = new List<string>();
+            public List<string> Tags { get; set; } = [];
 
             [JsonProperty("templateId")]
             public string TemplateId { get; set; } = string.Empty;
@@ -726,7 +691,7 @@ namespace Tailgrab.Clients.VRChat
             public string Description { get; set; } = string.Empty;
 
             [JsonProperty("details")]
-            public List<ModerationReportDetails> Details { get; set; } = new List<ModerationReportDetails>();
+            public List<ModerationReportDetails> Details { get; set; } = [];
         }
 
         public class ModerationReportDetails

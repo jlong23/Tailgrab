@@ -853,7 +853,8 @@ namespace Tailgrab.PlayerManagement
 
         public Player? UpdatePlayerUserFromVRCProfile(User profile, string profileHash)
         {
-            if (profile != null)
+            logger.Warn($"Updating UserInfo for user {profile.DisplayName} (ID: {profile.Id}) with DateJoined: {profile.DateJoined} and ProfileHash: {profileHash}");
+            if (profile != null && profile.Id != null)
             {
                 TailgrabDBContext dbContext = serviceRegistry.GetDBContext();
                 Player? player = GetPlayerByUserId(profile.Id);
@@ -903,7 +904,7 @@ namespace Tailgrab.PlayerManagement
             try
             {
                 VRChatClient vrcClient = serviceRegistry.GetVRChatAPIClient();
-                VRChat.API.Model.Group? group = vrcClient.getGroupById(groupId);
+                VRChat.API.Model.Group? group = vrcClient.GetGroupById(groupId);
                 if (group != null)
                 {
                     TailgrabDBContext dbContext = serviceRegistry.GetDBContext();
