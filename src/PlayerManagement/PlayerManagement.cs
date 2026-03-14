@@ -323,6 +323,7 @@ namespace Tailgrab.PlayerManagement
         public PlayerManager(ServiceRegistry registry)
         {
             serviceRegistry = registry;
+            _ = Task.Run(() => AvatarCheckTask(priorityQueue, serviceRegistry));
         }
 
         private static Dictionary<string, Player> playersByUserId = [];
@@ -342,7 +343,6 @@ namespace Tailgrab.PlayerManagement
 
         private static ConcurrentPriorityQueue<IHavePriority<int>, int> priorityQueue = new();
         private static Dictionary<String, DateTime> recentlyProcessedAvatars = [];
-
 
 
         public static Player? GetPlayerByDisplayName(string displayName)
