@@ -375,6 +375,65 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
+        private void GistUrl_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            // Enable/disable the corresponding "Check Now" button based on whether there's text in the textbox
+            if (sender == avatarGistUrl)
+            {
+                avatarGistCheckButton.IsEnabled = !string.IsNullOrWhiteSpace(avatarGistUrl.Text);
+            }
+            else if (sender == groupGistUrl)
+            {
+                groupGistCheckButton.IsEnabled = !string.IsNullOrWhiteSpace(groupGistUrl.Text);
+            }
+        }
+
+        private async void CheckAvatarGist_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                avatarGistCheckButton.IsEnabled = false;
+                avatarGistCheckButton.Content = "Checking...";
+
+                await Task.Run(() => _serviceRegistry.ProcessAvatarGist());
+
+                System.Windows.MessageBox.Show("Avatar GIST list processing in the background.", "Check Avatar GIST", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to process Avatar GIST");
+                System.Windows.MessageBox.Show($"Failed to process Avatar GIST: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                avatarGistCheckButton.Content = "Check Now";
+                avatarGistCheckButton.IsEnabled = !string.IsNullOrWhiteSpace(avatarGistUrl.Text);
+            }
+        }
+
+        private async void CheckGroupGist_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                groupGistCheckButton.IsEnabled = false;
+                groupGistCheckButton.Content = "Checking...";
+
+                await Task.Run(() => _serviceRegistry.ProcessGroupGist());
+
+                System.Windows.MessageBox.Show("Group GIST list processing in the background.", "Check Group GIST", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to process Group GIST");
+                System.Windows.MessageBox.Show($"Failed to process Group GIST: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                groupGistCheckButton.Content = "Check Now";
+                groupGistCheckButton.IsEnabled = !string.IsNullOrWhiteSpace(groupGistUrl.Text);
+            }
+        }
+
         private static void SetAlertKeyString(string alertKey, AlertTypeEnum alertType, string subType, object value)
         {
             string key = CommonConst.ConfigRegistryPath + "\\" + alertKey + "\\" + alertType.ToString();

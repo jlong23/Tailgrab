@@ -17,6 +17,8 @@ namespace Tailgrab
         VRChatClient vrcAPIClient = new VRChatClient();
         PlayerManager? playerManager = null;
         OllamaClient? ollamaAPIClient = null;
+        AvatarBosGistListManager? avatarGistMgr = null;
+        GroupBosGistListManager? groupGistMgr = null;
         static Logger logger = LogManager.GetCurrentClassLogger();
         ServiceCollection services = new ServiceCollection();
 
@@ -64,11 +66,11 @@ namespace Tailgrab
                 }
 
                 logger.Info("Starting Avatar GIST Manager...");
-                AvatarBosGistListManager avatarGistMgr = new AvatarBosGistListManager();
+                avatarGistMgr = new AvatarBosGistListManager();
                 _ = Task.Run(() => avatarGistMgr.ProcessAvatarGistList());
 
                 logger.Info("Starting Group GIST Manager...");
-                GroupBosGistListManager groupGistMgr = new GroupBosGistListManager(dbContext, playerManager);
+                groupGistMgr = new GroupBosGistListManager(dbContext, playerManager);
                 _ = Task.Run(() => groupGistMgr.ProcessGroupGistList());
 
                 logger.Info("All services started.");
@@ -111,6 +113,36 @@ namespace Tailgrab
                 throw new InvalidOperationException("Ollama API Client has not been initialized. Call StartAllServices() first.");
             }
             return ollamaAPIClient;
+        }
+
+        public async void ProcessAvatarGist()
+        {
+            if (avatarGistMgr == null)
+            {
+                logger.Info("Avatar GIST Manager not initialized, creating new instance...");
+                avatarGistMgr = new AvatarBosGistListManager();
+            }
+
+            logger.Info("Processing Avatar GIST list on demand...");
+            await avatarGistMgr.ProcessAvatarGistList();
+            logger.Info("Avatar GIST list processing completed.");
+        }
+
+        public async void ProcessGroupGist()
+        {
+            if (groupGistMgr == null)
+            {
+                if (dbContext == null || playerManager == null)
+                {
+                    throw new InvalidOperationException("Database context and Player Manager must be initialized before processing Group GIST.");
+                }
+                logger.Info("Group GIST Manager not initialized, creating new instance...");
+                groupGistMgr = new GroupBosGistListManager(dbContext, playerManager);
+            }
+
+            logger.Info("Processing Group GIST list on demand...");
+            await groupGistMgr.ProcessGroupGistList();
+            logger.Info("Group GIST list processing completed.");
         }
     }
 }

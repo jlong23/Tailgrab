@@ -1180,7 +1180,8 @@ Title="Tailgrab Player Panel"
                                     <Grid Margin="6">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto" />
-                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="Auto" />
@@ -1188,10 +1189,12 @@ Title="Tailgrab Player Panel"
                                         </Grid.RowDefinitions>
 
                                         <Label Grid.Row="0" Grid.Column="0" Content="Avatar GIST Url:" VerticalAlignment="Center"/>
-                                        <TextBox Grid.Row="0" Grid.Column="1" Name="avatarGistUrl" Width="300" Margin="6,2" />
+                                        <TextBox Grid.Row="0" Grid.Column="1" Name="avatarGistUrl" Width="300" Margin="6,2" TextChanged="GistUrl_TextChanged"/>
+                                        <Button Grid.Row="0" Grid.Column="2" Name="avatarGistCheckButton" Content="Check Now" Width="100" Margin="6,2" Click="CheckAvatarGist_Click" IsEnabled="False"/>
 
                                         <Label Grid.Row="1" Grid.Column="0" Content="Group GIST Url:" VerticalAlignment="Center"/>
-                                        <TextBox Grid.Row="1" Grid.Column="1" Name="groupGistUrl" Width="300" Margin="6,2" />
+                                        <TextBox Grid.Row="1" Grid.Column="1" Name="groupGistUrl" Width="300" Margin="6,2" TextChanged="GistUrl_TextChanged"/>
+                                        <Button Grid.Row="1" Grid.Column="2" Name="groupGistCheckButton" Content="Check Now" Width="100" Margin="6,2" Click="CheckGroupGist_Click" IsEnabled="False"/>
                                     </Grid>
                                 </GroupBox>
 
