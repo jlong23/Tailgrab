@@ -22,21 +22,21 @@ Title="Tailgrab Player Panel"
         <Grid Margin="8" Grid.Row="0">
             <TabControl>
                 <TabItem Header="Active Players">
-                    <Grid>
+                    <Grid Name="ActivePlayerLayoutGrid">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="13*"/>
                             <RowDefinition Height="267*"/>
                             <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*" MinHeight="100"/>
+                            <RowDefinition x:Name="ActivePlayerGridRow" Height="*" MinHeight="100"/>
                         </Grid.RowDefinitions>
 
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6" Grid.Row="0">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6" Grid.Row="0" Grid.ColumnSpan="2">
                             <TextBox Name="ActiveFilterBox" Width="300" Margin="0,0,8,0" />
                             <Button Content="Apply Filter" Click="ActiveApplyFilter_Click" Margin="0,0,6,0"/>
                             <Button Content="Clear Filter" Click="ActiveClearFilter_Click"/>
                         </StackPanel>
 
-                        <ListView Name="ActiveListView" ItemsSource="{Binding ActiveView}" SelectedItem="{Binding SelectedActive, Mode=TwoWay}" Grid.Row="1">
+                        <ListView Name="ActiveListView" ItemsSource="{Binding ActiveView}" SelectedItem="{Binding SelectedActive, Mode=TwoWay}" Grid.ColumnSpan="2" Margin="0,26,0,0" Grid.RowSpan="2">
                             <ListView.Resources>
                                 <Style TargetType="{x:Type ListViewItem}">
                                     <Setter Property="Background" Value="#FF1E1E1E"/>
@@ -170,9 +170,9 @@ Title="Tailgrab Player Panel"
                             </ListView.View>
                         </ListView>
 
-                        <GridSplitter Grid.Row="2" Height="5" HorizontalAlignment="Stretch" VerticalAlignment="Center" Background="#FF3F3F46" ShowsPreview="False" ResizeDirection="Rows"/>
+                        <GridSplitter Name="ActivePlayers_Horz"  Grid.Row="2" Height="5" HorizontalAlignment="Stretch" VerticalAlignment="Center" Background="#FF3F3F46" ShowsPreview="False" ResizeDirection="Rows" Grid.ColumnSpan="2"/>
 
-                        <Grid Margin="0,0,0,6" Grid.Row="3">
+                        <Grid Margin="0,0,0,6" Grid.Row="3" Grid.ColumnSpan="2">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
@@ -188,7 +188,7 @@ Title="Tailgrab Player Panel"
                                 </TextBox.Text>
                             </TextBox>
 
-                            <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="#FF3F3F46" ShowsPreview="False"/>
+                            <GridSplitter Name="ActivePlayers_Vert" Grid.Column="1" Width="5" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="#FF3F3F46" ShowsPreview="False"/>
 
                             <TextBox Name="UserAlertsBox" Grid.Column="2" Height="auto" Margin="4,0,8,0" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" Text="{Binding SelectedActive.History, Mode=OneWay, FallbackValue='', TargetNullValue=''}" />
                         </Grid>
@@ -284,12 +284,12 @@ Title="Tailgrab Player Panel"
                 </TabItem>
 
                 <TabItem Header="Past Players">
-                    <Grid>
+                    <Grid Name="PastPlayerLayoutGrid">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="13*"/>
                             <RowDefinition Height="267*"/>
                             <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*" MinHeight="100"/>
+                            <RowDefinition x:Name="PastPlayerGridRow" Height="*" MinHeight="100"/>
                         </Grid.RowDefinitions>
 
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,6" Grid.Row="0">
@@ -433,7 +433,7 @@ Title="Tailgrab Player Panel"
                             </ListView.View>
                         </ListView>
 
-                        <GridSplitter Grid.Row="2" Height="5" HorizontalAlignment="Stretch" VerticalAlignment="Center" Background="#FF3F3F46" ShowsPreview="False" ResizeDirection="Rows"/>
+                        <GridSplitter Name="PastPlayers_Horz" Grid.Row="2" Height="5" HorizontalAlignment="Stretch" VerticalAlignment="Center" Background="#FF3F3F46" ShowsPreview="False" ResizeDirection="Rows"/>
 
                         <Grid Margin="0,0,0,6" Grid.Row="3">
                             <Grid.ColumnDefinitions>
@@ -451,7 +451,7 @@ Title="Tailgrab Player Panel"
                                 </TextBox.Text>
                             </TextBox>
 
-                            <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="#FF3F3F46" ShowsPreview="False"/>
+                            <GridSplitter Name="PastPlayers_Vert" Grid.Column="1" Width="5" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="#FF3F3F46" ShowsPreview="False"/>
 
                             <TextBox Name="UserAlertsBoxPast" Grid.Column="2" Height="auto" Margin="4,0,8,0" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" Text="{Binding SelectedPast.History, Mode=OneWay, FallbackValue='', TargetNullValue=''}" />
                         </Grid>
@@ -1246,7 +1246,7 @@ Title="Tailgrab Player Panel"
 
                                         <Label Grid.Row="0" Grid.Column="0" Content="Insert Discovered Public Avatars:" VerticalAlignment="Center"/>
                                         <CheckBox Grid.Row="0" Grid.Column="1" Name="DiscoveredAvatarCaching" VerticalAlignment="Center" Margin="6,2" ToolTip="When enabled, Tailgrab will collect avatars from the AmpCache, public and private and include them into your private list."/>
-                                        
+
                                         <Label Grid.Row="0" Grid.Column="2" Content="Insert Moderated Public Avatars:" VerticalAlignment="Center"/>
                                         <CheckBox Grid.Row="0" Grid.Column="3" Name="ModeratedAvatarCaching" VerticalAlignment="Center" Margin="6,2" ToolTip="When enabled, Tailgrab will download your account's avatar moderation and add public avatars that do not exist into your list as 'Nuisance' avatars.  Will not include the private avatar moderations."/>
 

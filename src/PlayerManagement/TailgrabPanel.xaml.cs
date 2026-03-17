@@ -2421,8 +2421,8 @@ namespace Tailgrab.PlayerManagement
                 });
 
                 // Load splitter positions
-                LoadRowSplitter("ActivePlayers", 3, WindowLayoutManager.DefaultActiveRowSplitterHeight);
-                LoadRowSplitter("PastPlayers", 3, WindowLayoutManager.DefaultPastRowSplitterHeight);
+                LoadRowSplitter("ActivePlayers", 2, WindowLayoutManager.DefaultActiveRowSplitterHeight);
+                LoadRowSplitter("PastPlayers", 2, WindowLayoutManager.DefaultPastRowSplitterHeight);
 
                 // Subscribe to column width change events
                 SubscribeToColumnWidthChanges();
@@ -2486,18 +2486,22 @@ namespace Tailgrab.PlayerManagement
             // Find the grid for the specified tab and set the row height
             if (tabName == "ActivePlayers")
             {
-                var grid = FindTabGrid(0);
-                if (grid != null && grid.RowDefinitions.Count > rowIndex)
+                RowDefinition gridRow = ActivePlayerGridRow;
+                logger.Debug($"Attempting to load splitter height for Grid {gridRow?.Name}");
+                if (gridRow != null)
                 {
-                    grid.RowDefinitions[rowIndex].Height = new GridLength(height, GridUnitType.Star);
+                    logger.Debug($"Found grid for {tabName}, setting row {rowIndex} height to {height}");
+                    gridRow.Height = new GridLength(height, GridUnitType.Star);
                 }
             }
             else if (tabName == "PastPlayers")
             {
-                var grid = FindTabGrid(1);
-                if (grid != null && grid.RowDefinitions.Count > rowIndex)
+                RowDefinition gridRow = PastPlayerGridRow;
+                logger.Debug($"Attempting to load splitter height for Grid {gridRow?.Name}");
+                if (gridRow != null)
                 {
-                    grid.RowDefinitions[rowIndex].Height = new GridLength(height, GridUnitType.Star);
+                    logger.Debug($"Found grid for {tabName}, setting row {rowIndex} height to {height}");
+                    gridRow.Height = new GridLength(height, GridUnitType.Star);
                 }
             }
         }
@@ -2600,9 +2604,17 @@ namespace Tailgrab.PlayerManagement
                 int rowIndex = Grid.GetRow(splitter);
 
                 // Determine which tab we're in based on the parent structure
+                string splitterName = splitter.Name;
+                string[] splitterParts = splitterName.Split('_');
                 string tabName = GetTabNameForGrid(grid);
+                if( splitterParts.Length > 1 )
+                {
+                    tabName = splitterParts[0];
+                }
+                string resizename = splitter.ResizeDirection.ToString();
+                logger.Debug($"Grid Splitter dragged in tab: {tabName}, row index: {rowIndex}");
 
-                if (!string.IsNullOrEmpty(tabName) && rowIndex + 1 < grid.RowDefinitions.Count)
+                if (!string.IsNullOrEmpty(tabName) && rowIndex + 1 < grid.RowDefinitions.Count && resizename == "Rows")
                 {
                     var rowDef = grid.RowDefinitions[rowIndex + 1];
                     if (rowDef.Height.IsStar || rowDef.Height.IsAbsolute)
