@@ -772,6 +772,32 @@ public class FileTailer
         app.Resources[typeof(System.Windows.Window)] = windowStyle;
 
         var panel = new TailgrabPanel(serviceRegistryInstance);
+
+        try
+        {
+            string LayoutRegistryPath = "Software\\DeviousFox\\Tailgrab\\Layout";
+            using (var key = Registry.CurrentUser.OpenSubKey(LayoutRegistryPath))
+            {
+                if (key != null)
+                {
+                    var width = key.GetValue("WindowWidth");
+                    var height = key.GetValue("WindowHeight");
+
+                    if (width != null && height != null)
+                    {
+                        panel.Width = Convert.ToDouble(width);
+                        panel.Height = Convert.ToDouble(height);
+                        logger.Debug($"Loaded window size: {panel.Width}x{panel.Height}");
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.Error(ex, "Failed to load window size from registry.");
+        }
+
+
         app.Run(panel);
     }
 }

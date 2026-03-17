@@ -1150,6 +1150,7 @@ Title="Tailgrab Player Panel"
                                     <RowDefinition Height="Auto" />
                                     <RowDefinition Height="Auto" />
                                     <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
                                     <RowDefinition Height="*" />
                                 </Grid.RowDefinitions>
 
@@ -1254,8 +1255,9 @@ Title="Tailgrab Player Panel"
                                     </Grid>
                                 </GroupBox>
 
-                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,12,0,0" Grid.Row="4">
-                                    <Button Content="Save Config" Click="SaveConfig_Click" Width="120" />
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,12,0,0" Grid.Row="5">
+                                    <Button Content="Save Config" Click="SaveConfig_Click" Width="120" Margin="0,0,12,0"/>
+                                    <Button Content="Reset Layout" Click="ResetLayout_Click" Width="120" ToolTip="Reset window size and column widths to default values"/>
                                 </StackPanel>
                             </Grid>
                         </TabItem>

@@ -301,6 +301,10 @@ namespace Tailgrab.PlayerManagement
             statusBarTimer.Start();
 
             this.Closed += (s, e) => Dispose();
+
+            // Load window layout from registry
+            this.Loaded += Window_Loaded;
+            this.SizeChanged += Window_SizeChanged;
         }
 
         private void SaveConfig_Click(object sender, RoutedEventArgs e)
@@ -2343,6 +2347,345 @@ namespace Tailgrab.PlayerManagement
 
             System.Windows.MessageBox.Show(sb.ToString(), "Migration Status", MessageBoxButton.OK, MessageBoxImage.Information);
         }
+        #endregion
+
+        //
+        // Window Layout Management
+        #region Window Layout Management
+
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // Load window size
+                WindowLayoutManager.LoadWindowSize(this);
+
+                // Load column widths for Active Players tab
+                LoadGridViewColumnWidths(ActiveListView, new Dictionary<string, double>
+                {
+                    { "DisplayName", WindowLayoutManager.DefaultActiveDisplayNameWidth },
+                    { "Age", WindowLayoutManager.DefaultActiveAgeWidth },
+                    { "AvatarName", WindowLayoutManager.DefaultActiveAvatarNameWidth },
+                    { "InstanceStartTime", WindowLayoutManager.DefaultActiveInstanceStartWidth },
+                    { "UserId", WindowLayoutManager.DefaultActiveAlertMessagesWidth },
+                });
+
+                // Load column widths for Past Players tab
+                LoadGridViewColumnWidths(PastListView, new Dictionary<string, double>
+                {
+                    { "DisplayName", WindowLayoutManager.DefaultPastDisplayNameWidth },
+                    { "Age", WindowLayoutManager.DefaultPastAgeWidth },
+                    { "AvatarName", WindowLayoutManager.DefaultPastAvatarNameWidth },
+                    { "InstanceEndTime", WindowLayoutManager.DefaultPastInstanceEndWidth },
+                    { "UserId", WindowLayoutManager.DefaultPastAlertMessagesWidth },
+                });
+
+                // Load column widths for Known Avatars DataGrid
+                LoadDataGridColumnWidths(AvatarDbGrid, new Dictionary<string, double>
+                {
+                    { "Alert", WindowLayoutManager.DefaultAvatarAlertWidth },
+                    { "Avatar Name", WindowLayoutManager.DefaultAvatarNameWidth },
+                    { "Avatar ID", WindowLayoutManager.DefaultAvatarIdWidth },
+                    { "User Name", WindowLayoutManager.DefaultAvatarUserNameWidth },
+                    { "Last Updated", WindowLayoutManager.DefaultAvatarUpdatedWidth },
+                    { "Browser", WindowLayoutManager.DefaultAvatarBrowserWidth },
+                });
+
+                // Load column widths for Known Groups DataGrid
+                LoadDataGridColumnWidths(GroupDbGrid, new Dictionary<string, double>
+                {
+                    { "Alert", WindowLayoutManager.DefaultGroupAlertWidth },
+                    { "Group Name", WindowLayoutManager.DefaultGroupNameWidth },
+                    { "Group ID", WindowLayoutManager.DefaultGroupIdWidth },
+                    { "Last Updated", WindowLayoutManager.DefaultGroupUpdatedWidth },
+                    { "Browser", WindowLayoutManager.DefaultGroupBrowserWidth },
+                });
+
+                // Load column widths for Known Users DataGrid
+                LoadDataGridColumnWidths(UserDbGrid, new Dictionary<string, double>
+                {
+                    { "Display Name", WindowLayoutManager.DefaultUserDisplayNameWidth },
+                    { "User ID", WindowLayoutManager.DefaultUserIdWidth },
+                    { "Elapsed Time (hh:mm)", WindowLayoutManager.DefaultUserElapsedWidth },
+                    { "Last Updated", WindowLayoutManager.DefaultUserUpdatedWidth },
+                    { "Browser", WindowLayoutManager.DefaultUserBrowserWidth },
+                });
+
+                // Load column widths for Open Logs ListView
+                LoadGridViewColumnWidths(OpenLogsListView, new Dictionary<string, double>
+                {
+                    { "FileName", WindowLayoutManager.DefaultLogFileNameWidth },
+                    { "StartTime", WindowLayoutManager.DefaultLogOpenedWidth },
+                    { "LastLineProcessedTime", WindowLayoutManager.DefaultLogLastLineWidth },
+                    { "LinesProcessed", WindowLayoutManager.DefaultLogLinesProcessedWidth },
+                });
+
+                // Load splitter positions
+                LoadRowSplitter("ActivePlayers", 3, WindowLayoutManager.DefaultActiveRowSplitterHeight);
+                LoadRowSplitter("PastPlayers", 3, WindowLayoutManager.DefaultPastRowSplitterHeight);
+
+                // Subscribe to column width change events
+                SubscribeToColumnWidthChanges();
+
+                logger.Info("Window layout loaded from registry");
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to load window layout");
+            }
+        }
+
+        private void Window_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            if (this.WindowState == WindowState.Normal)
+            {
+                WindowLayoutManager.SaveWindowSize(this);
+            }
+        }
+
+        private void LoadGridViewColumnWidths(System.Windows.Controls.ListView listView, Dictionary<string, double> defaults)
+        {
+            if (listView.View is GridView gridView)
+            {
+                foreach (var column in gridView.Columns)
+                {
+                    if (column.Header is GridViewColumnHeader header)
+                    {
+                        string columnName = (header.Tag as string) ?? header.Content?.ToString() ?? "";
+                        if (!string.IsNullOrEmpty(columnName) && defaults.ContainsKey(columnName))
+                        {
+                            double width = WindowLayoutManager.LoadColumnWidth(
+                                $"{listView.Name}_{columnName}",
+                                defaults[columnName]);
+                            column.Width = width;
+                        }
+                    }
+                }
+            }
+        }
+
+        private void LoadDataGridColumnWidths(System.Windows.Controls.DataGrid dataGrid, Dictionary<string, double> defaults)
+        {
+            foreach (var column in dataGrid.Columns)
+            {
+                string columnName = column.Header?.ToString() ?? "";
+                if (!string.IsNullOrEmpty(columnName) && defaults.ContainsKey(columnName))
+                {
+                    double width = WindowLayoutManager.LoadColumnWidth(
+                        $"{dataGrid.Name}_{columnName}",
+                        defaults[columnName]);
+                    column.Width = new DataGridLength(width);
+                }
+            }
+        }
+
+        private void LoadRowSplitter(string tabName, int rowIndex, double defaultHeight)
+        {
+            double height = WindowLayoutManager.LoadSplitterHeight(tabName, defaultHeight);
+
+            // Find the grid for the specified tab and set the row height
+            if (tabName == "ActivePlayers")
+            {
+                var grid = FindTabGrid(0);
+                if (grid != null && grid.RowDefinitions.Count > rowIndex)
+                {
+                    grid.RowDefinitions[rowIndex].Height = new GridLength(height, GridUnitType.Star);
+                }
+            }
+            else if (tabName == "PastPlayers")
+            {
+                var grid = FindTabGrid(1);
+                if (grid != null && grid.RowDefinitions.Count > rowIndex)
+                {
+                    grid.RowDefinitions[rowIndex].Height = new GridLength(height, GridUnitType.Star);
+                }
+            }
+        }
+
+        private Grid? FindTabGrid(int tabIndex)
+        {
+            if (this.Content is Grid mainGrid)
+            {
+                var tabControl = mainGrid.Children.OfType<System.Windows.Controls.TabControl>().FirstOrDefault();
+                if (tabControl != null && tabControl.Items.Count > tabIndex)
+                {
+                    var tabItem = tabControl.Items[tabIndex] as TabItem;
+                    return tabItem?.Content as Grid;
+                }
+            }
+            return null;
+        }
+
+        private void SubscribeToColumnWidthChanges()
+        {
+            // Subscribe to GridView column width changes
+            SubscribeToGridViewColumnChanges(ActiveListView);
+            SubscribeToGridViewColumnChanges(PastListView);
+            SubscribeToGridViewColumnChanges(OpenLogsListView);
+
+            // Subscribe to DataGrid column width changes
+            SubscribeToDataGridColumnChanges(AvatarDbGrid);
+            SubscribeToDataGridColumnChanges(GroupDbGrid);
+            SubscribeToDataGridColumnChanges(UserDbGrid);
+
+            // Subscribe to GridSplitter drag completed events
+            SubscribeToGridSplitters();
+        }
+
+        private void SubscribeToGridViewColumnChanges(System.Windows.Controls.ListView listView)
+        {
+            if (listView.View is GridView gridView)
+            {
+                foreach (var column in gridView.Columns)
+                {
+                    var dpd = DependencyPropertyDescriptor.FromProperty(
+                        GridViewColumn.WidthProperty,
+                        typeof(GridViewColumn));
+
+                    dpd?.AddValueChanged(column, (s, e) =>
+                    {
+                        if (s is GridViewColumn col && col.Header is GridViewColumnHeader header)
+                        {
+                            string columnName = (header.Tag as string) ?? header.Content?.ToString() ?? "";
+                            if (!string.IsNullOrEmpty(columnName))
+                            {
+                                WindowLayoutManager.SaveColumnWidth(
+                                    $"{listView.Name}_{columnName}",
+                                    col.ActualWidth);
+                            }
+                        }
+                    });
+                }
+            }
+        }
+
+        private void SubscribeToDataGridColumnChanges(System.Windows.Controls.DataGrid dataGrid)
+        {
+            foreach (var column in dataGrid.Columns)
+            {
+                var dpd = DependencyPropertyDescriptor.FromProperty(
+                    DataGridColumn.ActualWidthProperty,
+                    typeof(DataGridColumn));
+
+                dpd?.AddValueChanged(column, (s, e) =>
+                {
+                    if (s is DataGridColumn col)
+                    {
+                        string columnName = col.Header?.ToString() ?? "";
+                        if (!string.IsNullOrEmpty(columnName))
+                        {
+                            WindowLayoutManager.SaveColumnWidth(
+                                $"{dataGrid.Name}_{columnName}",
+                                col.ActualWidth);
+                        }
+                    }
+                });
+            }
+        }
+
+        private void SubscribeToGridSplitters()
+        {
+            // Find and subscribe to all GridSplitter controls
+            var splitters = FindVisualChildren<GridSplitter>(this);
+            foreach (var splitter in splitters)
+            {
+                splitter.DragCompleted += GridSplitter_DragCompleted;
+            }
+        }
+
+        private void GridSplitter_DragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
+        {
+            if (sender is GridSplitter splitter && splitter.Parent is Grid grid)
+            {
+                int rowIndex = Grid.GetRow(splitter);
+
+                // Determine which tab we're in based on the parent structure
+                string tabName = GetTabNameForGrid(grid);
+
+                if (!string.IsNullOrEmpty(tabName) && rowIndex + 1 < grid.RowDefinitions.Count)
+                {
+                    var rowDef = grid.RowDefinitions[rowIndex + 1];
+                    if (rowDef.Height.IsStar || rowDef.Height.IsAbsolute)
+                    {
+                        double height = rowDef.Height.IsStar ? rowDef.Height.Value : rowDef.ActualHeight;
+                        WindowLayoutManager.SaveSplitterHeight(tabName, height);
+                        logger.Debug($"Saved splitter height for {tabName}: {height}");
+                    }
+                }
+            }
+        }
+
+        private string GetTabNameForGrid(Grid grid)
+        {
+            // Navigate up to find the TabItem
+            DependencyObject parent = grid;
+            while (parent != null)
+            {
+                parent = VisualTreeHelper.GetParent(parent);
+                if (parent is TabItem tabItem)
+                {
+                    string header = tabItem.Header?.ToString() ?? "";
+                    if (header == "Active Players") return "ActivePlayers";
+                    if (header == "Past Players") return "PastPlayers";
+                }
+            }
+            return "";
+        }
+
+        private static IEnumerable<T> FindVisualChildren<T>(DependencyObject depObj) where T : DependencyObject
+        {
+            if (depObj != null)
+            {
+                for (int i = 0; i < VisualTreeHelper.GetChildrenCount(depObj); i++)
+                {
+                    DependencyObject child = VisualTreeHelper.GetChild(depObj, i);
+                    if (child is T t)
+                    {
+                        yield return t;
+                    }
+
+                    foreach (T childOfChild in FindVisualChildren<T>(child))
+                    {
+                        yield return childOfChild;
+                    }
+                }
+            }
+        }
+
+        private void ResetLayout_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var result = System.Windows.MessageBox.Show(
+                    "This will reset the window size and all column widths to their default values. Do you want to continue?",
+                    "Reset Layout",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question);
+
+                if (result == MessageBoxResult.Yes)
+                {
+                    WindowLayoutManager.ResetLayoutSettings();
+
+                    System.Windows.MessageBox.Show(
+                        "Layout settings have been reset. Please restart the application for changes to take effect.",
+                        "Reset Complete",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+
+                    logger.Info("Layout settings reset to defaults");
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to reset layout settings");
+                System.Windows.MessageBox.Show(
+                    $"Failed to reset layout: {ex.Message}",
+                    "Error",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+        }
+
         #endregion
 
 
