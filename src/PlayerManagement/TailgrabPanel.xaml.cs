@@ -2494,7 +2494,7 @@ namespace Tailgrab.PlayerManagement
 
         private void LoadRowSplitter(string tabName, double defaultHeight)
         {
-            RowDefinition gridRow = null;
+            RowDefinition? gridRow = null;
             double height = WindowLayoutManager.LoadSplitterHeight($"{tabName}_Horz", defaultHeight);
 
             // Find the grid for the specified tab and set the row width
@@ -2516,7 +2516,7 @@ namespace Tailgrab.PlayerManagement
 
         private void LoadColSplitter(string tabName, double defaultWidth)
         {
-            ColumnDefinition gridColumn = null;
+            ColumnDefinition? gridColumn = null;
             double width = WindowLayoutManager.LoadSplitterHeight($"{tabName}_Vert", defaultWidth);
 
             // Find the grid for the specified tab and set the row width
