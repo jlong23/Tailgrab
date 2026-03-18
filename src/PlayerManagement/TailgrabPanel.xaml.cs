@@ -8,6 +8,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
+using System.Windows.Media.Media3D;
 using System.Windows.Threading;
 using Tailgrab.Clients.VRChat;
 using Tailgrab.Common;
@@ -305,6 +306,7 @@ namespace Tailgrab.PlayerManagement
             // Load window layout from registry
             this.Loaded += Window_Loaded;
             this.SizeChanged += Window_SizeChanged;
+            this.LocationChanged += Window_LocationChanged;
         }
 
         private void SaveConfig_Click(object sender, RoutedEventArgs e)
@@ -2357,8 +2359,9 @@ namespace Tailgrab.PlayerManagement
         {
             try
             {
-                // Load window size
+                // Load window size and position
                 WindowLayoutManager.LoadWindowSize(this);
+                WindowLayoutManager.LoadWindowPosition(this);
 
                 // Load column widths for Active Players tab
                 LoadGridViewColumnWidths(ActiveListView, new Dictionary<string, double>
@@ -2421,8 +2424,10 @@ namespace Tailgrab.PlayerManagement
                 });
 
                 // Load splitter positions
-                LoadRowSplitter("ActivePlayers", 2, WindowLayoutManager.DefaultActiveRowSplitterHeight);
-                LoadRowSplitter("PastPlayers", 2, WindowLayoutManager.DefaultPastRowSplitterHeight);
+                LoadRowSplitter("ActivePlayers", WindowLayoutManager.DefaultActiveRowSplitterHeight);
+                LoadRowSplitter("PastPlayers", WindowLayoutManager.DefaultPastRowSplitterHeight);
+                LoadColSplitter("ActivePlayers", WindowLayoutManager.DefaultActiveColSplitterWidth);
+                LoadColSplitter("PastPlayers", WindowLayoutManager.DefaultPastColSplitterWidth);
 
                 // Subscribe to column width change events
                 SubscribeToColumnWidthChanges();
@@ -2440,6 +2445,14 @@ namespace Tailgrab.PlayerManagement
             if (this.WindowState == WindowState.Normal)
             {
                 WindowLayoutManager.SaveWindowSize(this);
+            }
+        }
+
+        private void Window_LocationChanged(object? sender, EventArgs e)
+        {
+            if (this.WindowState == WindowState.Normal)
+            {
+                WindowLayoutManager.SaveWindowPosition(this);
             }
         }
 
@@ -2479,46 +2492,58 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
-        private void LoadRowSplitter(string tabName, int rowIndex, double defaultHeight)
+        private void LoadRowSplitter(string tabName, double defaultHeight)
         {
-            double height = WindowLayoutManager.LoadSplitterHeight(tabName, defaultHeight);
+            RowDefinition gridRow = null;
+            double height = WindowLayoutManager.LoadSplitterHeight($"{tabName}_Horz", defaultHeight);
 
-            // Find the grid for the specified tab and set the row height
+            // Find the grid for the specified tab and set the row width
             if (tabName == "ActivePlayers")
             {
-                RowDefinition gridRow = ActivePlayerGridRow;
-                logger.Debug($"Attempting to load splitter height for Grid {gridRow?.Name}");
-                if (gridRow != null)
-                {
-                    logger.Debug($"Found grid for {tabName}, setting row {rowIndex} height to {height}");
-                    gridRow.Height = new GridLength(height, GridUnitType.Star);
-                }
+                gridRow = ActivePlayerGridRow;
             }
             else if (tabName == "PastPlayers")
             {
-                RowDefinition gridRow = PastPlayerGridRow;
-                logger.Debug($"Attempting to load splitter height for Grid {gridRow?.Name}");
-                if (gridRow != null)
-                {
-                    logger.Debug($"Found grid for {tabName}, setting row {rowIndex} height to {height}");
-                    gridRow.Height = new GridLength(height, GridUnitType.Star);
-                }
+                gridRow = PastPlayerGridRow;
+            }
+
+            if (gridRow != null)
+            {
+                logger.Debug($"Attempting to load splitter height for Row Splitter {tabName}, height to {height}");
+                gridRow.Height = new GridLength(height, GridUnitType.Star);
             }
         }
 
-        private Grid? FindTabGrid(int tabIndex)
+        private void LoadColSplitter(string tabName, double defaultWidth)
         {
-            if (this.Content is Grid mainGrid)
+            ColumnDefinition gridColumn = null;
+            double width = WindowLayoutManager.LoadSplitterHeight($"{tabName}_Vert", defaultWidth);
+
+            // Find the grid for the specified tab and set the row width
+            if (tabName == "ActivePlayers")
             {
-                var tabControl = mainGrid.Children.OfType<System.Windows.Controls.TabControl>().FirstOrDefault();
-                if (tabControl != null && tabControl.Items.Count > tabIndex)
-                {
-                    var tabItem = tabControl.Items[tabIndex] as TabItem;
-                    return tabItem?.Content as Grid;
-                }
+                gridColumn = ActivePlayerGridColumn;
             }
-            return null;
+            else if (tabName == "PastPlayers")
+            {
+                gridColumn = PastPlayerGridColumn;
+            }
+
+            if (gridColumn != null)
+            {
+                logger.Debug($"Attempting to load splitter width for Col Splitter {tabName}, width to {width}");
+                if (width == -1)
+                {
+                    gridColumn.Width = new GridLength(1, GridUnitType.Star);
+                }
+                else
+                {
+                    gridColumn.Width = new GridLength(width, GridUnitType.Pixel);
+                }                
+            }
         }
+
+
 
         private void SubscribeToColumnWidthChanges()
         {
@@ -2531,9 +2556,6 @@ namespace Tailgrab.PlayerManagement
             SubscribeToDataGridColumnChanges(AvatarDbGrid);
             SubscribeToDataGridColumnChanges(GroupDbGrid);
             SubscribeToDataGridColumnChanges(UserDbGrid);
-
-            // Subscribe to GridSplitter drag completed events
-            SubscribeToGridSplitters();
         }
 
         private void SubscribeToGridViewColumnChanges(System.Windows.Controls.ListView listView)
@@ -2587,61 +2609,51 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
-        private void SubscribeToGridSplitters()
-        {
-            // Find and subscribe to all GridSplitter controls
-            var splitters = FindVisualChildren<GridSplitter>(this);
-            foreach (var splitter in splitters)
-            {
-                splitter.DragCompleted += GridSplitter_DragCompleted;
-            }
-        }
-
         private void GridSplitter_DragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
         {
             if (sender is GridSplitter splitter && splitter.Parent is Grid grid)
             {
-                int rowIndex = Grid.GetRow(splitter);
-
-                // Determine which tab we're in based on the parent structure
                 string splitterName = splitter.Name;
-                string[] splitterParts = splitterName.Split('_');
-                string tabName = GetTabNameForGrid(grid);
-                if( splitterParts.Length > 1 )
+                if (string.IsNullOrEmpty(splitterName))
                 {
-                    tabName = splitterParts[0];
+                    logger.Warn("GridSplitter has no name, cannot save position");
+                    return;
                 }
-                string resizename = splitter.ResizeDirection.ToString();
-                logger.Debug($"Grid Splitter dragged in tab: {tabName}, row index: {rowIndex}");
 
-                if (!string.IsNullOrEmpty(tabName) && rowIndex + 1 < grid.RowDefinitions.Count && resizename == "Rows")
+                string resizeDirection = splitter.ResizeDirection.ToString();
+                logger.Debug($"Grid Splitter '{splitterName}' dragged, ResizeDirection: {resizeDirection}");
+
+                if (resizeDirection == "Rows")
                 {
-                    var rowDef = grid.RowDefinitions[rowIndex + 1];
-                    if (rowDef.Height.IsStar || rowDef.Height.IsAbsolute)
+                    // Horizontal splitter - save row width
+                    int rowIndex = Grid.GetRow(splitter);
+                    if (rowIndex + 1 < grid.RowDefinitions.Count)
                     {
-                        double height = rowDef.Height.IsStar ? rowDef.Height.Value : rowDef.ActualHeight;
-                        WindowLayoutManager.SaveSplitterHeight(tabName, height);
-                        logger.Debug($"Saved splitter height for {tabName}: {height}");
+                        var rowDef = grid.RowDefinitions[rowIndex + 1];
+                        if (rowDef.Height.IsStar || rowDef.Height.IsAbsolute)
+                        {
+                            double height = rowDef.Height.IsStar ? rowDef.Height.Value : rowDef.ActualHeight;
+                            WindowLayoutManager.SaveSplitterPosition(splitterName, height);
+                            logger.Debug($"Saved row width for splitter '{splitterName}': {height}");
+                        }
+                    }
+                }
+                else if (resizeDirection == "Columns")
+                {
+                    // Vertical splitter - save column width
+                    int colIndex = Grid.GetColumn(splitter);
+                    if (colIndex == 1)
+                    {
+                        var colDef = grid.ColumnDefinitions[0];
+                        if (colDef.Width.IsStar || colDef.Width.IsAbsolute)
+                        {
+                            double width = colDef.Width.IsStar ? colDef.Width.Value : colDef.ActualWidth;
+                            WindowLayoutManager.SaveSplitterPosition(splitterName, width);
+                            logger.Debug($"Saved column width for splitter '{splitterName}': {width}");
+                        }
                     }
                 }
             }
-        }
-
-        private string GetTabNameForGrid(Grid grid)
-        {
-            // Navigate up to find the TabItem
-            DependencyObject parent = grid;
-            while (parent != null)
-            {
-                parent = VisualTreeHelper.GetParent(parent);
-                if (parent is TabItem tabItem)
-                {
-                    string header = tabItem.Header?.ToString() ?? "";
-                    if (header == "Active Players") return "ActivePlayers";
-                    if (header == "Past Players") return "PastPlayers";
-                }
-            }
-            return "";
         }
 
         private static IEnumerable<T> FindVisualChildren<T>(DependencyObject depObj) where T : DependencyObject
@@ -2669,7 +2681,7 @@ namespace Tailgrab.PlayerManagement
             try
             {
                 var result = System.Windows.MessageBox.Show(
-                    "This will reset the window size and all column widths to their default values. Do you want to continue?",
+                    "This will reset the window size, position, all column widths, and splitter positions to their default values. Do you want to continue?",
                     "Reset Layout",
                     MessageBoxButton.YesNo,
                     MessageBoxImage.Question);

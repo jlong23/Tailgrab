@@ -24,7 +24,7 @@ Title="Tailgrab Player Panel"
                 <TabItem Header="Active Players">
                     <Grid Name="ActivePlayerLayoutGrid">
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="13*"/>
+                            <RowDefinition Height="20*"/>
                             <RowDefinition Height="267*"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition x:Name="ActivePlayerGridRow" Height="*" MinHeight="100"/>
@@ -170,11 +170,11 @@ Title="Tailgrab Player Panel"
                             </ListView.View>
                         </ListView>
 
-                        <GridSplitter Name="ActivePlayers_Horz"  Grid.Row="2" Height="5" HorizontalAlignment="Stretch" VerticalAlignment="Center" Background="#FF3F3F46" ShowsPreview="False" ResizeDirection="Rows" Grid.ColumnSpan="2"/>
+                        <GridSplitter Name="ActivePlayers_Horz"  Grid.Row="2" Height="5" HorizontalAlignment="Stretch" VerticalAlignment="Center" Background="#FF3F3F46" ShowsPreview="False" ResizeDirection="Rows" Grid.ColumnSpan="2" DragCompleted="GridSplitter_DragCompleted"/>
 
                         <Grid Margin="0,0,0,6" Grid.Row="3" Grid.ColumnSpan="2">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*" Name="ActivePlayerGridColumn"/>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
@@ -188,7 +188,7 @@ Title="Tailgrab Player Panel"
                                 </TextBox.Text>
                             </TextBox>
 
-                            <GridSplitter Name="ActivePlayers_Vert" Grid.Column="1" Width="5" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="#FF3F3F46" ShowsPreview="False"/>
+                            <GridSplitter Name="ActivePlayers_Vert" Grid.Column="1" Width="5" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="#FF3F3F46" ShowsPreview="False" ResizeDirection="Columns" DragCompleted="GridSplitter_DragCompleted"/>
 
                             <TextBox Name="UserAlertsBox" Grid.Column="2" Height="auto" Margin="4,0,8,0" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" Text="{Binding SelectedActive.History, Mode=OneWay, FallbackValue='', TargetNullValue=''}" />
                         </Grid>
@@ -286,7 +286,7 @@ Title="Tailgrab Player Panel"
                 <TabItem Header="Past Players">
                     <Grid Name="PastPlayerLayoutGrid">
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="13*"/>
+                            <RowDefinition Height="20*"/>
                             <RowDefinition Height="267*"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition x:Name="PastPlayerGridRow" Height="*" MinHeight="100"/>
@@ -433,11 +433,11 @@ Title="Tailgrab Player Panel"
                             </ListView.View>
                         </ListView>
 
-                        <GridSplitter Name="PastPlayers_Horz" Grid.Row="2" Height="5" HorizontalAlignment="Stretch" VerticalAlignment="Center" Background="#FF3F3F46" ShowsPreview="False" ResizeDirection="Rows"/>
+                        <GridSplitter Name="PastPlayers_Horz" Grid.Row="2" Height="5" HorizontalAlignment="Stretch" VerticalAlignment="Center" Background="#FF3F3F46" ShowsPreview="False" ResizeDirection="Rows" DragCompleted="GridSplitter_DragCompleted"/>
 
                         <Grid Margin="0,0,0,6" Grid.Row="3">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*" Name="PastPlayerGridColumn"/>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
@@ -451,7 +451,7 @@ Title="Tailgrab Player Panel"
                                 </TextBox.Text>
                             </TextBox>
 
-                            <GridSplitter Name="PastPlayers_Vert" Grid.Column="1" Width="5" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="#FF3F3F46" ShowsPreview="False"/>
+                            <GridSplitter Name="PastPlayers_Vert" Grid.Column="1" Width="5" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="#FF3F3F46" ShowsPreview="False" ResizeDirection="Columns" DragCompleted="GridSplitter_DragCompleted"/>
 
                             <TextBox Name="UserAlertsBoxPast" Grid.Column="2" Height="auto" Margin="4,0,8,0" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" Text="{Binding SelectedPast.History, Mode=OneWay, FallbackValue='', TargetNullValue=''}" />
                         </Grid>

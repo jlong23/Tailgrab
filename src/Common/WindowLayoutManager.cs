@@ -2,6 +2,7 @@ using Microsoft.Win32;
 using NLog;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Forms;
 
 namespace Tailgrab.Common
 {
@@ -65,6 +66,10 @@ namespace Tailgrab.Common
         public const double DefaultActiveRowSplitterHeight = 100;
         public const double DefaultPastRowSplitterHeight = 100;
 
+        // GridSplitter positions (stored as GridLength values)
+        public const double DefaultActiveColSplitterWidth = -1;
+        public const double DefaultPastColSplitterWidth = -1;
+
         #region Save Methods
 
         public static void SaveWindowSize(Window window)
@@ -87,6 +92,26 @@ namespace Tailgrab.Common
             }
         }
 
+        public static void SaveWindowPosition(Window window)
+        {
+            try
+            {
+                if (window.WindowState == WindowState.Normal)
+                {
+                    using (var key = Registry.CurrentUser.CreateSubKey(LayoutRegistryPath))
+                    {
+                        key.SetValue("WindowLeft", window.Left);
+                        key.SetValue("WindowTop", window.Top);
+                    }
+                    logger.Debug($"Saved window position: Left={window.Left}, Top={window.Top}");
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to save window position to registry.");
+            }
+        }
+
         public static void SaveColumnWidth(string columnName, double width)
         {
             try
@@ -103,7 +128,7 @@ namespace Tailgrab.Common
             }
         }
 
-        public static void SaveSplitterHeight(string splitterName, double height)
+        public static void SaveSplitterPosition(string splitterName, double height)
         {
             try
             {
@@ -118,11 +143,9 @@ namespace Tailgrab.Common
                 logger.Error(ex, $"Failed to save splitter height for {splitterName}.");
             }
         }
-
         #endregion
 
         #region Load Methods
-
         public static void LoadWindowSize(Window window)
         {
             try
@@ -146,6 +169,43 @@ namespace Tailgrab.Common
             catch (Exception ex)
             {
                 logger.Error(ex, "Failed to load window size from registry.");
+            }
+        }
+
+        public static void LoadWindowPosition(Window window)
+        {
+            try
+            {
+                using (var key = Registry.CurrentUser.OpenSubKey(LayoutRegistryPath))
+                {
+                    if (key != null)
+                    {
+                        var left = key.GetValue("WindowLeft");
+                        var top = key.GetValue("WindowTop");
+
+                        if (left != null && top != null)
+                        {
+                            double leftPos = Convert.ToDouble(left);
+                            double topPos = Convert.ToDouble(top);
+
+                            // Validate that the position is within visible screen bounds
+                            if (IsPositionValid(leftPos, topPos, window.Width, window.Height))
+                            {
+                                window.Left = leftPos;
+                                window.Top = topPos;
+                                logger.Debug($"Loaded window position: Left={window.Left}, Top={window.Top}");
+                            }
+                            else
+                            {
+                                logger.Warn("Saved window position is outside visible screen bounds. Using default position.");
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to load window position from registry.");
             }
         }
 
@@ -230,6 +290,28 @@ namespace Tailgrab.Common
         #endregion
 
         #region Helper Methods
+
+        private static bool IsPositionValid(double left, double top, double width, double height)
+        {
+            // Check if at least part of the window is visible on any screen
+            var windowRect = new Rect(left, top, width, height);
+
+            foreach (var screen in System.Windows.Forms.Screen.AllScreens)
+            {
+                var screenRect = new Rect(
+                    screen.WorkingArea.Left,
+                    screen.WorkingArea.Top,
+                    screen.WorkingArea.Width,
+                    screen.WorkingArea.Height);
+
+                if (windowRect.IntersectsWith(screenRect))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
 
         public static void ApplyLayoutToGridView(GridView gridView, Dictionary<string, double> columnWidths)
         {
