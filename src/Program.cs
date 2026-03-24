@@ -2,6 +2,7 @@
 using Microsoft.Win32;
 using NLog;
 using System.IO;
+using System.Net.Http;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
@@ -134,6 +135,9 @@ public class FileTailer
         _ = Task.Run(() => WatchAmpCache(ampPath, _serviceRegistry));
 
         //SyncAvatarModerations(_serviceRegistry);
+
+        // Check for updates before showing the main window
+        _ = Task.Run(async () => await CheckForUpdatesAsync());
 
         BuildAppWindow(_serviceRegistry);
 
@@ -519,6 +523,79 @@ public class FileTailer
         catch (Exception ex)
         {
             logger.Error(ex, "Failed to create database backup");
+        }
+    }
+
+    /// <summary>
+    /// Check GitHub for new releases and notify the user if a newer version is available.
+    /// </summary>
+    private static async Task CheckForUpdatesAsync()
+    {
+        try
+        {
+            using var httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders.Add("User-Agent", "Tailgrab-Update-Checker");
+
+            var response = await httpClient.GetAsync("https://api.github.com/repos/jlong23/Tailgrab/releases/latest");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                logger.Debug($"Failed to check for updates. Status: {response.StatusCode}");
+                return;
+            }
+
+            var json = await response.Content.ReadAsStringAsync();
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+
+            if (!root.TryGetProperty("tag_name", out var tagNameElement))
+            {
+                logger.Debug("No tag_name found in GitHub release response");
+                return;
+            }
+
+            if (!root.TryGetProperty("name", out var releaseNameElement))
+            {
+                logger.Debug("No tag_name found in GitHub release response");
+                return;
+            }
+
+            string latestVersion = tagNameElement.GetString() ?? "";
+            string latestVersionName = releaseNameElement.GetString() ?? "";
+            string currentVersion = BuildInfo.GetInformationalVersion();
+
+            // Remove 'v' prefix if present for comparison
+            latestVersion = latestVersion.TrimStart('v');
+            currentVersion = currentVersion.TrimStart('v');
+
+            // Parse and compare versions
+            if (Version.TryParse(latestVersion, out var latest) && 
+                Version.TryParse(currentVersion.Split('+')[0], out var current))
+            {
+                if (latest > current)
+                {
+                    logger.Info($"New version available: {latestVersion} (current: {currentVersion})");
+
+                    // Show update notification on the UI thread
+                    System.Windows.Application.Current?.Dispatcher.Invoke(() =>
+                    {
+                        var dialog = new UpdateNotificationDialog(latestVersion, latestVersionName, currentVersion);
+                        dialog.ShowDialog();
+                    });
+                }
+                else
+                {
+                    logger.Debug($"Already on latest version: {currentVersion}");
+                }
+            }
+            else
+            {
+                logger.Debug($"Failed to parse versions. Latest: {latestVersion}, Current: {currentVersion}");
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.Warn(ex, "Failed to check for updates");
         }
     }
 
