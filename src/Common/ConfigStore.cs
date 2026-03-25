@@ -171,5 +171,10 @@ namespace Tailgrab.Common
             }
         }
 
+        public static void RemoveStoredKeyString(string keyName)
+        {
+            RemoveStoredKeyString(CommonConst.ConfigRegistryPath, keyName);
+        }
+
     }
 }

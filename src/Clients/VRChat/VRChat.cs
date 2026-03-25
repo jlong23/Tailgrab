@@ -10,7 +10,6 @@ using Tailgrab.Common;
 using VRChat.API.Client;
 using VRChat.API.Model;
 
-
 namespace Tailgrab.Clients.VRChat
 {
     public class VRChatClient
@@ -407,6 +406,92 @@ namespace Tailgrab.Clients.VRChat
 
             return group;
         }
+
+        public async Task<TGGroupMemberStatus> GetGroupMemberStatus(string groupId, string userId)
+        {
+            try
+            {
+                if (_vrchat == null)
+                {
+                    logger.Error("VRChat client not initialized");
+                    return TGGroupMemberStatus.Unknown;
+                }
+
+                GroupLimitedMember membership = _vrchat.Groups.GetGroupMember(groupId, userId);
+                logger.Info($"Checking group {groupId} member status for user {userId}");
+
+                if( membership != null && membership.MembershipStatus != null)
+                {
+                    if (membership.MembershipStatus == GroupMemberStatus.Banned)
+                    {
+                        return TGGroupMemberStatus.Banned;
+                    }
+                    else if( membership.MembershipStatus == GroupMemberStatus.Member)
+                    {
+                        return TGGroupMemberStatus.Member;
+                    }
+                }
+                return TGGroupMemberStatus.NotMember;
+            }
+            catch (Exception ex)
+            {
+                logger.Error($"Error checking group member status: {ex.Message}");
+                return TGGroupMemberStatus.Unknown;
+            }
+        }
+
+        public async Task<bool> BanUserFromGroup(string groupId, string userId)
+        {
+            try
+            {
+                if (_vrchat == null)
+                {
+                    logger.Error("VRChat client not initialized");
+                    return false;
+                }
+
+                UserIdPayload request = new UserIdPayload { UserId = userId };
+                // Create HTTP client with cookies
+                using HttpClient httpClient = CreateHttpClientWithCookies();
+
+                // Submit the moderation report
+                HttpResponseMessage response = await httpClient.PostAsJsonAsync($"{URI_VRC_BASE_API}/api/1/groups/{groupId}/bans", request);
+                string responseContent = await response.Content.ReadAsStringAsync();
+                logger.Debug($"Response from submitting moderation report for content: {responseContent}");
+                logger.Info($"Banning user {userId} from group {groupId}");
+                response.EnsureSuccessStatusCode();
+
+                return response.IsSuccessStatusCode;
+
+            }
+            catch (Exception ex)
+            {
+                logger.Error($"Error banning user from group: {ex.Message}");
+                return false;
+            }
+        }
+
+        public async Task<bool> UnbanUserFromGroup(string groupId, string userId)
+        {
+            try
+            {
+                if (_vrchat == null)
+                {
+                    logger.Error("VRChat client not initialized");
+                    return false;
+                }
+
+                _vrchat.Groups.UnbanGroupMember(groupId, userId);
+                logger.Info($"Unbanning user {userId} from group {groupId}");
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                logger.Error($"Error unbanning user from group: {ex.Message}");
+                return false;
+            }
+        }
         #endregion
 
         #region Moderation Management
@@ -420,7 +505,6 @@ namespace Tailgrab.Clients.VRChat
                     return false;
                 }
 
-                // Create HTTP client with cookies
                 // Create HTTP client with cookies
                 using HttpClient httpClient = CreateHttpClientWithCookies();
 
@@ -739,6 +823,20 @@ namespace Tailgrab.Clients.VRChat
             public string FileId { get; set; } = string.Empty;
             [JsonProperty("image")]
             public string ImageUrl { get; set; } = string.Empty;
+        }
+
+        public class UserIdPayload
+        {
+            [JsonProperty("userId")]
+            public string UserId { get; set; } = string.Empty;
+        }   
+
+        public enum TGGroupMemberStatus
+        {
+            Unknown,
+            NotMember,
+            Member,
+            Banned
         }
         #endregion
     }

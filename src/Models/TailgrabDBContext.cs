@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using System.Windows.Media.Animation;
+using tailgrab.src.Models;
 using Tailgrab.Common;
 
 namespace Tailgrab.Models;
@@ -58,6 +59,8 @@ public partial class TailgrabDBContext : DbContext
 
     public virtual DbSet<GroupInfo> GroupInfos { get; set; }
 
+    public virtual DbSet<GroupManagement> GroupManagements { get; set; }
+
     public virtual DbSet<ProfileEvaluation> ProfileEvaluations { get; set; }
 
     public virtual DbSet<ImageEvaluation> ImageEvaluations { get; set; }
@@ -88,6 +91,18 @@ public partial class TailgrabDBContext : DbContext
 
             entity.HasIndex(g => g.GroupName);
             entity.HasIndex(g => g.AlertType);
+        });
+
+        modelBuilder.Entity<GroupManagement>(entity =>
+        {
+            entity.HasKey(e => e.GroupId);
+
+            entity.ToTable("GroupManagement");
+
+            entity.Property(e => e.CreatedAt).HasColumnName("createDate");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updateDate");
+
+            entity.HasIndex(g => g.GroupName);
         });
 
         modelBuilder.Entity<ProfileEvaluation>(entity =>
@@ -126,18 +141,14 @@ public partial class TailgrabDBContext : DbContext
 
     public void UpgradeDatabase()
     {
-        // CREATE INDEX ix_avtr_aname ON AvatarInfo(AvatarName);
-        // CREATE INDEX ix_avtr_uname ON AvatarInfo(UserName);
-        // CREATE INDEX ix_avtr_alert ON AvatarInfo(alertType);
-        // CREATE INDEX ix_grp_gname ON GroupInfo(groupName);
-        // CREATE INDEX ix_grp_alert ON GroupInfo(alertType);
-
         ExecuteSqlTransaction(
             "CREATE INDEX IF NOT EXISTS ix_avtr_aname ON AvatarInfo(AvatarName)",
             "CREATE INDEX IF NOT EXISTS ix_avtr_uname ON AvatarInfo(UserName)",
             "CREATE INDEX IF NOT EXISTS ix_avtr_alert ON AvatarInfo(alertType)",
             "CREATE INDEX IF NOT EXISTS ix_grp_gname ON GroupInfo(groupName)",
-            "CREATE INDEX IF NOT EXISTS ix_grp_alert ON GroupInfo(alertType)"
+            "CREATE INDEX IF NOT EXISTS ix_grp_alert ON GroupInfo(alertType)",
+            "CREATE TABLE IF NOT EXISTS GroupManagement ( GroupId TEXT NOT NULL CONSTRAINT PK_GroupManagement PRIMARY KEY, GroupName TEXT NULL, createDate TEXT NOT NULL, updateDate TEXT NULL )",
+            "CREATE INDEX IF NOT EXISTS ix_grpm_gname ON GroupManagement(groupName)"
         );
     }
 
@@ -153,6 +164,7 @@ public partial class TailgrabDBContext : DbContext
         {
             try
             {
+                logger.Warn(sql);
                 Database.ExecuteSqlRaw(sql);
             }
             catch
@@ -162,6 +174,7 @@ public partial class TailgrabDBContext : DbContext
                 throw;
             }
         }
+        transaction.Commit();
     }
 
     private async Task ExecuteSqlAsync(string sql)

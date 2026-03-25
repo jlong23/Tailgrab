@@ -8,7 +8,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
-using System.Windows.Media.Media3D;
 using System.Windows.Threading;
 using Tailgrab.Clients.VRChat;
 using Tailgrab.Common;
@@ -154,13 +153,25 @@ namespace Tailgrab.PlayerManagement
             new KeyValuePair<string, AlertTypeEnum>("Crasher", AlertTypeEnum.Crasher)
         ];
 
-        public List<KeyValuePair<string, string>> AlertColorOptions { get; } = 
-        [
-            new KeyValuePair<string, string>("*NONE", "Normal"),
-            new KeyValuePair<string, string>("Yellow", "Yellow"),
-            new KeyValuePair<string, string>("Purple", "Purple"),
-            new KeyValuePair<string, string>("Red", "Red"),
-        ];
+        private List<AlertColorOption>? _alertColorOptions;
+        public List<AlertColorOption> AlertColorOptions 
+        { 
+            get
+            {
+                if (_alertColorOptions == null)
+                {
+                    _alertColorOptions = 
+                    [
+                        new AlertColorOption("*NONE", "Normal", NormalBackground, NormalForeground),
+                        new AlertColorOption("Class 1", "Class01", Class01Background, Class01Foreground),
+                        new AlertColorOption("Class 2", "Class02", Class02Background, Class02Foreground),
+                        new AlertColorOption("Class 3", "Class03", Class03Background, Class03Foreground),
+                        new AlertColorOption("Class 4", "Class04", Class04Background, Class04Foreground),
+                    ];
+                }
+                return _alertColorOptions;
+            }
+        }
 
         public List<KeyValuePair<string, string>> AlertSoundOptions { get; set; } = [];
 
@@ -172,6 +183,319 @@ namespace Tailgrab.PlayerManagement
             new ReportReasonItem("Child Exploitation", "child"),
             new ReportReasonItem("Other", "other")
         ];
+
+        // Color options for selection
+        public List<ColorOption> ColorOptions { get; } =
+        [
+            new ColorOption("Dark Gray", "#FF1E1E1E"),
+            new ColorOption("Light Gray", "#FFE6E6E6"),
+            new ColorOption("Black", "Black"),
+            new ColorOption("White", "White"),
+            new ColorOption("Red", "Red"),
+            new ColorOption("Yellow", "Yellow"),
+            new ColorOption("Green", "Green"),
+            new ColorOption("Blue", "Blue"),
+            new ColorOption("Purple", "Purple"),
+            new ColorOption("Orange", "Orange"),
+            new ColorOption("Pink", "Pink"),
+            new ColorOption("Light Green", "LightGreen"),
+            new ColorOption("Light Blue", "LightBlue"),
+            new ColorOption("Light Pink", "LightPink"),
+            new ColorOption("Dark Blue", "#FF1d1db3"),
+            new ColorOption("Bright Yellow", "#FFFFFF00"),
+            new ColorOption("Cyan", "Cyan"),
+            new ColorOption("Magenta", "Magenta"),
+            new ColorOption("Lime", "Lime"),
+            new ColorOption("Brown", "Brown"),
+            new ColorOption("Navy", "Navy"),
+            new ColorOption("Teal", "Teal"),
+            new ColorOption("Maroon", "Maroon"),
+            new ColorOption("Olive", "Olive"),
+            new ColorOption("Silver", "Silver"),
+            new ColorOption("Gold", "Gold"),
+        ];
+
+        // Highlight class color properties with backing fields
+        private System.Windows.Media.Brush _normalBackground = null!;
+        public System.Windows.Media.Brush NormalBackground
+        {
+            get => _normalBackground;
+            set { _normalBackground = value; OnPropertyChanged(nameof(NormalBackground)); }
+        }
+
+        private System.Windows.Media.Brush _normalForeground = null!;
+        public System.Windows.Media.Brush NormalForeground
+        {
+            get => _normalForeground;
+            set { _normalForeground = value; OnPropertyChanged(nameof(NormalForeground)); }
+        }
+
+        private System.Windows.Media.Brush _friendBackground = null!;
+        public System.Windows.Media.Brush FriendBackground
+        {
+            get => _friendBackground;
+            set { _friendBackground = value; OnPropertyChanged(nameof(FriendBackground)); }
+        }
+
+        private System.Windows.Media.Brush _friendForeground = null!;
+        public System.Windows.Media.Brush FriendForeground
+        {
+            get => _friendForeground;
+            set { _friendForeground = value; OnPropertyChanged(nameof(FriendForeground)); }
+        }
+
+        private System.Windows.Media.Brush _Class01Background = null!;
+        public System.Windows.Media.Brush Class01Background
+        {
+            get => _Class01Background;
+            set { _Class01Background = value; OnPropertyChanged(nameof(Class01Background)); }
+        }
+
+        private System.Windows.Media.Brush _Class01Foreground = null!;
+        public System.Windows.Media.Brush Class01Foreground
+        {
+            get => _Class01Foreground;
+            set { _Class01Foreground = value; OnPropertyChanged(nameof(Class01Foreground)); }
+        }
+
+        private System.Windows.Media.Brush _Class02Background = null!;
+        public System.Windows.Media.Brush Class02Background
+        {
+            get => _Class02Background;
+            set { _Class02Background = value; OnPropertyChanged(nameof(Class02Background)); }
+        }
+
+        private System.Windows.Media.Brush _Class02Foreground = null!;
+        public System.Windows.Media.Brush Class02Foreground
+        {
+            get => _Class02Foreground;
+            set { _Class02Foreground = value; OnPropertyChanged(nameof(Class02Foreground)); }
+        }
+
+        private System.Windows.Media.Brush _Class03Background = null!;
+        public System.Windows.Media.Brush Class03Background
+        {
+            get => _Class03Background;
+            set { _Class03Background = value; OnPropertyChanged(nameof(Class03Background)); }
+        }
+
+        private System.Windows.Media.Brush _Class03Foreground = null!;
+        public System.Windows.Media.Brush Class03Foreground
+        {
+            get => _Class03Foreground;
+            set { _Class03Foreground = value; OnPropertyChanged(nameof(Class03Foreground)); }
+        }
+
+        private System.Windows.Media.Brush _Class04Background = null!;
+        public System.Windows.Media.Brush Class04Background
+        {
+            get => _Class04Background;
+            set { _Class04Background = value; OnPropertyChanged(nameof(Class04Background)); }
+        }
+
+        private System.Windows.Media.Brush _Class04Foreground = null!;
+        public System.Windows.Media.Brush Class04Foreground
+        {
+            get => _Class04Foreground;
+            set { _Class04Foreground = value; OnPropertyChanged(nameof(Class04Foreground)); }
+        }
+
+        private System.Windows.Media.Brush _selectedBackground = null!;
+        public System.Windows.Media.Brush SelectedBackground
+        {
+            get => _selectedBackground;
+            set { _selectedBackground = value; OnPropertyChanged(nameof(SelectedBackground)); }
+        }
+
+        private System.Windows.Media.Brush _selectedForeground = null!;
+        public System.Windows.Media.Brush SelectedForeground
+        {
+            get => _selectedForeground;
+            set { _selectedForeground = value; OnPropertyChanged(nameof(SelectedForeground)); }
+        }
+
+        private System.Windows.Media.Brush _mouseOverBackground = null!;
+        public System.Windows.Media.Brush MouseOverBackground
+        {
+            get => _mouseOverBackground;
+            set { _mouseOverBackground = value; OnPropertyChanged(nameof(MouseOverBackground)); }
+        }
+
+        private System.Windows.Media.Brush _mouseOverForeground = null!;
+        public System.Windows.Media.Brush MouseOverForeground
+        {
+            get => _mouseOverForeground;
+            set { _mouseOverForeground = value; OnPropertyChanged(nameof(MouseOverForeground)); }
+        }
+
+        // Selected color options for ComboBoxes
+        private ColorOption? _selectedNormalBackground;
+        public ColorOption? SelectedNormalBackground
+        {
+            get => _selectedNormalBackground;
+            set
+            {
+                _selectedNormalBackground = value;
+                if (value != null) NormalBackground = value.Brush;
+                OnPropertyChanged(nameof(SelectedNormalBackground));
+            }
+        }
+
+        private ColorOption? _selectedNormalForeground;
+        public ColorOption? SelectedNormalForeground
+        {
+            get => _selectedNormalForeground;
+            set
+            {
+                _selectedNormalForeground = value;
+                if (value != null) NormalForeground = value.Brush;
+                OnPropertyChanged(nameof(SelectedNormalForeground));
+            }
+        }
+
+        private ColorOption? _selectedFriendBackground;
+        public ColorOption? SelectedFriendBackground
+        {
+            get => _selectedFriendBackground;
+            set
+            {
+                _selectedFriendBackground = value;
+                if (value != null) FriendBackground = value.Brush;
+                OnPropertyChanged(nameof(SelectedFriendBackground));
+            }
+        }
+
+        private ColorOption? _selectedFriendForeground;
+        public ColorOption? SelectedFriendForeground
+        {
+            get => _selectedFriendForeground;
+            set
+            {
+                _selectedFriendForeground = value;
+                if (value != null) FriendForeground = value.Brush;
+                OnPropertyChanged(nameof(SelectedFriendForeground));
+            }
+        }
+
+        private ColorOption? _selectedClass01Background;
+        public ColorOption? SelectedClass01Background
+        {
+            get => _selectedClass01Background;
+            set
+            {
+                _selectedClass01Background = value;
+                if (value != null) Class01Background = value.Brush;
+                OnPropertyChanged(nameof(SelectedClass01Background));
+            }
+        }
+
+        private ColorOption? _selectedClass01Foreground;
+        public ColorOption? SelectedClass01Foreground
+        {
+            get => _selectedClass01Foreground;
+            set
+            {
+                _selectedClass01Foreground = value;
+                if (value != null) Class01Foreground = value.Brush;
+                OnPropertyChanged(nameof(SelectedClass01Foreground));
+            }
+        }
+
+        private ColorOption? _selectedClass02Background;
+        public ColorOption? SelectedClass02Background
+        {
+            get => _selectedClass02Background;
+            set
+            {
+                _selectedClass02Background = value;
+                if (value != null) Class02Background = value.Brush;
+                OnPropertyChanged(nameof(SelectedClass02Background));
+            }
+        }
+
+        private ColorOption? _selectedClass02Foreground;
+        public ColorOption? SelectedClass02Foreground
+        {
+            get => _selectedClass02Foreground;
+            set
+            {
+                _selectedClass02Foreground = value;
+                if (value != null) Class02Foreground = value.Brush;
+                OnPropertyChanged(nameof(SelectedClass02Foreground));
+            }
+        }
+
+        private ColorOption? _selectedClass03Background;
+        public ColorOption? SelectedClass03Background
+        {
+            get => _selectedClass03Background;
+            set
+            {
+                _selectedClass03Background = value;
+                if (value != null) Class03Background = value.Brush;
+                OnPropertyChanged(nameof(SelectedClass03Background));
+            }
+        }
+
+        private ColorOption? _selectedClass03Foreground;
+        public ColorOption? SelectedClass03Foreground
+        {
+            get => _selectedClass03Foreground;
+            set
+            {
+                _selectedClass03Foreground = value;
+                if (value != null) Class04Foreground = value.Brush;
+                OnPropertyChanged(nameof(SelectedClass03Foreground));
+            }
+        }
+
+        private ColorOption? _selectedClass04Background;
+        public ColorOption? SelectedClass04Background
+        {
+            get => _selectedClass04Background;
+            set
+            {
+                _selectedClass04Background = value;
+                if (value != null) Class04Background = value.Brush;
+                OnPropertyChanged(nameof(SelectedClass04Background));
+            }
+        }
+
+        private ColorOption? _selectedClass04Foreground;
+        public ColorOption? SelectedClass04Foreground
+        {
+            get => _selectedClass04Foreground;
+            set
+            {
+                _selectedClass04Foreground = value;
+                if (value != null) Class04Foreground = value.Brush;
+                OnPropertyChanged(nameof(SelectedClass04Foreground));
+            }
+        }
+
+        private ColorOption? _selectedSelectedBackground;
+        public ColorOption? SelectedSelectedBackground
+        {
+            get => _selectedSelectedBackground;
+            set
+            {
+                _selectedSelectedBackground = value;
+                if (value != null) SelectedBackground = value.Brush;
+                OnPropertyChanged(nameof(SelectedSelectedBackground));
+            }
+        }
+
+        private ColorOption? _selectedSelectedForeground;
+        public ColorOption? SelectedSelectedForeground
+        {
+            get => _selectedSelectedForeground;
+            set
+            {
+                _selectedSelectedForeground = value;
+                if (value != null) SelectedForeground = value.Brush;
+                OnPropertyChanged(nameof(SelectedSelectedForeground));
+            }
+        }
 
 
         public TailgrabPanel(ServiceRegistry serviceRegistry)
@@ -270,6 +594,9 @@ namespace Tailgrab.PlayerManagement
                 DiscoveredAvatarCaching.IsChecked = ConfigStore.GetStoredKeyBool(CommonConst.Registry_Discovered_Avatar_Caching, true);
                 ModeratedAvatarCaching.IsChecked = ConfigStore.GetStoredKeyBool(CommonConst.Registry_Moderated_Avatar_Caching, true);
                 DiscoveredGroupCaching.IsChecked = ConfigStore.GetStoredKeyBool(CommonConst.Registry_Discovered_Group_Caching, true);
+
+                // Load highlight colors from registry
+                LoadHighlightColors();
 
             }
             catch { }
@@ -381,6 +708,13 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
+        private void AlertsTab_GotFocus(object sender, RoutedEventArgs e)
+        {
+            // Invalidate cached AlertColorOptions to refresh color previews with current color settings
+            _alertColorOptions = null;
+            OnPropertyChanged(nameof(AlertColorOptions));
+        }
+
         private void GistUrl_TextChanged(object sender, TextChangedEventArgs e)
         {
             // Enable/disable the corresponding "Check Now" button based on whether there's text in the textbox
@@ -460,6 +794,159 @@ namespace Tailgrab.PlayerManagement
             string key = CommonConst.ConfigRegistryPath + "\\" + alertKey + "\\" + alertType.ToString();
 
             return ConfigStore.GetStoredKeyString(key, subType);
+        }
+
+        private void LoadHighlightColors()
+        {
+            try
+            {
+                // Load colors from registry or use defaults
+                var normalBg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Normal_Background) ?? CommonConst.Default_HighlightClass_Normal_Background;
+                var normalFg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Normal_Foreground) ?? CommonConst.Default_HighlightClass_Normal_Foreground;
+                var friendBg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Friend_Background) ?? CommonConst.Default_HighlightClass_Friend_Background;
+                var friendFg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Friend_Foreground) ?? CommonConst.Default_HighlightClass_Friend_Foreground;
+                var class01Bg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Class01_Background) ?? CommonConst.Default_HighlightClass_Class01_Background;
+                var class01Fg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Class01_Foreground) ?? CommonConst.Default_HighlightClass_Class01_Foreground;
+                var class02Bg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Class02_Background) ?? CommonConst.Default_HighlightClass_Class02_Background;
+                var class02Fg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Class02_Foreground) ?? CommonConst.Default_HighlightClass_Class02_Foreground;
+                var class03Bg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Class03_Background) ?? CommonConst.Default_HighlightClass_Class03_Background;
+                var class03Fg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Class03_Foreground) ?? CommonConst.Default_HighlightClass_Class03_Foreground;
+                var class04Bg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Class04_Background) ?? CommonConst.Default_HighlightClass_Class04_Background;
+                var class04Fg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Class04_Foreground) ?? CommonConst.Default_HighlightClass_Class04_Foreground;
+                var selectedBg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Selected_Background) ?? CommonConst.Default_HighlightClass_Selected_Background;
+                var selectedFg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Selected_Foreground) ?? CommonConst.Default_HighlightClass_Selected_Foreground;
+                var mouseOverBg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_MouseOver_Background) ?? CommonConst.Default_HighlightClass_MouseOver_Background;
+                var mouseOverFg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_MouseOver_Foreground) ?? CommonConst.Default_HighlightClass_MouseOver_Foreground;
+
+                // Set the brush properties
+                var converter = new BrushConverter();
+                NormalBackground = (System.Windows.Media.Brush)converter.ConvertFromString(normalBg)!;
+                NormalForeground = (System.Windows.Media.Brush)converter.ConvertFromString(normalFg)!;
+                FriendBackground = (System.Windows.Media.Brush)converter.ConvertFromString(friendBg)!;
+                FriendForeground = (System.Windows.Media.Brush)converter.ConvertFromString(friendFg)!;
+                Class01Background = (System.Windows.Media.Brush)converter.ConvertFromString(class01Bg)!;
+                Class01Foreground = (System.Windows.Media.Brush)converter.ConvertFromString(class01Fg)!;
+                Class02Background = (System.Windows.Media.Brush)converter.ConvertFromString(class02Bg)!;
+                Class02Foreground = (System.Windows.Media.Brush)converter.ConvertFromString(class02Fg)!;
+                Class03Background = (System.Windows.Media.Brush)converter.ConvertFromString(class03Bg)!;
+                Class03Foreground = (System.Windows.Media.Brush)converter.ConvertFromString(class03Fg)!;
+                Class04Background = (System.Windows.Media.Brush)converter.ConvertFromString(class04Bg)!;
+                Class04Foreground = (System.Windows.Media.Brush)converter.ConvertFromString(class04Fg)!;
+                SelectedBackground = (System.Windows.Media.Brush)converter.ConvertFromString(selectedBg)!;
+                SelectedForeground = (System.Windows.Media.Brush)converter.ConvertFromString(selectedFg)!;
+                MouseOverBackground = (System.Windows.Media.Brush)converter.ConvertFromString(mouseOverBg)!;
+                MouseOverForeground = (System.Windows.Media.Brush)converter.ConvertFromString(mouseOverFg)!;
+
+                // Set selected options in ComboBoxes
+                SelectedNormalBackground = ColorOptions.FirstOrDefault(c => c.Value.Equals(normalBg, StringComparison.OrdinalIgnoreCase));
+                SelectedNormalForeground = ColorOptions.FirstOrDefault(c => c.Value.Equals(normalFg, StringComparison.OrdinalIgnoreCase));
+                SelectedFriendBackground = ColorOptions.FirstOrDefault(c => c.Value.Equals(friendBg, StringComparison.OrdinalIgnoreCase));
+                SelectedFriendForeground = ColorOptions.FirstOrDefault(c => c.Value.Equals(friendFg, StringComparison.OrdinalIgnoreCase));
+                SelectedClass01Background = ColorOptions.FirstOrDefault(c => c.Value.Equals(class01Bg, StringComparison.OrdinalIgnoreCase));
+                SelectedClass01Foreground = ColorOptions.FirstOrDefault(c => c.Value.Equals(class01Fg, StringComparison.OrdinalIgnoreCase));
+                SelectedClass02Background = ColorOptions.FirstOrDefault(c => c.Value.Equals(class02Bg, StringComparison.OrdinalIgnoreCase));
+                SelectedClass02Foreground = ColorOptions.FirstOrDefault(c => c.Value.Equals(class02Fg, StringComparison.OrdinalIgnoreCase));
+                SelectedClass03Background = ColorOptions.FirstOrDefault(c => c.Value.Equals(class03Bg, StringComparison.OrdinalIgnoreCase));
+                SelectedClass03Foreground = ColorOptions.FirstOrDefault(c => c.Value.Equals(class03Fg, StringComparison.OrdinalIgnoreCase));
+                SelectedClass04Background = ColorOptions.FirstOrDefault(c => c.Value.Equals(class04Bg, StringComparison.OrdinalIgnoreCase));
+                SelectedClass04Foreground = ColorOptions.FirstOrDefault(c => c.Value.Equals(class04Fg, StringComparison.OrdinalIgnoreCase));
+                SelectedSelectedBackground = ColorOptions.FirstOrDefault(c => c.Value.Equals(selectedBg, StringComparison.OrdinalIgnoreCase));
+                SelectedSelectedForeground = ColorOptions.FirstOrDefault(c => c.Value.Equals(selectedFg, StringComparison.OrdinalIgnoreCase));
+
+                // Invalidate cached alert color options so they reload with new brushes
+                _alertColorOptions = null;
+                OnPropertyChanged(nameof(AlertColorOptions));
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to load highlight colors");
+            }
+        }
+
+        private void SaveColors_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // Save all color settings to registry
+                if (SelectedNormalBackground != null)
+                    ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Normal_Background, SelectedNormalBackground.Value);
+                if (SelectedNormalForeground != null)
+                    ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Normal_Foreground, SelectedNormalForeground.Value);
+                if (SelectedFriendBackground != null)
+                    ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Friend_Background, SelectedFriendBackground.Value);
+                if (SelectedFriendForeground != null)
+                    ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Friend_Foreground, SelectedFriendForeground.Value);
+                if (SelectedClass01Background != null)
+                    ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Class01_Background, SelectedClass01Background.Value);
+                if (SelectedClass01Foreground != null)
+                    ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Class01_Foreground, SelectedClass01Foreground.Value);
+                if (SelectedClass02Background != null)
+                    ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Class02_Background, SelectedClass02Background.Value);
+                if (SelectedClass02Foreground != null)
+                    ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Class02_Foreground, SelectedClass02Foreground.Value);
+                if (SelectedClass03Background != null)
+                    ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Class03_Background, SelectedClass03Background.Value);
+                if (SelectedClass03Foreground != null)
+                    ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Class03_Foreground, SelectedClass03Foreground.Value);
+                if (SelectedClass04Background != null)
+                    ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Class04_Background, SelectedClass04Background.Value);
+                if (SelectedClass04Foreground != null)
+                    ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Class04_Foreground, SelectedClass04Foreground.Value);
+                if (SelectedSelectedBackground != null)
+                    ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Selected_Background, SelectedSelectedBackground.Value);
+                if (SelectedSelectedForeground != null)
+                    ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Selected_Foreground, SelectedSelectedForeground.Value);
+
+                System.Windows.MessageBox.Show("Color settings saved successfully. Changes are applied immediately.", "Colors Saved", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to save color settings");
+                System.Windows.MessageBox.Show($"Failed to save color settings: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void ResetColors_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var result = System.Windows.MessageBox.Show(
+                    "Are you sure you want to reset all colors to their default values?",
+                    "Reset Colors",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question);
+
+                if (result == MessageBoxResult.Yes)
+                {
+                    // Remove all color settings from registry
+                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Normal_Background);
+                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Normal_Foreground);
+                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Friend_Background);
+                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Friend_Foreground);
+                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Class01_Background);
+                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Class01_Foreground);
+                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Class02_Background);
+                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Class02_Foreground);
+                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Class03_Background);
+                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Class03_Foreground);
+                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Class04_Background);
+                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Class04_Foreground);
+                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Selected_Background);
+                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Selected_Foreground);
+                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_MouseOver_Background);
+                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_MouseOver_Foreground);
+
+                    // Reload colors with defaults
+                    LoadHighlightColors();
+
+                    System.Windows.MessageBox.Show("Colors reset to defaults successfully.", "Colors Reset", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to reset color settings");
+                System.Windows.MessageBox.Show($"Failed to reset color settings: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private void StatusBarTimer_Tick(object? sender, EventArgs e)
@@ -2733,6 +3220,395 @@ namespace Tailgrab.PlayerManagement
             };
             view.Refresh();
         }
+
+        #region Ban Management handlers
+        private ObservableCollection<GroupBanItem> _banMgmtGroupList = new ObservableCollection<GroupBanItem>();
+        private string _currentBanMgmtUserId = string.Empty;
+        private User? _currentBanMgmtUser = null;
+
+        private async void BanMgmtLoadUser_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                string userId = BanMgmtUserIdTextBox.Text.Trim();
+
+                if (string.IsNullOrWhiteSpace(userId))
+                {
+                    BanMgmtUserStatusText.Text = "Please enter a User ID";
+                    BanMgmtUserStatusText.Foreground = System.Windows.Media.Brushes.Yellow;
+                    return;
+                }
+
+                if (!userId.StartsWith("usr_"))
+                {
+                    BanMgmtUserStatusText.Text = "Invalid User ID format (must start with usr_)";
+                    BanMgmtUserStatusText.Foreground = System.Windows.Media.Brushes.Red;
+                    return;
+                }
+
+                BanMgmtUserStatusText.Text = "Loading...";
+                BanMgmtUserStatusText.Foreground = System.Windows.Media.Brushes.Yellow;
+
+                // Call GetProfile
+                var user = _serviceRegistry.GetVRChatAPIClient().GetProfile(userId);
+
+                if (user == null || string.IsNullOrEmpty(user.Id))
+                {
+                    BanMgmtUserStatusText.Text = "User not found";
+                    BanMgmtUserStatusText.Foreground = System.Windows.Media.Brushes.Red;
+                    BanMgmtUserInfoGroup.Visibility = Visibility.Collapsed;
+                    return;
+                }
+
+                _currentBanMgmtUser = user;
+                _currentBanMgmtUserId = userId;
+
+                logger.Info($"Fetched user profile for ban management: {user.DisplayName} ({user})");
+
+                // Populate user info
+                BanMgmtUserName.Text = user.DisplayName ?? "Unknown";
+                BanMgmtUserStatusDesc.Text = user.StatusDescription ?? user.Status.ToString();
+                BanMgmtUserPronouns.Text = string.IsNullOrEmpty(user.Pronouns) ? "Not specified" : user.Pronouns;
+                BanMgmtUserJoinDate.Text = user.DateJoined.ToString("yyyy-MM-dd");
+                BanMgmtUserAgeVerified.Text = user.AgeVerified ? "Yes" : "No";
+                BanMgmtUserState.Text = user.State.ToString() ;
+
+
+                string? accountThumbnailUrl = !string.IsNullOrEmpty(user.ProfilePicOverrideThumbnail) ? user.ProfilePicOverrideThumbnail : user.CurrentAvatarThumbnailImageUrl;
+
+                // Load profile image if available
+                if (!string.IsNullOrEmpty(accountThumbnailUrl))
+                {
+                    try
+                    {
+                        var bitmap = new System.Windows.Media.Imaging.BitmapImage();
+                        bitmap.BeginInit();
+                        bitmap.UriSource = new Uri(accountThumbnailUrl);
+                        bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                        bitmap.EndInit();
+                        BanMgmtUserImage.Source = bitmap;
+                    }
+                    catch
+                    {
+                        BanMgmtUserImage.Source = null;
+                    }
+                }
+                else
+                {
+                    BanMgmtUserImage.Source = null;
+                }
+
+                BanMgmtUserStatusText.Text = "User loaded successfully";
+                BanMgmtUserStatusText.Foreground = System.Windows.Media.Brushes.LightGreen;
+                BanMgmtUserInfoGroup.Visibility = Visibility.Visible;
+                BanMgmtGroupListGroup.Visibility = Visibility.Visible;
+
+                // Load groups from database
+                await LoadBanManagementGroupsAsync();
+
+                logger.Info($"Loaded user profile for ban management: {user.DisplayName} ({userId})");
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error loading user for ban management");
+                BanMgmtUserStatusText.Text = $"Error: {ex.Message}";
+                BanMgmtUserStatusText.Foreground = System.Windows.Media.Brushes.Red;
+            }
+        }
+
+        private async Task LoadBanManagementGroupsAsync()
+        {
+            try
+            {
+                _banMgmtGroupList.Clear();
+
+                // Load all groups from the database
+                var groups = _serviceRegistry.GetDBContext().GroupManagements.ToList();
+
+                foreach (var group in groups)
+                {
+                    var item = new GroupBanItem
+                    {
+                        GroupId = group.GroupId,
+                        GroupName = group.GroupName,
+                        Status = "Checking...",
+                        CanBan = false,
+                        CanUnban = false
+                    };
+
+                    _banMgmtGroupList.Add(item);
+
+                    // Check member status asynchronously
+                    _ = Task.Run(async () =>
+                    {
+                        var status = await _serviceRegistry.GetVRChatAPIClient().GetGroupMemberStatus(group.GroupId, _currentBanMgmtUserId);
+
+                        await Dispatcher.InvokeAsync(() =>
+                        {
+                            item.Status = status switch
+                            {
+                                VRChatClient.TGGroupMemberStatus.Member => "Member",
+                                VRChatClient.TGGroupMemberStatus.Banned => "Banned",
+                                VRChatClient.TGGroupMemberStatus.NotMember => "Not Member",
+                                _ => "Unknown"
+                            };
+
+                            item.CanBan = status != VRChatClient.TGGroupMemberStatus.Banned && status != VRChatClient.TGGroupMemberStatus.Unknown;
+                            item.CanUnban = status == VRChatClient.TGGroupMemberStatus.Banned;
+                        });
+                    });
+                }
+
+                BanMgmtGroupList.ItemsSource = _banMgmtGroupList;
+                logger.Info($"Loaded {_banMgmtGroupList.Count} groups for ban management");
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error loading ban management groups");
+            }
+        }
+
+        private async void BanMgmtAddGroup_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                TailgrabDBContext dBContext = _serviceRegistry.GetDBContext();
+                string groupId = BanMgmtAddGroupIdTextBox.Text.Trim();
+
+                if (string.IsNullOrWhiteSpace(groupId))
+                {
+                    System.Windows.MessageBox.Show("Please enter a Group ID", 
+                        "Invalid Input", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                if (!groupId.StartsWith("grp_"))
+                {
+                    System.Windows.MessageBox.Show("Invalid Group ID format (must start with grp_)", 
+                        "Invalid Input", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                // Check if group already exists in database
+                var existingGroup = dBContext.GroupManagements.FirstOrDefault(g => g.GroupId == groupId);
+
+                if (existingGroup != null)
+                {
+                    System.Windows.MessageBox.Show("This group already exists in the database", 
+                        "Duplicate Group", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                // Verify group exists in VRChat
+                var group = _serviceRegistry.GetVRChatAPIClient().GetGroupById(groupId);
+                if (group == null || string.IsNullOrEmpty(group.Id))
+                {
+                    System.Windows.MessageBox.Show("Group not found in VRChat. Please verify the Group ID.", 
+                        "Group Not Found", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                // Add to database
+                var newGroup = new tailgrab.src.Models.GroupManagement
+                {
+                    GroupId = groupId,
+                    GroupName = group.Name ?? "Unknown",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+
+                dBContext.Add(newGroup);
+                dBContext.SaveChanges();
+
+                // Add to the UI list
+                var item = new GroupBanItem
+                {
+                    GroupId = groupId,
+                    GroupName = group.Name ?? "Unknown",
+                    Status = "Checking...",
+                    CanBan = false,
+                    CanUnban = false
+                };
+
+                _banMgmtGroupList.Add(item);
+
+                // Check member status
+                var status = await _serviceRegistry.GetVRChatAPIClient().GetGroupMemberStatus(groupId, _currentBanMgmtUserId);
+
+                item.Status = status switch
+                {
+                    VRChatClient.TGGroupMemberStatus.Member => "Member",
+                    VRChatClient.TGGroupMemberStatus.Banned => "Banned",
+                    VRChatClient.TGGroupMemberStatus.NotMember => "Not Member",
+                    _ => "Unknown"
+                };
+
+                item.CanBan = status != VRChatClient.TGGroupMemberStatus.Banned && status != VRChatClient.TGGroupMemberStatus.Unknown;
+                item.CanUnban = status == VRChatClient.TGGroupMemberStatus.Banned;
+
+                // Clear the text box
+                BanMgmtAddGroupIdTextBox.Text = string.Empty;
+
+                logger.Info($"Added group {groupId} ({group.Name}) to ban management");
+                System.Windows.MessageBox.Show($"Group '{group.Name}' added successfully", 
+                    "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error adding group to ban management");
+                System.Windows.MessageBox.Show($"Error: {ex.Message}", 
+                    "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void BanMgmtRemoveGroup_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                TailgrabDBContext dBContext = _serviceRegistry.GetDBContext();
+                if (sender is System.Windows.Controls.Button button && button.Tag is GroupBanItem item)
+                {
+                    var result = System.Windows.MessageBox.Show(
+                        $"Are you sure you want to remove group '{item.GroupName}' from the list?\n\nThis will remove it from the database.",
+                        "Confirm Remove",
+                        MessageBoxButton.YesNo,
+                        MessageBoxImage.Question);
+
+                    if (result != MessageBoxResult.Yes)
+                    {
+                        return;
+                    }
+
+                    // Remove from database
+                    var dbGroup = dBContext.GroupManagements.FirstOrDefault(g => g.GroupId == item.GroupId);
+
+                    if (dbGroup != null)
+                    {
+                        dBContext.GroupManagements.Remove(dbGroup);
+                        dBContext.SaveChanges();
+                    }
+
+                    // Remove from UI
+                    _banMgmtGroupList.Remove(item);
+
+                    logger.Info($"Removed group {item.GroupId} ({item.GroupName}) from ban management");
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error removing group from ban management");
+                System.Windows.MessageBox.Show($"Error: {ex.Message}", 
+                    "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private async void BanMgmtBanUser_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (sender is System.Windows.Controls.Button button && button.Tag is GroupBanItem item)
+                {
+                    if (string.IsNullOrWhiteSpace(item.GroupId) || string.IsNullOrWhiteSpace(_currentBanMgmtUserId))
+                    {
+                        return;
+                    }
+
+                    var result = MessageBoxResult.Yes;
+                    //var result = System.Windows.MessageBox.Show(
+                    //    $"Are you sure you want to ban {_currentBanMgmtUser?.DisplayName} from group {item.GroupName}?",
+                    //    "Confirm Ban",
+                    //    MessageBoxButton.YesNo,
+                    //    MessageBoxImage.Question);
+
+                    if (result != MessageBoxResult.Yes)
+                    {
+                        return;
+                    }
+
+                    button.IsEnabled = false;
+                    item.Status = "Banning...";
+
+                    bool success = await _serviceRegistry.GetVRChatAPIClient().BanUserFromGroup(item.GroupId, _currentBanMgmtUserId);
+
+                    if (success)
+                    {
+                        item.Status = "Banned";
+                        item.CanBan = false;
+                        item.CanUnban = true;
+                        logger.Info($"Banned user {_currentBanMgmtUserId} from group {item.GroupId}");
+                        //System.Windows.MessageBox.Show("User banned successfully", "Success", 
+                        //    MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                    else
+                    {
+                        item.Status = "Ban Failed";
+                        button.IsEnabled = true;
+                        //System.Windows.MessageBox.Show("Failed to ban user", "Error", 
+                        //    MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error banning user from group");
+                System.Windows.MessageBox.Show($"Error: {ex.Message}", "Error", 
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private async void BanMgmtUnbanUser_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (sender is System.Windows.Controls.Button button && button.Tag is GroupBanItem item)
+                {
+                    if (string.IsNullOrWhiteSpace(item.GroupId) || string.IsNullOrWhiteSpace(_currentBanMgmtUserId))
+                    {
+                        return;
+                    }
+                    var result = MessageBoxResult.Yes;
+                    //var result = System.Windows.MessageBox.Show(
+                    //    $"Are you sure you want to unban {_currentBanMgmtUser?.DisplayName} from group {item.GroupName}?",
+                    //    "Confirm Unban",
+                    //    MessageBoxButton.YesNo,
+                    //    MessageBoxImage.Question);
+
+                    if (result != MessageBoxResult.Yes)
+                    {
+                        return;
+                    }
+
+                    button.IsEnabled = false;
+                    item.Status = "Unbanning...";
+
+                    bool success = await _serviceRegistry.GetVRChatAPIClient().UnbanUserFromGroup(item.GroupId, _currentBanMgmtUserId);
+
+                    if (success)
+                    {
+                        item.Status = "Not Member";
+                        item.CanBan = true;
+                        item.CanUnban = false;
+                        logger.Info($"Unbanned user {_currentBanMgmtUserId} from group {item.GroupId}");
+                        //System.Windows.MessageBox.Show("User unbanned successfully", "Success", 
+                        //    MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                    else
+                    {
+                        item.Status = "Unban Failed";
+                        button.IsEnabled = true;
+                        //System.Windows.MessageBox.Show("Failed to unban user", "Error", 
+                        //    MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error unbanning user from group");
+                System.Windows.MessageBox.Show($"Error: {ex.Message}", "Error", 
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+        #endregion
 
         public event PropertyChangedEventHandler? PropertyChanged;
         protected void OnPropertyChanged(string propertyName)
