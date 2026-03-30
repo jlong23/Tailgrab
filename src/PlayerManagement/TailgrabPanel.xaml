@@ -64,6 +64,10 @@ Title="Tailgrab Player Panel"
             <TabControl>
                 <TabItem Header="Active Players">
                     <Grid Name="ActivePlayerLayoutGrid">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="172*"/>
+                            <ColumnDefinition Width="357*"/>
+                        </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="20*"/>
                             <RowDefinition Height="267*"/>
@@ -200,11 +204,11 @@ Title="Tailgrab Player Panel"
                         <!-- Overlay Panel for Report Profile -->
                         <Border Name="OverlayProfileReport" 
                             Grid.Row="0" 
-                            Grid.RowSpan="3"
+                            Grid.RowSpan="4"
                             Grid.ColumnSpan="2"
                             Background="#CC000000" 
                             Visibility="Collapsed"
-                            Panel.ZIndex="1000">
+                            Panel.ZIndex="1000" Margin="0,0,0,100">
                             <Border Background="#FF2D2D30" 
                                 MaxWidth="650" 
                                 MaxHeight="500" 
@@ -1117,7 +1121,6 @@ Title="Tailgrab Player Panel"
                                     <RowDefinition Height="Auto" />
                                     <RowDefinition Height="Auto" />
                                     <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
                                     <RowDefinition Height="*" />
                                 </Grid.RowDefinitions>
 
@@ -1166,39 +1169,7 @@ Title="Tailgrab Player Panel"
                                     </Grid>
                                 </GroupBox>
 
-                                <GroupBox Header="Ollama Cloud Credentials" Margin="0,6,0,6" Grid.Row="2">
-                                    <Grid Margin="6">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto" />
-                                            <ColumnDefinition Width="*" />
-                                        </Grid.ColumnDefinitions>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto" />
-                                            <RowDefinition Height="Auto" />
-                                            <RowDefinition Height="Auto" />
-                                            <RowDefinition Height="Auto" />
-                                            <RowDefinition Height="Auto" />
-                                        </Grid.RowDefinitions>
-
-                                        <Label Grid.Row="0" Grid.Column="0" Content="Ollama Endpoint:" VerticalAlignment="Center"/>
-                                        <TextBox Grid.Row="0" Grid.Column="1" Name="VrOllamaEndpointBox" Width="400" Margin="6,2" />
-
-                                        <Label Grid.Row="1" Grid.Column="0" Content="Ollama API Key:" VerticalAlignment="Center"/>
-                                        <PasswordBox Grid.Row="1" Grid.Column="1" Name="VrOllamaBox" Width="400" Margin="6,2" />
-
-                                        <Label Grid.Row="2" Grid.Column="0" Content="Ollama Model Name:" VerticalAlignment="Center"/>
-                                        <TextBox Grid.Row="2" Grid.Column="1" Name="VrOllamaModelBox" Width="400" Margin="6,2" />
-
-                                        <Label Grid.Row="3" Grid.Column="0" Content="Profile AI Prompt:" VerticalAlignment="Center"/>
-                                        <TextBox Grid.Row="3" Grid.Column="1" Name="VrOllamaPromptBox" Width="800" Height="60" Margin="6,2" TextWrapping="Wrap"/>
-
-                                        <Label Grid.Row="4" Grid.Column="0" Content="Image AI Prompt:" VerticalAlignment="Center"/>
-                                        <TextBox Grid.Row="4" Grid.Column="1" Name="VrOllamaImagePromptBox" Width="800" Height="60" Margin="6,2" TextWrapping="Wrap"/>
-
-                                    </Grid>
-                                </GroupBox>
-
-                                <GroupBox Header="Behaviors" Margin="0,6,0,6" Grid.Row="3">
+                                <GroupBox Header="Behaviors" Margin="0,6,0,6" Grid.Row="2">
                                     <Grid Margin="6">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto" />
@@ -1222,12 +1193,170 @@ Title="Tailgrab Player Panel"
                                     </Grid>
                                 </GroupBox>
 
-                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,12,0,0" Grid.Row="5">
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,12,0,0" Grid.Row="3">
                                     <Button Content="Save Config" Click="SaveConfig_Click" Width="120" Margin="0,0,12,0"/>
                                     <Button Content="Reset Layout" Click="ResetLayout_Click" Width="120" ToolTip="Reset window size and column widths to default values"/>
                                 </StackPanel>
                             </Grid>
                         </TabItem>
+                        
+                        <TabItem Header="AI Config">
+                            <Grid Margin="6">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+
+                                <GroupBox Header="Ollama Cloud Credentials" Margin="0,0,0,6" Grid.Row="0">
+                                    <Grid Margin="6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+
+                                        <Label Grid.Row="0" Grid.Column="0" Content="Ollama Endpoint:" VerticalAlignment="Center"/>
+                                        <TextBox Grid.Row="0" Grid.Column="1" Name="VrOllamaEndpointBox" Width="400" Margin="6,2" />
+
+                                        <Label Grid.Row="1" Grid.Column="0" Content="Ollama API Key:" VerticalAlignment="Center"/>
+                                        <PasswordBox Grid.Row="1" Grid.Column="1" Name="VrOllamaBox" Width="400" Margin="6,2" />
+
+                                    </Grid>
+                                </GroupBox>
+
+                                <GroupBox Header="AI Evaluation Parameters" Margin="0,0,0,6" Grid.Row="1">
+                                    <Grid Margin="6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+
+                                        <Label Grid.Row="0" Grid.Column="0" Content="Ollama Model Name:" VerticalAlignment="Center"/>
+                                        <ComboBox Grid.Row="0" Grid.Column="1" Name="VrOllamaModelBox" Width="400" Margin="6,2" 
+                                                  ItemsSource="{Binding OllamaModelOptions}" 
+                                                  IsEditable="True"
+                                                  SelectionChanged="TestProfilePromptInput_Changed"/>
+
+                                        <Label Grid.Row="1" Grid.Column="0" Content="Profile AI Prompt:" VerticalAlignment="Center"/>
+                                        <TextBox Grid.Row="1" Grid.Column="1" Name="VrOllamaPromptBox" Width="800" Height="60" Margin="6,2" TextWrapping="Wrap" TextChanged="TestProfilePromptInput_Changed"/>
+
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,12,0,0" Grid.Row="2" Grid.ColumnSpan="2">
+                                            <Label Content="User Account to Test:" VerticalAlignment="Center"/>
+                                            <TextBox Name="UserAccountTestBox" Width="400" Margin="6,2" TextChanged="TestProfilePromptInput_Changed"/>
+                                            <Button Name="TestProfilePromptButton" Content="Test AI Profile Prompt" Width="120" Click="TestProfilePrompt_Click" IsEnabled="{Binding CanTestProfilePrompt}"/>
+                                        </StackPanel>
+
+                                        <Label Grid.Row="3" Grid.Column="0" Content="Image AI Prompt:" VerticalAlignment="Center"/>
+                                        <TextBox Grid.Row="3" Grid.Column="1" Name="VrOllamaImagePromptBox" Width="800" Height="60" Margin="6,2" TextWrapping="Wrap"/>
+
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,12,0,0" Grid.Row="4" Grid.ColumnSpan="2">
+                                            <Label Content="Tested with known image set:" VerticalAlignment="Center"/>
+                                            <Button Content="Test AI Image Prompt" Width="120" />
+                                        </StackPanel>
+
+                                    </Grid>
+                                </GroupBox>
+
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,12,0,0" Grid.Row="2">
+                                    <Button Content="Save AI Config" Click="SaveAIConfig_Click" Width="120" />
+                                </StackPanel>
+
+                                <!-- Overlay Panel for Test AI Evaluation -->
+                                <Border Name="OverlayTestProfileEval" 
+                            Grid.Row="0" 
+                            Grid.RowSpan="3"
+                            Grid.ColumnSpan="2"
+                            Background="#CC000000" 
+                            Visibility="Collapsed"
+                            Panel.ZIndex="1000">
+                                    <Border Background="#FF2D2D30" 
+                                MaxWidth="650" 
+                                MaxHeight="600" 
+                                CornerRadius="8"
+                                Padding="16"
+                                VerticalAlignment="Center"
+                                HorizontalAlignment="Center">
+                                        <Grid>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="*"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
+
+                                            <!-- Title -->
+                                            <TextBlock Grid.Row="0" 
+                                           Text="Test AI Prompt" 
+                                           FontSize="20" 
+                                           FontWeight="Bold" 
+                                           Foreground="#FFE6E6E6"
+                                           Margin="0,0,0,16"/>
+
+                                            <!-- User ID -->
+                                            <StackPanel Grid.Row="1" Margin="0,0,0,12">
+                                                <Label Content="User ID: *" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBox Name="OverlayTestProfileEvalUserIdTextBox" Grid.Column="0" IsReadOnly="True"/>
+                                                </Grid>
+                                            </StackPanel>
+
+                                            <!-- Category -->
+                                            <StackPanel Grid.Row="2" Margin="0,0,0,12">
+                                                <Label Content="Profile:" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                                                <TextBox Name="OverlayTestProfileEvalProfileTextBox" 
+                                                        TextWrapping="Wrap" 
+                                                        AcceptsReturn="True" 
+                                                        VerticalScrollBarVisibility="Auto"
+                                                        IsReadOnly="True"
+                                                        MinHeight="150"/>
+                                            </StackPanel>
+
+                                            <!-- Report Reason -->
+                                            <StackPanel Grid.Row="3" Margin="0,0,0,12">
+                                                <Label Content="AI Eval:" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                                                <TextBox Name="OverlayTestProfileEvalEvaluationTextBox" 
+                                                        TextWrapping="Wrap" 
+                                                        AcceptsReturn="True" 
+                                                        VerticalScrollBarVisibility="Auto"
+                                                        IsReadOnly="True"
+                                                        MinHeight="200"/>
+                                            </StackPanel>
+
+                                            <!-- Action Buttons -->
+                                            <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right">
+                                                <Button Name="OverlayTestProfileEvalOkButton" Content="Submit" Width="100" Click="TestProfilePrompt_Ok_Click"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </Border>
+
+                            </Grid>
+
+                        </TabItem>
+                        
                         <TabItem Header="Alerts" GotFocus="AlertsTab_GotFocus">
                             <Grid Margin="6">
                                 <Grid.RowDefinitions>

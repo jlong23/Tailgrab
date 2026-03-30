@@ -11,6 +11,8 @@ public partial class ProfileEvaluation
 {
     public string Md5checksum { get; set; }
 
+    public string PromptMd5Checksum { get; set; }
+
     public byte[] ProfileText { get; set; }
 
     public byte[] Evaluation { get; set; }
@@ -26,6 +28,6 @@ public partial class ProfileEvaluation
 
     public override string ToString()
     {
-        return $"ProfileEvaluation: Md5checksum={Md5checksum}, LastDateTime={LastDateTime}, IsIgnored={IsIgnored}";
+        return $"ProfileEvaluation: Md5checksum={Md5checksum}, PromptMd5Checksum={PromptMd5Checksum}, LastDateTime={LastDateTime}, IsIgnored={IsIgnored}";
     }
 }

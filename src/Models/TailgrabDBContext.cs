@@ -142,13 +142,14 @@ public partial class TailgrabDBContext : DbContext
     public void UpgradeDatabase()
     {
         ExecuteSqlTransaction(
-            "CREATE INDEX IF NOT EXISTS ix_avtr_aname ON AvatarInfo(AvatarName)",
-            "CREATE INDEX IF NOT EXISTS ix_avtr_uname ON AvatarInfo(UserName)",
-            "CREATE INDEX IF NOT EXISTS ix_avtr_alert ON AvatarInfo(alertType)",
-            "CREATE INDEX IF NOT EXISTS ix_grp_gname ON GroupInfo(groupName)",
-            "CREATE INDEX IF NOT EXISTS ix_grp_alert ON GroupInfo(alertType)",
-            "CREATE TABLE IF NOT EXISTS GroupManagement ( GroupId TEXT NOT NULL CONSTRAINT PK_GroupManagement PRIMARY KEY, GroupName TEXT NULL, createDate TEXT NOT NULL, updateDate TEXT NULL )",
-            "CREATE INDEX IF NOT EXISTS ix_grpm_gname ON GroupManagement(groupName)"
+            new SqlMigration( "CREATE INDEX IF NOT EXISTS ix_avtr_aname ON AvatarInfo(AvatarName)", true ),
+            new SqlMigration("CREATE INDEX IF NOT EXISTS ix_avtr_uname ON AvatarInfo(UserName)", true),
+            new SqlMigration("CREATE INDEX IF NOT EXISTS ix_avtr_alert ON AvatarInfo(alertType)", true),
+            new SqlMigration("CREATE INDEX IF NOT EXISTS ix_grp_gname ON GroupInfo(groupName)", true),
+            new SqlMigration("CREATE INDEX IF NOT EXISTS ix_grp_alert ON GroupInfo(alertType)", true),
+            new SqlMigration("CREATE TABLE IF NOT EXISTS GroupManagement ( GroupId TEXT NOT NULL CONSTRAINT PK_GroupManagement PRIMARY KEY, GroupName TEXT NULL, createDate TEXT NOT NULL, updateDate TEXT NULL )", true),
+            new SqlMigration("CREATE INDEX IF NOT EXISTS ix_grpm_gname ON GroupManagement(groupName)", true),
+            new SqlMigration("ALTER TABLE ProfileEvaluation ADD COLUMN PromptMd5Checksum TEXT", false )
         );
     }
 
@@ -157,21 +158,24 @@ public partial class TailgrabDBContext : DbContext
         Database.ExecuteSqlRaw(sql);
     }
 
-    private void ExecuteSqlTransaction(params string[] sqlStatements)
+    private void ExecuteSqlTransaction(params SqlMigration[] sqlStatements)
     {
         using var transaction = Database.BeginTransaction();
-        foreach (var sql in sqlStatements)
+        foreach (SqlMigration migration in sqlStatements)
         {
             try
             {
-                logger.Warn(sql);
-                Database.ExecuteSqlRaw(sql);
+                logger.Warn(migration.Sql);
+                Database.ExecuteSqlRaw(migration.Sql);
             }
             catch
             {
-                logger.Error($"Error executing SQL transaction. Rolling back changes. {sql}");
-                transaction.Rollback();
-                throw;
+                logger.Error($"Error executing SQL transaction. Rolling back changes. {migration.Sql}");
+                if(migration.Validate)
+                {
+                    transaction.Rollback();
+                    throw;
+                }
             }
         }
         transaction.Commit();
@@ -634,6 +638,11 @@ public partial class TailgrabDBContext : DbContext
     }
 }
 
+public class  SqlMigration( string sql, bool validate )
+{
+    public string Sql { get; } = sql;
+    public bool Validate { get; } = validate;   
+}
 
 public class MigrationStatus
 {

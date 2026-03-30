@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Text.RegularExpressions;
 
 namespace Tailgrab.Common
 {
@@ -85,5 +86,26 @@ namespace Tailgrab.Common
         public const string Registry_Discovered_Avatar_Caching = "DISCOVERED_AVATAR_CACHING";
         public const string Registry_Moderated_Avatar_Caching = "MODERATED_AVATAR_CACHING";
         public const string Registry_Discovered_Group_Caching = "DISCOVERED_GROUP_CACHING";
+
+
+        public const string AI_EVALUATION_SEXUAL = "Explicit Sexual";
+        public const string AI_EVALUATION_HATE = "Harassment & Bullying";
+        public const string AI_EVALUATION_SELFHARM = "Self Harm";
+
+
+
+        public static readonly Regex sWhitespace = new(@"\s+");
+
+        public static string MD5Hash(string hashable)
+        {
+            if (string.IsNullOrEmpty(hashable))
+            {
+                return string.Empty;
+            }
+
+            // Remove all whitespace for hashing
+            return Checksum.CreateMD5(sWhitespace.Replace(hashable, ""));
+        }
+
     }
 }

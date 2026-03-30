@@ -19,7 +19,7 @@ namespace Tailgrab.PlayerManagement
 {
     public partial class TailgrabPanel : Window, IDisposable, INotifyPropertyChanged
     {
-        public static Logger logger = LogManager.GetCurrentClassLogger();
+        public static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         protected ServiceRegistry _serviceRegistry;
 
@@ -158,9 +158,7 @@ namespace Tailgrab.PlayerManagement
         { 
             get
             {
-                if (_alertColorOptions == null)
-                {
-                    _alertColorOptions = 
+                _alertColorOptions ??= 
                     [
                         new AlertColorOption("*NONE", "Normal", NormalBackground, NormalForeground),
                         new AlertColorOption("Class 1", "Class01", Class01Background, Class01Foreground),
@@ -168,12 +166,36 @@ namespace Tailgrab.PlayerManagement
                         new AlertColorOption("Class 3", "Class03", Class03Background, Class03Foreground),
                         new AlertColorOption("Class 4", "Class04", Class04Background, Class04Foreground),
                     ];
-                }
                 return _alertColorOptions;
             }
         }
 
         public List<KeyValuePair<string, string>> AlertSoundOptions { get; set; } = [];
+
+        private ObservableCollection<string> _ollamaModelOptions = [];
+        public ObservableCollection<string> OllamaModelOptions
+        {
+            get => _ollamaModelOptions;
+            set
+            {
+                _ollamaModelOptions = value;
+                OnPropertyChanged(nameof(OllamaModelOptions));
+            }
+        }
+
+        private bool _canTestProfilePrompt;
+        public bool CanTestProfilePrompt
+        {
+            get => _canTestProfilePrompt;
+            set
+            {
+                if (_canTestProfilePrompt != value)
+                {
+                    _canTestProfilePrompt = value;
+                    OnPropertyChanged(nameof(CanTestProfilePrompt));
+                }
+            }
+        }
 
         public List<ReportReasonItem> ProfileReportReasonsOptions =
         [
@@ -609,6 +631,22 @@ namespace Tailgrab.PlayerManagement
             RefreshGroupDb();
             RefreshUserDb();
 
+            // Load Ollama models if credentials are configured
+            Task.Run(async () => 
+            {
+                try 
+                {
+                    await LoadOllamaModelsAsync();
+                }
+                catch (Exception ex)
+                {
+                    logger.Warn(ex, "Failed to load Ollama models during initialization");
+                }
+            });
+
+            // Initialize button state for Test Profile Prompt
+            UpdateCanTestProfilePrompt();
+
             // Subscribe to PlayerManager events for reactive updates
             PlayerManager.PlayerChanged += PlayerManager_PlayerChanged;
 
@@ -644,11 +682,6 @@ namespace Tailgrab.PlayerManagement
                 ConfigStore.SaveSecret(CommonConst.Registry_VRChat_Web_UserName, VrUserBox.Text.Trim() ?? string.Empty);
                 if (!string.IsNullOrEmpty(VrPassBox.Password)) ConfigStore.SaveSecret(CommonConst.Registry_VRChat_Web_Password, VrPassBox.Password.Trim());
                 if (!string.IsNullOrEmpty(Vr2FaBox.Password)) ConfigStore.SaveSecret(CommonConst.Registry_VRChat_Web_2FactorKey, Vr2FaBox.Password.Trim());
-                if (!string.IsNullOrEmpty(VrOllamaBox.Password)) ConfigStore.SaveSecret(CommonConst.Registry_Ollama_API_Key, VrOllamaBox.Password.Trim());
-                ConfigStore.SaveSecret(CommonConst.Registry_Ollama_API_Endpoint, VrOllamaEndpointBox.Text ?? CommonConst.Default_Ollama_API_Endpoint);
-                ConfigStore.SaveSecret(CommonConst.Registry_Ollama_API_Prompt, VrOllamaPromptBox.Text ?? CommonConst.Default_Ollama_API_Prompt);
-                ConfigStore.SaveSecret(CommonConst.Registry_Ollama_API_Image_Prompt, VrOllamaImagePromptBox.Text ?? CommonConst.Default_Ollama_API_Image_Prompt);
-                ConfigStore.SaveSecret(CommonConst.Registry_Ollama_API_Model, VrOllamaModelBox.Text ?? CommonConst.Default_Ollama_API_Model);
 
                 ConfigStore.PutStoredKeyString(Common.CommonConst.Registry_Avatar_Gist, avatarGistUrl.Text);
                 ConfigStore.PutStoredKeyString(CommonConst.Registry_Group_Gist, groupGistUrl.Text);
@@ -663,6 +696,128 @@ namespace Tailgrab.PlayerManagement
             {
                 System.Windows.MessageBox.Show($"Failed to save configuration: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+
+
+        private async void SaveAIConfig_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // Save Ollama credentials to registry protected store
+                if (!string.IsNullOrEmpty(VrOllamaBox.Password)) ConfigStore.SaveSecret(CommonConst.Registry_Ollama_API_Key, VrOllamaBox.Password.Trim());
+                ConfigStore.SaveSecret(CommonConst.Registry_Ollama_API_Endpoint, VrOllamaEndpointBox.Text ?? CommonConst.Default_Ollama_API_Endpoint);
+                ConfigStore.SaveSecret(CommonConst.Registry_Ollama_API_Prompt, VrOllamaPromptBox.Text ?? CommonConst.Default_Ollama_API_Prompt);
+                ConfigStore.SaveSecret(CommonConst.Registry_Ollama_API_Image_Prompt, VrOllamaImagePromptBox.Text ?? CommonConst.Default_Ollama_API_Image_Prompt);
+                ConfigStore.SaveSecret(CommonConst.Registry_Ollama_API_Model, VrOllamaModelBox.Text ?? CommonConst.Default_Ollama_API_Model);
+
+                // Load available models from Ollama after saving credentials
+                await LoadOllamaModelsAsync();
+
+                System.Windows.MessageBox.Show("AI Configuration saved. Restart the Application for all changes to take effect.", "AI Config", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"Failed to save AI configuration: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+
+        private async Task LoadOllamaModelsAsync()
+        {
+            try
+            {
+                var models = await Clients.Ollama.OllamaClient.GetModels();
+
+                // Update the ObservableCollection on the UI thread
+                System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                {
+                    OllamaModelOptions.Clear();
+                    foreach (var model in models)
+                    {
+                        OllamaModelOptions.Add(model);
+                    }
+
+                    // If there's a currently saved model, try to select it
+                    string? currentModel = ConfigStore.LoadSecret(CommonConst.Registry_Ollama_API_Model);
+                    if (!string.IsNullOrEmpty(currentModel) && OllamaModelOptions.Contains(currentModel))
+                    {
+                        VrOllamaModelBox.Text = currentModel;
+                    }
+                    else if (OllamaModelOptions.Count > 0)
+                    {
+                        VrOllamaModelBox.Text = OllamaModelOptions[0];
+                    }
+
+                    // Update the test button state after loading models
+                    UpdateCanTestProfilePrompt();
+                });
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to load Ollama models");
+                System.Windows.MessageBox.Show($"Failed to load Ollama models: {ex.Message}", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+
+
+        private void UpdateCanTestProfilePrompt()
+        {
+            CanTestProfilePrompt =
+                !string.IsNullOrEmpty(ConfigStore.LoadSecret(CommonConst.Registry_Ollama_API_Endpoint)) &&
+                !string.IsNullOrEmpty(ConfigStore.LoadSecret(CommonConst.Registry_Ollama_API_Key)) &&
+                !string.IsNullOrEmpty(VrOllamaModelBox.Text) &&
+                (VrOllamaPromptBox.Text?.Length ?? 0) > 60 &&
+                (UserAccountTestBox.Text?.StartsWith("usr_") ?? false);
+        }
+
+        private void TestProfilePromptInput_Changed(object sender, EventArgs e)
+        {
+            UpdateCanTestProfilePrompt();
+        }
+
+        private async void TestProfilePrompt_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                TestProfilePromptButton.IsEnabled = false;
+                var userId = UserAccountTestBox.Text?.Trim();
+                var prompt = VrOllamaPromptBox.Text?.Trim();
+                var model = VrOllamaModelBox.Text?.Trim();
+
+                if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(prompt) || string.IsNullOrEmpty(model))
+                {
+                    System.Windows.MessageBox.Show("Please ensure User ID, Prompt, and Model are specified.", "Validation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                // Call Ollama test method
+                ProfileEvaluation result = await Clients.Ollama.OllamaClient.TestProfilePrompt(_serviceRegistry, userId, prompt, model);
+                if (result != null) {
+                    logger.Info("Profile prompt test successful for user {UserId} with model {Model} as {Evaluation}", userId, model, result.Evaluation);
+
+                    OverlayTestProfileEvalUserIdTextBox.Text = userId;
+                    OverlayTestProfileEvalProfileTextBox.Text = System.Text.Encoding.UTF8.GetString( result.ProfileText );
+                    OverlayTestProfileEvalEvaluationTextBox.Text = System.Text.Encoding.UTF8.GetString( result.Evaluation );
+                    OverlayTestProfileEval.Visibility = Visibility.Visible;
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to test profile prompt");
+                System.Windows.MessageBox.Show($"Failed to test profile prompt: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                TestProfilePromptButton.IsEnabled = true;
+            }
+        }
+
+        private async void TestProfilePrompt_Ok_Click(object sender, RoutedEventArgs e)
+        {
+            OverlayTestProfileEvalUserIdTextBox.Text = string.Empty;
+            OverlayTestProfileEvalProfileTextBox.Text = string.Empty;
+            OverlayTestProfileEvalEvaluationTextBox.Text = string.Empty;
+            OverlayTestProfileEval.Visibility = Visibility.Collapsed;
         }
 
 
@@ -1249,8 +1404,7 @@ namespace Tailgrab.PlayerManagement
             var lv = FindAncestor<System.Windows.Controls.ListView>(clickedHeader);
             if (lv == null) return;
 
-            var gridView = lv.View as GridView;
-            if (gridView == null) return;
+            if (lv.View is not GridView gridView) return;
 
             // Get the current sort direction for the property
             var sortDesc = view.SortDescriptions.FirstOrDefault(sd => sd.PropertyName == property);
@@ -2754,7 +2908,7 @@ namespace Tailgrab.PlayerManagement
                     }
                     else
                     {
-                        existing.UpdateFromStatus(kvp.Value);
+                        existing.UpdateFromStatus();
                     }
                 }
             }
@@ -2952,11 +3106,10 @@ namespace Tailgrab.PlayerManagement
                     if (column.Header is GridViewColumnHeader header)
                     {
                         string columnName = (header.Tag as string) ?? header.Content?.ToString() ?? "";
-                        if (!string.IsNullOrEmpty(columnName) && defaults.ContainsKey(columnName))
+                        if (!string.IsNullOrEmpty(columnName) && defaults.TryGetValue(columnName, out double value))
                         {
                             double width = WindowLayoutManager.LoadColumnWidth(
-                                $"{listView.Name}_{columnName}",
-                                defaults[columnName]);
+                                $"{listView.Name}_{columnName}", value);
                             column.Width = width;
                         }
                     }
@@ -2969,11 +3122,10 @@ namespace Tailgrab.PlayerManagement
             foreach (var column in dataGrid.Columns)
             {
                 string columnName = column.Header?.ToString() ?? "";
-                if (!string.IsNullOrEmpty(columnName) && defaults.ContainsKey(columnName))
+                if (!string.IsNullOrEmpty(columnName) && defaults.TryGetValue(columnName, out double value))
                 {
                     double width = WindowLayoutManager.LoadColumnWidth(
-                        $"{dataGrid.Name}_{columnName}",
-                        defaults[columnName]);
+                        $"{dataGrid.Name}_{columnName}", value);
                     column.Width = new DataGridLength(width);
                 }
             }
@@ -3222,7 +3374,7 @@ namespace Tailgrab.PlayerManagement
         }
 
         #region Ban Management handlers
-        private ObservableCollection<GroupBanItem> _banMgmtGroupList = new ObservableCollection<GroupBanItem>();
+        private ObservableCollection<GroupBanItem> _banMgmtGroupList = [];
         private string _currentBanMgmtUserId = string.Empty;
         private User? _currentBanMgmtUser = null;
 
@@ -3809,12 +3961,9 @@ namespace Tailgrab.PlayerManagement
         public string LastLineProcessedTimeFormatted => 
             LastLineProcessedTime.HasValue ? LastLineProcessedTime.Value.ToString("u") : "N/A";
 
-        public TailTaskViewModel(FileTailStatus status)
-        {
-            _status = status;
-        }
+        public TailTaskViewModel(FileTailStatus status) => _status = status;
 
-        public void UpdateFromStatus(FileTailStatus status)
+        public void UpdateFromStatus()
         {
             OnPropertyChanged(nameof(LinesProcessed));
             OnPropertyChanged(nameof(LastLineProcessedTime));
