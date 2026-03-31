@@ -1,7 +1,12 @@
-﻿namespace Tailgrab.Common
+﻿using System.Text.RegularExpressions;
+
+namespace Tailgrab.Common
 {
-    internal class Checksum
+
+    public class Checksum
     {
+        public static readonly Regex sWhitespace = new(@"\s+");
+
         public static string CreateMD5(string input)
         {
             // Use input string to calculate MD5 hash
@@ -22,6 +27,17 @@
 
                 return Convert.ToHexString(hashBytes);
             }
+        }
+
+        public static string MD5Hash(string hashable)
+        {
+            if (string.IsNullOrEmpty(hashable))
+            {
+                return string.Empty;
+            }
+
+            // Remove all whitespace for hashing
+            return Checksum.CreateMD5(sWhitespace.Replace(hashable, ""));
         }
     }
 }

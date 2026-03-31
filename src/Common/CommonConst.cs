@@ -6,7 +6,7 @@ namespace Tailgrab.Common
     public static class CommonConst
     {
 
-        public static string APPLICATION_LOCAL_DATA_PATH = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Tailgrab" );
+        public static string APPLICATION_LOCAL_DATA_PATH = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Tailgrab");
         public const string APPLICATION_LOCAL_DATABASE = "tailgrab.db";
         public const string ApplicationName = "Tailgrab";
         public const string CompanyName = "DeviousFox";
@@ -91,21 +91,5 @@ namespace Tailgrab.Common
         public const string AI_EVALUATION_SEXUAL = "Explicit Sexual";
         public const string AI_EVALUATION_HATE = "Harassment & Bullying";
         public const string AI_EVALUATION_SELFHARM = "Self Harm";
-
-
-
-        public static readonly Regex sWhitespace = new(@"\s+");
-
-        public static string MD5Hash(string hashable)
-        {
-            if (string.IsNullOrEmpty(hashable))
-            {
-                return string.Empty;
-            }
-
-            // Remove all whitespace for hashing
-            return Checksum.CreateMD5(sWhitespace.Replace(hashable, ""));
-        }
-
     }
 }

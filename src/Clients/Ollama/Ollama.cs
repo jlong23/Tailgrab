@@ -1,10 +1,8 @@
 ﻿using ConcurrentPriorityQueue.Core;
-using Microsoft.EntityFrameworkCore;
 using NLog;
 using OllamaSharp;
 using OllamaSharp.Models;
 using System.Net.Http;
-using System.Text.RegularExpressions;
 using Tailgrab.Common;
 using Tailgrab.Models;
 using Tailgrab.PlayerManagement;
@@ -73,7 +71,7 @@ namespace Tailgrab.Clients.Ollama
                         try
                         {
                             string profilePrompt = ConfigStore.LoadSecret(CommonConst.Registry_Ollama_API_Prompt) ?? CommonConst.Default_Ollama_API_Prompt;
-                            string promptHash = CommonConst.MD5Hash(profilePrompt);
+                            string promptHash = Checksum.MD5Hash(profilePrompt);
 
                             TailgrabDBContext dBContext = serviceRegistry.GetDBContext();
                             User profile = serviceRegistry.GetVRChatAPIClient().GetProfile(item.UserId);
@@ -108,15 +106,7 @@ namespace Tailgrab.Clients.Ollama
                                             dBContext.Add(evaluation);
                                             dBContext.SaveChanges();
 
-                                            Player? player = PlayerManager.GetPlayerByUserId(item.UserId ?? string.Empty);
-                                            if (player != null)
-                                            {
-                                                player.UserBio = item.UserBio;
-                                                player.AIEval = System.Text.Encoding.UTF8.GetString(evaluation.Evaluation);
-                                                player.IsFriend = item.IsFriend;
-
-                                                ProfileViewUpdate(player);
-                                            }
+                                            UpdatePlayerWithEvaluation(item, evaluation);
                                         }
 
                                         // Wait for a short period before checking the queue again
@@ -149,6 +139,19 @@ namespace Tailgrab.Clients.Ollama
             }
         }
 
+        private static void UpdatePlayerWithEvaluation(QueuedProcess item, ProfileEvaluation evaluation)
+        {
+            Player? player = PlayerManager.GetPlayerByUserId(item.UserId ?? string.Empty);
+            if (player != null)
+            {
+                player.UserBio = item.UserBio;
+                player.AIEval = System.Text.Encoding.UTF8.GetString(evaluation.Evaluation);
+                player.IsFriend = item.IsFriend;
+
+                ProfileViewUpdate(player);
+            }
+        }
+
         private async static Task<bool> GetUserGroupInformation(TailgrabDBContext dBContext, List<LimitedUserGroups> userGroups, QueuedProcess item)
         {
             bool saveGroups = ConfigStore.GetStoredKeyBool(CommonConst.Registry_Discovered_Group_Caching, true);
@@ -162,35 +165,12 @@ namespace Tailgrab.Clients.Ollama
                     GroupInfo? groupInfo = dBContext.GroupInfos.Find(group.GroupId);
                     if (groupInfo == null)
                     {
-                        if( saveGroups )
-                        {
-                            groupInfo = new GroupInfo
-                            {
-                                GroupId = group.GroupId,
-                                GroupName = group.Name,
-                                AlertType = AlertTypeEnum.None,
-                                CreatedAt = DateTime.UtcNow,
-                                UpdatedAt = DateTime.UtcNow
-                            };
-                            dBContext.GroupInfos.Add(groupInfo);
-                            dBContext.SaveChanges();
-                        }
+                        groupInfo = SaveGroupInfo(dBContext, saveGroups, group);
                     }
                     else
                     {
-                        // We will update the group name on each lookup in case it changes, but not reset the alert level as that is user defined
-                        groupInfo.GroupName = group.Name;
-                        dBContext.GroupInfos.Update(groupInfo);
-                        dBContext.SaveChanges();
-
-                        if (groupInfo.AlertType > AlertTypeEnum.None)
-                        {
-                            player = PlayerManager.AddPlayerEventByUserId(item.UserId ?? string.Empty, PlayerEvent.EventType.GroupWatch, $"User is member of group: {groupInfo.GroupName} with alert level {groupInfo.AlertType}");
-                            player?.AddAlertMessage(AlertClassEnum.Group, groupInfo.AlertType, groupInfo.GroupName);
-                            maxAlertType = maxAlertType < groupInfo.AlertType ? groupInfo.AlertType : maxAlertType;
-                        }
+                        UpdateGroupInfo(dBContext, item, ref player, ref maxAlertType, group, groupInfo);
                     }
-
                 }
 
                 if (player != null && player.IsWatched)
@@ -200,6 +180,41 @@ namespace Tailgrab.Clients.Ollama
                 }
             }
             return false;
+        }
+
+        private static void UpdateGroupInfo(TailgrabDBContext dBContext, QueuedProcess item, ref Player? player, ref AlertTypeEnum maxAlertType, LimitedUserGroups group, GroupInfo groupInfo)
+        {
+            // We will update the group name on each lookup in case it changes, but not reset the alert level as that is user defined
+            groupInfo.GroupName = group.Name;
+            dBContext.GroupInfos.Update(groupInfo);
+            dBContext.SaveChanges();
+
+            if (groupInfo.AlertType > AlertTypeEnum.None)
+            {
+                player = PlayerManager.AddPlayerEventByUserId(item.UserId ?? string.Empty, PlayerEvent.EventType.GroupWatch, $"User is member of group: {groupInfo.GroupName} with alert level {groupInfo.AlertType}");
+                player?.AddAlertMessage(AlertClassEnum.Group, groupInfo.AlertType, groupInfo.GroupName);
+                maxAlertType = maxAlertType < groupInfo.AlertType ? groupInfo.AlertType : maxAlertType;
+            }
+        }
+
+        private static GroupInfo SaveGroupInfo(TailgrabDBContext dBContext, bool saveGroups, LimitedUserGroups group)
+        {
+            GroupInfo groupInfo = new GroupInfo
+            {
+                GroupId = group.GroupId,
+                GroupName = group.Name,
+                AlertType = AlertTypeEnum.None,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            if (saveGroups)
+            {
+                dBContext.GroupInfos.Add(groupInfo);
+                dBContext.SaveChanges();
+            }
+
+            return groupInfo;
         }
 
         private static void GetEvaluationFromStore(ProfileEvaluation evaluated, QueuedProcess item)
@@ -334,7 +349,7 @@ namespace Tailgrab.Clients.Ollama
                             Stream = false
                         };
 
-                        var response = await ollamaApi.GenerateAsync(request).StreamToEndAsync();
+                        GenerateDoneResponseStream? response = await ollamaApi.GenerateAsync(request).StreamToEndAsync();
 
                         logger.Debug($"Image classified for InventoryId: {imageReference.InventoryId} as {response?.Response}");
                         imageEvaluation = SaveImageEvaluation(imageReference, response?.Response);
@@ -489,7 +504,7 @@ namespace Tailgrab.Clients.Ollama
             ProfileEvaluation evaluation = new()
             {
                 Md5checksum = item.MD5Hash ?? string.Empty,
-                PromptMd5Checksum = CommonConst.MD5Hash(prompt),
+                PromptMd5Checksum = Checksum.MD5Hash(prompt),
                 ProfileText = System.Text.Encoding.UTF8.GetBytes(item.UserBio ?? string.Empty),
                 LastDateTime = DateTime.UtcNow
             };
@@ -541,7 +556,7 @@ namespace Tailgrab.Clients.Ollama
                 }
 
                 // Remove all whitespace for hashing
-                return Checksum.CreateMD5(CommonConst.sWhitespace.Replace(UserBio, ""));
+                return Checksum.CreateMD5(UserBio);
             }
         }
     }
