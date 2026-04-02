@@ -11,6 +11,7 @@ using System.Windows.Media;
 using Tailgrab.Common;
 using Tailgrab.Configuration;
 using Tailgrab.LineHandler;
+using Tailgrab.Models;
 using Tailgrab.PlayerManagement;
 
 namespace Tailgrab;
@@ -101,6 +102,10 @@ public class FileTailer
 
         _serviceRegistry = new ServiceRegistry();
         _serviceRegistry.StartAllServices();
+
+        UpgradeApplication(_serviceRegistry);
+
+
 
         if (upgrade)
         {
@@ -381,16 +386,112 @@ public class FileTailer
     }
 
     private static void UpgradeApplication(ServiceRegistry serviceRegistry)
-    {
-        logger.Warn($"Starting application upgrade process...");
-
-        // Migrate database schema while preserving data
-        serviceRegistry.GetDBContext().Database.Migrate();
+    {       
+        // Execute registry migrations
+        ExecuteRegistryMigrations(serviceRegistry);
 
         // Create missing registry items with default values
         InitializeMissingRegistryItems();
+    }
 
-        logger.Warn($"Completed application upgrade process...");
+    /// <summary>
+    /// Configures and executes registry migrations to bring the registry schema up to the current application version.
+    /// </summary>
+    private static void ExecuteRegistryMigrations(ServiceRegistry serviceRegistry)
+    {
+        var migrationManager = new Tailgrab.Common.RegistryMigrationManager();
+        string currentAppVersion = BuildInfo.GetInformationalVersion().Split('+')[0].TrimStart('v');
+
+        logger.Info($"Configuring registry migrations for application version {currentAppVersion}");
+
+        // Register migrations in order from oldest to newest
+        // Example: migrationManager.RegisterMigration("1.0.0", "1.1.0", MigrateFrom_1_0_0_To_1_1_0);
+
+
+        // Migration from 1.1.0 to 1.1.3 - Add Ollama API settings
+        migrationManager.RegisterMigration("1.1.0", "1.1.3", () =>
+        {
+            logger.Info("Migrating registry from 1.1.0-2 to 1.1.3: Adding Ollama API settings");
+
+            try
+            {
+                // Move Registry Ollama API settings from secrets to plain text entries
+                var ollamaEndpoint = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_Ollama_API_Endpoint);
+                if (!string.IsNullOrEmpty(ollamaEndpoint))
+                {
+                    ConfigStore.DeleteSecret(Tailgrab.Common.CommonConst.Registry_Ollama_API_Endpoint);
+                    ConfigStore.PutStoredKeyString(Tailgrab.Common.CommonConst.Registry_Ollama_API_Endpoint, ollamaEndpoint);
+                    logger.Info("Migrated Ollama API Endpoint from secrets to registry");
+                }
+
+                // Move Ollama API Model from secrets to plain text entry
+                var ollamaModel = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_Ollama_API_Model);
+                if (!string.IsNullOrEmpty(ollamaModel))
+                {
+                    ConfigStore.DeleteSecret(Tailgrab.Common.CommonConst.Registry_Ollama_API_Model);
+                    ConfigStore.PutStoredKeyString(Tailgrab.Common.CommonConst.Registry_Ollama_API_Model, ollamaModel);
+                    logger.Info("Migrated Ollama API Model from secrets to registry");
+                }
+
+                // Move Ollama API Prompt from secrets to plain text entry
+                var ollamaPrompt = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_Ollama_API_Prompt);
+                if (!string.IsNullOrEmpty(ollamaPrompt))
+                {
+                    ConfigStore.DeleteSecret(Tailgrab.Common.CommonConst.Registry_Ollama_API_Prompt);
+                    ConfigStore.PutStoredKeyString(Tailgrab.Common.CommonConst.Registry_Ollama_API_Prompt, ollamaPrompt);
+                    logger.Info("Migrated Ollama API Prompt from secrets to registry");
+                }
+
+                // Move Ollama API Image Prompt from secrets to plain text entry
+                var ollamaImagePrompt = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_Ollama_API_Image_Prompt);
+                if (!string.IsNullOrEmpty(ollamaImagePrompt))
+                {
+                    ConfigStore.DeleteSecret(Tailgrab.Common.CommonConst.Registry_Ollama_API_Image_Prompt);
+                    ConfigStore.PutStoredKeyString(Tailgrab.Common.CommonConst.Registry_Ollama_API_Image_Prompt, ollamaImagePrompt);
+                    logger.Info("Migrated Ollama API Image Prompt from secrets to registry");
+                }
+
+                TailgrabDBContext dbContext = serviceRegistry.GetDBContext();
+                if (dbContext != null)
+                {
+                    // Migrate the ProfileEvaluation table to add the new PromptMd5Checksum column, which is used to link evaluations to specific prompts.
+                    try
+                    {
+                        dbContext.ExecuteSql("DROP TABLE IF EXISTS ProfileEvaluation");
+                        dbContext.ExecuteSql("CREATE TABLE IF NOT EXISTS ProfileEvaluation (MD5Checksum TEXT NOT NULL, ProfileText BLOB, Evaluation\tBLOB, LastDateTime TEXT NOT NULL, isIgnored INTEGER NOT NULL DEFAULT 0, PromptMd5Checksum TEXT, CONSTRAINT PK_ProfileEvaluation PRIMARY KEY(MD5Checksum))");
+                    }
+                    catch 
+                    { 
+                        logger.Warn("Failed to migrate ProfileEvaluation table during registry migration. This may cause issues with profile evaluations. Consider backing up your database, deleting it, and allowing Tailgrab to create a new one if you encounter problems with profile evaluations after this update.");
+                    }
+                }
+                
+            }
+            catch (Exception ex)
+            {
+                logger.Warn(ex, "Failed during registry migration from 1.1.0-2 to 1.1.3");
+            }
+        });
+
+        // To add a new migration for a future version:
+        // 1. Add a new RegisterMigration call with the appropriate version numbers
+        // 2. Implement the migration action to handle version-specific changes
+        // 3. The migration will automatically execute when users upgrade
+        // Example:
+        // migrationManager.RegisterMigration("1.1.3", "1.2.0", () =>
+        // {
+        //     logger.Info("Migrating registry from 1.1.3 to 1.2.0: Adding new feature settings");
+        //     // Perform version-specific registry changes here
+        //     // e.g., rename keys, remove obsolete keys, or transform data
+        // });
+
+        // Execute all pending migrations
+        bool success = migrationManager.ExecuteMigrations(currentAppVersion);
+
+        if (!success)
+        {
+            logger.Error("Registry migration failed. Application may not function correctly.");
+        }
     }
 
     /// <summary>

@@ -142,18 +142,17 @@ public partial class TailgrabDBContext : DbContext
     public void UpgradeDatabase()
     {
         ExecuteSqlTransaction(
-            new SqlMigration( "CREATE INDEX IF NOT EXISTS ix_avtr_aname ON AvatarInfo(AvatarName)", true ),
+            new SqlMigration("CREATE INDEX IF NOT EXISTS ix_avtr_aname ON AvatarInfo(AvatarName)", true ),
             new SqlMigration("CREATE INDEX IF NOT EXISTS ix_avtr_uname ON AvatarInfo(UserName)", true),
             new SqlMigration("CREATE INDEX IF NOT EXISTS ix_avtr_alert ON AvatarInfo(alertType)", true),
             new SqlMigration("CREATE INDEX IF NOT EXISTS ix_grp_gname ON GroupInfo(groupName)", true),
             new SqlMigration("CREATE INDEX IF NOT EXISTS ix_grp_alert ON GroupInfo(alertType)", true),
             new SqlMigration("CREATE TABLE IF NOT EXISTS GroupManagement ( GroupId TEXT NOT NULL CONSTRAINT PK_GroupManagement PRIMARY KEY, GroupName TEXT NULL, createDate TEXT NOT NULL, updateDate TEXT NULL )", true),
-            new SqlMigration("CREATE INDEX IF NOT EXISTS ix_grpm_gname ON GroupManagement(groupName)", true),
-            new SqlMigration("ALTER TABLE ProfileEvaluation ADD COLUMN PromptMd5Checksum TEXT", false )
+            new SqlMigration("CREATE INDEX IF NOT EXISTS ix_grpm_gname ON GroupManagement(groupName)", true)
         );
     }
 
-    private void ExecuteSql(string sql)
+    public void ExecuteSql(string sql)
     {
         Database.ExecuteSqlRaw(sql);
     }

@@ -7,9 +7,9 @@ namespace tailgrab.src.Models
 {
     public partial class GroupManagement
     {
-        public string GroupId { get; set; }
+        public required string GroupId { get; set; }
 
-        public string GroupName { get; set; }
+        public required string GroupName { get; set; }
 
         public DateTime CreatedAt { get; set; }
 

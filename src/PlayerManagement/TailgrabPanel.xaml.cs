@@ -9,6 +9,7 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
 using System.Windows.Threading;
+using Tailgrab.Clients.Ollama;
 using Tailgrab.Clients.VRChat;
 using Tailgrab.Common;
 using Tailgrab.Models;
@@ -153,27 +154,21 @@ namespace Tailgrab.PlayerManagement
             new KeyValuePair<string, AlertTypeEnum>("Crasher", AlertTypeEnum.Crasher)
         ];
 
-        private List<AlertColorOption>? _alertColorOptions;
-        public List<AlertColorOption> AlertColorOptions 
-        { 
-            get
+        private ObservableCollection<AlertColorOption> _alertColorOptions = [];
+        public ObservableCollection<AlertColorOption> AlertColorOptions 
+        {
+            get => _alertColorOptions;
+            set
             {
-                _alertColorOptions ??= 
-                    [
-                        new AlertColorOption("*NONE", "Normal", NormalBackground, NormalForeground),
-                        new AlertColorOption("Class 1", "Class01", Class01Background, Class01Foreground),
-                        new AlertColorOption("Class 2", "Class02", Class02Background, Class02Foreground),
-                        new AlertColorOption("Class 3", "Class03", Class03Background, Class03Foreground),
-                        new AlertColorOption("Class 4", "Class04", Class04Background, Class04Foreground),
-                    ];
-                return _alertColorOptions;
+                _alertColorOptions = value;
+                OnPropertyChanged(nameof(AlertColorOptions));
             }
         }
 
         public List<KeyValuePair<string, string>> AlertSoundOptions { get; set; } = [];
 
-        private ObservableCollection<string> _ollamaModelOptions = [];
-        public ObservableCollection<string> OllamaModelOptions
+        private List<KeyValuePair<string, string>> _ollamaModelOptions = [];
+        public List<KeyValuePair<string, string>> OllamaModelOptions
         {
             get => _ollamaModelOptions;
             set
@@ -196,6 +191,8 @@ namespace Tailgrab.PlayerManagement
                 }
             }
         }
+
+        public ObservableCollection<Models.TestImageAIEvalItem> TestImageAIEvalItems { get; } = [];
 
         public List<ReportReasonItem> ProfileReportReasonsOptions =
         [
@@ -526,6 +523,10 @@ namespace Tailgrab.PlayerManagement
             InitializeComponent();
             DataContext = this;
 
+            // Load highlight colors from registry BEFORE setting SelectedValue on color ComboBoxes
+            // This ensures AlertColorOptions is populated when WPF binding resolves
+            LoadHighlightColors();
+
             // Set window title with version
             Title = $"Tailgrab {BuildInfo.GetInformationalVersion()}";
 
@@ -563,10 +564,10 @@ namespace Tailgrab.PlayerManagement
             var vrPass = ConfigStore.LoadSecret(CommonConst.Registry_VRChat_Web_Password);
             var vr2fa = ConfigStore.LoadSecret(CommonConst.Registry_VRChat_Web_2FactorKey);
             var ollamaKey = ConfigStore.LoadSecret(CommonConst.Registry_Ollama_API_Key);
-            var ollamaEndpoint = ConfigStore.LoadSecret(CommonConst.Registry_Ollama_API_Endpoint) ?? CommonConst.Default_Ollama_API_Endpoint;
-            var ollamaProfilePrompt = ConfigStore.LoadSecret(CommonConst.Registry_Ollama_API_Prompt) ?? CommonConst.Default_Ollama_API_Prompt;
-            var ollamaImagePrompt = ConfigStore.LoadSecret(CommonConst.Registry_Ollama_API_Image_Prompt) ?? CommonConst.Default_Ollama_API_Image_Prompt;
-            var ollamaModel = ConfigStore.LoadSecret(CommonConst.Registry_Ollama_API_Model) ?? CommonConst.Default_Ollama_API_Model;
+            var ollamaEndpoint = ConfigStore.GetStoredKeyString(CommonConst.Registry_Ollama_API_Endpoint) ?? CommonConst.Default_Ollama_API_Endpoint;
+            var ollamaModel = ConfigStore.GetStoredKeyString(CommonConst.Registry_Ollama_API_Model) ?? CommonConst.Default_Ollama_API_Model;
+            var ollamaProfilePrompt = ConfigStore.GetStoredKeyString(CommonConst.Registry_Ollama_API_Prompt) ?? CommonConst.Default_Ollama_API_Prompt;
+            var ollamaImagePrompt = ConfigStore.GetStoredKeyString(CommonConst.Registry_Ollama_API_Image_Prompt) ?? CommonConst.Default_Ollama_API_Image_Prompt;
             var avatarGistUri = ConfigStore.GetStoredKeyString(CommonConst.Registry_Avatar_Gist);
             var groupGistUri = ConfigStore.GetStoredKeyString(CommonConst.Registry_Group_Gist);
 
@@ -576,7 +577,7 @@ namespace Tailgrab.PlayerManagement
             if (!string.IsNullOrEmpty(vr2fa)) Vr2FaBox.ToolTip = "Stored (hidden)";
             if (!string.IsNullOrEmpty(ollamaKey)) VrOllamaBox.ToolTip = "Stored (hidden)";
             if (!string.IsNullOrEmpty(ollamaEndpoint)) VrOllamaEndpointBox.Text = ollamaEndpoint;
-            if (!string.IsNullOrEmpty(ollamaModel)) VrOllamaModelBox.Text = ollamaModel;
+            if (!string.IsNullOrEmpty(ollamaModel)) VrOllamaModelBox.SelectedValue = ollamaModel;
             if (!string.IsNullOrEmpty(ollamaProfilePrompt)) VrOllamaPromptBox.Text = ollamaProfilePrompt;
             if (!string.IsNullOrEmpty(ollamaImagePrompt)) VrOllamaImagePromptBox.Text = ollamaImagePrompt;
 
@@ -586,40 +587,7 @@ namespace Tailgrab.PlayerManagement
             // Populate sound combo boxes
             try
             {
-                var sounds = SoundManager.GetAvailableSounds();
-                AlertSoundOptions = [.. sounds.Select(s => new KeyValuePair<string, string>(s, s))];
-
-                // Avatar Alerts
-                AvatarWarnSound.SelectedValue = GetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Watch, CommonConst.Sound_Alert_Key) ?? "*NONE";
-                AvatarNuisanceSound.SelectedValue = GetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Sound_Alert_Key) ?? "*NONE";
-                AvatarCrasherSound.SelectedValue = GetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Sound_Alert_Key) ?? "*NONE";
-                AvatarWarnColor.SelectedValue = GetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Watch, CommonConst.Color_Alert_Key) ?? "Normal";
-                AvatarNuisanceColor.SelectedValue = GetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Color_Alert_Key) ?? "Yellow";
-                AvatarCrasherColor.SelectedValue = GetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Color_Alert_Key) ?? "Red";
-
-                // Group Alerts
-                GroupWarnSound.SelectedValue = GetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Watch, CommonConst.Sound_Alert_Key) ?? "*NONE";
-                GroupNuisanceSound.SelectedValue = GetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Sound_Alert_Key) ?? "*NONE";
-                GroupCrasherSound.SelectedValue = GetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Sound_Alert_Key) ?? "*NONE";
-                GroupWarnColor.SelectedValue = GetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Watch, CommonConst.Color_Alert_Key) ?? "Normal";
-                GroupNuisanceColor.SelectedValue = GetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Color_Alert_Key) ?? "Yellow";
-                GroupCrasherColor.SelectedValue = GetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Color_Alert_Key) ?? "Red";
-
-                // Group Alerts
-                ProfileWarnSound.SelectedValue = GetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Watch, CommonConst.Sound_Alert_Key) ?? "*NONE";
-                ProfileNuisanceSound.SelectedValue = GetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Sound_Alert_Key) ?? "*NONE";
-                ProfileCrasherSound.SelectedValue = GetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Sound_Alert_Key) ?? "*NONE";
-                ProfileWarnColor.SelectedValue = GetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Watch, CommonConst.Color_Alert_Key) ?? "Normal";
-                ProfileNuisanceColor.SelectedValue = GetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Color_Alert_Key) ?? "Yellow";
-                ProfileCrasherColor.SelectedValue = GetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Color_Alert_Key) ?? "Red";
-
-                DiscoveredAvatarCaching.IsChecked = ConfigStore.GetStoredKeyBool(CommonConst.Registry_Discovered_Avatar_Caching, true);
-                ModeratedAvatarCaching.IsChecked = ConfigStore.GetStoredKeyBool(CommonConst.Registry_Moderated_Avatar_Caching, true);
-                DiscoveredGroupCaching.IsChecked = ConfigStore.GetStoredKeyBool(CommonConst.Registry_Discovered_Group_Caching, true);
-
-                // Load highlight colors from registry
-                LoadHighlightColors();
-
+                UpdateAlertComboBoxValues();
             }
             catch { }
 
@@ -674,6 +642,37 @@ namespace Tailgrab.PlayerManagement
             this.LocationChanged += Window_LocationChanged;
         }
 
+
+        private void UpdateAlertComboBoxValues()
+        {
+            var sounds = SoundManager.GetAvailableSounds();
+            AlertSoundOptions = [.. sounds.Select(s => new KeyValuePair<string, string>(s, s))];
+
+            // Avatar Alerts
+            AvatarWarnSound.SelectedValue = GetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Watch, CommonConst.Sound_Alert_Key) ?? "*NONE";
+            AvatarNuisanceSound.SelectedValue = GetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Sound_Alert_Key) ?? "*NONE";
+            AvatarCrasherSound.SelectedValue = GetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Sound_Alert_Key) ?? "*NONE";
+            AvatarWarnColor.SelectedValue = GetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Watch, CommonConst.Color_Alert_Key) ?? "Normal";
+            AvatarNuisanceColor.SelectedValue = GetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Color_Alert_Key) ?? "Yellow";
+            AvatarCrasherColor.SelectedValue = GetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Color_Alert_Key) ?? "Red";
+
+            // Group Alerts
+            GroupWarnSound.SelectedValue = GetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Watch, CommonConst.Sound_Alert_Key) ?? "*NONE";
+            GroupNuisanceSound.SelectedValue = GetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Sound_Alert_Key) ?? "*NONE";
+            GroupCrasherSound.SelectedValue = GetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Sound_Alert_Key) ?? "*NONE";
+            GroupWarnColor.SelectedValue = GetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Watch, CommonConst.Color_Alert_Key) ?? "Normal";
+            GroupNuisanceColor.SelectedValue = GetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Color_Alert_Key) ?? "Yellow";
+            GroupCrasherColor.SelectedValue = GetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Color_Alert_Key) ?? "Red";
+
+            // Profile Alerts
+            ProfileWarnSound.SelectedValue = GetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Watch, CommonConst.Sound_Alert_Key) ?? "*NONE";
+            ProfileNuisanceSound.SelectedValue = GetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Sound_Alert_Key) ?? "*NONE";
+            ProfileCrasherSound.SelectedValue = GetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Sound_Alert_Key) ?? "*NONE";
+            ProfileWarnColor.SelectedValue = GetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Watch, CommonConst.Color_Alert_Key) ?? "Normal";
+            ProfileNuisanceColor.SelectedValue = GetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Color_Alert_Key) ?? "Yellow";
+            ProfileCrasherColor.SelectedValue = GetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Color_Alert_Key) ?? "Red";
+        }
+
         private void SaveConfig_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -705,10 +704,10 @@ namespace Tailgrab.PlayerManagement
             {
                 // Save Ollama credentials to registry protected store
                 if (!string.IsNullOrEmpty(VrOllamaBox.Password)) ConfigStore.SaveSecret(CommonConst.Registry_Ollama_API_Key, VrOllamaBox.Password.Trim());
-                ConfigStore.SaveSecret(CommonConst.Registry_Ollama_API_Endpoint, VrOllamaEndpointBox.Text ?? CommonConst.Default_Ollama_API_Endpoint);
-                ConfigStore.SaveSecret(CommonConst.Registry_Ollama_API_Prompt, VrOllamaPromptBox.Text ?? CommonConst.Default_Ollama_API_Prompt);
-                ConfigStore.SaveSecret(CommonConst.Registry_Ollama_API_Image_Prompt, VrOllamaImagePromptBox.Text ?? CommonConst.Default_Ollama_API_Image_Prompt);
-                ConfigStore.SaveSecret(CommonConst.Registry_Ollama_API_Model, VrOllamaModelBox.Text ?? CommonConst.Default_Ollama_API_Model);
+                ConfigStore.PutStoredKeyString(CommonConst.Registry_Ollama_API_Endpoint, VrOllamaEndpointBox.Text ?? CommonConst.Default_Ollama_API_Endpoint);
+                ConfigStore.PutStoredKeyString(CommonConst.Registry_Ollama_API_Prompt, VrOllamaPromptBox.Text ?? CommonConst.Default_Ollama_API_Prompt);
+                ConfigStore.PutStoredKeyString(CommonConst.Registry_Ollama_API_Image_Prompt, VrOllamaImagePromptBox.Text ?? CommonConst.Default_Ollama_API_Image_Prompt);
+                ConfigStore.PutStoredKeyString(CommonConst.Registry_Ollama_API_Model, (string)VrOllamaModelBox.SelectedValue ?? CommonConst.Default_Ollama_API_Model);
 
                 // Load available models from Ollama after saving credentials
                 await LoadOllamaModelsAsync();
@@ -732,20 +731,17 @@ namespace Tailgrab.PlayerManagement
                 System.Windows.Application.Current.Dispatcher.Invoke(() =>
                 {
                     OllamaModelOptions.Clear();
-                    foreach (var model in models)
-                    {
-                        OllamaModelOptions.Add(model);
-                    }
-
+                    OllamaModelOptions = [.. models.Select(s => new KeyValuePair<string, string>(s, s))];
+                    
                     // If there's a currently saved model, try to select it
-                    string? currentModel = ConfigStore.LoadSecret(CommonConst.Registry_Ollama_API_Model);
-                    if (!string.IsNullOrEmpty(currentModel) && OllamaModelOptions.Contains(currentModel))
+                    string? currentModel = ConfigStore.GetStoredKeyString(CommonConst.Registry_Ollama_API_Model);
+                    if (!string.IsNullOrEmpty(currentModel) && OllamaModelOptions.Contains(new KeyValuePair<string, string>( currentModel, currentModel )))
                     {
-                        VrOllamaModelBox.Text = currentModel;
+                        VrOllamaModelBox.SelectedValue = currentModel;
                     }
                     else if (OllamaModelOptions.Count > 0)
                     {
-                        VrOllamaModelBox.Text = OllamaModelOptions[0];
+                        VrOllamaModelBox.SelectedValue = OllamaModelOptions[0].Value;
                     }
 
                     // Update the test button state after loading models
@@ -763,9 +759,9 @@ namespace Tailgrab.PlayerManagement
         private void UpdateCanTestProfilePrompt()
         {
             CanTestProfilePrompt =
-                !string.IsNullOrEmpty(ConfigStore.LoadSecret(CommonConst.Registry_Ollama_API_Endpoint)) &&
+                !string.IsNullOrEmpty(ConfigStore.GetStoredKeyString(CommonConst.Registry_Ollama_API_Endpoint)) &&
                 !string.IsNullOrEmpty(ConfigStore.LoadSecret(CommonConst.Registry_Ollama_API_Key)) &&
-                !string.IsNullOrEmpty(VrOllamaModelBox.Text) &&
+                !string.IsNullOrEmpty((string)VrOllamaModelBox.SelectedValue) &&
                 (VrOllamaPromptBox.Text?.Length ?? 0) > 60 &&
                 (UserAccountTestBox.Text?.StartsWith("usr_") ?? false);
         }
@@ -782,7 +778,7 @@ namespace Tailgrab.PlayerManagement
                 TestProfilePromptButton.IsEnabled = false;
                 var userId = UserAccountTestBox.Text?.Trim();
                 var prompt = VrOllamaPromptBox.Text?.Trim();
-                var model = VrOllamaModelBox.Text?.Trim();
+                var model = ((string)VrOllamaModelBox.SelectedValue)?.Trim();
 
                 if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(prompt) || string.IsNullOrEmpty(model))
                 {
@@ -818,6 +814,103 @@ namespace Tailgrab.PlayerManagement
             OverlayTestProfileEvalProfileTextBox.Text = string.Empty;
             OverlayTestProfileEvalEvaluationTextBox.Text = string.Empty;
             OverlayTestProfileEval.Visibility = Visibility.Collapsed;
+        }
+
+        private async Task ProcessAIImagePromptTest()
+        {
+            OllamaClient ollamaClient = _serviceRegistry.GetOllamaAPIClient();
+            try
+            {
+                var prompt = VrOllamaImagePromptBox.Text?.Trim();
+                var model = ((string)VrOllamaModelBox.SelectedValue)?.Trim();
+
+                if (model != null && prompt != null)
+                {
+                    // Clear existing items
+                    TestImageAIEvalItems.Clear();
+
+                    // Get test images from the test-images folder
+                    List<string> testImages = tailgrab.Common.TestImageManager.GetAvailableImages();
+
+                    // TODO: Implement actual AI image prompt testing logic
+                    // This would typically:
+                    // 1. Load each test image from the test-images folder
+                    // 2. Send to Ollama for evaluation with the configured prompt
+                    // 3. Populate TestImageAIEvalItems with results
+
+                    // Stub implementation - create placeholder items
+                    foreach (string imageName in testImages)
+                    {
+                        string? imagePath = GetTestImagePath(imageName);
+                        logger.Info("Processing test image {ImageName} at path {ImagePath}", imageName, imagePath);
+                        if (imagePath != null)
+                        {
+
+                            string evaluation = await ollamaClient.TestImagePrompt(model, prompt, imagePath);
+
+                            Models.TestImageAIEvalItem item = new()
+                            {
+                                ImagePath = imagePath,
+                                AIEvaluation = evaluation
+                            };
+
+                            TestImageAIEvalItems.Add(item);
+                        }
+                    }
+
+                    logger.Info($"Loaded {TestImageAIEvalItems.Count} test images for AI evaluation");
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to process AI image prompt test");
+                System.Windows.MessageBox.Show($"Failed to load test images: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private string? GetTestImagePath(string imageName)
+        {
+            string[] extensions = [".png", ".jpg", ".gif", ".webp"];
+            foreach (string extension in extensions)
+            {
+                string imagePath = Path.Combine(CommonConst.APPLICATION_LOCAL_DATA_PATH, "test-images", imageName + extension);
+                if (System.IO.File.Exists(imagePath))
+                {
+                    return imagePath;
+                }
+
+            }
+
+            return null;
+        }
+
+        private void CloseTestImageEval_Click(object sender, RoutedEventArgs e)
+        {
+            OverlayTestImageEval.Visibility = Visibility.Collapsed;
+            TestImageAIEvalItems.Clear();
+        }
+
+        private async void TestImagePrompt_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                TestImagePromptButton.IsEnabled = false;
+
+                // Process the test images
+                await ProcessAIImagePromptTest();
+
+                // Show the overlay with results
+                OverlayTestImageEval.Visibility = Visibility.Visible;
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to test image prompt");
+                System.Windows.MessageBox.Show($"Failed to test image prompt: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                TestImagePromptButton.IsEnabled = true;
+            }
         }
 
 
@@ -861,13 +954,6 @@ namespace Tailgrab.PlayerManagement
             {
                 SoundManager.PlaySound(soundName);
             }
-        }
-
-        private void AlertsTab_GotFocus(object sender, RoutedEventArgs e)
-        {
-            // Invalidate cached AlertColorOptions to refresh color previews with current color settings
-            _alertColorOptions = null;
-            OnPropertyChanged(nameof(AlertColorOptions));
         }
 
         private void GistUrl_TextChanged(object sender, TextChangedEventArgs e)
@@ -955,6 +1041,8 @@ namespace Tailgrab.PlayerManagement
         {
             try
             {
+                UpdateAlertColorOptions();
+
                 // Load colors from registry or use defaults
                 var normalBg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Normal_Background) ?? CommonConst.Default_HighlightClass_Normal_Background;
                 var normalFg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Normal_Foreground) ?? CommonConst.Default_HighlightClass_Normal_Foreground;
@@ -1008,14 +1096,25 @@ namespace Tailgrab.PlayerManagement
                 SelectedSelectedBackground = ColorOptions.FirstOrDefault(c => c.Value.Equals(selectedBg, StringComparison.OrdinalIgnoreCase));
                 SelectedSelectedForeground = ColorOptions.FirstOrDefault(c => c.Value.Equals(selectedFg, StringComparison.OrdinalIgnoreCase));
 
-                // Invalidate cached alert color options so they reload with new brushes
-                _alertColorOptions = null;
-                OnPropertyChanged(nameof(AlertColorOptions));
+                // Need to update alert color options after loading new colors to ensure they reflect in the ComboBoxes
+                UpdateAlertColorOptions();
+                UpdateAlertComboBoxValues();
+
             }
             catch (Exception ex)
             {
                 logger.Error(ex, "Failed to load highlight colors");
             }
+        }
+
+        private void UpdateAlertColorOptions()
+        {
+            AlertColorOptions.Clear();
+            AlertColorOptions.Add(new AlertColorOption("*NONE", "Normal", NormalBackground, NormalForeground));
+            AlertColorOptions.Add(new AlertColorOption("Class 1", "Class01", Class01Background, Class01Foreground));
+            AlertColorOptions.Add(new AlertColorOption("Class 2", "Class02", Class02Background, Class02Foreground));
+            AlertColorOptions.Add(new AlertColorOption("Class 3", "Class03", Class03Background, Class03Foreground));
+            AlertColorOptions.Add(new AlertColorOption("Class 4", "Class04", Class04Background, Class04Foreground));
         }
 
         private void SaveColors_Click(object sender, RoutedEventArgs e)
@@ -1051,6 +1150,9 @@ namespace Tailgrab.PlayerManagement
                     ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Selected_Background, SelectedSelectedBackground.Value);
                 if (SelectedSelectedForeground != null)
                     ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Selected_Foreground, SelectedSelectedForeground.Value);
+
+                // Reload colors with new settings
+                LoadHighlightColors();
 
                 System.Windows.MessageBox.Show("Color settings saved successfully. Changes are applied immediately.", "Colors Saved", MessageBoxButton.OK, MessageBoxImage.Information);
             }
@@ -3778,6 +3880,11 @@ namespace Tailgrab.PlayerManagement
 
             PlayerManager.PlayerChanged -= PlayerManager_PlayerChanged;
         }
+
+        private void TestProfilePromptInput_Changed(object sender, SelectionChangedEventArgs e)
+        {
+
+        }
     }
 
     #region ViewModels
@@ -3800,9 +3907,10 @@ namespace Tailgrab.PlayerManagement
         public ObservableCollection<PrintInfoViewModel> Prints { get; private set; } = [];
         public ObservableCollection<EmojiInfoViewModel> Emojis { get; private set; } = [];
         private bool IsFriend {  get; set; }
+        public string ProfileUrl { get; set; }
+
 
         private string _AlertColor = "Normal";
-
         public string HighlightClass
         {
             get
@@ -3834,6 +3942,7 @@ namespace Tailgrab.PlayerManagement
             AlertMessages = p.AlertMessage;
             _AlertColor = p.AlertColor;
             IsFriend = p.IsFriend;
+            ProfileUrl = p.ProfileImage;
 
             PopulateCollectionsFromPlayer(p); ;
         }
@@ -3860,6 +3969,7 @@ namespace Tailgrab.PlayerManagement
             if (AlertMessages != p.AlertMessage) { AlertMessages = p.AlertMessage ?? string.Empty; changed = true; }
             if (_AlertColor != p.AlertColor) { _AlertColor = p.AlertColor; changed = true; }
             if (IsFriend != p.IsFriend) { IsFriend = p.IsFriend; changed = true; }
+            if (ProfileUrl != p.ProfileImage) { ProfileUrl = p.ProfileImage; changed = true; }
 
             if (changed) OnPropertyChanged(string.Empty);
 
@@ -3884,7 +3994,8 @@ namespace Tailgrab.PlayerManagement
             sb.AppendLine($"History: {History}");
             sb.AppendLine($"AlertColor: {_AlertColor}");
             sb.AppendLine($"AlertMessages: {AlertMessages}");
-
+            sb.AppendLine($"IsFriend: {IsFriend}");
+            sb.AppendLine($"ProfileUrl: {ProfileUrl}");
             return sb.ToString();
         }
         private void PopulateCollectionsFromPlayer(Player p)

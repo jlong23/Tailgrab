@@ -13,6 +13,23 @@ Title="Tailgrab Player Panel"
         <local:MinutesToHoursMinutesConverter x:Key="MinutesToHoursMinutesConverter"/>
         <local:SoundNotNoneConverter x:Key="SoundNotNoneConverter"/>
 
+        <!-- Reusable ComboBox ItemTemplate for Single Color Display -->
+        <DataTemplate x:Key="SingleColorItemTemplate">
+            <StackPanel Orientation="Horizontal">
+                <Rectangle Width="20" Height="20" Fill="{Binding Brush}" Margin="0,0,8,0"/>
+                <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
+            </StackPanel>
+        </DataTemplate>
+
+        <!-- Reusable ComboBox ItemTemplate for Dual Color Display -->
+        <DataTemplate x:Key="DualColorItemTemplate">
+            <StackPanel Orientation="Horizontal">
+                <Rectangle Width="20" Height="20" Fill="{Binding BackgroundBrush}" Margin="0,0,4,0"/>
+                <Rectangle Width="20" Height="20" Fill="{Binding ForegroundBrush}" Margin="0,0,8,0"/>
+                <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
+            </StackPanel>
+        </DataTemplate>
+
         <!-- Reusable ListViewItem Style with Dynamic Colors -->
         <Style x:Key="PlayerListViewItemStyle" TargetType="{x:Type ListViewItem}">
             <Setter Property="Background" Value="{Binding DataContext.NormalBackground, RelativeSource={RelativeSource AncestorType=Window}}"/>
@@ -187,14 +204,35 @@ Title="Tailgrab Player Panel"
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
 
-                            <TextBox Name="UserPofileBox" Grid.Column="0" Height="auto" Margin="0,0,4,0" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto">
-                                <TextBox.Text>
-                                    <MultiBinding StringFormat="{}User Profile:&#x0a;{0}&#x0a;&#x0a;AI Evaluation:&#x0a;{1}" Mode="OneWay">
-                                        <Binding Path="SelectedActive.Profile" Mode="OneWay" FallbackValue="" TargetNullValue=""/>
-                                        <Binding Path="SelectedActive.AIEval" Mode="OneWay" FallbackValue="" TargetNullValue=""/>
-                                    </MultiBinding>
-                                </TextBox.Text>
-                            </TextBox>
+                            <ScrollViewer Grid.Column="0" Margin="0,0,4,0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                <StackPanel>
+                                    <Image Source="{Binding SelectedActive.ProfileUrl, Mode=OneWay}" 
+                                           Width="100" 
+                                           Height="100"
+                                           HorizontalAlignment="Left"
+                                           Margin="0,0,0,4">
+                                        <Image.Style>
+                                            <Style TargetType="Image">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding SelectedActive.ProfileUrl, Converter={x:Static local:StringNotNullOrEmptyConverter.Instance}}" Value="True">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Image.Style>
+                                    </Image>
+
+                                    <TextBlock Name="UserPofileBox" TextWrapping="Wrap" Foreground="#FFE6E6E6">
+                                        <TextBlock.Text>
+                                            <MultiBinding StringFormat="{}User Profile:&#x0a;{0}&#x0a;&#x0a;AI Evaluation:&#x0a;{1}" Mode="OneWay">
+                                                <Binding Path="SelectedActive.Profile" Mode="OneWay" FallbackValue="" TargetNullValue=""/>
+                                                <Binding Path="SelectedActive.AIEval" Mode="OneWay" FallbackValue="" TargetNullValue=""/>
+                                            </MultiBinding>
+                                        </TextBlock.Text>
+                                    </TextBlock>
+                                </StackPanel>
+                            </ScrollViewer>
 
                             <GridSplitter Name="ActivePlayers_Vert" Grid.Column="1" Width="5" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="#FF3F3F46" ShowsPreview="False" ResizeDirection="Columns" DragCompleted="GridSplitter_DragCompleted"/>
 
@@ -943,7 +981,7 @@ Title="Tailgrab Player Panel"
                     </Grid>
                 </TabItem>
 
-                <TabItem Header="Config" Height="23" Margin="-2,-2,-2,0" VerticalAlignment="Top">
+                <TabItem Header="Config">
                     <TabControl>
                         <TabItem Header="Known Avatars">
                             <Grid>
@@ -1199,7 +1237,7 @@ Title="Tailgrab Player Panel"
                                 </StackPanel>
                             </Grid>
                         </TabItem>
-                        
+
                         <TabItem Header="AI Config">
                             <Grid Margin="6">
                                 <Grid.ColumnDefinitions>
@@ -1249,13 +1287,25 @@ Title="Tailgrab Player Panel"
                                         </Grid.RowDefinitions>
 
                                         <Label Grid.Row="0" Grid.Column="0" Content="Ollama Model Name:" VerticalAlignment="Center"/>
-                                        <ComboBox Grid.Row="0" Grid.Column="1" Name="VrOllamaModelBox" Width="400" Margin="6,2" 
-                                                  ItemsSource="{Binding OllamaModelOptions}" 
-                                                  IsEditable="True"
+
+                                        <ComboBox Name="VrOllamaModelBox" 
+                                                  ItemsSource="{Binding DataContext.OllamaModelOptions, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                  SelectedValuePath="Value" 
+                                                  DisplayMemberPath="Key" 
+                                                  Margin="2,2,2,2" 
+                                                  Grid.Row="0" 
+                                                  Grid.Column="1" 
+                                                  Width="400"
                                                   SelectionChanged="TestProfilePromptInput_Changed"/>
 
+
                                         <Label Grid.Row="1" Grid.Column="0" Content="Profile AI Prompt:" VerticalAlignment="Center"/>
-                                        <TextBox Grid.Row="1" Grid.Column="1" Name="VrOllamaPromptBox" Width="800" Height="60" Margin="6,2" TextWrapping="Wrap" TextChanged="TestProfilePromptInput_Changed"/>
+                                        <TextBox Grid.Row="1" Grid.Column="1" Name="VrOllamaPromptBox" Width="800" Height="120" Margin="6,2" 
+                                                 TextWrapping="Wrap" 
+                                                 AcceptsReturn="True" 
+                                                 VerticalScrollBarVisibility="Auto" 
+                                                 HorizontalScrollBarVisibility="Disabled"
+                                                 TextChanged="TestProfilePromptInput_Changed"/>
 
                                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,12,0,0" Grid.Row="2" Grid.ColumnSpan="2">
                                             <Label Content="User Account to Test:" VerticalAlignment="Center"/>
@@ -1264,11 +1314,16 @@ Title="Tailgrab Player Panel"
                                         </StackPanel>
 
                                         <Label Grid.Row="3" Grid.Column="0" Content="Image AI Prompt:" VerticalAlignment="Center"/>
-                                        <TextBox Grid.Row="3" Grid.Column="1" Name="VrOllamaImagePromptBox" Width="800" Height="60" Margin="6,2" TextWrapping="Wrap"/>
+                                        <TextBox Grid.Row="3" Grid.Column="1" Name="VrOllamaImagePromptBox" Width="800" Height="120" Margin="6,2" 
+                                                 TextWrapping="Wrap" 
+                                                 AcceptsReturn="True" 
+                                                 VerticalScrollBarVisibility="Auto" 
+                                                 HorizontalScrollBarVisibility="Disabled"
+                                                 TextChanged="TestProfilePromptInput_Changed"/>
 
                                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,12,0,0" Grid.Row="4" Grid.ColumnSpan="2">
                                             <Label Content="Tested with known image set:" VerticalAlignment="Center"/>
-                                            <Button Content="Test AI Image Prompt" Width="120" />
+                                            <Button Name="TestImagePromptButton" Content="Test AI Image Prompt" Width="120" Click="TestImagePrompt_Click"/>
                                         </StackPanel>
 
                                     </Grid>
@@ -1280,19 +1335,19 @@ Title="Tailgrab Player Panel"
 
                                 <!-- Overlay Panel for Test AI Evaluation -->
                                 <Border Name="OverlayTestProfileEval" 
-                            Grid.Row="0" 
-                            Grid.RowSpan="3"
-                            Grid.ColumnSpan="2"
-                            Background="#CC000000" 
-                            Visibility="Collapsed"
-                            Panel.ZIndex="1000">
+                                    Grid.Row="0" 
+                                    Grid.RowSpan="3"
+                                    Grid.ColumnSpan="2"
+                                    Background="#CC000000" 
+                                    Visibility="Collapsed"
+                                    Panel.ZIndex="1000">
                                     <Border Background="#FF2D2D30" 
-                                MaxWidth="650" 
-                                MaxHeight="600" 
-                                CornerRadius="8"
-                                Padding="16"
-                                VerticalAlignment="Center"
-                                HorizontalAlignment="Center">
+                                        MaxWidth="650" 
+                                        MaxHeight="600" 
+                                        CornerRadius="8"
+                                        Padding="16"
+                                        VerticalAlignment="Center"
+                                        HorizontalAlignment="Center">
                                         <Grid>
                                             <Grid.RowDefinitions>
                                                 <RowDefinition Height="Auto"/>
@@ -1313,7 +1368,7 @@ Title="Tailgrab Player Panel"
 
                                             <!-- User ID -->
                                             <StackPanel Grid.Row="1" Margin="0,0,0,12">
-                                                <Label Content="User ID: *" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                                                <Label Content="User ID:" FontWeight="Bold" Foreground="#FFE6E6E6"/>
                                                 <Grid>
                                                     <Grid.ColumnDefinitions>
                                                         <ColumnDefinition Width="*"/>
@@ -1331,7 +1386,7 @@ Title="Tailgrab Player Panel"
                                                         AcceptsReturn="True" 
                                                         VerticalScrollBarVisibility="Auto"
                                                         IsReadOnly="True"
-                                                        MinHeight="150"/>
+                                                        MaxHeight="150"/>
                                             </StackPanel>
 
                                             <!-- Report Reason -->
@@ -1342,22 +1397,115 @@ Title="Tailgrab Player Panel"
                                                         AcceptsReturn="True" 
                                                         VerticalScrollBarVisibility="Auto"
                                                         IsReadOnly="True"
-                                                        MinHeight="200"/>
+                                                        MaxHeight="200"/>
                                             </StackPanel>
 
                                             <!-- Action Buttons -->
                                             <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right">
-                                                <Button Name="OverlayTestProfileEvalOkButton" Content="Submit" Width="100" Click="TestProfilePrompt_Ok_Click"/>
+                                                <Button Name="OverlayTestProfileEvalOkButton" Content="Close" Width="100" Click="TestProfilePrompt_Ok_Click"/>
                                             </StackPanel>
                                         </Grid>
                                     </Border>
                                 </Border>
+                                <!-- Overlay Panel for Test AI Evaluation -->
+                                <Border Name="OverlayTestImageEval" 
+                                    Grid.Row="0" 
+                                    Grid.RowSpan="3"
+                                    Grid.ColumnSpan="2"
+                                    Background="#CC000000" 
+                                    Visibility="Collapsed"
+                                    Panel.ZIndex="1000">
+                                    <Border Background="#FF2D2D30" 
+                                        MaxWidth="850" 
+                                        MaxHeight="700" 
+                                        CornerRadius="8"
+                                        Padding="16"
+                                        VerticalAlignment="Center"
+                                        HorizontalAlignment="Center">
+                                        <Grid>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="*"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
 
+                                            <!-- Title -->
+                                            <TextBlock Grid.Row="0" 
+                                                       Text="Test AI Image Prompt Results" 
+                                                       FontSize="20" 
+                                                       FontWeight="Bold" 
+                                                       Foreground="#FFE6E6E6"
+                                                       Margin="0,0,0,16"/>
+
+                                            <!-- ListView for Test Images -->
+                                            <ListView Grid.Row="1" 
+                                                      Name="TestImageAIEvalListView"
+                                                      ItemsSource="{Binding TestImageAIEvalItems}"
+                                                      Margin="0,0,0,12"
+                                                      Background="#FF2D2D30"
+                                                      BorderBrush="#FF3F3F46"
+                                                      BorderThickness="1">
+                                                <ListView.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Border BorderBrush="#FF3F3F46" 
+                                                                BorderThickness="0,0,0,1" 
+                                                                Padding="8"
+                                                                Margin="0,4">
+                                                            <Grid>
+                                                                <Grid.ColumnDefinitions>
+                                                                    <ColumnDefinition Width="200"/>
+                                                                    <ColumnDefinition Width="*"/>
+                                                                </Grid.ColumnDefinitions>
+
+                                                                <!-- Image Display -->
+                                                                <Border Grid.Column="0" 
+                                                                        Width="200" 
+                                                                        Height="200"
+                                                                        BorderBrush="#FF3F3F46"
+                                                                        BorderThickness="1"
+                                                                        Margin="0,0,12,0">
+                                                                    <Image Source="{Binding ImagePath}" 
+                                                                           Stretch="Uniform"
+                                                                           Width="200"
+                                                                           Height="200"/>
+                                                                </Border>
+
+                                                                <!-- AI Evaluation Text -->
+                                                                <Border Grid.Column="1"
+                                                                        BorderBrush="#FF3F3F46"
+                                                                        BorderThickness="1"
+                                                                        Padding="8"
+                                                                        Background="#FF1E1E1E">
+                                                                    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                                                                  HorizontalScrollBarVisibility="Disabled">
+                                                                        <TextBlock Text="{Binding AIEvaluation}" 
+                                                                                   TextWrapping="Wrap"
+                                                                                   Foreground="#FFE6E6E6"
+                                                                                   FontFamily="Consolas"
+                                                                                   FontSize="12" Width="500" Height="200"/>
+                                                                    </ScrollViewer>
+                                                                </Border>
+                                                            </Grid>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ListView.ItemTemplate>
+                                            </ListView>
+
+                                            <!-- Close Button -->
+                                            <Button Grid.Row="2" 
+                                                    Content="Close" 
+                                                    Width="100" 
+                                                    HorizontalAlignment="Right"
+                                                    Click="CloseTestImageEval_Click"
+                                                    Padding="8,4"/>
+                                        </Grid>
+                                    </Border>
+                                </Border>
                             </Grid>
 
                         </TabItem>
-                        
-                        <TabItem Header="Alerts" GotFocus="AlertsTab_GotFocus">
+
+                        <TabItem Header="Alerts">
                             <Grid Margin="6">
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="auto" />
@@ -1404,17 +1552,9 @@ Title="Tailgrab Player Panel"
 
                                             <Label Content="Class:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
                                             <ComboBox Name="AvatarWarnColor" ItemsSource="{Binding DataContext.AlertColorOptions, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                          SelectedValuePath="Value" Margin="2,2,2,2" Width="260">
-                                                <ComboBox.ItemTemplate>
-                                                    <DataTemplate>
-                                                        <StackPanel Orientation="Horizontal">
-                                                            <Rectangle Width="20" Height="20" Fill="{Binding BackgroundBrush}" Margin="0,0,4,0"/>
-                                                            <Rectangle Width="20" Height="20" Fill="{Binding ForegroundBrush}" Margin="0,0,8,0"/>
-                                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
-                                                        </StackPanel>
-                                                    </DataTemplate>
-                                                </ComboBox.ItemTemplate>
-                                            </ComboBox>
+                                                          SelectedValuePath="Value" 
+                                                          ItemTemplate="{StaticResource DualColorItemTemplate}"
+                                                          Margin="2,2,2,2" Width="260"/>
                                         </StackPanel>
 
                                         <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="2">
@@ -1431,17 +1571,9 @@ Title="Tailgrab Player Panel"
 
                                             <Label Content="Class:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
                                             <ComboBox Name="AvatarNuisanceColor" ItemsSource="{Binding DataContext.AlertColorOptions, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                          SelectedValuePath="Value" Margin="2,2,2,2" Width="260">
-                                                <ComboBox.ItemTemplate>
-                                                    <DataTemplate>
-                                                        <StackPanel Orientation="Horizontal">
-                                                            <Rectangle Width="20" Height="20" Fill="{Binding BackgroundBrush}" Margin="0,0,4,0"/>
-                                                            <Rectangle Width="20" Height="20" Fill="{Binding ForegroundBrush}" Margin="0,0,8,0"/>
-                                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
-                                                        </StackPanel>
-                                                    </DataTemplate>
-                                                </ComboBox.ItemTemplate>
-                                            </ComboBox>
+                                                          SelectedValuePath="Value" 
+                                                          ItemTemplate="{StaticResource DualColorItemTemplate}"
+                                                          Margin="2,2,2,2" Width="260"/>
                                         </StackPanel>
 
                                         <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="2">
@@ -1458,17 +1590,9 @@ Title="Tailgrab Player Panel"
 
                                             <Label Content="Class:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
                                             <ComboBox Name="AvatarCrasherColor" ItemsSource="{Binding DataContext.AlertColorOptions, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                          SelectedValuePath="Value" Margin="2,2,2,2" Width="260">
-                                                <ComboBox.ItemTemplate>
-                                                    <DataTemplate>
-                                                        <StackPanel Orientation="Horizontal">
-                                                            <Rectangle Width="20" Height="20" Fill="{Binding BackgroundBrush}" Margin="0,0,4,0"/>
-                                                            <Rectangle Width="20" Height="20" Fill="{Binding ForegroundBrush}" Margin="0,0,8,0"/>
-                                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
-                                                        </StackPanel>
-                                                    </DataTemplate>
-                                                </ComboBox.ItemTemplate>
-                                            </ComboBox>
+                                                          SelectedValuePath="Value" 
+                                                          ItemTemplate="{StaticResource DualColorItemTemplate}"
+                                                          Margin="2,2,2,2" Width="260"/>
                                         </StackPanel>
 
 
@@ -1488,17 +1612,9 @@ Title="Tailgrab Player Panel"
 
                                             <Label Content="Class:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
                                             <ComboBox Name="GroupWarnColor" ItemsSource="{Binding DataContext.AlertColorOptions, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                          SelectedValuePath="Value" Margin="2,2,2,2" Width="260">
-                                                <ComboBox.ItemTemplate>
-                                                    <DataTemplate>
-                                                        <StackPanel Orientation="Horizontal">
-                                                            <Rectangle Width="20" Height="20" Fill="{Binding BackgroundBrush}" Margin="0,0,4,0"/>
-                                                            <Rectangle Width="20" Height="20" Fill="{Binding ForegroundBrush}" Margin="0,0,8,0"/>
-                                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
-                                                        </StackPanel>
-                                                    </DataTemplate>
-                                                </ComboBox.ItemTemplate>
-                                            </ComboBox>
+                                                          SelectedValuePath="Value" 
+                                                          ItemTemplate="{StaticResource DualColorItemTemplate}"
+                                                          Margin="2,2,2,2" Width="260"/>
                                         </StackPanel>
 
                                         <StackPanel Grid.Row="4" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="2">
@@ -1515,17 +1631,9 @@ Title="Tailgrab Player Panel"
 
                                             <Label Content="Class:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
                                             <ComboBox Name="GroupNuisanceColor" ItemsSource="{Binding DataContext.AlertColorOptions, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                          SelectedValuePath="Value" Margin="2,2,2,2" Width="260">
-                                                <ComboBox.ItemTemplate>
-                                                    <DataTemplate>
-                                                        <StackPanel Orientation="Horizontal">
-                                                            <Rectangle Width="20" Height="20" Fill="{Binding BackgroundBrush}" Margin="0,0,4,0"/>
-                                                            <Rectangle Width="20" Height="20" Fill="{Binding ForegroundBrush}" Margin="0,0,8,0"/>
-                                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
-                                                        </StackPanel>
-                                                    </DataTemplate>
-                                                </ComboBox.ItemTemplate>
-                                            </ComboBox>
+                                                          SelectedValuePath="Value" 
+                                                          ItemTemplate="{StaticResource DualColorItemTemplate}"
+                                                          Margin="2,2,2,2" Width="260"/>
                                         </StackPanel>
 
                                         <StackPanel Grid.Row="5" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="2">
@@ -1542,17 +1650,9 @@ Title="Tailgrab Player Panel"
 
                                             <Label Content="Class:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
                                             <ComboBox Name="GroupCrasherColor" ItemsSource="{Binding DataContext.AlertColorOptions, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                          SelectedValuePath="Value" Margin="2,2,2,2" Width="260">
-                                                <ComboBox.ItemTemplate>
-                                                    <DataTemplate>
-                                                        <StackPanel Orientation="Horizontal">
-                                                            <Rectangle Width="20" Height="20" Fill="{Binding BackgroundBrush}" Margin="0,0,4,0"/>
-                                                            <Rectangle Width="20" Height="20" Fill="{Binding ForegroundBrush}" Margin="0,0,8,0"/>
-                                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
-                                                        </StackPanel>
-                                                    </DataTemplate>
-                                                </ComboBox.ItemTemplate>
-                                            </ComboBox>
+                                                          SelectedValuePath="Value" 
+                                                          ItemTemplate="{StaticResource DualColorItemTemplate}"
+                                                          Margin="2,2,2,2" Width="260"/>
                                         </StackPanel>
 
 
@@ -1572,17 +1672,9 @@ Title="Tailgrab Player Panel"
 
                                             <Label Content="Class:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
                                             <ComboBox Name="ProfileWarnColor" ItemsSource="{Binding DataContext.AlertColorOptions, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                          SelectedValuePath="Value" Margin="2,2,2,2" Width="260">
-                                                <ComboBox.ItemTemplate>
-                                                    <DataTemplate>
-                                                        <StackPanel Orientation="Horizontal">
-                                                            <Rectangle Width="20" Height="20" Fill="{Binding BackgroundBrush}" Margin="0,0,4,0"/>
-                                                            <Rectangle Width="20" Height="20" Fill="{Binding ForegroundBrush}" Margin="0,0,8,0"/>
-                                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
-                                                        </StackPanel>
-                                                    </DataTemplate>
-                                                </ComboBox.ItemTemplate>
-                                            </ComboBox>
+                                                          SelectedValuePath="Value" 
+                                                          ItemTemplate="{StaticResource DualColorItemTemplate}"
+                                                          Margin="2,2,2,2" Width="260"/>
                                         </StackPanel>
 
                                         <StackPanel Grid.Row="7" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="2">
@@ -1599,17 +1691,9 @@ Title="Tailgrab Player Panel"
 
                                             <Label Content="Class:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
                                             <ComboBox Name="ProfileNuisanceColor" ItemsSource="{Binding DataContext.AlertColorOptions, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                          SelectedValuePath="Value" Margin="2,2,2,2" Width="260">
-                                                <ComboBox.ItemTemplate>
-                                                    <DataTemplate>
-                                                        <StackPanel Orientation="Horizontal">
-                                                            <Rectangle Width="20" Height="20" Fill="{Binding BackgroundBrush}" Margin="0,0,4,0"/>
-                                                            <Rectangle Width="20" Height="20" Fill="{Binding ForegroundBrush}" Margin="0,0,8,0"/>
-                                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
-                                                        </StackPanel>
-                                                    </DataTemplate>
-                                                </ComboBox.ItemTemplate>
-                                            </ComboBox>
+                                                          SelectedValuePath="Value" 
+                                                          ItemTemplate="{StaticResource DualColorItemTemplate}"
+                                                          Margin="2,2,2,2" Width="260"/>
                                         </StackPanel>
 
                                         <StackPanel Grid.Row="8" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="2">
@@ -1626,17 +1710,9 @@ Title="Tailgrab Player Panel"
 
                                             <Label Content="Class:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
                                             <ComboBox Name="ProfileCrasherColor" ItemsSource="{Binding DataContext.AlertColorOptions, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                          SelectedValuePath="Value" Margin="2,2,2,2" Width="260">
-                                                <ComboBox.ItemTemplate>
-                                                    <DataTemplate>
-                                                        <StackPanel Orientation="Horizontal">
-                                                            <Rectangle Width="20" Height="20" Fill="{Binding BackgroundBrush}" Margin="0,0,4,0"/>
-                                                            <Rectangle Width="20" Height="20" Fill="{Binding ForegroundBrush}" Margin="0,0,8,0"/>
-                                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
-                                                        </StackPanel>
-                                                    </DataTemplate>
-                                                </ComboBox.ItemTemplate>
-                                            </ComboBox>
+                                                          SelectedValuePath="Value" 
+                                                          ItemTemplate="{StaticResource DualColorItemTemplate}"
+                                                          Margin="2,2,2,2" Width="260"/>
                                         </StackPanel>
 
 
@@ -1691,176 +1767,78 @@ Title="Tailgrab Player Panel"
                                             <!-- Normal -->
                                             <Label Grid.Row="1" Grid.Column="0" Content="Normal:" VerticalAlignment="Center" Foreground="#FFE6E6E6"/>
                                             <ComboBox Grid.Row="1" Grid.Column="1" Name="NormalBackgroundCombo" Margin="4,2" 
-                                                      ItemsSource="{Binding ColorOptions}" SelectedValue="{Binding SelectedNormalBackground, Mode=TwoWay}">
-                                                <ComboBox.ItemTemplate>
-                                                    <DataTemplate>
-                                                        <StackPanel Orientation="Horizontal">
-                                                            <Rectangle Width="20" Height="20" Fill="{Binding Brush}" Margin="0,0,8,0"/>
-                                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
-                                                        </StackPanel>
-                                                    </DataTemplate>
-                                                </ComboBox.ItemTemplate>
-                                            </ComboBox>
+                                                      ItemsSource="{Binding ColorOptions}" 
+                                                      SelectedValue="{Binding SelectedNormalBackground, Mode=TwoWay}"
+                                                      ItemTemplate="{StaticResource SingleColorItemTemplate}"/>
                                             <ComboBox Grid.Row="1" Grid.Column="2" Name="NormalForegroundCombo" Margin="4,2"
-                                                      ItemsSource="{Binding ColorOptions}" SelectedValue="{Binding SelectedNormalForeground, Mode=TwoWay}">
-                                                <ComboBox.ItemTemplate>
-                                                    <DataTemplate>
-                                                        <StackPanel Orientation="Horizontal">
-                                                            <Rectangle Width="20" Height="20" Fill="{Binding Brush}" Margin="0,0,8,0"/>
-                                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
-                                                        </StackPanel>
-                                                    </DataTemplate>
-                                                </ComboBox.ItemTemplate>
-                                            </ComboBox>
+                                                      ItemsSource="{Binding ColorOptions}" 
+                                                      SelectedValue="{Binding SelectedNormalForeground, Mode=TwoWay}"
+                                                      ItemTemplate="{StaticResource SingleColorItemTemplate}"/>
 
                                             <!-- Friend -->
                                             <Label Grid.Row="2" Grid.Column="0" Content="Friends:" VerticalAlignment="Center" Foreground="#FFE6E6E6"/>
                                             <ComboBox Grid.Row="2" Grid.Column="1" Name="FriendBackgroundCombo" Margin="4,2"
-                                                      ItemsSource="{Binding ColorOptions}" SelectedValue="{Binding SelectedFriendBackground, Mode=TwoWay}">
-                                                <ComboBox.ItemTemplate>
-                                                    <DataTemplate>
-                                                        <StackPanel Orientation="Horizontal">
-                                                            <Rectangle Width="20" Height="20" Fill="{Binding Brush}" Margin="0,0,8,0"/>
-                                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
-                                                        </StackPanel>
-                                                    </DataTemplate>
-                                                </ComboBox.ItemTemplate>
-                                            </ComboBox>
+                                                      ItemsSource="{Binding ColorOptions}" 
+                                                      SelectedValue="{Binding SelectedFriendBackground, Mode=TwoWay}"
+                                                      ItemTemplate="{StaticResource SingleColorItemTemplate}"/>
                                             <ComboBox Grid.Row="2" Grid.Column="2" Name="FriendForegroundCombo" Margin="4,2"
-                                                      ItemsSource="{Binding ColorOptions}" SelectedValue="{Binding SelectedFriendForeground, Mode=TwoWay}">
-                                                <ComboBox.ItemTemplate>
-                                                    <DataTemplate>
-                                                        <StackPanel Orientation="Horizontal">
-                                                            <Rectangle Width="20" Height="20" Fill="{Binding Brush}" Margin="0,0,8,0"/>
-                                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
-                                                        </StackPanel>
-                                                    </DataTemplate>
-                                                </ComboBox.ItemTemplate>
-                                            </ComboBox>
+                                                      ItemsSource="{Binding ColorOptions}" 
+                                                      SelectedValue="{Binding SelectedFriendForeground, Mode=TwoWay}"
+                                                      ItemTemplate="{StaticResource SingleColorItemTemplate}"/>
 
                                             <!-- Selected -->
                                             <Label Grid.Row="3" Grid.Column="0" Content="Selected:" VerticalAlignment="Center" Foreground="#FFE6E6E6"/>
                                             <ComboBox Grid.Row="3" Grid.Column="1" Name="SelectedBackgroundCombo" Margin="4,2"
-                                                      ItemsSource="{Binding ColorOptions}" SelectedValue="{Binding SelectedSelectedBackground, Mode=TwoWay}">
-                                                <ComboBox.ItemTemplate>
-                                                    <DataTemplate>
-                                                        <StackPanel Orientation="Horizontal">
-                                                            <Rectangle Width="20" Height="20" Fill="{Binding Brush}" Margin="0,0,8,0"/>
-                                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
-                                                        </StackPanel>
-                                                    </DataTemplate>
-                                                </ComboBox.ItemTemplate>
-                                            </ComboBox>
+                                                      ItemsSource="{Binding ColorOptions}" 
+                                                      SelectedValue="{Binding SelectedSelectedBackground, Mode=TwoWay}"
+                                                      ItemTemplate="{StaticResource SingleColorItemTemplate}"/>
                                             <ComboBox Grid.Row="3" Grid.Column="2" Name="SelectedForegroundCombo" Margin="4,2"
-                                                      ItemsSource="{Binding ColorOptions}" SelectedValue="{Binding SelectedSelectedForeground, Mode=TwoWay}">
-                                                <ComboBox.ItemTemplate>
-                                                    <DataTemplate>
-                                                        <StackPanel Orientation="Horizontal">
-                                                            <Rectangle Width="20" Height="20" Fill="{Binding Brush}" Margin="0,0,8,0"/>
-                                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
-                                                        </StackPanel>
-                                                    </DataTemplate>
-                                                </ComboBox.ItemTemplate>
-                                            </ComboBox>
+                                                      ItemsSource="{Binding ColorOptions}" 
+                                                      SelectedValue="{Binding SelectedSelectedForeground, Mode=TwoWay}"
+                                                      ItemTemplate="{StaticResource SingleColorItemTemplate}"/>
 
                                             <!-- Yellow -->
                                             <Label Grid.Row="4" Grid.Column="0" Content="Class 1:" VerticalAlignment="Center" Foreground="#FFE6E6E6"/>
                                             <ComboBox Grid.Row="4" Grid.Column="1" Name="Class01BackgroundCombo" Margin="4,2"
-                                                      ItemsSource="{Binding ColorOptions}" SelectedValue="{Binding SelectedClass01Background, Mode=TwoWay}">
-                                                <ComboBox.ItemTemplate>
-                                                    <DataTemplate>
-                                                        <StackPanel Orientation="Horizontal">
-                                                            <Rectangle Width="20" Height="20" Fill="{Binding Brush}" Margin="0,0,8,0"/>
-                                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
-                                                        </StackPanel>
-                                                    </DataTemplate>
-                                                </ComboBox.ItemTemplate>
-                                            </ComboBox>
+                                                      ItemsSource="{Binding ColorOptions}" 
+                                                      SelectedValue="{Binding SelectedClass01Background, Mode=TwoWay}"
+                                                      ItemTemplate="{StaticResource SingleColorItemTemplate}"/>
                                             <ComboBox Grid.Row="4" Grid.Column="2" Name="Class01ForegroundCombo" Margin="4,2"
-                                                      ItemsSource="{Binding ColorOptions}" SelectedValue="{Binding SelectedClass01Foreground, Mode=TwoWay}">
-                                                <ComboBox.ItemTemplate>
-                                                    <DataTemplate>
-                                                        <StackPanel Orientation="Horizontal">
-                                                            <Rectangle Width="20" Height="20" Fill="{Binding Brush}" Margin="0,0,8,0"/>
-                                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
-                                                        </StackPanel>
-                                                    </DataTemplate>
-                                                </ComboBox.ItemTemplate>
-                                            </ComboBox>
+                                                      ItemsSource="{Binding ColorOptions}" 
+                                                      SelectedValue="{Binding SelectedClass01Foreground, Mode=TwoWay}"
+                                                      ItemTemplate="{StaticResource SingleColorItemTemplate}"/>
 
                                             <!-- Red -->
                                             <Label Grid.Row="5" Grid.Column="0" Content="Class 2:" VerticalAlignment="Center" Foreground="#FFE6E6E6"/>
                                             <ComboBox Grid.Row="5" Grid.Column="1" Name="Class02BackgroundCombo" Margin="4,2"
-                                                      ItemsSource="{Binding ColorOptions}" SelectedValue="{Binding SelectedClass02Background, Mode=TwoWay}">
-                                                <ComboBox.ItemTemplate>
-                                                    <DataTemplate>
-                                                        <StackPanel Orientation="Horizontal">
-                                                            <Rectangle Width="20" Height="20" Fill="{Binding Brush}" Margin="0,0,8,0"/>
-                                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
-                                                        </StackPanel>
-                                                    </DataTemplate>
-                                                </ComboBox.ItemTemplate>
-                                            </ComboBox>
+                                                      ItemsSource="{Binding ColorOptions}" 
+                                                      SelectedValue="{Binding SelectedClass02Background, Mode=TwoWay}"
+                                                      ItemTemplate="{StaticResource SingleColorItemTemplate}"/>
                                             <ComboBox Grid.Row="5" Grid.Column="2" Name="Class02ForegroundCombo" Margin="4,2"
-                                                      ItemsSource="{Binding ColorOptions}" SelectedValue="{Binding SelectedClass02Foreground, Mode=TwoWay}">
-                                                <ComboBox.ItemTemplate>
-                                                    <DataTemplate>
-                                                        <StackPanel Orientation="Horizontal">
-                                                            <Rectangle Width="20" Height="20" Fill="{Binding Brush}" Margin="0,0,8,0"/>
-                                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
-                                                        </StackPanel>
-                                                    </DataTemplate>
-                                                </ComboBox.ItemTemplate>
-                                            </ComboBox>
+                                                      ItemsSource="{Binding ColorOptions}" 
+                                                      SelectedValue="{Binding SelectedClass02Foreground, Mode=TwoWay}"
+                                                      ItemTemplate="{StaticResource SingleColorItemTemplate}"/>
 
                                             <!-- Purple -->
                                             <Label Grid.Row="6" Grid.Column="0" Content="Class 3:" VerticalAlignment="Center" Foreground="#FFE6E6E6"/>
                                             <ComboBox Grid.Row="6" Grid.Column="1" Name="Class03BackgroundCombo" Margin="4,2"
-                                                      ItemsSource="{Binding ColorOptions}" SelectedValue="{Binding SelectedClass03Background, Mode=TwoWay}">
-                                                <ComboBox.ItemTemplate>
-                                                    <DataTemplate>
-                                                        <StackPanel Orientation="Horizontal">
-                                                            <Rectangle Width="20" Height="20" Fill="{Binding Brush}" Margin="0,0,8,0"/>
-                                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
-                                                        </StackPanel>
-                                                    </DataTemplate>
-                                                </ComboBox.ItemTemplate>
-                                            </ComboBox>
+                                                      ItemsSource="{Binding ColorOptions}" 
+                                                      SelectedValue="{Binding SelectedClass03Background, Mode=TwoWay}"
+                                                      ItemTemplate="{StaticResource SingleColorItemTemplate}"/>
                                             <ComboBox Grid.Row="6" Grid.Column="2" Name="Class03ForegroundCombo" Margin="4,2"
-                                                      ItemsSource="{Binding ColorOptions}" SelectedValue="{Binding SelectedClass03Foreground, Mode=TwoWay}">
-                                                <ComboBox.ItemTemplate>
-                                                    <DataTemplate>
-                                                        <StackPanel Orientation="Horizontal">
-                                                            <Rectangle Width="20" Height="20" Fill="{Binding Brush}" Margin="0,0,8,0"/>
-                                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
-                                                        </StackPanel>
-                                                    </DataTemplate>
-                                                </ComboBox.ItemTemplate>
-                                            </ComboBox>
+                                                      ItemsSource="{Binding ColorOptions}" 
+                                                      SelectedValue="{Binding SelectedClass03Foreground, Mode=TwoWay}"
+                                                      ItemTemplate="{StaticResource SingleColorItemTemplate}"/>
                                             <!-- Purple -->
                                             <Label Grid.Row="7" Grid.Column="0" Content="Class 4:" VerticalAlignment="Center" Foreground="#FFE6E6E6"/>
                                             <ComboBox Grid.Row="7" Grid.Column="1" Name="Class04BackgroundCombo" Margin="4,2"
-                                                      ItemsSource="{Binding ColorOptions}" SelectedValue="{Binding SelectedClass04Background, Mode=TwoWay}">
-                                                <ComboBox.ItemTemplate>
-                                                    <DataTemplate>
-                                                        <StackPanel Orientation="Horizontal">
-                                                            <Rectangle Width="20" Height="20" Fill="{Binding Brush}" Margin="0,0,8,0"/>
-                                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
-                                                        </StackPanel>
-                                                    </DataTemplate>
-                                                </ComboBox.ItemTemplate>
-                                            </ComboBox>
+                                                      ItemsSource="{Binding ColorOptions}" 
+                                                      SelectedValue="{Binding SelectedClass04Background, Mode=TwoWay}"
+                                                      ItemTemplate="{StaticResource SingleColorItemTemplate}"/>
                                             <ComboBox Grid.Row="7" Grid.Column="2" Name="Class04ForegroundCombo" Margin="4,2"
-                                                      ItemsSource="{Binding ColorOptions}" SelectedValue="{Binding SelectedClass04Foreground, Mode=TwoWay}">
-                                                <ComboBox.ItemTemplate>
-                                                    <DataTemplate>
-                                                        <StackPanel Orientation="Horizontal">
-                                                            <Rectangle Width="20" Height="20" Fill="{Binding Brush}" Margin="0,0,8,0"/>
-                                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
-                                                        </StackPanel>
-                                                    </DataTemplate>
-                                                </ComboBox.ItemTemplate>
-                                            </ComboBox>
+                                                      ItemsSource="{Binding ColorOptions}" 
+                                                      SelectedValue="{Binding SelectedClass04Foreground, Mode=TwoWay}"
+                                                      ItemTemplate="{StaticResource SingleColorItemTemplate}"/>
 
                                         </Grid>
                                     </GroupBox>

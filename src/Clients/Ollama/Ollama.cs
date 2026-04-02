@@ -52,7 +52,7 @@ namespace Tailgrab.Clients.Ollama
 
         public static async Task ProfileCheckTask(ConcurrentPriorityQueue<IHavePriority<int>, int> priorityQueue, ServiceRegistry serviceRegistry)
         {
-            OllamaApiClient? ollamaApi = GetClient();
+            using OllamaApiClient? ollamaApi = GetClient();
             if (ollamaApi is null)
             {
                 System.Windows.MessageBox.Show("Ollama API Credentials are not set.\nThis is not nessasary for limited operation, the Profiles will not be profileText.\nOtherwise use the Config / Secrets tab to update credenials and restart Tailgrab.", "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
@@ -70,22 +70,24 @@ namespace Tailgrab.Clients.Ollama
                     {
                         try
                         {
-                            string profilePrompt = ConfigStore.LoadSecret(CommonConst.Registry_Ollama_API_Prompt) ?? CommonConst.Default_Ollama_API_Prompt;
-                            string promptHash = Checksum.MD5Hash(profilePrompt);
+                            string prompt = ConfigStore.GetStoredKeyString(CommonConst.Registry_Ollama_API_Prompt) ?? CommonConst.Default_Ollama_API_Prompt;
+                            string model = ConfigStore.GetStoredKeyString(CommonConst.Registry_Ollama_API_Model) ?? CommonConst.Default_Ollama_API_Model;
+                            string promptHash = Checksum.MD5Hash(prompt);
 
                             TailgrabDBContext dBContext = serviceRegistry.GetDBContext();
                             User profile = serviceRegistry.GetVRChatAPIClient().GetProfile(item.UserId);
+                            string? accountThumbnailUrl = !string.IsNullOrEmpty(profile.ProfilePicOverrideThumbnail) ? profile.ProfilePicOverrideThumbnail : profile.CurrentAvatarThumbnailImageUrl;
+
+
                             List<LimitedUserGroups> userGroups = serviceRegistry.GetVRChatAPIClient().GetProfileGroups(item.UserId);
 
                             string fullProfile = $"DisplayName: {profile.DisplayName}\nStatusDesc: {profile.StatusDescription}\nPronowns: {profile.Pronouns}\nProfileBio: {profile.Bio}\n";
                             item.IsFriend = profile.IsFriend;
                             item.UserBio = fullProfile;
+                            item.ProfileUrl = accountThumbnailUrl;
 
                             serviceRegistry.GetPlayerManager().UpdatePlayerUserFromVRCProfile(profile, item.MD5Hash);
                             await GetUserGroupInformation(dBContext, userGroups, item);
-
-                            // Wait for a short period before checking the queue again
-                            await Task.Delay(1000);
 
                             if (ollamaApi != null)
                             {
@@ -98,7 +100,7 @@ namespace Tailgrab.Clients.Ollama
                                     ProfileEvaluation? evaluated = serviceRegistry.GetDBContext().ProfileEvaluations.Find(item.MD5Hash);
                                     if (evaluated == null || evaluated.PromptMd5Checksum != promptHash )
                                     {
-                                        ProfileEvaluation evaluation = await PerformOllamaGeneration(ollamaApi, item, ollamaApi.SelectedModel, profilePrompt);
+                                        ProfileEvaluation evaluation = await PerformOllamaGeneration(ollamaApi, item, model, prompt);
 
                                         // if we got a response save it to the database
                                         if (evaluation != null)
@@ -108,13 +110,10 @@ namespace Tailgrab.Clients.Ollama
 
                                             UpdatePlayerWithEvaluation(item, evaluation);
                                         }
-
-                                        // Wait for a short period before checking the queue again
-                                        await Task.Delay(5000);
                                     }
                                     else
                                     {
-                                        GetEvaluationFromStore(evaluated, item);
+                                        UpdatePlayerWithEvaluation(item, evaluated);
                                     }
                                 }
                             }
@@ -132,6 +131,8 @@ namespace Tailgrab.Clients.Ollama
                         break;
                     }
 
+                    // Wait for a short period before checking the queue again
+                    await Task.Delay(2000);
                 }
 
                 // Wait for a short period before checking the queue again
@@ -147,6 +148,7 @@ namespace Tailgrab.Clients.Ollama
                 player.UserBio = item.UserBio;
                 player.AIEval = System.Text.Encoding.UTF8.GetString(evaluation.Evaluation);
                 player.IsFriend = item.IsFriend;
+                player.ProfileImage = item.ProfileUrl ?? player.ProfileImage;
 
                 ProfileViewUpdate(player);
             }
@@ -199,7 +201,7 @@ namespace Tailgrab.Clients.Ollama
 
         private static GroupInfo SaveGroupInfo(TailgrabDBContext dBContext, bool saveGroups, LimitedUserGroups group)
         {
-            GroupInfo groupInfo = new GroupInfo
+            GroupInfo groupInfo = new()
             {
                 GroupId = group.GroupId,
                 GroupName = group.Name,
@@ -215,34 +217,6 @@ namespace Tailgrab.Clients.Ollama
             }
 
             return groupInfo;
-        }
-
-        private static void GetEvaluationFromStore(ProfileEvaluation evaluated, QueuedProcess item)
-        {
-            if (item != null && item.UserId != null)
-            {
-
-                Player? player = PlayerManager.GetPlayerByUserId(item.UserId);
-                if (player != null)
-                {
-                    player.AIEval = System.Text.Encoding.UTF8.GetString(evaluated.Evaluation);
-                    player.UserBio = System.Text.Encoding.UTF8.GetString(evaluated.ProfileText);
-                    player.IsFriend = item.IsFriend;
-
-
-                    ProfileViewUpdate(player);
-                    logger.Debug($"User profile already processed for userId: {item.UserId}");
-                }
-                else
-                {
-                    logger.Debug($"User profile lookup fails for userId: {item.UserId}");
-                }
-
-            }
-            else
-            {
-                logger.Debug($"User profile lookup fails for a null userId");
-            }
         }
 
         private static void ProfileViewUpdate(Player player)
@@ -323,7 +297,7 @@ namespace Tailgrab.Clients.Ollama
                     return null;
                 }
 
-                string ollamaEndpoint = ConfigStore.LoadSecret(CommonConst.Registry_Ollama_API_Endpoint) ?? CommonConst.Default_Ollama_API_Endpoint;
+                string ollamaEndpoint = ConfigStore.GetStoredKeyString(CommonConst.Registry_Ollama_API_Endpoint) ?? CommonConst.Default_Ollama_API_Endpoint;
 
                 ImageReference? imageReference = await _serviceRegistry.GetVRChatAPIClient().GetImageReference(assetId, userId, imageUrlList);
                 if (imageReference != null)
@@ -337,10 +311,10 @@ namespace Tailgrab.Clients.Ollama
                         ollamaHttpClient.DefaultRequestHeaders.Add("Authorization", "Bearer " + ollamaCloudKey);
 
                         using OllamaApiClient ollamaApi = new(ollamaHttpClient);
-                        string? ollamaModel = ConfigStore.LoadSecret(CommonConst.Registry_Ollama_API_Model) ?? CommonConst.Default_Ollama_API_Model;
+                        string? ollamaModel = ConfigStore.GetStoredKeyString(CommonConst.Registry_Ollama_API_Model) ?? CommonConst.Default_Ollama_API_Model;
                         ollamaApi.SelectedModel = ollamaModel;
 
-                        string? ollamaPrompt = ConfigStore.LoadSecret(CommonConst.Registry_Ollama_API_Image_Prompt);
+                        string? ollamaPrompt = ConfigStore.GetStoredKeyString(CommonConst.Registry_Ollama_API_Image_Prompt);
                         GenerateRequest request = new()
                         {
                             Model = ollamaApi.SelectedModel,
@@ -414,7 +388,7 @@ namespace Tailgrab.Clients.Ollama
                 logger.Warn("Ollama API credentials are not set");
                 return null;
             }
-            string ollamaEndpoint = ConfigStore.LoadSecret(CommonConst.Registry_Ollama_API_Endpoint) ?? CommonConst.Default_Ollama_API_Endpoint;
+            string ollamaEndpoint = ConfigStore.GetStoredKeyString(CommonConst.Registry_Ollama_API_Endpoint) ?? CommonConst.Default_Ollama_API_Endpoint;
             HttpClient client = new()
             {
                 BaseAddress = new Uri(ollamaEndpoint)
@@ -467,6 +441,7 @@ namespace Tailgrab.Clients.Ollama
                 var vrcClient = serviceRegistry.GetVRChatAPIClient();
                 if( vrcClient == null) {
                     profileEvaluation.Evaluation = System.Text.Encoding.UTF8.GetBytes("Error: Could not create VRChat API client. Please check credentials.");
+                    return profileEvaluation;
                 }
 
                 User profile = vrcClient.GetProfile(userId);
@@ -498,6 +473,33 @@ namespace Tailgrab.Clients.Ollama
             profileEvaluation.Evaluation = System.Text.Encoding.UTF8.GetBytes("Error: User profile is empty or invalid.");
             return profileEvaluation;
         }
+
+        public async Task<string> TestImagePrompt(string model, string prompt, string imagePath)
+        {
+            string imageEvaluation = string.Empty;
+            logger.Debug($"Testing image URI: {imagePath}, {model}, {prompt}");
+
+            try
+            {
+                var ollamaClient = GetClient();
+                if (ollamaClient == null)
+                {
+                    imageEvaluation = "Error: Could not create Ollama ollamaClient. Please check credentials.";
+                    return imageEvaluation;
+                }
+
+                imageEvaluation = await PerformOllamaImageGeneration(ollamaClient, model, prompt, imagePath);
+                return imageEvaluation;
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, $"Error classifying image from : {imagePath}");
+            }
+
+            return imageEvaluation;
+            ;
+        }
+
 
         public static async Task<ProfileEvaluation> PerformOllamaGeneration(OllamaApiClient ollamaApi, QueuedProcess item, string model, string prompt)
         {
@@ -535,16 +537,49 @@ namespace Tailgrab.Clients.Ollama
             return evaluation;
         }
 
+        public static async Task<string> PerformOllamaImageGeneration(OllamaApiClient ollamaApi, string model, string prompt, string imagePath)
+        {
+            string evaluation = string.Empty;
+            try
+            {
+                byte[] contentBytes = System.IO.File.ReadAllBytes(imagePath);
+                string contentB64 = Convert.ToBase64String(contentBytes);
+
+                GenerateRequest request = new()
+                {
+                    Model = model,
+                    Prompt = prompt,
+                    Images = [contentB64],
+                    Stream = false
+                };
+
+                await ollamaApi.GenerateAsync(request).StreamToEndAsync(responseTask =>
+                {
+                    string response = responseTask?.Response ?? string.Empty;
+                    evaluation = response;
+                });
+
+                return evaluation;
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, $"Error processing Ollama request for ImageName : {imagePath} - {ex.Message}");
+            }
+
+            return evaluation;
+        }
+
         #endregion
     }
 
-    // Simplest implementation of IHavePriority<T>
-    public class QueuedProcess : IHavePriority<int>
+        // Simplest implementation of IHavePriority<T>
+        public class QueuedProcess : IHavePriority<int>
     {
         public int Priority { get; set; }
         public string? UserId { get; set; }
         public string? UserBio { get; set; }
         public bool IsFriend { get; set; }
+        public string? ProfileUrl { get; set; }
 
         public string MD5Hash
         {

@@ -97,6 +97,8 @@ namespace Tailgrab.PlayerManagement
         public string? AIEval { get; set; }
 
         public List<AlertMessage> _AlertMessage = [];
+        public string ProfileImage { get; set; } = string.Empty;
+
 
         public string AlertMessage
         {
