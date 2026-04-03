@@ -26,10 +26,11 @@ namespace Tailgrab.PlayerManagement
         private readonly DispatcherTimer fallbackTimer;
         private readonly DispatcherTimer statusBarTimer;
 
-        public ObservableCollection<PlayerViewModel> ActivePlayers { get; } = new ObservableCollection<PlayerViewModel>();
-        public ObservableCollection<PlayerViewModel> PastPlayers { get; } = new ObservableCollection<PlayerViewModel>();
-        public ObservableCollection<PlayerViewModel> PrintPlayers { get; } = new ObservableCollection<PlayerViewModel>();
-        public ObservableCollection<PlayerViewModel> EmojiPlayers { get; } = new ObservableCollection<PlayerViewModel>();
+        public ObservableCollection<PlayerViewModel> ActivePlayers { get; } = [];
+        public ObservableCollection<PlayerViewModel> PastPlayers { get; } = [];
+        public ObservableCollection<PlayerViewModel> PrintPlayers { get; } = [];
+        public ObservableCollection<PlayerViewModel> EmojiPlayers { get; } = [];
+        public ObservableCollection<TailTaskViewModel> OpenLogs { get; } = [];
         public AvatarVirtualizingCollection AvatarDbItems { get; private set; }
         public GroupVirtualizingCollection GroupDbItems { get; private set; }
         public UserVirtualizingCollection UserDbItems { get; private set; }
@@ -41,6 +42,7 @@ namespace Tailgrab.PlayerManagement
         public ICollectionView PastView { get; }
         public ICollectionView PrintView { get; }
         public ICollectionView EmojiView { get; }
+        public ICollectionView OpenLogsView { get; }
 
 
         private PlayerViewModel? _selectedActive;
@@ -143,32 +145,357 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
-        public List<KeyValuePair<string, AlertTypeEnum>> AlertTypeOptions { get; } = new List<KeyValuePair<string, AlertTypeEnum>>
-        {
+        public List<KeyValuePair<string, AlertTypeEnum>> AlertTypeOptions { get; } =
+        [
             new KeyValuePair<string, AlertTypeEnum>("None", AlertTypeEnum.None),
             new KeyValuePair<string, AlertTypeEnum>("Watch", AlertTypeEnum.Watch),
             new KeyValuePair<string, AlertTypeEnum>("Nuisance", AlertTypeEnum.Nuisance),
             new KeyValuePair<string, AlertTypeEnum>("Crasher", AlertTypeEnum.Crasher)
-        };
+        ];
 
-        public List<KeyValuePair<string, string>> AlertColorOptions { get; } = new List<KeyValuePair<string, string>>
-        {
-            new KeyValuePair<string, string>("*NONE", "Normal"),
-            new KeyValuePair<string, string>("Yellow", "Yellow"),
-            new KeyValuePair<string, string>("Purple", "Purple"),
-            new KeyValuePair<string, string>("Red", "Red"),
-        };
+        private List<AlertColorOption>? _alertColorOptions;
+        public List<AlertColorOption> AlertColorOptions 
+        { 
+            get
+            {
+                if (_alertColorOptions == null)
+                {
+                    _alertColorOptions = 
+                    [
+                        new AlertColorOption("*NONE", "Normal", NormalBackground, NormalForeground),
+                        new AlertColorOption("Class 1", "Class01", Class01Background, Class01Foreground),
+                        new AlertColorOption("Class 2", "Class02", Class02Background, Class02Foreground),
+                        new AlertColorOption("Class 3", "Class03", Class03Background, Class03Foreground),
+                        new AlertColorOption("Class 4", "Class04", Class04Background, Class04Foreground),
+                    ];
+                }
+                return _alertColorOptions;
+            }
+        }
 
-        public List<KeyValuePair<string, string>> AlertSoundOptions { get; set; } = new List<KeyValuePair<string, string>>();
+        public List<KeyValuePair<string, string>> AlertSoundOptions { get; set; } = [];
 
-        public List<ReportReasonItem> ProfileReportReasonsOptions = new List<ReportReasonItem>
-        {
+        public List<ReportReasonItem> ProfileReportReasonsOptions =
+        [
             new ReportReasonItem("Sexual Content", "sexual"),
             new ReportReasonItem("Hateful Content", "hateful"),
             new ReportReasonItem("Gore and Violence", "gore"),
             new ReportReasonItem("Child Exploitation", "child"),
             new ReportReasonItem("Other", "other")
-        };
+        ];
+
+        // Color options for selection
+        public List<ColorOption> ColorOptions { get; } =
+        [
+            new ColorOption("Dark Gray", "#FF1E1E1E"),
+            new ColorOption("Light Gray", "#FFE6E6E6"),
+            new ColorOption("Black", "Black"),
+            new ColorOption("White", "White"),
+            new ColorOption("Red", "Red"),
+            new ColorOption("Yellow", "Yellow"),
+            new ColorOption("Green", "Green"),
+            new ColorOption("Blue", "Blue"),
+            new ColorOption("Purple", "Purple"),
+            new ColorOption("Orange", "Orange"),
+            new ColorOption("Pink", "Pink"),
+            new ColorOption("Light Green", "LightGreen"),
+            new ColorOption("Light Blue", "LightBlue"),
+            new ColorOption("Light Pink", "LightPink"),
+            new ColorOption("Dark Blue", "#FF1d1db3"),
+            new ColorOption("Bright Yellow", "#FFFFFF00"),
+            new ColorOption("Cyan", "Cyan"),
+            new ColorOption("Magenta", "Magenta"),
+            new ColorOption("Lime", "Lime"),
+            new ColorOption("Brown", "Brown"),
+            new ColorOption("Navy", "Navy"),
+            new ColorOption("Teal", "Teal"),
+            new ColorOption("Maroon", "Maroon"),
+            new ColorOption("Olive", "Olive"),
+            new ColorOption("Silver", "Silver"),
+            new ColorOption("Gold", "Gold"),
+        ];
+
+        // Highlight class color properties with backing fields
+        private System.Windows.Media.Brush _normalBackground = null!;
+        public System.Windows.Media.Brush NormalBackground
+        {
+            get => _normalBackground;
+            set { _normalBackground = value; OnPropertyChanged(nameof(NormalBackground)); }
+        }
+
+        private System.Windows.Media.Brush _normalForeground = null!;
+        public System.Windows.Media.Brush NormalForeground
+        {
+            get => _normalForeground;
+            set { _normalForeground = value; OnPropertyChanged(nameof(NormalForeground)); }
+        }
+
+        private System.Windows.Media.Brush _friendBackground = null!;
+        public System.Windows.Media.Brush FriendBackground
+        {
+            get => _friendBackground;
+            set { _friendBackground = value; OnPropertyChanged(nameof(FriendBackground)); }
+        }
+
+        private System.Windows.Media.Brush _friendForeground = null!;
+        public System.Windows.Media.Brush FriendForeground
+        {
+            get => _friendForeground;
+            set { _friendForeground = value; OnPropertyChanged(nameof(FriendForeground)); }
+        }
+
+        private System.Windows.Media.Brush _Class01Background = null!;
+        public System.Windows.Media.Brush Class01Background
+        {
+            get => _Class01Background;
+            set { _Class01Background = value; OnPropertyChanged(nameof(Class01Background)); }
+        }
+
+        private System.Windows.Media.Brush _Class01Foreground = null!;
+        public System.Windows.Media.Brush Class01Foreground
+        {
+            get => _Class01Foreground;
+            set { _Class01Foreground = value; OnPropertyChanged(nameof(Class01Foreground)); }
+        }
+
+        private System.Windows.Media.Brush _Class02Background = null!;
+        public System.Windows.Media.Brush Class02Background
+        {
+            get => _Class02Background;
+            set { _Class02Background = value; OnPropertyChanged(nameof(Class02Background)); }
+        }
+
+        private System.Windows.Media.Brush _Class02Foreground = null!;
+        public System.Windows.Media.Brush Class02Foreground
+        {
+            get => _Class02Foreground;
+            set { _Class02Foreground = value; OnPropertyChanged(nameof(Class02Foreground)); }
+        }
+
+        private System.Windows.Media.Brush _Class03Background = null!;
+        public System.Windows.Media.Brush Class03Background
+        {
+            get => _Class03Background;
+            set { _Class03Background = value; OnPropertyChanged(nameof(Class03Background)); }
+        }
+
+        private System.Windows.Media.Brush _Class03Foreground = null!;
+        public System.Windows.Media.Brush Class03Foreground
+        {
+            get => _Class03Foreground;
+            set { _Class03Foreground = value; OnPropertyChanged(nameof(Class03Foreground)); }
+        }
+
+        private System.Windows.Media.Brush _Class04Background = null!;
+        public System.Windows.Media.Brush Class04Background
+        {
+            get => _Class04Background;
+            set { _Class04Background = value; OnPropertyChanged(nameof(Class04Background)); }
+        }
+
+        private System.Windows.Media.Brush _Class04Foreground = null!;
+        public System.Windows.Media.Brush Class04Foreground
+        {
+            get => _Class04Foreground;
+            set { _Class04Foreground = value; OnPropertyChanged(nameof(Class04Foreground)); }
+        }
+
+        private System.Windows.Media.Brush _selectedBackground = null!;
+        public System.Windows.Media.Brush SelectedBackground
+        {
+            get => _selectedBackground;
+            set { _selectedBackground = value; OnPropertyChanged(nameof(SelectedBackground)); }
+        }
+
+        private System.Windows.Media.Brush _selectedForeground = null!;
+        public System.Windows.Media.Brush SelectedForeground
+        {
+            get => _selectedForeground;
+            set { _selectedForeground = value; OnPropertyChanged(nameof(SelectedForeground)); }
+        }
+
+        private System.Windows.Media.Brush _mouseOverBackground = null!;
+        public System.Windows.Media.Brush MouseOverBackground
+        {
+            get => _mouseOverBackground;
+            set { _mouseOverBackground = value; OnPropertyChanged(nameof(MouseOverBackground)); }
+        }
+
+        private System.Windows.Media.Brush _mouseOverForeground = null!;
+        public System.Windows.Media.Brush MouseOverForeground
+        {
+            get => _mouseOverForeground;
+            set { _mouseOverForeground = value; OnPropertyChanged(nameof(MouseOverForeground)); }
+        }
+
+        // Selected color options for ComboBoxes
+        private ColorOption? _selectedNormalBackground;
+        public ColorOption? SelectedNormalBackground
+        {
+            get => _selectedNormalBackground;
+            set
+            {
+                _selectedNormalBackground = value;
+                if (value != null) NormalBackground = value.Brush;
+                OnPropertyChanged(nameof(SelectedNormalBackground));
+            }
+        }
+
+        private ColorOption? _selectedNormalForeground;
+        public ColorOption? SelectedNormalForeground
+        {
+            get => _selectedNormalForeground;
+            set
+            {
+                _selectedNormalForeground = value;
+                if (value != null) NormalForeground = value.Brush;
+                OnPropertyChanged(nameof(SelectedNormalForeground));
+            }
+        }
+
+        private ColorOption? _selectedFriendBackground;
+        public ColorOption? SelectedFriendBackground
+        {
+            get => _selectedFriendBackground;
+            set
+            {
+                _selectedFriendBackground = value;
+                if (value != null) FriendBackground = value.Brush;
+                OnPropertyChanged(nameof(SelectedFriendBackground));
+            }
+        }
+
+        private ColorOption? _selectedFriendForeground;
+        public ColorOption? SelectedFriendForeground
+        {
+            get => _selectedFriendForeground;
+            set
+            {
+                _selectedFriendForeground = value;
+                if (value != null) FriendForeground = value.Brush;
+                OnPropertyChanged(nameof(SelectedFriendForeground));
+            }
+        }
+
+        private ColorOption? _selectedClass01Background;
+        public ColorOption? SelectedClass01Background
+        {
+            get => _selectedClass01Background;
+            set
+            {
+                _selectedClass01Background = value;
+                if (value != null) Class01Background = value.Brush;
+                OnPropertyChanged(nameof(SelectedClass01Background));
+            }
+        }
+
+        private ColorOption? _selectedClass01Foreground;
+        public ColorOption? SelectedClass01Foreground
+        {
+            get => _selectedClass01Foreground;
+            set
+            {
+                _selectedClass01Foreground = value;
+                if (value != null) Class01Foreground = value.Brush;
+                OnPropertyChanged(nameof(SelectedClass01Foreground));
+            }
+        }
+
+        private ColorOption? _selectedClass02Background;
+        public ColorOption? SelectedClass02Background
+        {
+            get => _selectedClass02Background;
+            set
+            {
+                _selectedClass02Background = value;
+                if (value != null) Class02Background = value.Brush;
+                OnPropertyChanged(nameof(SelectedClass02Background));
+            }
+        }
+
+        private ColorOption? _selectedClass02Foreground;
+        public ColorOption? SelectedClass02Foreground
+        {
+            get => _selectedClass02Foreground;
+            set
+            {
+                _selectedClass02Foreground = value;
+                if (value != null) Class02Foreground = value.Brush;
+                OnPropertyChanged(nameof(SelectedClass02Foreground));
+            }
+        }
+
+        private ColorOption? _selectedClass03Background;
+        public ColorOption? SelectedClass03Background
+        {
+            get => _selectedClass03Background;
+            set
+            {
+                _selectedClass03Background = value;
+                if (value != null) Class03Background = value.Brush;
+                OnPropertyChanged(nameof(SelectedClass03Background));
+            }
+        }
+
+        private ColorOption? _selectedClass03Foreground;
+        public ColorOption? SelectedClass03Foreground
+        {
+            get => _selectedClass03Foreground;
+            set
+            {
+                _selectedClass03Foreground = value;
+                if (value != null) Class04Foreground = value.Brush;
+                OnPropertyChanged(nameof(SelectedClass03Foreground));
+            }
+        }
+
+        private ColorOption? _selectedClass04Background;
+        public ColorOption? SelectedClass04Background
+        {
+            get => _selectedClass04Background;
+            set
+            {
+                _selectedClass04Background = value;
+                if (value != null) Class04Background = value.Brush;
+                OnPropertyChanged(nameof(SelectedClass04Background));
+            }
+        }
+
+        private ColorOption? _selectedClass04Foreground;
+        public ColorOption? SelectedClass04Foreground
+        {
+            get => _selectedClass04Foreground;
+            set
+            {
+                _selectedClass04Foreground = value;
+                if (value != null) Class04Foreground = value.Brush;
+                OnPropertyChanged(nameof(SelectedClass04Foreground));
+            }
+        }
+
+        private ColorOption? _selectedSelectedBackground;
+        public ColorOption? SelectedSelectedBackground
+        {
+            get => _selectedSelectedBackground;
+            set
+            {
+                _selectedSelectedBackground = value;
+                if (value != null) SelectedBackground = value.Brush;
+                OnPropertyChanged(nameof(SelectedSelectedBackground));
+            }
+        }
+
+        private ColorOption? _selectedSelectedForeground;
+        public ColorOption? SelectedSelectedForeground
+        {
+            get => _selectedSelectedForeground;
+            set
+            {
+                _selectedSelectedForeground = value;
+                if (value != null) SelectedForeground = value.Brush;
+                OnPropertyChanged(nameof(SelectedSelectedForeground));
+            }
+        }
 
 
         public TailgrabPanel(ServiceRegistry serviceRegistry)
@@ -190,6 +517,9 @@ namespace Tailgrab.PlayerManagement
 
             PrintView = CollectionViewSource.GetDefaultView(PrintPlayers);
             EmojiView = CollectionViewSource.GetDefaultView(EmojiPlayers);
+
+            OpenLogsView = CollectionViewSource.GetDefaultView(OpenLogs);
+            OpenLogsView.SortDescriptions.Add(new SortDescription("StartTime", ListSortDirection.Descending));
 
             AvatarDbItems = new AvatarVirtualizingCollection(_serviceRegistry);
             AvatarDbView = CollectionViewSource.GetDefaultView(AvatarDbItems);
@@ -235,7 +565,7 @@ namespace Tailgrab.PlayerManagement
             try
             {
                 var sounds = SoundManager.GetAvailableSounds();
-                AlertSoundOptions = sounds.Select(s => new KeyValuePair<string, string>(s, s)).ToList();
+                AlertSoundOptions = [.. sounds.Select(s => new KeyValuePair<string, string>(s, s))];
 
                 // Avatar Alerts
                 AvatarWarnSound.SelectedValue = GetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Watch, CommonConst.Sound_Alert_Key) ?? "*NONE";
@@ -264,6 +594,9 @@ namespace Tailgrab.PlayerManagement
                 DiscoveredAvatarCaching.IsChecked = ConfigStore.GetStoredKeyBool(CommonConst.Registry_Discovered_Avatar_Caching, true);
                 ModeratedAvatarCaching.IsChecked = ConfigStore.GetStoredKeyBool(CommonConst.Registry_Moderated_Avatar_Caching, true);
                 DiscoveredGroupCaching.IsChecked = ConfigStore.GetStoredKeyBool(CommonConst.Registry_Discovered_Group_Caching, true);
+
+                // Load highlight colors from registry
+                LoadHighlightColors();
 
             }
             catch { }
@@ -296,6 +629,11 @@ namespace Tailgrab.PlayerManagement
             statusBarTimer.Start();
 
             this.Closed += (s, e) => Dispose();
+
+            // Load window layout from registry
+            this.Loaded += Window_Loaded;
+            this.SizeChanged += Window_SizeChanged;
+            this.LocationChanged += Window_LocationChanged;
         }
 
         private void SaveConfig_Click(object sender, RoutedEventArgs e)
@@ -370,7 +708,73 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
-        private void SetAlertKeyString(string alertKey, AlertTypeEnum alertType, string subType, object value)
+        private void AlertsTab_GotFocus(object sender, RoutedEventArgs e)
+        {
+            // Invalidate cached AlertColorOptions to refresh color previews with current color settings
+            _alertColorOptions = null;
+            OnPropertyChanged(nameof(AlertColorOptions));
+        }
+
+        private void GistUrl_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            // Enable/disable the corresponding "Check Now" button based on whether there's text in the textbox
+            if (sender == avatarGistUrl)
+            {
+                avatarGistCheckButton.IsEnabled = !string.IsNullOrWhiteSpace(avatarGistUrl.Text);
+            }
+            else if (sender == groupGistUrl)
+            {
+                groupGistCheckButton.IsEnabled = !string.IsNullOrWhiteSpace(groupGistUrl.Text);
+            }
+        }
+
+        private async void CheckAvatarGist_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                avatarGistCheckButton.IsEnabled = false;
+                avatarGistCheckButton.Content = "Checking...";
+
+                await Task.Run(() => _serviceRegistry.ProcessAvatarGist());
+
+                System.Windows.MessageBox.Show("Avatar GIST list processing in the background.", "Check Avatar GIST", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to process Avatar GIST");
+                System.Windows.MessageBox.Show($"Failed to process Avatar GIST: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                avatarGistCheckButton.Content = "Check Now";
+                avatarGistCheckButton.IsEnabled = !string.IsNullOrWhiteSpace(avatarGistUrl.Text);
+            }
+        }
+
+        private async void CheckGroupGist_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                groupGistCheckButton.IsEnabled = false;
+                groupGistCheckButton.Content = "Checking...";
+
+                await Task.Run(() => _serviceRegistry.ProcessGroupGist());
+
+                System.Windows.MessageBox.Show("Group GIST list processing in the background.", "Check Group GIST", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to process Group GIST");
+                System.Windows.MessageBox.Show($"Failed to process Group GIST: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                groupGistCheckButton.Content = "Check Now";
+                groupGistCheckButton.IsEnabled = !string.IsNullOrWhiteSpace(groupGistUrl.Text);
+            }
+        }
+
+        private static void SetAlertKeyString(string alertKey, AlertTypeEnum alertType, string subType, object value)
         {
             string key = CommonConst.ConfigRegistryPath + "\\" + alertKey + "\\" + alertType.ToString();
 
@@ -385,22 +789,177 @@ namespace Tailgrab.PlayerManagement
 
         }
 
-        private string? GetAlertKeyString(string alertKey, AlertTypeEnum alertType, string subType)
+        private static string? GetAlertKeyString(string alertKey, AlertTypeEnum alertType, string subType)
         {
             string key = CommonConst.ConfigRegistryPath + "\\" + alertKey + "\\" + alertType.ToString();
 
             return ConfigStore.GetStoredKeyString(key, subType);
         }
 
+        private void LoadHighlightColors()
+        {
+            try
+            {
+                // Load colors from registry or use defaults
+                var normalBg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Normal_Background) ?? CommonConst.Default_HighlightClass_Normal_Background;
+                var normalFg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Normal_Foreground) ?? CommonConst.Default_HighlightClass_Normal_Foreground;
+                var friendBg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Friend_Background) ?? CommonConst.Default_HighlightClass_Friend_Background;
+                var friendFg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Friend_Foreground) ?? CommonConst.Default_HighlightClass_Friend_Foreground;
+                var class01Bg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Class01_Background) ?? CommonConst.Default_HighlightClass_Class01_Background;
+                var class01Fg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Class01_Foreground) ?? CommonConst.Default_HighlightClass_Class01_Foreground;
+                var class02Bg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Class02_Background) ?? CommonConst.Default_HighlightClass_Class02_Background;
+                var class02Fg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Class02_Foreground) ?? CommonConst.Default_HighlightClass_Class02_Foreground;
+                var class03Bg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Class03_Background) ?? CommonConst.Default_HighlightClass_Class03_Background;
+                var class03Fg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Class03_Foreground) ?? CommonConst.Default_HighlightClass_Class03_Foreground;
+                var class04Bg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Class04_Background) ?? CommonConst.Default_HighlightClass_Class04_Background;
+                var class04Fg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Class04_Foreground) ?? CommonConst.Default_HighlightClass_Class04_Foreground;
+                var selectedBg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Selected_Background) ?? CommonConst.Default_HighlightClass_Selected_Background;
+                var selectedFg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Selected_Foreground) ?? CommonConst.Default_HighlightClass_Selected_Foreground;
+                var mouseOverBg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_MouseOver_Background) ?? CommonConst.Default_HighlightClass_MouseOver_Background;
+                var mouseOverFg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_MouseOver_Foreground) ?? CommonConst.Default_HighlightClass_MouseOver_Foreground;
+
+                // Set the brush properties
+                var converter = new BrushConverter();
+                NormalBackground = (System.Windows.Media.Brush)converter.ConvertFromString(normalBg)!;
+                NormalForeground = (System.Windows.Media.Brush)converter.ConvertFromString(normalFg)!;
+                FriendBackground = (System.Windows.Media.Brush)converter.ConvertFromString(friendBg)!;
+                FriendForeground = (System.Windows.Media.Brush)converter.ConvertFromString(friendFg)!;
+                Class01Background = (System.Windows.Media.Brush)converter.ConvertFromString(class01Bg)!;
+                Class01Foreground = (System.Windows.Media.Brush)converter.ConvertFromString(class01Fg)!;
+                Class02Background = (System.Windows.Media.Brush)converter.ConvertFromString(class02Bg)!;
+                Class02Foreground = (System.Windows.Media.Brush)converter.ConvertFromString(class02Fg)!;
+                Class03Background = (System.Windows.Media.Brush)converter.ConvertFromString(class03Bg)!;
+                Class03Foreground = (System.Windows.Media.Brush)converter.ConvertFromString(class03Fg)!;
+                Class04Background = (System.Windows.Media.Brush)converter.ConvertFromString(class04Bg)!;
+                Class04Foreground = (System.Windows.Media.Brush)converter.ConvertFromString(class04Fg)!;
+                SelectedBackground = (System.Windows.Media.Brush)converter.ConvertFromString(selectedBg)!;
+                SelectedForeground = (System.Windows.Media.Brush)converter.ConvertFromString(selectedFg)!;
+                MouseOverBackground = (System.Windows.Media.Brush)converter.ConvertFromString(mouseOverBg)!;
+                MouseOverForeground = (System.Windows.Media.Brush)converter.ConvertFromString(mouseOverFg)!;
+
+                // Set selected options in ComboBoxes
+                SelectedNormalBackground = ColorOptions.FirstOrDefault(c => c.Value.Equals(normalBg, StringComparison.OrdinalIgnoreCase));
+                SelectedNormalForeground = ColorOptions.FirstOrDefault(c => c.Value.Equals(normalFg, StringComparison.OrdinalIgnoreCase));
+                SelectedFriendBackground = ColorOptions.FirstOrDefault(c => c.Value.Equals(friendBg, StringComparison.OrdinalIgnoreCase));
+                SelectedFriendForeground = ColorOptions.FirstOrDefault(c => c.Value.Equals(friendFg, StringComparison.OrdinalIgnoreCase));
+                SelectedClass01Background = ColorOptions.FirstOrDefault(c => c.Value.Equals(class01Bg, StringComparison.OrdinalIgnoreCase));
+                SelectedClass01Foreground = ColorOptions.FirstOrDefault(c => c.Value.Equals(class01Fg, StringComparison.OrdinalIgnoreCase));
+                SelectedClass02Background = ColorOptions.FirstOrDefault(c => c.Value.Equals(class02Bg, StringComparison.OrdinalIgnoreCase));
+                SelectedClass02Foreground = ColorOptions.FirstOrDefault(c => c.Value.Equals(class02Fg, StringComparison.OrdinalIgnoreCase));
+                SelectedClass03Background = ColorOptions.FirstOrDefault(c => c.Value.Equals(class03Bg, StringComparison.OrdinalIgnoreCase));
+                SelectedClass03Foreground = ColorOptions.FirstOrDefault(c => c.Value.Equals(class03Fg, StringComparison.OrdinalIgnoreCase));
+                SelectedClass04Background = ColorOptions.FirstOrDefault(c => c.Value.Equals(class04Bg, StringComparison.OrdinalIgnoreCase));
+                SelectedClass04Foreground = ColorOptions.FirstOrDefault(c => c.Value.Equals(class04Fg, StringComparison.OrdinalIgnoreCase));
+                SelectedSelectedBackground = ColorOptions.FirstOrDefault(c => c.Value.Equals(selectedBg, StringComparison.OrdinalIgnoreCase));
+                SelectedSelectedForeground = ColorOptions.FirstOrDefault(c => c.Value.Equals(selectedFg, StringComparison.OrdinalIgnoreCase));
+
+                // Invalidate cached alert color options so they reload with new brushes
+                _alertColorOptions = null;
+                OnPropertyChanged(nameof(AlertColorOptions));
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to load highlight colors");
+            }
+        }
+
+        private void SaveColors_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // Save all color settings to registry
+                if (SelectedNormalBackground != null)
+                    ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Normal_Background, SelectedNormalBackground.Value);
+                if (SelectedNormalForeground != null)
+                    ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Normal_Foreground, SelectedNormalForeground.Value);
+                if (SelectedFriendBackground != null)
+                    ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Friend_Background, SelectedFriendBackground.Value);
+                if (SelectedFriendForeground != null)
+                    ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Friend_Foreground, SelectedFriendForeground.Value);
+                if (SelectedClass01Background != null)
+                    ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Class01_Background, SelectedClass01Background.Value);
+                if (SelectedClass01Foreground != null)
+                    ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Class01_Foreground, SelectedClass01Foreground.Value);
+                if (SelectedClass02Background != null)
+                    ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Class02_Background, SelectedClass02Background.Value);
+                if (SelectedClass02Foreground != null)
+                    ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Class02_Foreground, SelectedClass02Foreground.Value);
+                if (SelectedClass03Background != null)
+                    ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Class03_Background, SelectedClass03Background.Value);
+                if (SelectedClass03Foreground != null)
+                    ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Class03_Foreground, SelectedClass03Foreground.Value);
+                if (SelectedClass04Background != null)
+                    ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Class04_Background, SelectedClass04Background.Value);
+                if (SelectedClass04Foreground != null)
+                    ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Class04_Foreground, SelectedClass04Foreground.Value);
+                if (SelectedSelectedBackground != null)
+                    ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Selected_Background, SelectedSelectedBackground.Value);
+                if (SelectedSelectedForeground != null)
+                    ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Selected_Foreground, SelectedSelectedForeground.Value);
+
+                System.Windows.MessageBox.Show("Color settings saved successfully. Changes are applied immediately.", "Colors Saved", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to save color settings");
+                System.Windows.MessageBox.Show($"Failed to save color settings: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void ResetColors_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var result = System.Windows.MessageBox.Show(
+                    "Are you sure you want to reset all colors to their default values?",
+                    "Reset Colors",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question);
+
+                if (result == MessageBoxResult.Yes)
+                {
+                    // Remove all color settings from registry
+                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Normal_Background);
+                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Normal_Foreground);
+                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Friend_Background);
+                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Friend_Foreground);
+                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Class01_Background);
+                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Class01_Foreground);
+                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Class02_Background);
+                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Class02_Foreground);
+                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Class03_Background);
+                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Class03_Foreground);
+                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Class04_Background);
+                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Class04_Foreground);
+                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Selected_Background);
+                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Selected_Foreground);
+                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_MouseOver_Background);
+                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_MouseOver_Foreground);
+
+                    // Reload colors with defaults
+                    LoadHighlightColors();
+
+                    System.Windows.MessageBox.Show("Colors reset to defaults successfully.", "Colors Reset", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to reset color settings");
+                System.Windows.MessageBox.Show($"Failed to reset color settings: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
         private void StatusBarTimer_Tick(object? sender, EventArgs e)
         {
             try
             {
-                var avatarManager = _serviceRegistry.GetAvatarManager();
                 var ollamaClient = _serviceRegistry.GetOllamaAPIClient();
 
-                AvatarQueueLength = avatarManager?.GetQueueCount() ?? 0;
+                AvatarQueueLength = PlayerManager.GetQueueCount();
                 OllamaQueueLength = ollamaClient?.GetQueueSize() ?? 0;
+
+                // Update Open Logs collection
+                RefreshOpenLogs();
 
                 // Update session info
                 var currentSession = PlayerManager.CurrentSession;
@@ -414,7 +973,7 @@ namespace Tailgrab.PlayerManagement
                     }
 
                     // Update elapsed time
-                    var elapsed = DateTime.Now - currentSession.startDateTime;
+                    var elapsed = DateTime.Now - currentSession.StartDateTime;
                     int hours = (int)elapsed.TotalHours;
                     int minutes = elapsed.Minutes;
                     int seconds = elapsed.Seconds;
@@ -436,7 +995,7 @@ namespace Tailgrab.PlayerManagement
             // Ensure collections reflect PlayerManager state
             try
             {
-                var players = _serviceRegistry.GetPlayerManager().GetAllPlayers().ToList();
+                var players = PlayerManager.GetAllPlayers().ToList();
                 UpdateCollectionsFromSnapshot(players);
             }
             catch { }
@@ -566,7 +1125,7 @@ namespace Tailgrab.PlayerManagement
         private void PurgePastOlderThan(int minutes)
         {
             var olderThan = DateTime.Now.AddMinutes(minutes);
-            List<PlayerViewModel> toRemove = new List<PlayerViewModel>();
+            List<PlayerViewModel> toRemove = [];
             foreach (PlayerViewModel oldPlayer in PastPlayers)
             {
                 if (!string.IsNullOrEmpty(oldPlayer.InstanceEndTime))
@@ -663,7 +1222,7 @@ namespace Tailgrab.PlayerManagement
             return null;
         }
 
-        private void ToggleSort(ICollectionView view, string property)
+        private static void ToggleSort(ICollectionView view, string property)
         {
             // If already sorted on property, flip direction. Otherwise set ascending.
             var existing = view.SortDescriptions.FirstOrDefault(sd => sd.PropertyName == property);
@@ -684,7 +1243,7 @@ namespace Tailgrab.PlayerManagement
             view.Refresh();
         }
 
-        private void UpdateHeaderSortIndicator(GridViewColumnHeader clickedHeader, ICollectionView view, string property)
+        private static void UpdateHeaderSortIndicator(GridViewColumnHeader clickedHeader, ICollectionView view, string property)
         {
             // Clear indicators on sibling headers in same ListView
             var lv = FindAncestor<System.Windows.Controls.ListView>(clickedHeader);
@@ -784,7 +1343,7 @@ namespace Tailgrab.PlayerManagement
                 try
                 {
                     // Get the player from PlayerManager
-                    Player? player = _serviceRegistry.GetPlayerManager().GetPlayerByUserId(userId);
+                    Player? player = PlayerManager.GetPlayerByUserId(userId);
 
                     if (player != null && !string.IsNullOrEmpty(player.AIEval))
                     {
@@ -907,17 +1466,21 @@ namespace Tailgrab.PlayerManagement
         // Reusable method to submit profile report - can be called from other places in the future if needed
         private async Task<bool> SubmitProfileReport(string userId, string category, string reportReason, string reportDescription)
         {
-            ModerationReportPayload rpt = new ModerationReportPayload();
-            rpt.Type = "user";
-            rpt.Category = "profile";
-            rpt.Reason = reportReason;
-            rpt.ContentId = userId;
-            rpt.Description = reportDescription;
+            ModerationReportPayload rpt = new()
+            {
+                Type = "user",
+                Category = "profile",
+                Reason = reportReason,
+                ContentId = userId,
+                Description = reportDescription
+            };
 
-            ModerationReportDetails rptDtls = new ModerationReportDetails();
-            rptDtls.InstanceType = "Group Public";
-            rptDtls.InstanceAgeGated = false;
-            rpt.Details = new List<ModerationReportDetails>() { rptDtls };
+            ModerationReportDetails rptDtls = new()
+            {
+                InstanceType = "Group Public",
+                InstanceAgeGated = false
+            };
+            rpt.Details = [rptDtls];
 
             bool success = await _serviceRegistry.GetVRChatAPIClient().SubmitModerationReportAsync(rpt);
             if (success)
@@ -1305,18 +1868,22 @@ namespace Tailgrab.PlayerManagement
 
         private async Task<bool> SubmitPrintReport(string userId, string printId, string category, string reportReason, string reportDescription)
         {
-            ModerationReportPayload rpt = new ModerationReportPayload();
-            rpt.Type = category;
-            rpt.Category = category;
-            rpt.Reason = reportReason;
-            rpt.ContentId = printId;
-            rpt.Description = reportDescription;
+            ModerationReportPayload rpt = new()
+            {
+                Type = category,
+                Category = category,
+                Reason = reportReason,
+                ContentId = printId,
+                Description = reportDescription
+            };
 
-            ModerationReportDetails rptDtls = new ModerationReportDetails();
-            rptDtls.InstanceType = "Group Public";
-            rptDtls.InstanceAgeGated = false;
-            rptDtls.HolderId = userId;
-            rpt.Details = new List<ModerationReportDetails>() { rptDtls };
+            ModerationReportDetails rptDtls = new()
+            {
+                InstanceType = "Group Public",
+                InstanceAgeGated = false,
+                HolderId = userId
+            };
+            rpt.Details = [rptDtls];
 
             bool success = await _serviceRegistry.GetVRChatAPIClient().SubmitModerationReportAsync(rpt);
             if (success)
@@ -1353,7 +1920,7 @@ namespace Tailgrab.PlayerManagement
                     PrintOverlayUserIdTextBox.Text = printInfo.OwnerId;
                     PrintOverlayInventoryIdTextBox.Text = printInfo.Id;
 
-                    List<string> imageUrls = new List<string>();
+                    List<string> imageUrls = [];
 
                     if (!string.IsNullOrEmpty(printInfo.Files.Image))
                     {
@@ -1448,13 +2015,13 @@ namespace Tailgrab.PlayerManagement
         //
         // Emoji Handlers
         #region Emoji handlers
-        public List<ReportReasonItem> ReportReasons { get; } = new List<ReportReasonItem>
-        {
+        public List<ReportReasonItem> ReportReasons { get; } =
+        [
             new ReportReasonItem("Sexual Content", "sexual"),
             new ReportReasonItem("Hateful Content", "hateful"),
             new ReportReasonItem("Gore and Violence", "gore"),
             new ReportReasonItem("Other", "other")
-        };
+        ];
 
         private void EmojiApplyFilter_Click(object sender, RoutedEventArgs e)
         {
@@ -1659,18 +2226,22 @@ namespace Tailgrab.PlayerManagement
 
         private async Task<bool> SubmitInventoryReport(string userId, string inventoryId, string category, string reportReason, string reportDescription)
         {
-            ModerationReportPayload rpt = new ModerationReportPayload();
-            rpt.Type = category.ToLower();
-            rpt.Category = category.ToLower();
-            rpt.Reason = reportReason;
-            rpt.ContentId = inventoryId;
-            rpt.Description = reportDescription;
+            ModerationReportPayload rpt = new()
+            {
+                Type = category.ToLower(),
+                Category = category.ToLower(),
+                Reason = reportReason,
+                ContentId = inventoryId,
+                Description = reportDescription
+            };
 
-            ModerationReportDetails rptDtls = new ModerationReportDetails();
-            rptDtls.InstanceType = "Group Public";
-            rptDtls.InstanceAgeGated = false;
-            rptDtls.HolderId = userId;
-            rpt.Details = new List<ModerationReportDetails>() { rptDtls };
+            ModerationReportDetails rptDtls = new()
+            {
+                InstanceType = "Group Public",
+                InstanceAgeGated = false,
+                HolderId = userId
+            };
+            rpt.Details = [rptDtls];
 
             bool success = await _serviceRegistry.GetVRChatAPIClient().SubmitModerationReportAsync(rpt);
             if (success)
@@ -1712,7 +2283,7 @@ namespace Tailgrab.PlayerManagement
                         OverlayCategoryTextBox.Text = "Unknown";
                     }
 
-                    List<string> imageUrls = new List<string>();
+                    List<string> imageUrls = [];
 
                     if (!string.IsNullOrEmpty(inventoryItem.Metadata?.ImageUrl))
                     {
@@ -2158,6 +2729,59 @@ namespace Tailgrab.PlayerManagement
         #endregion
 
         //
+        // Open Logs UI handlers
+        #region Open Logs handlers
+        private void RefreshOpenLogs()
+        {
+            try
+            {
+                var activeTasks = FileTailer.GetActiveTailTasks();
+
+                // Remove tasks that are no longer active
+                var toRemove = OpenLogs.Where(vm => !activeTasks.ContainsKey(vm.FilePath)).ToList();
+                foreach (var item in toRemove)
+                {
+                    OpenLogs.Remove(item);
+                }
+
+                // Add or update tasks
+                foreach (var kvp in activeTasks)
+                {
+                    var existing = OpenLogs.FirstOrDefault(vm => vm.FilePath == kvp.Key);
+                    if (existing == null)
+                    {
+                        OpenLogs.Add(new TailTaskViewModel(kvp.Value));
+                    }
+                    else
+                    {
+                        existing.UpdateFromStatus(kvp.Value);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                logger?.Error(ex, "Failed to refresh open logs");
+            }
+        }
+
+        private void CancelTailTask_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (sender is System.Windows.Controls.Button button && button.Tag is TailTaskViewModel viewModel)
+                {
+                    viewModel.RequestCancellation();
+                    logger.Info($"Cancellation requested for: {viewModel.FilePath}");
+                }
+            }
+            catch (Exception ex)
+            {
+                logger?.Error(ex, "Failed to cancel tail task");
+            }
+        }
+        #endregion
+
+        //
         // Migration UI handlers
         #region Migration handlers
         private void MigrationBrowse_Click(object sender, RoutedEventArgs e)
@@ -2204,7 +2828,7 @@ namespace Tailgrab.PlayerManagement
 
             MigrationStatus status = _serviceRegistry.GetDBContext().MigrateOldVersion(filePath);
 
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new();
             foreach (var msg in status.Messages)
             {
                 sb.AppendLine(msg);
@@ -2212,6 +2836,367 @@ namespace Tailgrab.PlayerManagement
 
             System.Windows.MessageBox.Show(sb.ToString(), "Migration Status", MessageBoxButton.OK, MessageBoxImage.Information);
         }
+        #endregion
+
+        //
+        // Window Layout Management
+        #region Window Layout Management
+
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // Load window size and position
+                WindowLayoutManager.LoadWindowSize(this);
+                WindowLayoutManager.LoadWindowPosition(this);
+
+                // Load column widths for Active Players tab
+                LoadGridViewColumnWidths(ActiveListView, new Dictionary<string, double>
+                {
+                    { "DisplayName", WindowLayoutManager.DefaultActiveDisplayNameWidth },
+                    { "Age", WindowLayoutManager.DefaultActiveAgeWidth },
+                    { "AvatarName", WindowLayoutManager.DefaultActiveAvatarNameWidth },
+                    { "InstanceStartTime", WindowLayoutManager.DefaultActiveInstanceStartWidth },
+                    { "UserId", WindowLayoutManager.DefaultActiveAlertMessagesWidth },
+                });
+
+                // Load column widths for Past Players tab
+                LoadGridViewColumnWidths(PastListView, new Dictionary<string, double>
+                {
+                    { "DisplayName", WindowLayoutManager.DefaultPastDisplayNameWidth },
+                    { "Age", WindowLayoutManager.DefaultPastAgeWidth },
+                    { "AvatarName", WindowLayoutManager.DefaultPastAvatarNameWidth },
+                    { "InstanceEndTime", WindowLayoutManager.DefaultPastInstanceEndWidth },
+                    { "UserId", WindowLayoutManager.DefaultPastAlertMessagesWidth },
+                });
+
+                // Load column widths for Known Avatars DataGrid
+                LoadDataGridColumnWidths(AvatarDbGrid, new Dictionary<string, double>
+                {
+                    { "Alert", WindowLayoutManager.DefaultAvatarAlertWidth },
+                    { "Avatar Name", WindowLayoutManager.DefaultAvatarNameWidth },
+                    { "Avatar ID", WindowLayoutManager.DefaultAvatarIdWidth },
+                    { "User Name", WindowLayoutManager.DefaultAvatarUserNameWidth },
+                    { "Last Updated", WindowLayoutManager.DefaultAvatarUpdatedWidth },
+                    { "Browser", WindowLayoutManager.DefaultAvatarBrowserWidth },
+                });
+
+                // Load column widths for Known Groups DataGrid
+                LoadDataGridColumnWidths(GroupDbGrid, new Dictionary<string, double>
+                {
+                    { "Alert", WindowLayoutManager.DefaultGroupAlertWidth },
+                    { "Group Name", WindowLayoutManager.DefaultGroupNameWidth },
+                    { "Group ID", WindowLayoutManager.DefaultGroupIdWidth },
+                    { "Last Updated", WindowLayoutManager.DefaultGroupUpdatedWidth },
+                    { "Browser", WindowLayoutManager.DefaultGroupBrowserWidth },
+                });
+
+                // Load column widths for Known Users DataGrid
+                LoadDataGridColumnWidths(UserDbGrid, new Dictionary<string, double>
+                {
+                    { "Display Name", WindowLayoutManager.DefaultUserDisplayNameWidth },
+                    { "User ID", WindowLayoutManager.DefaultUserIdWidth },
+                    { "Elapsed Time (hh:mm)", WindowLayoutManager.DefaultUserElapsedWidth },
+                    { "Last Updated", WindowLayoutManager.DefaultUserUpdatedWidth },
+                    { "Browser", WindowLayoutManager.DefaultUserBrowserWidth },
+                });
+
+                // Load column widths for Open Logs ListView
+                LoadGridViewColumnWidths(OpenLogsListView, new Dictionary<string, double>
+                {
+                    { "FileName", WindowLayoutManager.DefaultLogFileNameWidth },
+                    { "StartTime", WindowLayoutManager.DefaultLogOpenedWidth },
+                    { "LastLineProcessedTime", WindowLayoutManager.DefaultLogLastLineWidth },
+                    { "LinesProcessed", WindowLayoutManager.DefaultLogLinesProcessedWidth },
+                });
+
+                // Load splitter positions
+                LoadRowSplitter("ActivePlayers", WindowLayoutManager.DefaultActiveRowSplitterHeight);
+                LoadRowSplitter("PastPlayers", WindowLayoutManager.DefaultPastRowSplitterHeight);
+                LoadColSplitter("ActivePlayers", WindowLayoutManager.DefaultActiveColSplitterWidth);
+                LoadColSplitter("PastPlayers", WindowLayoutManager.DefaultPastColSplitterWidth);
+
+                // Subscribe to column width change events
+                SubscribeToColumnWidthChanges();
+
+                logger.Info("Window layout loaded from registry");
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to load window layout");
+            }
+        }
+
+        private void Window_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            if (this.WindowState == WindowState.Normal)
+            {
+                WindowLayoutManager.SaveWindowSize(this);
+            }
+        }
+
+        private void Window_LocationChanged(object? sender, EventArgs e)
+        {
+            if (this.WindowState == WindowState.Normal)
+            {
+                WindowLayoutManager.SaveWindowPosition(this);
+            }
+        }
+
+        private void LoadGridViewColumnWidths(System.Windows.Controls.ListView listView, Dictionary<string, double> defaults)
+        {
+            if (listView.View is GridView gridView)
+            {
+                foreach (var column in gridView.Columns)
+                {
+                    if (column.Header is GridViewColumnHeader header)
+                    {
+                        string columnName = (header.Tag as string) ?? header.Content?.ToString() ?? "";
+                        if (!string.IsNullOrEmpty(columnName) && defaults.ContainsKey(columnName))
+                        {
+                            double width = WindowLayoutManager.LoadColumnWidth(
+                                $"{listView.Name}_{columnName}",
+                                defaults[columnName]);
+                            column.Width = width;
+                        }
+                    }
+                }
+            }
+        }
+
+        private void LoadDataGridColumnWidths(System.Windows.Controls.DataGrid dataGrid, Dictionary<string, double> defaults)
+        {
+            foreach (var column in dataGrid.Columns)
+            {
+                string columnName = column.Header?.ToString() ?? "";
+                if (!string.IsNullOrEmpty(columnName) && defaults.ContainsKey(columnName))
+                {
+                    double width = WindowLayoutManager.LoadColumnWidth(
+                        $"{dataGrid.Name}_{columnName}",
+                        defaults[columnName]);
+                    column.Width = new DataGridLength(width);
+                }
+            }
+        }
+
+        private void LoadRowSplitter(string tabName, double defaultHeight)
+        {
+            RowDefinition? gridRow = null;
+            double height = WindowLayoutManager.LoadSplitterHeight($"{tabName}_Horz", defaultHeight);
+
+            // Find the grid for the specified tab and set the row width
+            if (tabName == "ActivePlayers")
+            {
+                gridRow = ActivePlayerGridRow;
+            }
+            else if (tabName == "PastPlayers")
+            {
+                gridRow = PastPlayerGridRow;
+            }
+
+            if (gridRow != null)
+            {
+                logger.Debug($"Attempting to load splitter height for Row Splitter {tabName}, height to {height}");
+                gridRow.Height = new GridLength(height, GridUnitType.Star);
+            }
+        }
+
+        private void LoadColSplitter(string tabName, double defaultWidth)
+        {
+            ColumnDefinition? gridColumn = null;
+            double width = WindowLayoutManager.LoadSplitterHeight($"{tabName}_Vert", defaultWidth);
+
+            // Find the grid for the specified tab and set the row width
+            if (tabName == "ActivePlayers")
+            {
+                gridColumn = ActivePlayerGridColumn;
+            }
+            else if (tabName == "PastPlayers")
+            {
+                gridColumn = PastPlayerGridColumn;
+            }
+
+            if (gridColumn != null)
+            {
+                logger.Debug($"Attempting to load splitter width for Col Splitter {tabName}, width to {width}");
+                if (width == -1)
+                {
+                    gridColumn.Width = new GridLength(1, GridUnitType.Star);
+                }
+                else
+                {
+                    gridColumn.Width = new GridLength(width, GridUnitType.Pixel);
+                }                
+            }
+        }
+
+
+
+        private void SubscribeToColumnWidthChanges()
+        {
+            // Subscribe to GridView column width changes
+            SubscribeToGridViewColumnChanges(ActiveListView);
+            SubscribeToGridViewColumnChanges(PastListView);
+            SubscribeToGridViewColumnChanges(OpenLogsListView);
+
+            // Subscribe to DataGrid column width changes
+            SubscribeToDataGridColumnChanges(AvatarDbGrid);
+            SubscribeToDataGridColumnChanges(GroupDbGrid);
+            SubscribeToDataGridColumnChanges(UserDbGrid);
+        }
+
+        private void SubscribeToGridViewColumnChanges(System.Windows.Controls.ListView listView)
+        {
+            if (listView.View is GridView gridView)
+            {
+                foreach (var column in gridView.Columns)
+                {
+                    var dpd = DependencyPropertyDescriptor.FromProperty(
+                        GridViewColumn.WidthProperty,
+                        typeof(GridViewColumn));
+
+                    dpd?.AddValueChanged(column, (s, e) =>
+                    {
+                        if (s is GridViewColumn col && col.Header is GridViewColumnHeader header)
+                        {
+                            string columnName = (header.Tag as string) ?? header.Content?.ToString() ?? "";
+                            if (!string.IsNullOrEmpty(columnName))
+                            {
+                                WindowLayoutManager.SaveColumnWidth(
+                                    $"{listView.Name}_{columnName}",
+                                    col.ActualWidth);
+                            }
+                        }
+                    });
+                }
+            }
+        }
+
+        private void SubscribeToDataGridColumnChanges(System.Windows.Controls.DataGrid dataGrid)
+        {
+            foreach (var column in dataGrid.Columns)
+            {
+                var dpd = DependencyPropertyDescriptor.FromProperty(
+                    DataGridColumn.ActualWidthProperty,
+                    typeof(DataGridColumn));
+
+                dpd?.AddValueChanged(column, (s, e) =>
+                {
+                    if (s is DataGridColumn col)
+                    {
+                        string columnName = col.Header?.ToString() ?? "";
+                        if (!string.IsNullOrEmpty(columnName))
+                        {
+                            WindowLayoutManager.SaveColumnWidth(
+                                $"{dataGrid.Name}_{columnName}",
+                                col.ActualWidth);
+                        }
+                    }
+                });
+            }
+        }
+
+        private void GridSplitter_DragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
+        {
+            if (sender is GridSplitter splitter && splitter.Parent is Grid grid)
+            {
+                string splitterName = splitter.Name;
+                if (string.IsNullOrEmpty(splitterName))
+                {
+                    logger.Warn("GridSplitter has no name, cannot save position");
+                    return;
+                }
+
+                string resizeDirection = splitter.ResizeDirection.ToString();
+                logger.Debug($"Grid Splitter '{splitterName}' dragged, ResizeDirection: {resizeDirection}");
+
+                if (resizeDirection == "Rows")
+                {
+                    // Horizontal splitter - save row width
+                    int rowIndex = Grid.GetRow(splitter);
+                    if (rowIndex + 1 < grid.RowDefinitions.Count)
+                    {
+                        var rowDef = grid.RowDefinitions[rowIndex + 1];
+                        if (rowDef.Height.IsStar || rowDef.Height.IsAbsolute)
+                        {
+                            double height = rowDef.Height.IsStar ? rowDef.Height.Value : rowDef.ActualHeight;
+                            WindowLayoutManager.SaveSplitterPosition(splitterName, height);
+                            logger.Debug($"Saved row width for splitter '{splitterName}': {height}");
+                        }
+                    }
+                }
+                else if (resizeDirection == "Columns")
+                {
+                    // Vertical splitter - save column width
+                    int colIndex = Grid.GetColumn(splitter);
+                    if (colIndex == 1)
+                    {
+                        var colDef = grid.ColumnDefinitions[0];
+                        if (colDef.Width.IsStar || colDef.Width.IsAbsolute)
+                        {
+                            double width = colDef.Width.IsStar ? colDef.Width.Value : colDef.ActualWidth;
+                            WindowLayoutManager.SaveSplitterPosition(splitterName, width);
+                            logger.Debug($"Saved column width for splitter '{splitterName}': {width}");
+                        }
+                    }
+                }
+            }
+        }
+
+        private static IEnumerable<T> FindVisualChildren<T>(DependencyObject depObj) where T : DependencyObject
+        {
+            if (depObj != null)
+            {
+                for (int i = 0; i < VisualTreeHelper.GetChildrenCount(depObj); i++)
+                {
+                    DependencyObject child = VisualTreeHelper.GetChild(depObj, i);
+                    if (child is T t)
+                    {
+                        yield return t;
+                    }
+
+                    foreach (T childOfChild in FindVisualChildren<T>(child))
+                    {
+                        yield return childOfChild;
+                    }
+                }
+            }
+        }
+
+        private void ResetLayout_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var result = System.Windows.MessageBox.Show(
+                    "This will reset the window size, position, all column widths, and splitter positions to their default values. Do you want to continue?",
+                    "Reset Layout",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question);
+
+                if (result == MessageBoxResult.Yes)
+                {
+                    WindowLayoutManager.ResetLayoutSettings();
+
+                    System.Windows.MessageBox.Show(
+                        "Layout settings have been reset. Please restart the application for changes to take effect.",
+                        "Reset Complete",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+
+                    logger.Info("Layout settings reset to defaults");
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to reset layout settings");
+                System.Windows.MessageBox.Show(
+                    $"Failed to reset layout: {ex.Message}",
+                    "Error",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+        }
+
         #endregion
 
 
@@ -2235,6 +3220,395 @@ namespace Tailgrab.PlayerManagement
             };
             view.Refresh();
         }
+
+        #region Ban Management handlers
+        private ObservableCollection<GroupBanItem> _banMgmtGroupList = new ObservableCollection<GroupBanItem>();
+        private string _currentBanMgmtUserId = string.Empty;
+        private User? _currentBanMgmtUser = null;
+
+        private async void BanMgmtLoadUser_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                string userId = BanMgmtUserIdTextBox.Text.Trim();
+
+                if (string.IsNullOrWhiteSpace(userId))
+                {
+                    BanMgmtUserStatusText.Text = "Please enter a User ID";
+                    BanMgmtUserStatusText.Foreground = System.Windows.Media.Brushes.Yellow;
+                    return;
+                }
+
+                if (!userId.StartsWith("usr_"))
+                {
+                    BanMgmtUserStatusText.Text = "Invalid User ID format (must start with usr_)";
+                    BanMgmtUserStatusText.Foreground = System.Windows.Media.Brushes.Red;
+                    return;
+                }
+
+                BanMgmtUserStatusText.Text = "Loading...";
+                BanMgmtUserStatusText.Foreground = System.Windows.Media.Brushes.Yellow;
+
+                // Call GetProfile
+                var user = _serviceRegistry.GetVRChatAPIClient().GetProfile(userId);
+
+                if (user == null || string.IsNullOrEmpty(user.Id))
+                {
+                    BanMgmtUserStatusText.Text = "User not found";
+                    BanMgmtUserStatusText.Foreground = System.Windows.Media.Brushes.Red;
+                    BanMgmtUserInfoGroup.Visibility = Visibility.Collapsed;
+                    return;
+                }
+
+                _currentBanMgmtUser = user;
+                _currentBanMgmtUserId = userId;
+
+                logger.Info($"Fetched user profile for ban management: {user.DisplayName} ({user})");
+
+                // Populate user info
+                BanMgmtUserName.Text = user.DisplayName ?? "Unknown";
+                BanMgmtUserStatusDesc.Text = user.StatusDescription ?? user.Status.ToString();
+                BanMgmtUserPronouns.Text = string.IsNullOrEmpty(user.Pronouns) ? "Not specified" : user.Pronouns;
+                BanMgmtUserJoinDate.Text = user.DateJoined.ToString("yyyy-MM-dd");
+                BanMgmtUserAgeVerified.Text = user.AgeVerified ? "Yes" : "No";
+                BanMgmtUserState.Text = user.State.ToString() ;
+
+
+                string? accountThumbnailUrl = !string.IsNullOrEmpty(user.ProfilePicOverrideThumbnail) ? user.ProfilePicOverrideThumbnail : user.CurrentAvatarThumbnailImageUrl;
+
+                // Load profile image if available
+                if (!string.IsNullOrEmpty(accountThumbnailUrl))
+                {
+                    try
+                    {
+                        var bitmap = new System.Windows.Media.Imaging.BitmapImage();
+                        bitmap.BeginInit();
+                        bitmap.UriSource = new Uri(accountThumbnailUrl);
+                        bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                        bitmap.EndInit();
+                        BanMgmtUserImage.Source = bitmap;
+                    }
+                    catch
+                    {
+                        BanMgmtUserImage.Source = null;
+                    }
+                }
+                else
+                {
+                    BanMgmtUserImage.Source = null;
+                }
+
+                BanMgmtUserStatusText.Text = "User loaded successfully";
+                BanMgmtUserStatusText.Foreground = System.Windows.Media.Brushes.LightGreen;
+                BanMgmtUserInfoGroup.Visibility = Visibility.Visible;
+                BanMgmtGroupListGroup.Visibility = Visibility.Visible;
+
+                // Load groups from database
+                await LoadBanManagementGroupsAsync();
+
+                logger.Info($"Loaded user profile for ban management: {user.DisplayName} ({userId})");
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error loading user for ban management");
+                BanMgmtUserStatusText.Text = $"Error: {ex.Message}";
+                BanMgmtUserStatusText.Foreground = System.Windows.Media.Brushes.Red;
+            }
+        }
+
+        private async Task LoadBanManagementGroupsAsync()
+        {
+            try
+            {
+                _banMgmtGroupList.Clear();
+
+                // Load all groups from the database
+                var groups = _serviceRegistry.GetDBContext().GroupManagements.ToList();
+
+                foreach (var group in groups)
+                {
+                    var item = new GroupBanItem
+                    {
+                        GroupId = group.GroupId,
+                        GroupName = group.GroupName,
+                        Status = "Checking...",
+                        CanBan = false,
+                        CanUnban = false
+                    };
+
+                    _banMgmtGroupList.Add(item);
+
+                    // Check member status asynchronously
+                    _ = Task.Run(async () =>
+                    {
+                        var status = await _serviceRegistry.GetVRChatAPIClient().GetGroupMemberStatus(group.GroupId, _currentBanMgmtUserId);
+
+                        await Dispatcher.InvokeAsync(() =>
+                        {
+                            item.Status = status switch
+                            {
+                                VRChatClient.TGGroupMemberStatus.Member => "Member",
+                                VRChatClient.TGGroupMemberStatus.Banned => "Banned",
+                                VRChatClient.TGGroupMemberStatus.NotMember => "Not Member",
+                                _ => "Unknown"
+                            };
+
+                            item.CanBan = status != VRChatClient.TGGroupMemberStatus.Banned && status != VRChatClient.TGGroupMemberStatus.Unknown;
+                            item.CanUnban = status == VRChatClient.TGGroupMemberStatus.Banned;
+                        });
+                    });
+                }
+
+                BanMgmtGroupList.ItemsSource = _banMgmtGroupList;
+                logger.Info($"Loaded {_banMgmtGroupList.Count} groups for ban management");
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error loading ban management groups");
+            }
+        }
+
+        private async void BanMgmtAddGroup_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                TailgrabDBContext dBContext = _serviceRegistry.GetDBContext();
+                string groupId = BanMgmtAddGroupIdTextBox.Text.Trim();
+
+                if (string.IsNullOrWhiteSpace(groupId))
+                {
+                    System.Windows.MessageBox.Show("Please enter a Group ID", 
+                        "Invalid Input", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                if (!groupId.StartsWith("grp_"))
+                {
+                    System.Windows.MessageBox.Show("Invalid Group ID format (must start with grp_)", 
+                        "Invalid Input", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                // Check if group already exists in database
+                var existingGroup = dBContext.GroupManagements.FirstOrDefault(g => g.GroupId == groupId);
+
+                if (existingGroup != null)
+                {
+                    System.Windows.MessageBox.Show("This group already exists in the database", 
+                        "Duplicate Group", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                // Verify group exists in VRChat
+                var group = _serviceRegistry.GetVRChatAPIClient().GetGroupById(groupId);
+                if (group == null || string.IsNullOrEmpty(group.Id))
+                {
+                    System.Windows.MessageBox.Show("Group not found in VRChat. Please verify the Group ID.", 
+                        "Group Not Found", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                // Add to database
+                var newGroup = new tailgrab.src.Models.GroupManagement
+                {
+                    GroupId = groupId,
+                    GroupName = group.Name ?? "Unknown",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+
+                dBContext.Add(newGroup);
+                dBContext.SaveChanges();
+
+                // Add to the UI list
+                var item = new GroupBanItem
+                {
+                    GroupId = groupId,
+                    GroupName = group.Name ?? "Unknown",
+                    Status = "Checking...",
+                    CanBan = false,
+                    CanUnban = false
+                };
+
+                _banMgmtGroupList.Add(item);
+
+                // Check member status
+                var status = await _serviceRegistry.GetVRChatAPIClient().GetGroupMemberStatus(groupId, _currentBanMgmtUserId);
+
+                item.Status = status switch
+                {
+                    VRChatClient.TGGroupMemberStatus.Member => "Member",
+                    VRChatClient.TGGroupMemberStatus.Banned => "Banned",
+                    VRChatClient.TGGroupMemberStatus.NotMember => "Not Member",
+                    _ => "Unknown"
+                };
+
+                item.CanBan = status != VRChatClient.TGGroupMemberStatus.Banned && status != VRChatClient.TGGroupMemberStatus.Unknown;
+                item.CanUnban = status == VRChatClient.TGGroupMemberStatus.Banned;
+
+                // Clear the text box
+                BanMgmtAddGroupIdTextBox.Text = string.Empty;
+
+                logger.Info($"Added group {groupId} ({group.Name}) to ban management");
+                System.Windows.MessageBox.Show($"Group '{group.Name}' added successfully", 
+                    "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error adding group to ban management");
+                System.Windows.MessageBox.Show($"Error: {ex.Message}", 
+                    "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void BanMgmtRemoveGroup_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                TailgrabDBContext dBContext = _serviceRegistry.GetDBContext();
+                if (sender is System.Windows.Controls.Button button && button.Tag is GroupBanItem item)
+                {
+                    var result = System.Windows.MessageBox.Show(
+                        $"Are you sure you want to remove group '{item.GroupName}' from the list?\n\nThis will remove it from the database.",
+                        "Confirm Remove",
+                        MessageBoxButton.YesNo,
+                        MessageBoxImage.Question);
+
+                    if (result != MessageBoxResult.Yes)
+                    {
+                        return;
+                    }
+
+                    // Remove from database
+                    var dbGroup = dBContext.GroupManagements.FirstOrDefault(g => g.GroupId == item.GroupId);
+
+                    if (dbGroup != null)
+                    {
+                        dBContext.GroupManagements.Remove(dbGroup);
+                        dBContext.SaveChanges();
+                    }
+
+                    // Remove from UI
+                    _banMgmtGroupList.Remove(item);
+
+                    logger.Info($"Removed group {item.GroupId} ({item.GroupName}) from ban management");
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error removing group from ban management");
+                System.Windows.MessageBox.Show($"Error: {ex.Message}", 
+                    "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private async void BanMgmtBanUser_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (sender is System.Windows.Controls.Button button && button.Tag is GroupBanItem item)
+                {
+                    if (string.IsNullOrWhiteSpace(item.GroupId) || string.IsNullOrWhiteSpace(_currentBanMgmtUserId))
+                    {
+                        return;
+                    }
+
+                    var result = MessageBoxResult.Yes;
+                    //var result = System.Windows.MessageBox.Show(
+                    //    $"Are you sure you want to ban {_currentBanMgmtUser?.DisplayName} from group {item.GroupName}?",
+                    //    "Confirm Ban",
+                    //    MessageBoxButton.YesNo,
+                    //    MessageBoxImage.Question);
+
+                    if (result != MessageBoxResult.Yes)
+                    {
+                        return;
+                    }
+
+                    button.IsEnabled = false;
+                    item.Status = "Banning...";
+
+                    bool success = await _serviceRegistry.GetVRChatAPIClient().BanUserFromGroup(item.GroupId, _currentBanMgmtUserId);
+
+                    if (success)
+                    {
+                        item.Status = "Banned";
+                        item.CanBan = false;
+                        item.CanUnban = true;
+                        logger.Info($"Banned user {_currentBanMgmtUserId} from group {item.GroupId}");
+                        //System.Windows.MessageBox.Show("User banned successfully", "Success", 
+                        //    MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                    else
+                    {
+                        item.Status = "Ban Failed";
+                        button.IsEnabled = true;
+                        //System.Windows.MessageBox.Show("Failed to ban user", "Error", 
+                        //    MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error banning user from group");
+                System.Windows.MessageBox.Show($"Error: {ex.Message}", "Error", 
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private async void BanMgmtUnbanUser_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (sender is System.Windows.Controls.Button button && button.Tag is GroupBanItem item)
+                {
+                    if (string.IsNullOrWhiteSpace(item.GroupId) || string.IsNullOrWhiteSpace(_currentBanMgmtUserId))
+                    {
+                        return;
+                    }
+                    var result = MessageBoxResult.Yes;
+                    //var result = System.Windows.MessageBox.Show(
+                    //    $"Are you sure you want to unban {_currentBanMgmtUser?.DisplayName} from group {item.GroupName}?",
+                    //    "Confirm Unban",
+                    //    MessageBoxButton.YesNo,
+                    //    MessageBoxImage.Question);
+
+                    if (result != MessageBoxResult.Yes)
+                    {
+                        return;
+                    }
+
+                    button.IsEnabled = false;
+                    item.Status = "Unbanning...";
+
+                    bool success = await _serviceRegistry.GetVRChatAPIClient().UnbanUserFromGroup(item.GroupId, _currentBanMgmtUserId);
+
+                    if (success)
+                    {
+                        item.Status = "Not Member";
+                        item.CanBan = true;
+                        item.CanUnban = false;
+                        logger.Info($"Unbanned user {_currentBanMgmtUserId} from group {item.GroupId}");
+                        //System.Windows.MessageBox.Show("User unbanned successfully", "Success", 
+                        //    MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                    else
+                    {
+                        item.Status = "Unban Failed";
+                        button.IsEnabled = true;
+                        //System.Windows.MessageBox.Show("Failed to unban user", "Error", 
+                        //    MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error unbanning user from group");
+                System.Windows.MessageBox.Show($"Error: {ex.Message}", "Error", 
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+        #endregion
 
         public event PropertyChangedEventHandler? PropertyChanged;
         protected void OnPropertyChanged(string propertyName)
@@ -2271,8 +3645,8 @@ namespace Tailgrab.PlayerManagement
         public bool IsWatched { get; set; } = false;
         public string History { get; set; } = string.Empty;
         public string AlertMessages { get; set; } = string.Empty;
-        public ObservableCollection<PrintInfoViewModel> Prints { get; private set; } = new ObservableCollection<PrintInfoViewModel>();
-        public ObservableCollection<EmojiInfoViewModel> Emojis { get; private set; } = new ObservableCollection<EmojiInfoViewModel>();
+        public ObservableCollection<PrintInfoViewModel> Prints { get; private set; } = [];
+        public ObservableCollection<EmojiInfoViewModel> Emojis { get; private set; } = [];
         private bool IsFriend {  get; set; }
 
         private string _AlertColor = "Normal";
@@ -2393,26 +3767,63 @@ namespace Tailgrab.PlayerManagement
         }
     }
 
-    public class PrintInfoViewModel : INotifyPropertyChanged
+    public class PrintInfoViewModel(PlayerPrint p) : INotifyPropertyChanged
     {
-        public string PrintId { get; set; }
-        public string OwnerId { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public DateTime Timestamp { get; set; }
-        public string PrintUrl { get; set; }
-        public string AIEvaluation { get; set; }
-        public string AIClass { get; set; }
-        public string AuthorName { get; set; }
-        public PrintInfoViewModel(PlayerPrint p)
+        public string PrintId { get; set; } = p.PrintId;
+        public string OwnerId { get; set; } = p.OwnerId;
+        public DateTime CreatedAt { get; set; } = p.CreatedAt;
+        public DateTime Timestamp { get; set; } = p.Timestamp;
+        public string PrintUrl { get; set; } = p.PrintUrl;
+        public string AIEvaluation { get; set; } = p.AIEvaluation;
+        public string AIClass { get; set; } = p.AIClass;
+        public string AuthorName { get; set; } = p.AuthorName;
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+
+        protected void OnPropertyChanged(string propertyName)
         {
-            PrintId = p.PrintId;
-            OwnerId = p.OwnerId;
-            CreatedAt = p.CreatedAt;
-            Timestamp = p.Timestamp;
-            PrintUrl = p.PrintUrl;
-            AuthorName = p.AuthorName;
-            AIEvaluation = p.AIEvaluation;
-            AIClass = p.AIClass;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+    }
+
+    public class EmojiInfoViewModel(string userId, PlayerInventory i)
+    {
+        public string UserId { get; set; } = userId;
+        public string InventoryId { get; set; } = i.InventoryId;
+        public DateTime SpawnedAt { get; set; } = i.SpawnedAt;
+        public string ImageUrl { get; set; } = i.ItemUrl;
+        public string InventoryType { get; set; } = i.InventoryType;
+        public string AIEvalutation { get; set; } = i.AIEvaluation;
+    }
+
+    public class TailTaskViewModel : INotifyPropertyChanged
+    {
+        private readonly FileTailStatus _status;
+
+        public string FilePath => _status.FilePath;
+        public string FileName => Path.GetFileName(_status.FilePath);
+        public DateTime StartTime => _status.StartTime;
+        public int LinesProcessed => _status.LinesProcessed;
+        public DateTime? LastLineProcessedTime => _status.LastLineProcessedTime;
+
+        public string LastLineProcessedTimeFormatted => 
+            LastLineProcessedTime.HasValue ? LastLineProcessedTime.Value.ToString("u") : "N/A";
+
+        public TailTaskViewModel(FileTailStatus status)
+        {
+            _status = status;
+        }
+
+        public void UpdateFromStatus(FileTailStatus status)
+        {
+            OnPropertyChanged(nameof(LinesProcessed));
+            OnPropertyChanged(nameof(LastLineProcessedTime));
+            OnPropertyChanged(nameof(LastLineProcessedTimeFormatted));
+        }
+
+        public void RequestCancellation()
+        {
+            _status.RequestCancellation();
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
@@ -2423,35 +3834,10 @@ namespace Tailgrab.PlayerManagement
         }
     }
 
-    public class EmojiInfoViewModel
+    public class ReportReasonItem(string displayName, string value)
     {
-        public string UserId { get; set; }
-        public string InventoryId { get; set; }
-        public DateTime SpawnedAt { get; set; }
-        public string ImageUrl { get; set; }
-        public string InventoryType { get; set; }
-        public string AIEvalutation { get; set; }
-        public EmojiInfoViewModel(string userId, PlayerInventory i)
-        {
-            UserId = userId;
-            InventoryId = i.InventoryId;
-            SpawnedAt = i.SpawnedAt;
-            ImageUrl = i.ItemUrl;
-            InventoryType = i.InventoryType;
-            AIEvalutation = i.AIEvaluation;
-        }
-    }
-
-    public class ReportReasonItem
-    {
-        public string DisplayName { get; set; }
-        public string Value { get; set; }
-
-        public ReportReasonItem(string displayName, string value)
-        {
-            DisplayName = displayName;
-            Value = value;
-        }
+        public string DisplayName { get; set; } = displayName;
+        public string Value { get; set; } = value;
     }
     #endregion
 }

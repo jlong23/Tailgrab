@@ -2,16 +2,15 @@
 using Microsoft.Win32;
 using NLog;
 using System.IO;
+using System.Net.Http;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Media;
-using Tailgrab.Clients.VRChat;
 using Tailgrab.Common;
 using Tailgrab.Configuration;
 using Tailgrab.LineHandler;
-using Tailgrab.Models;
 using Tailgrab.PlayerManagement;
 
 namespace Tailgrab;
@@ -47,6 +46,8 @@ public class FileTailer
 
     // At the class level, add a dictionary to track active tail tasks
     static Dictionary<string, FileTailStatus> ActiveTailTasks = new Dictionary<string, FileTailStatus>();
+
+    public static IReadOnlyDictionary<string, FileTailStatus> GetActiveTailTasks() => ActiveTailTasks;
 
     /// <summary>
     /// Watch the VRChat log directory by default and process logs.
@@ -135,6 +136,9 @@ public class FileTailer
 
         //SyncAvatarModerations(_serviceRegistry);
 
+        // Check for updates before showing the main window
+        _ = Task.Run(async () => await CheckForUpdatesAsync());
+
         BuildAppWindow(_serviceRegistry);
 
         // When the window closes, allow Main to complete. The watcher task will be abandoned; if desired add cancellation.
@@ -142,8 +146,9 @@ public class FileTailer
 
     /// <summary>
     /// Threaded tailing of a file, reading new lines as they are added.
+    /// Returns the FileTailStatus immediately and processes the file in the background.
     /// </summary>
-    public static async Task<FileTailStatus> TailFileAsync(string filePath)
+    public static FileTailStatus? TailFileAsync(string filePath)
     {
         if (OpenedFiles.Contains(filePath))
         {
@@ -153,62 +158,86 @@ public class FileTailer
         var status = new FileTailStatus(filePath);
         logger.Info($"Tailing file: {filePath}");
 
-        using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-        using (StreamReader sr = new StreamReader(fs, Encoding.UTF8))
+        OpenedFiles.Add(filePath);
+
+        // Start the file tailing process in the background
+        _ = Task.Run(async () =>
         {
-            // Start at the end of the file
-            long lastMaxOffset = fs.Length;
-            fs.Seek(lastMaxOffset, SeekOrigin.Begin);
-
-            OpenedFiles.Add(filePath);
-            WatchedFiles[filePath] = new FileWatchItem(lastMaxOffset);
-
-            while (!status.IsCancellationRequested)
+            try
             {
-                // If the file size hasn't changed, wait
-                if (fs.Length == lastMaxOffset)
+                using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                using (StreamReader sr = new StreamReader(fs, Encoding.UTF8))
                 {
-                    if (WatchedFiles.ContainsKey(filePath))
-                    {
-                        WatchedFiles[filePath].ElapsedTime += 1;
-                        if (WatchedFiles[filePath].ElapsedTime >= 9000) // If we've been watching this file for 15 minutes without changes
-                        {
-                            logger.Info($"Timeout waiting for new lines in '{filePath}'");
-                            break;
-                        }
-                    }
+                    // Start at the end of the file
+                    long lastMaxOffset = fs.Length;
+                    fs.Seek(lastMaxOffset, SeekOrigin.Begin);
 
-                    await Task.Delay(100, status.CancellationSource.Token).ConfigureAwait(false);
-                    continue;
+                    WatchedFiles[filePath] = new FileWatchItem(lastMaxOffset);
+
+                    while (!status.IsCancellationRequested)
+                    {
+                        // If the file size hasn't changed, wait
+                        if (fs.Length == lastMaxOffset)
+                        {
+                            if (WatchedFiles.ContainsKey(filePath))
+                            {
+                                WatchedFiles[filePath].ElapsedTime += 1;
+                                if (WatchedFiles[filePath].ElapsedTime >= 9000) // If we've been watching this file for 15 minutes without changes
+                                {
+                                    logger.Info($"Timeout waiting for new lines in '{filePath}'");
+                                    break;
+                                }
+                            }
+
+                            await Task.Delay(100, status.CancellationSource.Token).ConfigureAwait(false);
+                            continue;
+                        }
+
+                        // Read and display new lines
+                        string? line;
+                        while ((line = await sr.ReadLineAsync().ConfigureAwait(false)) != null)
+                        {
+                            if (status.IsCancellationRequested)
+                                break;
+
+                            foreach (ILineHandler handler in HandlerList)
+                            {
+                                if (handler.HandleLine(line))
+                                {
+                                    break;
+                                }
+                            }
+
+                            status.IncrementLinesProcessed();
+                        }
+
+                        // Update the offset to the new end of the file
+                        lastMaxOffset = fs.Length;
+
+                        // Reset the watch counter for this file since we have new data
+                        WatchedFiles.Remove(filePath);
+                    }
                 }
 
-                // Read and display new lines
-                string? line;
-                while ((line = await sr.ReadLineAsync().ConfigureAwait(false)) != null)
-                {
-                    if (status.IsCancellationRequested)
-                        break;
-
-                    foreach (ILineHandler handler in HandlerList)
-                    {
-                        if (handler.HandleLine(line))
-                        {
-                            break;
-                        }
-                    }
-
-                    status.IncrementLinesProcessed();
-                }
-
-                // Update the offset to the new end of the file
-                lastMaxOffset = fs.Length;
-
-                // Reset the watch counter for this file since we have new data
-                WatchedFiles.Remove(filePath);
+                logger.Info($"Stopped tailing file: {filePath}. Total lines processed: {status.LinesProcessed}");
             }
-        }
+            catch (OperationCanceledException)
+            {
+                logger.Info($"Tailing cancelled for: {filePath}. Total lines processed: {status.LinesProcessed}");
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, $"Error tailing file: {filePath}");
+            }
+            finally
+            {
+                // Clean up
+                OpenedFiles.Remove(filePath);
+                WatchedFiles.Remove(filePath);
+                ActiveTailTasks.Remove(filePath);
+            }
+        });
 
-        logger.Info($"Stopped tailing file: {filePath}. Total lines processed: {status.LinesProcessed}");
         return status;
     }
 
@@ -223,7 +252,7 @@ public class FileTailer
 
         LogWatcher.Created += async (source, e) =>
         {
-            var status = await TailFileAsync(e.FullPath);
+            var status = TailFileAsync(e.FullPath);
             if (status != null)
             {
                 ActiveTailTasks[e.FullPath] = status;
@@ -232,7 +261,7 @@ public class FileTailer
 
         LogWatcher.Changed += async (source, e) =>
         {
-            var status = await TailFileAsync(e.FullPath);
+            var status = TailFileAsync(e.FullPath);
             if (status != null)
             {
                 ActiveTailTasks[e.FullPath] = status;
@@ -250,9 +279,9 @@ public class FileTailer
             foreach (var f in existing)
             {
                 logger.Debug($"Found File to Tail: {f}");
-                _ = Task.Run(async () =>
+                _ = Task.Run(() =>
                 {
-                    var status = await TailFileAsync(f);
+                    var status = TailFileAsync(f);
                     if (status != null)
                     {
                         ActiveTailTasks[f] = status;
@@ -310,7 +339,7 @@ public class FileTailer
                                 }
                             }
 
-                            ServiceRegistryInstance.GetAvatarManager().CacheAvatars(avatarIds);
+                            PlayerManager.CacheAvatars(avatarIds);
                         }
                     }
                 }
@@ -494,6 +523,79 @@ public class FileTailer
         catch (Exception ex)
         {
             logger.Error(ex, "Failed to create database backup");
+        }
+    }
+
+    /// <summary>
+    /// Check GitHub for new releases and notify the user if a newer version is available.
+    /// </summary>
+    private static async Task CheckForUpdatesAsync()
+    {
+        try
+        {
+            using var httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders.Add("User-Agent", "Tailgrab-Update-Checker");
+
+            var response = await httpClient.GetAsync("https://api.github.com/repos/jlong23/Tailgrab/releases/latest");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                logger.Debug($"Failed to check for updates. Status: {response.StatusCode}");
+                return;
+            }
+
+            var json = await response.Content.ReadAsStringAsync();
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+
+            if (!root.TryGetProperty("tag_name", out var tagNameElement))
+            {
+                logger.Debug("No tag_name found in GitHub release response");
+                return;
+            }
+
+            if (!root.TryGetProperty("name", out var releaseNameElement))
+            {
+                logger.Debug("No tag_name found in GitHub release response");
+                return;
+            }
+
+            string latestVersion = tagNameElement.GetString() ?? "";
+            string latestVersionName = releaseNameElement.GetString() ?? "";
+            string currentVersion = BuildInfo.GetInformationalVersion();
+
+            // Remove 'v' prefix if present for comparison
+            latestVersion = latestVersion.TrimStart('v');
+            currentVersion = currentVersion.TrimStart('v');
+
+            // Parse and compare versions
+            if (Version.TryParse(latestVersion, out var latest) && 
+                Version.TryParse(currentVersion.Split('+')[0], out var current))
+            {
+                if (latest > current)
+                {
+                    logger.Info($"New version available: {latestVersion} (current: {currentVersion})");
+
+                    // Show update notification on the UI thread
+                    System.Windows.Application.Current?.Dispatcher.Invoke(() =>
+                    {
+                        var dialog = new UpdateNotificationDialog(latestVersion, latestVersionName, currentVersion);
+                        dialog.ShowDialog();
+                    });
+                }
+                else
+                {
+                    logger.Debug($"Already on latest version: {currentVersion}");
+                }
+            }
+            else
+            {
+                logger.Debug($"Failed to parse versions. Latest: {latestVersion}, Current: {currentVersion}");
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.Warn(ex, "Failed to check for updates");
         }
     }
 
@@ -747,6 +849,32 @@ public class FileTailer
         app.Resources[typeof(System.Windows.Window)] = windowStyle;
 
         var panel = new TailgrabPanel(serviceRegistryInstance);
+
+        try
+        {
+            string LayoutRegistryPath = "Software\\DeviousFox\\Tailgrab\\Layout";
+            using (var key = Registry.CurrentUser.OpenSubKey(LayoutRegistryPath))
+            {
+                if (key != null)
+                {
+                    var width = key.GetValue("WindowWidth");
+                    var height = key.GetValue("WindowHeight");
+
+                    if (width != null && height != null)
+                    {
+                        panel.Width = Convert.ToDouble(width);
+                        panel.Height = Convert.ToDouble(height);
+                        logger.Debug($"Loaded window size: {panel.Width}x{panel.Height}");
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.Error(ex, "Failed to load window size from registry.");
+        }
+
+
         app.Run(panel);
     }
 }

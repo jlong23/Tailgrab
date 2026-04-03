@@ -2,6 +2,7 @@ namespace Tailgrab.LineHandler;
 
 using System.Text.RegularExpressions;
 using Tailgrab.Common;
+using Tailgrab.PlayerManagement;
 
 public class QuitHandler : AbstractLineHandler
 {
@@ -35,7 +36,7 @@ public class QuitHandler : AbstractLineHandler
                 logger.Info($"{COLOR_PREFIX}Application Stop :  {time} {COLOR_RESET.GetAnsiEscape()}");
             }
 
-            _serviceRegistry.GetPlayerManager().ClearAllPlayers(this);
+            PlayerManager.ClearAllPlayers(this);
 
             ExecuteActions();
             return true;

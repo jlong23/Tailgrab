@@ -16,6 +16,9 @@ Tailgrab will read the VRChat Local Game Log files in real time, parse them for 
 - Group Flagging based on user directed database.
 - Historical tracking of User elapsed time seen from your usage of the application.
 - Trigger actions based on VRChat log events of "Vote To Kick" or "Group Moderation Action (Kick/Warn)", such as sending OSC Avatar Parameters, sending keystrokes to other applications, etc.
+- Allows capture of Groups and Avatars that are not currently in the instance for future alerting or ignoring them
+- Imports Moderated Users avatars as "Nuisance" level for quick identification in future instances.
+- Saves Layout of window size, position, columns and splitters for next open.
 
 ## Installation
 
@@ -213,5 +216,7 @@ https://gist.githubusercontent.com/jlong23/2b051df849cabb4da273eaf98225ae4e/raw/
 [Config Tab, Secrets](./docs/Config_Application.md) Configure API Keys and other application settings.
 
 [Config Tab, Alerts](./docs/Config_Alerts.md) Configure Alert Levels sounds and highlight colors.
+
+[Config Tab, Open Logs](./docs/Config_OpenLogs.md) Show and close open logs.
 
 [Config Tab, Migrations](./docs/Config_Migrations.md) Migrate V1.0.9 Database to the new database.

@@ -12,6 +12,47 @@ Title="Tailgrab Player Panel"
     <Window.Resources>
         <local:MinutesToHoursMinutesConverter x:Key="MinutesToHoursMinutesConverter"/>
         <local:SoundNotNoneConverter x:Key="SoundNotNoneConverter"/>
+
+        <!-- Reusable ListViewItem Style with Dynamic Colors -->
+        <Style x:Key="PlayerListViewItemStyle" TargetType="{x:Type ListViewItem}">
+            <Setter Property="Background" Value="{Binding DataContext.NormalBackground, RelativeSource={RelativeSource AncestorType=Window}}"/>
+            <Setter Property="Foreground" Value="{Binding DataContext.NormalForeground, RelativeSource={RelativeSource AncestorType=Window}}"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding HighlightClass}" Value="Normal">
+                    <Setter Property="Background" Value="{Binding DataContext.NormalBackground, RelativeSource={RelativeSource AncestorType=Window}}" />
+                    <Setter Property="Foreground" Value="{Binding DataContext.NormalForeground, RelativeSource={RelativeSource AncestorType=Window}}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding HighlightClass}" Value="Friend">
+                    <Setter Property="Background" Value="{Binding DataContext.FriendBackground, RelativeSource={RelativeSource AncestorType=Window}}" />
+                    <Setter Property="Foreground" Value="{Binding DataContext.FriendForeground, RelativeSource={RelativeSource AncestorType=Window}}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding HighlightClass}" Value="Class01">
+                    <Setter Property="Background" Value="{Binding DataContext.Class01Background, RelativeSource={RelativeSource AncestorType=Window}}" />
+                    <Setter Property="Foreground" Value="{Binding DataContext.Class01Foreground, RelativeSource={RelativeSource AncestorType=Window}}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding HighlightClass}" Value="Class02">
+                    <Setter Property="Background" Value="{Binding DataContext.Class02Background, RelativeSource={RelativeSource AncestorType=Window}}" />
+                    <Setter Property="Foreground" Value="{Binding DataContext.Class02Foreground, RelativeSource={RelativeSource AncestorType=Window}}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding HighlightClass}" Value="Class03">
+                    <Setter Property="Background" Value="{Binding DataContext.Class03Background, RelativeSource={RelativeSource AncestorType=Window}}" />
+                    <Setter Property="Foreground" Value="{Binding DataContext.Class03Foreground, RelativeSource={RelativeSource AncestorType=Window}}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding HighlightClass}" Value="Class04">
+                    <Setter Property="Background" Value="{Binding DataContext.Class04Background, RelativeSource={RelativeSource AncestorType=Window}}" />
+                    <Setter Property="Foreground" Value="{Binding DataContext.Class04Foreground, RelativeSource={RelativeSource AncestorType=Window}}" />
+                </DataTrigger>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="{Binding DataContext.SelectedBackground, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                    <Setter Property="Foreground" Value="{Binding DataContext.SelectedForeground, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                </Trigger>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{Binding DataContext.MouseOverBackground, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                    <Setter Property="Foreground" Value="{Binding DataContext.MouseOverForeground, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
     </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
@@ -22,61 +63,24 @@ Title="Tailgrab Player Panel"
         <Grid Margin="8" Grid.Row="0">
             <TabControl>
                 <TabItem Header="Active Players">
-                    <Grid>
+                    <Grid Name="ActivePlayerLayoutGrid">
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="13*"/>
+                            <RowDefinition Height="20*"/>
                             <RowDefinition Height="267*"/>
                             <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*" MinHeight="100"/>
+                            <RowDefinition x:Name="ActivePlayerGridRow" Height="*" MinHeight="100"/>
                         </Grid.RowDefinitions>
 
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6" Grid.Row="0">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6" Grid.Row="0" Grid.ColumnSpan="2">
                             <TextBox Name="ActiveFilterBox" Width="300" Margin="0,0,8,0" />
                             <Button Content="Apply Filter" Click="ActiveApplyFilter_Click" Margin="0,0,6,0"/>
                             <Button Content="Clear Filter" Click="ActiveClearFilter_Click"/>
                         </StackPanel>
 
-                        <ListView Name="ActiveListView" ItemsSource="{Binding ActiveView}" SelectedItem="{Binding SelectedActive, Mode=TwoWay}" Grid.Row="1">
-                            <ListView.Resources>
-                                <Style TargetType="{x:Type ListViewItem}">
-                                    <Setter Property="Background" Value="#FF1E1E1E"/>
-                                    <Setter Property="Foreground" Value="#FFE6E6E6"/>
-                                    <Setter Property="BorderBrush" Value="Transparent"/>
-                                    <Style.Triggers>
-                                        <!-- Existing DataTriggers -->
-                                        <DataTrigger Binding="{Binding HighlightClass}" Value="Normal">
-                                            <Setter Property="Background" Value="#FF1E1E1E" />
-                                            <Setter Property="Foreground" Value="#FFE6E6E6" />
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding HighlightClass}" Value="Friend">
-                                            <Setter Property="Background" Value="#FF1E1E1E" />
-                                            <Setter Property="Foreground" Value="LightGreen" />
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding HighlightClass}" Value="Yellow">
-                                            <Setter Property="Background" Value="Yellow" />
-                                            <Setter Property="Foreground" Value="Black" />
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding HighlightClass}" Value="Red">
-                                            <Setter Property="Background" Value="Red" />
-                                            <Setter Property="Foreground" Value="Yellow" />
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding HighlightClass}" Value="Purple">
-                                            <Setter Property="Background" Value="Purple" />
-                                            <Setter Property="Foreground" Value="Yellow" />
-                                        </DataTrigger>
-
-                                        <!-- Add these triggers for selection and mouse-over -->
-                                        <Trigger Property="IsSelected" Value="True">
-                                            <Setter Property="Background" Value="#FF1d1db3"/>
-                                            <Setter Property="Foreground" Value="#FFFFFF00"/>
-                                        </Trigger>
-                                        <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter Property="Background" Value="#FF1d1db3"/>
-                                            <Setter Property="Foreground" Value="#FFFFFF00"/>
-                                        </Trigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </ListView.Resources>
+                        <ListView Name="ActiveListView" ItemsSource="{Binding ActiveView}" SelectedItem="{Binding SelectedActive, Mode=TwoWay}" Grid.ColumnSpan="2" Margin="0,26,0,0" Grid.RowSpan="2">
+                            <ListView.ItemContainerStyle>
+                                <StaticResource ResourceKey="PlayerListViewItemStyle"/>
+                            </ListView.ItemContainerStyle>
                             <ListView.ContextMenu>
                                 <ContextMenu>
                                     <MenuItem Header="Filter">
@@ -170,11 +174,11 @@ Title="Tailgrab Player Panel"
                             </ListView.View>
                         </ListView>
 
-                        <GridSplitter Grid.Row="2" Height="5" HorizontalAlignment="Stretch" VerticalAlignment="Center" Background="#FF3F3F46" ShowsPreview="False" ResizeDirection="Rows"/>
+                        <GridSplitter Name="ActivePlayers_Horz"  Grid.Row="2" Height="5" HorizontalAlignment="Stretch" VerticalAlignment="Center" Background="#FF3F3F46" ShowsPreview="False" ResizeDirection="Rows" Grid.ColumnSpan="2" DragCompleted="GridSplitter_DragCompleted"/>
 
-                        <Grid Margin="0,0,0,6" Grid.Row="3">
+                        <Grid Margin="0,0,0,6" Grid.Row="3" Grid.ColumnSpan="2">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*" Name="ActivePlayerGridColumn"/>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
@@ -188,7 +192,7 @@ Title="Tailgrab Player Panel"
                                 </TextBox.Text>
                             </TextBox>
 
-                            <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="#FF3F3F46" ShowsPreview="False"/>
+                            <GridSplitter Name="ActivePlayers_Vert" Grid.Column="1" Width="5" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="#FF3F3F46" ShowsPreview="False" ResizeDirection="Columns" DragCompleted="GridSplitter_DragCompleted"/>
 
                             <TextBox Name="UserAlertsBox" Grid.Column="2" Height="auto" Margin="4,0,8,0" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" Text="{Binding SelectedActive.History, Mode=OneWay, FallbackValue='', TargetNullValue=''}" />
                         </Grid>
@@ -284,12 +288,12 @@ Title="Tailgrab Player Panel"
                 </TabItem>
 
                 <TabItem Header="Past Players">
-                    <Grid>
+                    <Grid Name="PastPlayerLayoutGrid">
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="13*"/>
+                            <RowDefinition Height="20*"/>
                             <RowDefinition Height="267*"/>
                             <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*" MinHeight="100"/>
+                            <RowDefinition x:Name="PastPlayerGridRow" Height="*" MinHeight="100"/>
                         </Grid.RowDefinitions>
 
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,6" Grid.Row="0">
@@ -299,46 +303,9 @@ Title="Tailgrab Player Panel"
                         </StackPanel>
 
                         <ListView Name="PastListView" Grid.Row="1" ItemsSource="{Binding PastView}" SelectedItem="{Binding SelectedPast, Mode=TwoWay}">
-                            <ListView.Resources>
-                                <Style TargetType="{x:Type ListViewItem}">
-                                    <Setter Property="Background" Value="#FF1E1E1E"/>
-                                    <Setter Property="Foreground" Value="#FFE6E6E6"/>
-                                    <Setter Property="BorderBrush" Value="Transparent"/>
-                                    <Style.Triggers>
-                                        <!-- Existing DataTriggers -->
-                                        <DataTrigger Binding="{Binding HighlightClass}" Value="Normal">
-                                            <Setter Property="Background" Value="#FF1E1E1E" />
-                                            <Setter Property="Foreground" Value="#FFE6E6E6" />
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding HighlightClass}" Value="Friend">
-                                            <Setter Property="Background" Value="#FF1E1E1E" />
-                                            <Setter Property="Foreground" Value="LightGreen" />
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding HighlightClass}" Value="Yellow">
-                                            <Setter Property="Background" Value="Yellow" />
-                                            <Setter Property="Foreground" Value="Black" />
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding HighlightClass}" Value="Red">
-                                            <Setter Property="Background" Value="Red" />
-                                            <Setter Property="Foreground" Value="Yellow" />
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding HighlightClass}" Value="Purple">
-                                            <Setter Property="Background" Value="Purple" />
-                                            <Setter Property="Foreground" Value="Yellow" />
-                                        </DataTrigger>
-
-                                        <!-- Add these triggers for selection and mouse-over -->
-                                        <Trigger Property="IsSelected" Value="True">
-                                            <Setter Property="Background" Value="#FF1d1db3"/>
-                                            <Setter Property="Foreground" Value="#FFFFFF00"/>
-                                        </Trigger>
-                                        <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter Property="Background" Value="#FF1d1db3"/>
-                                            <Setter Property="Foreground" Value="#FFFFFF00"/>
-                                        </Trigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </ListView.Resources>
+                            <ListView.ItemContainerStyle>
+                                <StaticResource ResourceKey="PlayerListViewItemStyle"/>
+                            </ListView.ItemContainerStyle>
 
                             <ListView.ContextMenu>
                                 <ContextMenu>
@@ -433,11 +400,11 @@ Title="Tailgrab Player Panel"
                             </ListView.View>
                         </ListView>
 
-                        <GridSplitter Grid.Row="2" Height="5" HorizontalAlignment="Stretch" VerticalAlignment="Center" Background="#FF3F3F46" ShowsPreview="False" ResizeDirection="Rows"/>
+                        <GridSplitter Name="PastPlayers_Horz" Grid.Row="2" Height="5" HorizontalAlignment="Stretch" VerticalAlignment="Center" Background="#FF3F3F46" ShowsPreview="False" ResizeDirection="Rows" DragCompleted="GridSplitter_DragCompleted"/>
 
                         <Grid Margin="0,0,0,6" Grid.Row="3">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*" Name="PastPlayerGridColumn"/>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
@@ -451,7 +418,7 @@ Title="Tailgrab Player Panel"
                                 </TextBox.Text>
                             </TextBox>
 
-                            <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="#FF3F3F46" ShowsPreview="False"/>
+                            <GridSplitter Name="PastPlayers_Vert" Grid.Column="1" Width="5" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="#FF3F3F46" ShowsPreview="False" ResizeDirection="Columns" DragCompleted="GridSplitter_DragCompleted"/>
 
                             <TextBox Name="UserAlertsBoxPast" Grid.Column="2" Height="auto" Margin="4,0,8,0" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" Text="{Binding SelectedPast.History, Mode=OneWay, FallbackValue='', TargetNullValue=''}" />
                         </Grid>
@@ -972,7 +939,7 @@ Title="Tailgrab Player Panel"
                     </Grid>
                 </TabItem>
 
-                <TabItem Header="Config">
+                <TabItem Header="Config" Height="23" Margin="-2,-2,-2,0" VerticalAlignment="Top">
                     <TabControl>
                         <TabItem Header="Known Avatars">
                             <Grid>
@@ -1136,7 +1103,7 @@ Title="Tailgrab Player Panel"
                                 </DataGrid>
                             </Grid>
                         </TabItem>
-                        <TabItem Header="Line Matchers">
+                        <TabItem Header="Line Matchers" IsEnabled="False">
                             <Grid>
                                 <TextBlock Margin="12" Text="Config view not implemented yet." />
                             </Grid>
@@ -1147,6 +1114,7 @@ Title="Tailgrab Player Panel"
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
                                     <RowDefinition Height="Auto" />
                                     <RowDefinition Height="Auto" />
                                     <RowDefinition Height="Auto" />
@@ -1180,7 +1148,8 @@ Title="Tailgrab Player Panel"
                                     <Grid Margin="6">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto" />
-                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="Auto" />
@@ -1188,10 +1157,12 @@ Title="Tailgrab Player Panel"
                                         </Grid.RowDefinitions>
 
                                         <Label Grid.Row="0" Grid.Column="0" Content="Avatar GIST Url:" VerticalAlignment="Center"/>
-                                        <TextBox Grid.Row="0" Grid.Column="1" Name="avatarGistUrl" Width="300" Margin="6,2" />
+                                        <TextBox Grid.Row="0" Grid.Column="1" Name="avatarGistUrl" Width="300" Margin="6,2" TextChanged="GistUrl_TextChanged"/>
+                                        <Button Grid.Row="0" Grid.Column="2" Name="avatarGistCheckButton" Content="Check Now" Width="100" Margin="6,2" Click="CheckAvatarGist_Click" IsEnabled="False"/>
 
                                         <Label Grid.Row="1" Grid.Column="0" Content="Group GIST Url:" VerticalAlignment="Center"/>
-                                        <TextBox Grid.Row="1" Grid.Column="1" Name="groupGistUrl" Width="300" Margin="6,2" />
+                                        <TextBox Grid.Row="1" Grid.Column="1" Name="groupGistUrl" Width="300" Margin="6,2" TextChanged="GistUrl_TextChanged"/>
+                                        <Button Grid.Row="1" Grid.Column="2" Name="groupGistCheckButton" Content="Check Now" Width="100" Margin="6,2" Click="CheckGroupGist_Click" IsEnabled="False"/>
                                     </Grid>
                                 </GroupBox>
 
@@ -1242,7 +1213,7 @@ Title="Tailgrab Player Panel"
 
                                         <Label Grid.Row="0" Grid.Column="0" Content="Insert Discovered Public Avatars:" VerticalAlignment="Center"/>
                                         <CheckBox Grid.Row="0" Grid.Column="1" Name="DiscoveredAvatarCaching" VerticalAlignment="Center" Margin="6,2" ToolTip="When enabled, Tailgrab will collect avatars from the AmpCache, public and private and include them into your private list."/>
-                                        
+
                                         <Label Grid.Row="0" Grid.Column="2" Content="Insert Moderated Public Avatars:" VerticalAlignment="Center"/>
                                         <CheckBox Grid.Row="0" Grid.Column="3" Name="ModeratedAvatarCaching" VerticalAlignment="Center" Margin="6,2" ToolTip="When enabled, Tailgrab will download your account's avatar moderation and add public avatars that do not exist into your list as 'Nuisance' avatars.  Will not include the private avatar moderations."/>
 
@@ -1251,12 +1222,13 @@ Title="Tailgrab Player Panel"
                                     </Grid>
                                 </GroupBox>
 
-                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,12,0,0" Grid.Row="4">
-                                    <Button Content="Save Config" Click="SaveConfig_Click" Width="120" />
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,12,0,0" Grid.Row="5">
+                                    <Button Content="Save Config" Click="SaveConfig_Click" Width="120" Margin="0,0,12,0"/>
+                                    <Button Content="Reset Layout" Click="ResetLayout_Click" Width="120" ToolTip="Reset window size and column widths to default values"/>
                                 </StackPanel>
                             </Grid>
                         </TabItem>
-                        <TabItem Header="Alerts">
+                        <TabItem Header="Alerts" GotFocus="AlertsTab_GotFocus">
                             <Grid Margin="6">
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="auto" />
@@ -1301,9 +1273,19 @@ Title="Tailgrab Player Panel"
                                                 </Button.IsEnabled>
                                             </Button>
 
-                                            <Label Content="Color:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
+                                            <Label Content="Class:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
                                             <ComboBox Name="AvatarWarnColor" ItemsSource="{Binding DataContext.AlertColorOptions, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                          SelectedValuePath="Value" DisplayMemberPath="Key" Margin="2,2,2,2" Width="200"/>
+                                                          SelectedValuePath="Value" Margin="2,2,2,2" Width="260">
+                                                <ComboBox.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <Rectangle Width="20" Height="20" Fill="{Binding BackgroundBrush}" Margin="0,0,4,0"/>
+                                                            <Rectangle Width="20" Height="20" Fill="{Binding ForegroundBrush}" Margin="0,0,8,0"/>
+                                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                </ComboBox.ItemTemplate>
+                                            </ComboBox>
                                         </StackPanel>
 
                                         <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="2">
@@ -1318,9 +1300,19 @@ Title="Tailgrab Player Panel"
                                                 </Button.IsEnabled>
                                             </Button>
 
-                                            <Label Content="Color:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
+                                            <Label Content="Class:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
                                             <ComboBox Name="AvatarNuisanceColor" ItemsSource="{Binding DataContext.AlertColorOptions, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                          SelectedValuePath="Value" DisplayMemberPath="Key" Margin="2,2,2,2" Width="200"/>
+                                                          SelectedValuePath="Value" Margin="2,2,2,2" Width="260">
+                                                <ComboBox.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <Rectangle Width="20" Height="20" Fill="{Binding BackgroundBrush}" Margin="0,0,4,0"/>
+                                                            <Rectangle Width="20" Height="20" Fill="{Binding ForegroundBrush}" Margin="0,0,8,0"/>
+                                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                </ComboBox.ItemTemplate>
+                                            </ComboBox>
                                         </StackPanel>
 
                                         <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="2">
@@ -1335,9 +1327,19 @@ Title="Tailgrab Player Panel"
                                                 </Button.IsEnabled>
                                             </Button>
 
-                                            <Label Content="Color:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
+                                            <Label Content="Class:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
                                             <ComboBox Name="AvatarCrasherColor" ItemsSource="{Binding DataContext.AlertColorOptions, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                          SelectedValuePath="Value" DisplayMemberPath="Key" Margin="2,2,2,2" Width="200"/>
+                                                          SelectedValuePath="Value" Margin="2,2,2,2" Width="260">
+                                                <ComboBox.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <Rectangle Width="20" Height="20" Fill="{Binding BackgroundBrush}" Margin="0,0,4,0"/>
+                                                            <Rectangle Width="20" Height="20" Fill="{Binding ForegroundBrush}" Margin="0,0,8,0"/>
+                                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                </ComboBox.ItemTemplate>
+                                            </ComboBox>
                                         </StackPanel>
 
 
@@ -1355,9 +1357,19 @@ Title="Tailgrab Player Panel"
                                                 </Button.IsEnabled>
                                             </Button>
 
-                                            <Label Content="Color:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
+                                            <Label Content="Class:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
                                             <ComboBox Name="GroupWarnColor" ItemsSource="{Binding DataContext.AlertColorOptions, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                          SelectedValuePath="Value" DisplayMemberPath="Key" Margin="2,2,2,2" Width="200"/>
+                                                          SelectedValuePath="Value" Margin="2,2,2,2" Width="260">
+                                                <ComboBox.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <Rectangle Width="20" Height="20" Fill="{Binding BackgroundBrush}" Margin="0,0,4,0"/>
+                                                            <Rectangle Width="20" Height="20" Fill="{Binding ForegroundBrush}" Margin="0,0,8,0"/>
+                                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                </ComboBox.ItemTemplate>
+                                            </ComboBox>
                                         </StackPanel>
 
                                         <StackPanel Grid.Row="4" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="2">
@@ -1372,9 +1384,19 @@ Title="Tailgrab Player Panel"
                                                 </Button.IsEnabled>
                                             </Button>
 
-                                            <Label Content="Color:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
+                                            <Label Content="Class:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
                                             <ComboBox Name="GroupNuisanceColor" ItemsSource="{Binding DataContext.AlertColorOptions, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                          SelectedValuePath="Value" DisplayMemberPath="Key" Margin="2,2,2,2" Width="200"/>
+                                                          SelectedValuePath="Value" Margin="2,2,2,2" Width="260">
+                                                <ComboBox.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <Rectangle Width="20" Height="20" Fill="{Binding BackgroundBrush}" Margin="0,0,4,0"/>
+                                                            <Rectangle Width="20" Height="20" Fill="{Binding ForegroundBrush}" Margin="0,0,8,0"/>
+                                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                </ComboBox.ItemTemplate>
+                                            </ComboBox>
                                         </StackPanel>
 
                                         <StackPanel Grid.Row="5" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="2">
@@ -1389,9 +1411,19 @@ Title="Tailgrab Player Panel"
                                                 </Button.IsEnabled>
                                             </Button>
 
-                                            <Label Content="Color:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
+                                            <Label Content="Class:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
                                             <ComboBox Name="GroupCrasherColor" ItemsSource="{Binding DataContext.AlertColorOptions, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                          SelectedValuePath="Value" DisplayMemberPath="Key" Margin="2,2,2,2" Width="200"/>
+                                                          SelectedValuePath="Value" Margin="2,2,2,2" Width="260">
+                                                <ComboBox.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <Rectangle Width="20" Height="20" Fill="{Binding BackgroundBrush}" Margin="0,0,4,0"/>
+                                                            <Rectangle Width="20" Height="20" Fill="{Binding ForegroundBrush}" Margin="0,0,8,0"/>
+                                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                </ComboBox.ItemTemplate>
+                                            </ComboBox>
                                         </StackPanel>
 
 
@@ -1409,9 +1441,19 @@ Title="Tailgrab Player Panel"
                                                 </Button.IsEnabled>
                                             </Button>
 
-                                            <Label Content="Color:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
+                                            <Label Content="Class:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
                                             <ComboBox Name="ProfileWarnColor" ItemsSource="{Binding DataContext.AlertColorOptions, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                          SelectedValuePath="Value" DisplayMemberPath="Key" Margin="2,2,2,2" Width="200"/>
+                                                          SelectedValuePath="Value" Margin="2,2,2,2" Width="260">
+                                                <ComboBox.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <Rectangle Width="20" Height="20" Fill="{Binding BackgroundBrush}" Margin="0,0,4,0"/>
+                                                            <Rectangle Width="20" Height="20" Fill="{Binding ForegroundBrush}" Margin="0,0,8,0"/>
+                                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                </ComboBox.ItemTemplate>
+                                            </ComboBox>
                                         </StackPanel>
 
                                         <StackPanel Grid.Row="7" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="2">
@@ -1426,9 +1468,19 @@ Title="Tailgrab Player Panel"
                                                 </Button.IsEnabled>
                                             </Button>
 
-                                            <Label Content="Color:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
+                                            <Label Content="Class:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
                                             <ComboBox Name="ProfileNuisanceColor" ItemsSource="{Binding DataContext.AlertColorOptions, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                          SelectedValuePath="Value" DisplayMemberPath="Key" Margin="2,2,2,2" Width="200"/>
+                                                          SelectedValuePath="Value" Margin="2,2,2,2" Width="260">
+                                                <ComboBox.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <Rectangle Width="20" Height="20" Fill="{Binding BackgroundBrush}" Margin="0,0,4,0"/>
+                                                            <Rectangle Width="20" Height="20" Fill="{Binding ForegroundBrush}" Margin="0,0,8,0"/>
+                                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                </ComboBox.ItemTemplate>
+                                            </ComboBox>
                                         </StackPanel>
 
                                         <StackPanel Grid.Row="8" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="2">
@@ -1443,9 +1495,19 @@ Title="Tailgrab Player Panel"
                                                 </Button.IsEnabled>
                                             </Button>
 
-                                            <Label Content="Color:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
+                                            <Label Content="Class:" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
                                             <ComboBox Name="ProfileCrasherColor" ItemsSource="{Binding DataContext.AlertColorOptions, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                          SelectedValuePath="Value" DisplayMemberPath="Key" Margin="2,2,2,2" Width="200"/>
+                                                          SelectedValuePath="Value" Margin="2,2,2,2" Width="260">
+                                                <ComboBox.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <Rectangle Width="20" Height="20" Fill="{Binding BackgroundBrush}" Margin="0,0,4,0"/>
+                                                            <Rectangle Width="20" Height="20" Fill="{Binding ForegroundBrush}" Margin="0,0,8,0"/>
+                                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                </ComboBox.ItemTemplate>
+                                            </ComboBox>
                                         </StackPanel>
 
 
@@ -1455,6 +1517,301 @@ Title="Tailgrab Player Panel"
                                 <StackPanel Orientation="Horizontal" Grid.Row="4" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,6,0,0">
                                     <Button Content="Save Config" Click="SaveAlerts_Click" Width="120" />
                                 </StackPanel>
+                            </Grid>
+                        </TabItem>
+                        <TabItem Header="Colors">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <Grid Margin="12">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+
+                                    <TextBlock Grid.Row="0" 
+                                               Text="Highlight Color Configuration" 
+                                               FontSize="16" 
+                                               FontWeight="Bold" 
+                                               Margin="0,0,0,16"
+                                               Foreground="White"/>
+
+                                    <GroupBox Header="Player List Highlight Colors" Grid.Row="1" Margin="0,0,0,12">
+                                        <Grid Margin="8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="150"/>
+                                                <ColumnDefinition Width="200"/>
+                                                <ColumnDefinition Width="200"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
+
+                                            <!-- Header Row -->
+                                            <Label Grid.Row="0" Grid.Column="0" Content="Class" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                                            <Label Grid.Row="0" Grid.Column="1" Content="Background Color" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                                            <Label Grid.Row="0" Grid.Column="2" Content="Foreground Color" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+
+                                            <!-- Normal -->
+                                            <Label Grid.Row="1" Grid.Column="0" Content="Normal:" VerticalAlignment="Center" Foreground="#FFE6E6E6"/>
+                                            <ComboBox Grid.Row="1" Grid.Column="1" Name="NormalBackgroundCombo" Margin="4,2" 
+                                                      ItemsSource="{Binding ColorOptions}" SelectedValue="{Binding SelectedNormalBackground, Mode=TwoWay}">
+                                                <ComboBox.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <Rectangle Width="20" Height="20" Fill="{Binding Brush}" Margin="0,0,8,0"/>
+                                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                </ComboBox.ItemTemplate>
+                                            </ComboBox>
+                                            <ComboBox Grid.Row="1" Grid.Column="2" Name="NormalForegroundCombo" Margin="4,2"
+                                                      ItemsSource="{Binding ColorOptions}" SelectedValue="{Binding SelectedNormalForeground, Mode=TwoWay}">
+                                                <ComboBox.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <Rectangle Width="20" Height="20" Fill="{Binding Brush}" Margin="0,0,8,0"/>
+                                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                </ComboBox.ItemTemplate>
+                                            </ComboBox>
+
+                                            <!-- Friend -->
+                                            <Label Grid.Row="2" Grid.Column="0" Content="Friends:" VerticalAlignment="Center" Foreground="#FFE6E6E6"/>
+                                            <ComboBox Grid.Row="2" Grid.Column="1" Name="FriendBackgroundCombo" Margin="4,2"
+                                                      ItemsSource="{Binding ColorOptions}" SelectedValue="{Binding SelectedFriendBackground, Mode=TwoWay}">
+                                                <ComboBox.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <Rectangle Width="20" Height="20" Fill="{Binding Brush}" Margin="0,0,8,0"/>
+                                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                </ComboBox.ItemTemplate>
+                                            </ComboBox>
+                                            <ComboBox Grid.Row="2" Grid.Column="2" Name="FriendForegroundCombo" Margin="4,2"
+                                                      ItemsSource="{Binding ColorOptions}" SelectedValue="{Binding SelectedFriendForeground, Mode=TwoWay}">
+                                                <ComboBox.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <Rectangle Width="20" Height="20" Fill="{Binding Brush}" Margin="0,0,8,0"/>
+                                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                </ComboBox.ItemTemplate>
+                                            </ComboBox>
+
+                                            <!-- Selected -->
+                                            <Label Grid.Row="3" Grid.Column="0" Content="Selected:" VerticalAlignment="Center" Foreground="#FFE6E6E6"/>
+                                            <ComboBox Grid.Row="3" Grid.Column="1" Name="SelectedBackgroundCombo" Margin="4,2"
+                                                      ItemsSource="{Binding ColorOptions}" SelectedValue="{Binding SelectedSelectedBackground, Mode=TwoWay}">
+                                                <ComboBox.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <Rectangle Width="20" Height="20" Fill="{Binding Brush}" Margin="0,0,8,0"/>
+                                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                </ComboBox.ItemTemplate>
+                                            </ComboBox>
+                                            <ComboBox Grid.Row="3" Grid.Column="2" Name="SelectedForegroundCombo" Margin="4,2"
+                                                      ItemsSource="{Binding ColorOptions}" SelectedValue="{Binding SelectedSelectedForeground, Mode=TwoWay}">
+                                                <ComboBox.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <Rectangle Width="20" Height="20" Fill="{Binding Brush}" Margin="0,0,8,0"/>
+                                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                </ComboBox.ItemTemplate>
+                                            </ComboBox>
+
+                                            <!-- Yellow -->
+                                            <Label Grid.Row="4" Grid.Column="0" Content="Class 1:" VerticalAlignment="Center" Foreground="#FFE6E6E6"/>
+                                            <ComboBox Grid.Row="4" Grid.Column="1" Name="Class01BackgroundCombo" Margin="4,2"
+                                                      ItemsSource="{Binding ColorOptions}" SelectedValue="{Binding SelectedClass01Background, Mode=TwoWay}">
+                                                <ComboBox.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <Rectangle Width="20" Height="20" Fill="{Binding Brush}" Margin="0,0,8,0"/>
+                                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                </ComboBox.ItemTemplate>
+                                            </ComboBox>
+                                            <ComboBox Grid.Row="4" Grid.Column="2" Name="Class01ForegroundCombo" Margin="4,2"
+                                                      ItemsSource="{Binding ColorOptions}" SelectedValue="{Binding SelectedClass01Foreground, Mode=TwoWay}">
+                                                <ComboBox.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <Rectangle Width="20" Height="20" Fill="{Binding Brush}" Margin="0,0,8,0"/>
+                                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                </ComboBox.ItemTemplate>
+                                            </ComboBox>
+
+                                            <!-- Red -->
+                                            <Label Grid.Row="5" Grid.Column="0" Content="Class 2:" VerticalAlignment="Center" Foreground="#FFE6E6E6"/>
+                                            <ComboBox Grid.Row="5" Grid.Column="1" Name="Class02BackgroundCombo" Margin="4,2"
+                                                      ItemsSource="{Binding ColorOptions}" SelectedValue="{Binding SelectedClass02Background, Mode=TwoWay}">
+                                                <ComboBox.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <Rectangle Width="20" Height="20" Fill="{Binding Brush}" Margin="0,0,8,0"/>
+                                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                </ComboBox.ItemTemplate>
+                                            </ComboBox>
+                                            <ComboBox Grid.Row="5" Grid.Column="2" Name="Class02ForegroundCombo" Margin="4,2"
+                                                      ItemsSource="{Binding ColorOptions}" SelectedValue="{Binding SelectedClass02Foreground, Mode=TwoWay}">
+                                                <ComboBox.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <Rectangle Width="20" Height="20" Fill="{Binding Brush}" Margin="0,0,8,0"/>
+                                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                </ComboBox.ItemTemplate>
+                                            </ComboBox>
+
+                                            <!-- Purple -->
+                                            <Label Grid.Row="6" Grid.Column="0" Content="Class 3:" VerticalAlignment="Center" Foreground="#FFE6E6E6"/>
+                                            <ComboBox Grid.Row="6" Grid.Column="1" Name="Class03BackgroundCombo" Margin="4,2"
+                                                      ItemsSource="{Binding ColorOptions}" SelectedValue="{Binding SelectedClass03Background, Mode=TwoWay}">
+                                                <ComboBox.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <Rectangle Width="20" Height="20" Fill="{Binding Brush}" Margin="0,0,8,0"/>
+                                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                </ComboBox.ItemTemplate>
+                                            </ComboBox>
+                                            <ComboBox Grid.Row="6" Grid.Column="2" Name="Class03ForegroundCombo" Margin="4,2"
+                                                      ItemsSource="{Binding ColorOptions}" SelectedValue="{Binding SelectedClass03Foreground, Mode=TwoWay}">
+                                                <ComboBox.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <Rectangle Width="20" Height="20" Fill="{Binding Brush}" Margin="0,0,8,0"/>
+                                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                </ComboBox.ItemTemplate>
+                                            </ComboBox>
+                                            <!-- Purple -->
+                                            <Label Grid.Row="7" Grid.Column="0" Content="Class 4:" VerticalAlignment="Center" Foreground="#FFE6E6E6"/>
+                                            <ComboBox Grid.Row="7" Grid.Column="1" Name="Class04BackgroundCombo" Margin="4,2"
+                                                      ItemsSource="{Binding ColorOptions}" SelectedValue="{Binding SelectedClass04Background, Mode=TwoWay}">
+                                                <ComboBox.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <Rectangle Width="20" Height="20" Fill="{Binding Brush}" Margin="0,0,8,0"/>
+                                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                </ComboBox.ItemTemplate>
+                                            </ComboBox>
+                                            <ComboBox Grid.Row="7" Grid.Column="2" Name="Class04ForegroundCombo" Margin="4,2"
+                                                      ItemsSource="{Binding ColorOptions}" SelectedValue="{Binding SelectedClass04Foreground, Mode=TwoWay}">
+                                                <ComboBox.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <Rectangle Width="20" Height="20" Fill="{Binding Brush}" Margin="0,0,8,0"/>
+                                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                </ComboBox.ItemTemplate>
+                                            </ComboBox>
+
+                                        </Grid>
+                                    </GroupBox>
+
+                                    <!-- Action Buttons -->
+                                    <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,12,0,0">
+                                        <Button Name="ColorConfigSaveButton" Content="Save Colors" Width="120" Margin="0,0,12,0" Click="SaveColors_Click"/>
+                                        <Button Name="ColorConfigResetButton" Content="Reset to Defaults" Width="140" Click="ResetColors_Click"/>
+                                    </StackPanel>
+                                </Grid>
+                            </ScrollViewer>
+                        </TabItem>
+                        <TabItem Header="Open Logs">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+
+                                <ListView Name="OpenLogsListView" ItemsSource="{Binding OpenLogsView}" Grid.Row="0">
+                                    <ListView.View>
+                                        <GridView>
+                                            <GridViewColumn Width="400">
+                                                <GridViewColumn.Header>
+                                                    <GridViewColumnHeader Content="Filename" Tag="FileName" Click="GridViewColumnHeader_Click"/>
+                                                </GridViewColumn.Header>
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding FileName}" ToolTip="{Binding FilePath}" />
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+
+                                            <GridViewColumn Width="180">
+                                                <GridViewColumn.Header>
+                                                    <GridViewColumnHeader Content="Opened" Tag="StartTime" Click="GridViewColumnHeader_Click"/>
+                                                </GridViewColumn.Header>
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding StartTime, StringFormat={}{0:u}}" />
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+
+                                            <GridViewColumn Width="180">
+                                                <GridViewColumn.Header>
+                                                    <GridViewColumnHeader Content="Last Line Processed" Tag="LastLineProcessedTime" Click="GridViewColumnHeader_Click"/>
+                                                </GridViewColumn.Header>
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding LastLineProcessedTimeFormatted}" />
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+
+                                            <GridViewColumn Width="120">
+                                                <GridViewColumn.Header>
+                                                    <GridViewColumnHeader Content="Lines Processed" Tag="LinesProcessed" Click="GridViewColumnHeader_Click"/>
+                                                </GridViewColumn.Header>
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding LinesProcessed, StringFormat=N0}" Width="100"
+                                                                   HorizontalAlignment="Right" 
+                                                                   TextAlignment="Right"/>
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+
+                                            <GridViewColumn Width="80">
+                                                <GridViewColumn.Header>
+                                                    <GridViewColumnHeader Content="Action" />
+                                                </GridViewColumn.Header>
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <Button Content="Cancel" Click="CancelTailTask_Click" Padding="4,2" Tag="{Binding}"/>
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+                                        </GridView>
+                                    </ListView.View>
+                                </ListView>
                             </Grid>
                         </TabItem>
                         <TabItem Header="Migration" IsEnabled="False">
@@ -1521,6 +1878,192 @@ Title="Tailgrab Player Panel"
                                             Width="120" 
                                             Click="MigrationSubmit_Click"/>
                                 </StackPanel>
+                            </Grid>
+                        </TabItem>
+                        <TabItem Header="Ban Management" Height="23" Margin="-2,-2,-2,0" VerticalAlignment="Top">
+                            <Grid Margin="12">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+
+                                <TextBlock Grid.Row="0" 
+                                           Text="Group Ban Management" 
+                                           FontSize="16" 
+                                           FontWeight="Bold" 
+                                           Margin="0,0,0,16"
+                                           Foreground="White"/>
+
+                                <!-- User ID Input Section -->
+                                <GroupBox Header="User Lookup" Grid.Row="1" Margin="0,0,0,12">
+                                    <Grid Margin="8">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="300"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <Label Grid.Row="0" Grid.Column="0" 
+                                               Content="User ID:" 
+                                               VerticalAlignment="Center" 
+                                               Margin="0,0,8,0"/>
+                                        <TextBox Grid.Row="0" Grid.Column="1" 
+                                                 Name="BanMgmtUserIdTextBox" 
+                                                 VerticalAlignment="Center"
+                                                 Margin="0,0,8,0"/>
+                                        <Button Grid.Row="0" Grid.Column="2" 
+                                                Content="Load User" 
+                                                Click="BanMgmtLoadUser_Click" 
+                                                Width="100"
+                                                Padding="4,2"/>
+                                        <TextBlock Grid.Row="0" Grid.Column="3"
+                                                   Name="BanMgmtUserStatusText"
+                                                   VerticalAlignment="Center"
+                                                   Margin="12,0,0,0"
+                                                   Foreground="Yellow"/>
+                                    </Grid>
+                                </GroupBox>
+
+                                <!-- User Info Display Section -->
+                                <GroupBox Header="User Information" Grid.Row="2" Margin="0,0,0,12" Name="BanMgmtUserInfoGroup" Visibility="Collapsed">
+                                    <Grid Margin="8">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="140"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <!-- Profile Image -->
+                                        <Image Grid.Row="0" Grid.Column="0" Grid.RowSpan="3"
+                                               Name="BanMgmtUserImage"
+                                               Width="120" Height="80"
+                                               Margin="0,0,12,0"
+                                               Stretch="UniformToFill"
+                                               VerticalAlignment="Top"/>
+
+                                        <!-- User Details -->
+                                        <Label Grid.Row="0" Grid.Column="1" Content="Username:" FontWeight="Bold" Margin="0,0,8,0"/>
+                                        <TextBlock Grid.Row="0" Grid.Column="2" Name="BanMgmtUserName" VerticalAlignment="Center"/>
+
+                                        <Label Grid.Row="1" Grid.Column="1" Content="Status:" FontWeight="Bold" Margin="0,0,8,0"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="2" Name="BanMgmtUserStatusDesc" VerticalAlignment="Center"/>
+
+                                        <Label Grid.Row="2" Grid.Column="1" Content="Pronouns:" FontWeight="Bold" Margin="0,0,8,0"/>
+                                        <TextBlock Grid.Row="2" Grid.Column="2" Name="BanMgmtUserPronouns" VerticalAlignment="Center"/>
+
+                                        <Label Grid.Row="0" Grid.Column="3" Content="Join Date:" FontWeight="Bold" Margin="0,0,8,0"/>
+                                        <TextBlock Grid.Row="0" Grid.Column="4" Name="BanMgmtUserJoinDate" VerticalAlignment="Center"/>
+
+                                        <Label Grid.Row="1" Grid.Column="3" Content="Age Verified:" FontWeight="Bold" Margin="0,0,8,0"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="4" Name="BanMgmtUserAgeVerified" VerticalAlignment="Center"/>
+
+                                        <Label Grid.Row="2" Grid.Column="3" Content="State:" FontWeight="Bold" Margin="0,0,8,0"/>
+                                        <TextBlock Grid.Row="2" Grid.Column="4" Name="BanMgmtUserState" VerticalAlignment="Center"/>
+                                    </Grid>
+                                </GroupBox>
+
+                                <!-- Group Ban Management Section -->
+                                <GroupBox Header="Group Ban Status" Grid.Row="3" Margin="0,0,0,0" Name="BanMgmtGroupListGroup" Visibility="Visible">
+                                    <Grid Margin="8">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="*"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+
+                                        <!-- Group List -->
+                                        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" Margin="0,0,0,12">
+                                            <ItemsControl Name="BanMgmtGroupList">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Border BorderBrush="Gray" BorderThickness="0,0,0,1" Padding="4" Margin="0,2">
+                                                            <Grid>
+                                                                <Grid.ColumnDefinitions>
+                                                                    <ColumnDefinition Width="300"/>
+                                                                    <ColumnDefinition Width="250"/>
+                                                                    <ColumnDefinition Width="150"/>
+                                                                    <ColumnDefinition Width="120"/>
+                                                                    <ColumnDefinition Width="80"/>
+                                                                    <ColumnDefinition Width="100"/>
+                                                                    <ColumnDefinition Width="100"/>
+                                                                </Grid.ColumnDefinitions>
+
+                                                                <TextBlock Grid.Column="0" 
+                                                                           Text="{Binding GroupId}" 
+                                                                           VerticalAlignment="Center"
+                                                                           Margin="4,0"/>
+                                                                <TextBlock Grid.Column="1" 
+                                                                           Text="{Binding GroupName}" 
+                                                                           VerticalAlignment="Center"
+                                                                           Margin="4,0"/>
+                                                                <TextBlock Grid.Column="2" 
+                                                                           Text="{Binding Status}" 
+                                                                           VerticalAlignment="Center"
+                                                                           Margin="4,0"
+                                                                           Foreground="{Binding StatusColor}"/>
+                                                                <Button Grid.Column="3" 
+                                                                        Content="Remove Group" 
+                                                                        Click="BanMgmtRemoveGroup_Click"
+                                                                        Tag="{Binding}"
+                                                                        Padding="4,2"
+                                                                        Margin="4,0"/>
+                                                                <Button Grid.Column="5" 
+                                                                        Content="Ban" 
+                                                                        Click="BanMgmtBanUser_Click"
+                                                                        Tag="{Binding}"
+                                                                        IsEnabled="{Binding CanBan}"
+                                                                        Padding="4,2"
+                                                                        Margin="4,0"/>
+                                                                <Button Grid.Column="6" 
+                                                                        Content="Unban" 
+                                                                        Click="BanMgmtUnbanUser_Click"
+                                                                        Tag="{Binding}"
+                                                                        IsEnabled="{Binding CanUnban}"
+                                                                        Padding="4,2"
+                                                                        Margin="4,0"/>
+                                                            </Grid>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </ScrollViewer>
+
+                                        <!-- Add Group Section -->
+                                        <Grid Grid.Row="1">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="300"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <Label Grid.Column="0" 
+                                                   Content="Add Group ID:" 
+                                                   VerticalAlignment="Center"
+                                                   Margin="0,0,8,0"/>
+                                            <TextBox Grid.Column="1" 
+                                                     Name="BanMgmtAddGroupIdTextBox"
+                                                     VerticalAlignment="Center"
+                                                     Margin="0,0,8,0"/>
+                                            <Button Grid.Column="2" 
+                                                    Content="Add Group" 
+                                                    Click="BanMgmtAddGroup_Click"
+                                                    Padding="4,2"/>
+                                        </Grid>
+                                    </Grid>
+                                </GroupBox>
                             </Grid>
                         </TabItem>
                     </TabControl>

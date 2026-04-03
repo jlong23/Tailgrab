@@ -59,17 +59,17 @@ public class PenNetworkHandler : AbstractLineHandler
             {
                 string fromPlayerName = "Unknown";
                 string toPlayerName = "Unknown";
-                if (_serviceRegistry.GetPlayerManager().GetPlayerByNetworkId(fromUserId) is Player fromPlayer)
+                if (PlayerManager.GetPlayerByNetworkId(fromUserId) is Player fromPlayer)
                 {
                     fromPlayerName = fromPlayer.DisplayName;
-                    _serviceRegistry.GetPlayerManager().AddPenEventByDisplayName(fromPlayerName, $"-Pen '{penColor}'.");
-                    _serviceRegistry.GetPlayerManager().AddPlayerEventByDisplayName(fromPlayerName, PlayerEvent.EventType.PenActivity, $"Lost ownership of pen '{penColor}'.");
+                    PlayerManager.AddPenEventByDisplayName(fromPlayerName, $"-Pen '{penColor}'.");
+                    PlayerManager.AddPlayerEventByDisplayName(fromPlayerName, PlayerEvent.EventType.PenActivity, $"Lost ownership of pen '{penColor}'.");
                 }
-                if (_serviceRegistry.GetPlayerManager().GetPlayerByNetworkId(toUserId) is Player toPlayer)
+                if (PlayerManager.GetPlayerByNetworkId(toUserId) is Player toPlayer)
                 {
                     toPlayerName = toPlayer.DisplayName;
-                    _serviceRegistry.GetPlayerManager().AddPenEventByDisplayName(toPlayerName, $"+Pen '{penColor}'.");
-                    _serviceRegistry.GetPlayerManager().AddPlayerEventByDisplayName(toPlayerName, PlayerEvent.EventType.PenActivity, $"Took ownership of pen '{penColor}'.");
+                    PlayerManager.AddPenEventByDisplayName(toPlayerName, $"+Pen '{penColor}'.");
+                    PlayerManager.AddPlayerEventByDisplayName(toPlayerName, PlayerEvent.EventType.PenActivity, $"Took ownership of pen '{penColor}'.");
                 }
                 if (LogOutput)
                 {

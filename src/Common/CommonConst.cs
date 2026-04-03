@@ -46,6 +46,42 @@ namespace Tailgrab.Common
         public const string Sound_Alert_Key = "Sound";
         public const string Color_Alert_Key = "Color";
 
+        // Highlight class color registry keys
+        public const string Registry_HighlightClass_Normal_Background = "HIGHLIGHT_NORMAL_BG";
+        public const string Registry_HighlightClass_Normal_Foreground = "HIGHLIGHT_NORMAL_FG";
+        public const string Registry_HighlightClass_Friend_Background = "HIGHLIGHT_FRIEND_BG";
+        public const string Registry_HighlightClass_Friend_Foreground = "HIGHLIGHT_FRIEND_FG";
+        public const string Registry_HighlightClass_Class01_Background = "HIGHLIGHT_CLASS01_BG";
+        public const string Registry_HighlightClass_Class01_Foreground = "HIGHLIGHT_CLASS01_FG";
+        public const string Registry_HighlightClass_Class02_Background = "HIGHLIGHT_CLASS02_BG";
+        public const string Registry_HighlightClass_Class02_Foreground = "HIGHLIGHT_CLASS02_FG";
+        public const string Registry_HighlightClass_Class03_Background = "HIGHLIGHT_CLASS03_BG";
+        public const string Registry_HighlightClass_Class03_Foreground = "HIGHLIGHT_CLASS03_FG";
+        public const string Registry_HighlightClass_Class04_Background = "HIGHLIGHT_CLASS04_BG";
+        public const string Registry_HighlightClass_Class04_Foreground = "HIGHLIGHT_CLASS04_FG";
+        public const string Registry_HighlightClass_Selected_Background = "HIGHLIGHT_SELECTED_BG";
+        public const string Registry_HighlightClass_Selected_Foreground = "HIGHLIGHT_SELECTED_FG";
+        public const string Registry_HighlightClass_MouseOver_Background = "HIGHLIGHT_MOUSEOVER_BG";
+        public const string Registry_HighlightClass_MouseOver_Foreground = "HIGHLIGHT_MOUSEOVER_FG";
+
+        // Default highlight class colors
+        public const string Default_HighlightClass_Normal_Background = "#FF1E1E1E";
+        public const string Default_HighlightClass_Normal_Foreground = "#FFE6E6E6";
+        public const string Default_HighlightClass_Friend_Background = "#FF1E1E1E";
+        public const string Default_HighlightClass_Friend_Foreground = "LightGreen";
+        public const string Default_HighlightClass_Class01_Background = "Yellow";
+        public const string Default_HighlightClass_Class01_Foreground = "Black";
+        public const string Default_HighlightClass_Class02_Background = "Red";
+        public const string Default_HighlightClass_Class02_Foreground = "Yellow";
+        public const string Default_HighlightClass_Class03_Background = "Purple";
+        public const string Default_HighlightClass_Class03_Foreground = "Yellow";
+        public const string Default_HighlightClass_Class04_Background = "Black";
+        public const string Default_HighlightClass_Class04_Foreground = "Yellow";
+        public const string Default_HighlightClass_Selected_Background = "#FF1d1db3";
+        public const string Default_HighlightClass_Selected_Foreground = "#FFFFFF00";
+        public const string Default_HighlightClass_MouseOver_Background = "#FF1d1db3";
+        public const string Default_HighlightClass_MouseOver_Foreground = "#FFFFFF00";
+
         public const string Registry_Discovered_Avatar_Caching = "DISCOVERED_AVATAR_CACHING";
         public const string Registry_Moderated_Avatar_Caching = "MODERATED_AVATAR_CACHING";
         public const string Registry_Discovered_Group_Caching = "DISCOVERED_GROUP_CACHING";

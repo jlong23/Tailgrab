@@ -2,6 +2,7 @@ namespace Tailgrab.LineHandler;
 
 using System.Text.RegularExpressions;
 using Tailgrab.Common;
+using Tailgrab.PlayerManagement;
 
 public class WorldChangeHandler : AbstractLineHandler
 {
@@ -31,8 +32,8 @@ public class WorldChangeHandler : AbstractLineHandler
                 logger.Info($"{COLOR_PREFIX}World Join : {worldId} as instance {instanceId}{COLOR_RESET.GetAnsiEscape()}");
             }
 
-            _serviceRegistry.GetPlayerManager().UpdateCurrentSession(worldId, instanceId);
-            _serviceRegistry.GetPlayerManager().ClearAllPlayers(this);
+            PlayerManager.UpdateCurrentSession(worldId, instanceId);
+            PlayerManager.ClearAllPlayers(this);
 
             ExecuteActions();
             return true;

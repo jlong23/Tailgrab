@@ -1,6 +1,7 @@
 namespace Tailgrab.LineHandler;
 
 using System.Text.RegularExpressions;
+using Tailgrab.PlayerManagement;
 
 public class OnPlayerNetworkHandler : AbstractLineHandler
 {
@@ -31,7 +32,7 @@ public class OnPlayerNetworkHandler : AbstractLineHandler
             }
             ExecuteActions();
 
-            _serviceRegistry.GetPlayerManager().AssignPlayerNetworkId(userName, networkId);
+            PlayerManager.AssignPlayerNetworkId(userName, networkId);
 
             return true;
         }

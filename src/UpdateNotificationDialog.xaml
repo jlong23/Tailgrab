@@ -1,0 +1,51 @@
+<Window x:Class="Tailgrab.UpdateNotificationDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Update Available" 
+        Height="200" 
+        Width="450"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize"
+        ShowInTaskbar="True">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" 
+                   FontSize="16" 
+                   FontWeight="Bold" 
+                   Margin="0,0,0,15"
+                   Text="Hooray!! A new version of Tailgrab is available!"/>
+
+        <StackPanel Grid.Row="1" Margin="0,0,0,20">
+            <TextBlock x:Name="CurrentVersionText" 
+                       TextWrapping="Wrap"
+                       Margin="0,0,0,5"/>
+            <TextBlock x:Name="LatestVersionText" 
+                       TextWrapping="Wrap"
+                       FontWeight="Bold"/>
+            <TextBlock x:Name="LatestVersionName" 
+                       TextWrapping="Wrap"
+                       FontWeight="Bold"/>
+        </StackPanel>
+
+        <StackPanel Grid.Row="2" 
+                    Orientation="Horizontal" 
+                    HorizontalAlignment="Right">
+            <Button x:Name="ViewReleasesButton" 
+                    Content="View Release Page" 
+                    Width="120" 
+                    Height="30" 
+                    Margin="0,0,10,0"
+                    Click="ViewReleasesButton_Click"/>
+            <Button x:Name="IgnoreButton" 
+                    Content="Ignore this time" 
+                    Width="120" 
+                    Height="30"
+                    Click="IgnoreButton_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>
