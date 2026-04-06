@@ -16,10 +16,27 @@ namespace Tailgrab.Clients.VRChat
     {
         private const string URI_VRC_BASE_API = "https://api.vrchat.cloud";
         private const string APP_NAME = "Tailgrab";
-        private const string API_VERSION = "1.1.2";
+        private static readonly string API_VERSION = LoadVersion();
         private const string APP_CONTACT = "jlong@rabbitearsvideoproduction.com";
-        private const string UserAgent = $"{APP_NAME}/{API_VERSION}";
+        private static readonly string UserAgent = $"{APP_NAME}/{API_VERSION}";
         private static Logger logger = LogManager.GetCurrentClassLogger();
+
+        private static string LoadVersion()
+        {
+            try
+            {
+                string versionFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "BuildVersion.txt");
+                if (System.IO.File.Exists(versionFile))
+                {
+                    return System.IO.File.ReadAllText(versionFile).Trim();
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.GetCurrentClassLogger().Warn($"Failed to load version from BuildVersion.txt: {ex.Message}");
+            }
+            return "1.1.3"; // Fallback version
+        }
 
         private IVRChat? _vrchat;
 

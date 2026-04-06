@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Text;
 using Tailgrab.Clients.Ollama;
 using Tailgrab.Clients.VRChat;
+using Tailgrab.Clients.XSOverlay;
 using Tailgrab.Common;
 using Tailgrab.LineHandler;
 using Tailgrab.Models;
@@ -403,6 +404,8 @@ namespace Tailgrab.PlayerManagement
         public static void UpdateCurrentSession(string worldId, string instanceId)
         {
             CurrentSession = new SessionInfo(worldId, instanceId);
+            OverlayManager overlay = serviceRegistry.GetXSOverlay();
+            overlay.Initialize();
         }
 
         public void PlayerJoined(string userId, string displayName, AbstractLineHandler handler)
@@ -599,6 +602,8 @@ namespace Tailgrab.PlayerManagement
                     {
                         player = AddPlayerEventByDisplayName(displayName, PlayerEvent.EventType.AvatarWatch, $"User has used a watched Avatar : {avatarName} alertType: {watchedAvatar.AlertType}");
                         player?.AddAlertMessage(AlertClassEnum.Avatar, watchedAvatar.AlertType, $"{avatarName}");
+                        OverlayManager overlay = serviceRegistry.GetXSOverlay();
+                        overlay.SendNotification( watchedAvatar.AlertType.ToString(), $"Player \\b1{displayName}\\b0 has used a watched Avatar \\b1\\i1{avatarName}\\i0\\b0");
                     }
                 }
                 if (player != null)

@@ -1,6 +1,7 @@
 namespace Tailgrab.LineHandler;
 
 using System.Text.RegularExpressions;
+using Tailgrab.Clients.XSOverlay;
 using Tailgrab.Common;
 using Tailgrab.PlayerManagement;
 
@@ -37,6 +38,9 @@ public class QuitHandler : AbstractLineHandler
             }
 
             PlayerManager.ClearAllPlayers(this);
+
+            OverlayManager overlay = _serviceRegistry.GetXSOverlay();
+            overlay.Dispose();
 
             ExecuteActions();
             return true;

@@ -7,6 +7,7 @@ using Tailgrab.Common;
 using Tailgrab.Models;
 using Tailgrab.PlayerManagement;
 using VRChat.API.Model;
+using Tailgrab.Clients.XSOverlay;
 
 namespace Tailgrab.Clients.Ollama
 {
@@ -87,7 +88,7 @@ namespace Tailgrab.Clients.Ollama
                             item.ProfileUrl = accountThumbnailUrl;
 
                             serviceRegistry.GetPlayerManager().UpdatePlayerUserFromVRCProfile(profile, item.MD5Hash);
-                            await GetUserGroupInformation(dBContext, userGroups, item);
+                            await GetUserGroupInformation(serviceRegistry, dBContext, userGroups, item);
 
                             if (ollamaApi != null)
                             {
@@ -154,7 +155,7 @@ namespace Tailgrab.Clients.Ollama
             }
         }
 
-        private async static Task<bool> GetUserGroupInformation(TailgrabDBContext dBContext, List<LimitedUserGroups> userGroups, QueuedProcess item)
+        private async static Task<bool> GetUserGroupInformation(ServiceRegistry serviceRegistry, TailgrabDBContext dBContext, List<LimitedUserGroups> userGroups, QueuedProcess item)
         {
             bool saveGroups = ConfigStore.GetStoredKeyBool(CommonConst.Registry_Discovered_Group_Caching, true);
             logger.Debug($"Processing User Group subscription for userId: {item.UserId}");
@@ -162,6 +163,7 @@ namespace Tailgrab.Clients.Ollama
             if (player != null)
             {
                 AlertTypeEnum maxAlertType = AlertTypeEnum.None;
+                string groupNames = string.Empty;
                 foreach (LimitedUserGroups group in userGroups)
                 {
                     GroupInfo? groupInfo = dBContext.GroupInfos.Find(group.GroupId);
@@ -171,12 +173,15 @@ namespace Tailgrab.Clients.Ollama
                     }
                     else
                     {
-                        UpdateGroupInfo(dBContext, item, ref player, ref maxAlertType, group, groupInfo);
+                        groupNames += UpdateGroupInfo(dBContext, item, ref player, ref maxAlertType, group, groupInfo);
                     }
                 }
 
                 if (player != null && player.IsWatched)
                 {
+                    OverlayManager overlay = serviceRegistry.GetXSOverlay();
+                    overlay.SendNotification(maxAlertType.ToString(), $"Player \b1{player.DisplayName}\b0 has questionable group memberships:\r\n{groupNames}");
+
                     SoundManager.PlayAlertSound(CommonConst.Group_Alert_Key, maxAlertType);
                     return true;
                 }
@@ -184,7 +189,7 @@ namespace Tailgrab.Clients.Ollama
             return false;
         }
 
-        private static void UpdateGroupInfo(TailgrabDBContext dBContext, QueuedProcess item, ref Player? player, ref AlertTypeEnum maxAlertType, LimitedUserGroups group, GroupInfo groupInfo)
+        private static string UpdateGroupInfo(TailgrabDBContext dBContext, QueuedProcess item, ref Player? player, ref AlertTypeEnum maxAlertType, LimitedUserGroups group, GroupInfo groupInfo)
         {
             // We will update the group name on each lookup in case it changes, but not reset the alert level as that is user defined
             groupInfo.GroupName = group.Name;
@@ -196,7 +201,10 @@ namespace Tailgrab.Clients.Ollama
                 player = PlayerManager.AddPlayerEventByUserId(item.UserId ?? string.Empty, PlayerEvent.EventType.GroupWatch, $"User is member of group: {groupInfo.GroupName} with alert level {groupInfo.AlertType}");
                 player?.AddAlertMessage(AlertClassEnum.Group, groupInfo.AlertType, groupInfo.GroupName);
                 maxAlertType = maxAlertType < groupInfo.AlertType ? groupInfo.AlertType : maxAlertType;
+                return groupInfo.GroupName + "\r\n";
             }
+
+            return string.Empty;
         }
 
         private static GroupInfo SaveGroupInfo(TailgrabDBContext dBContext, bool saveGroups, LimitedUserGroups group)
