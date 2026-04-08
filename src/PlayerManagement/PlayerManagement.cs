@@ -603,7 +603,7 @@ namespace Tailgrab.PlayerManagement
                         player = AddPlayerEventByDisplayName(displayName, PlayerEvent.EventType.AvatarWatch, $"User has used a watched Avatar : {avatarName} alertType: {watchedAvatar.AlertType}");
                         player?.AddAlertMessage(AlertClassEnum.Avatar, watchedAvatar.AlertType, $"{avatarName}");
                         OverlayManager overlay = serviceRegistry.GetXSOverlay();
-                        overlay.SendNotification( watchedAvatar.AlertType.ToString(), $"Player \\b1{displayName}\\b0 has used a watched Avatar \\b1\\i1{avatarName}\\i0\\b0");
+                        overlay.SendNotification( watchedAvatar.AlertType, $"Player \\b1{displayName}\\b0 has used a watched Avatar \\b1\\i1{avatarName}\\i0\\b0");
                     }
                 }
                 if (player != null)

@@ -180,7 +180,7 @@ namespace Tailgrab.Clients.Ollama
                 if (player != null && player.IsWatched)
                 {
                     OverlayManager overlay = serviceRegistry.GetXSOverlay();
-                    overlay.SendNotification(maxAlertType.ToString(), $"Player \b1{player.DisplayName}\b0 has questionable group memberships:\r\n{groupNames}");
+                    overlay.SendNotification(maxAlertType, $"Player \b1{player.DisplayName}\b0 has questionable group memberships:\r\n{groupNames}");
 
                     SoundManager.PlayAlertSound(CommonConst.Group_Alert_Key, maxAlertType);
                     return true;

@@ -570,6 +570,7 @@ namespace Tailgrab.PlayerManagement
             var ollamaImagePrompt = ConfigStore.GetStoredKeyString(CommonConst.Registry_Ollama_API_Image_Prompt) ?? CommonConst.Default_Ollama_API_Image_Prompt;
             var avatarGistUri = ConfigStore.GetStoredKeyString(CommonConst.Registry_Avatar_Gist);
             var groupGistUri = ConfigStore.GetStoredKeyString(CommonConst.Registry_Group_Gist);
+            var xsOverlayLevel = ConfigStore.GetStoredKeyString(CommonConst.Registry_XSOverlay_Level) ?? CommonConst.XSOverlay_Level_None;
 
             // Populate UI boxes but do not reveal secrets
             if (!string.IsNullOrEmpty(vrUser)) VrUserBox.Text = vrUser;
@@ -583,6 +584,8 @@ namespace Tailgrab.PlayerManagement
 
             if (!string.IsNullOrEmpty(avatarGistUri)) avatarGistUrl.Text = avatarGistUri;
             if (!string.IsNullOrEmpty(groupGistUri)) groupGistUrl.Text = groupGistUri;
+            if(!string.IsNullOrEmpty(xsOverlayLevel) && AlertTypeOptions.Any(o => o.Key == xsOverlayLevel))
+                XSOverlayNotifications.SelectedValue = xsOverlayLevel;
 
             // Populate sound combo boxes
             try
@@ -688,6 +691,8 @@ namespace Tailgrab.PlayerManagement
                 ConfigStore.PutStoredKeyBool(CommonConst.Registry_Discovered_Avatar_Caching, DiscoveredAvatarCaching.IsChecked == true);
                 ConfigStore.PutStoredKeyBool(CommonConst.Registry_Moderated_Avatar_Caching, ModeratedAvatarCaching.IsChecked == true);
                 ConfigStore.PutStoredKeyBool(CommonConst.Registry_Discovered_Group_Caching, DiscoveredGroupCaching.IsChecked == true);
+
+                ConfigStore.PutStoredKeyString(CommonConst.Registry_XSOverlay_Level, XSOverlayNotifications.SelectedValue.ToString() ?? CommonConst.XSOverlay_Level_None);
 
                 System.Windows.MessageBox.Show("Configuration saved. Restart the Applicaton for all changes to take affect.", "Config", MessageBoxButton.OK, MessageBoxImage.Information);
             }

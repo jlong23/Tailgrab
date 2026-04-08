@@ -1,10 +1,11 @@
-﻿using System;
+﻿using NLog;
+using System;
 using System.Collections.Generic;
 using System.Net.WebSockets;
 using System.Text;
 using System.Threading.Tasks;
+using Tailgrab.Common;
 using XSSocket.Models;
-using NLog;
 
 namespace Tailgrab.Clients.XSOverlay
 {
@@ -51,8 +52,22 @@ namespace Tailgrab.Clients.XSOverlay
             }
         }
 
-        public async Task SendNotification(string title, string message )
+        public async Task SendNotification(AlertTypeEnum alertType, string message )
         {
+            AlertTypeEnum xsOverlayLevel = 
+                CommonConst.AlertTypeEnumFromString( ConfigStore.GetStoredKeyString(CommonConst.Registry_XSOverlay_Level) ?? CommonConst.XSOverlay_Level_None);
+
+            if( xsOverlayLevel == AlertTypeEnum.None)
+            {
+                logger.Debug("XSOverlay notifications are disabled. Skipping sending notification.");
+                return;
+            } 
+            else if (alertType < xsOverlayLevel)
+            {
+                logger.Debug($"Alert type {alertType} is below the configured XSOverlay level {xsOverlayLevel}. Skipping sending notification.");
+                return;
+            }
+
             if ( connector == null || connector.State != WebSocketState.Open)
             {
                 logger.Warn("Cannot send notification. Not connected to OverlayManager.");
@@ -61,7 +76,7 @@ namespace Tailgrab.Clients.XSOverlay
 
             XSNotificationObject notificationObject = new()
             {
-                title = title,
+                title = $"{alertType.ToString()} Notifcation",
                 content = message,
                 timeout = 5,
                 height = 174,

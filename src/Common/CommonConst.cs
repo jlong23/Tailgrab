@@ -94,5 +94,19 @@ namespace Tailgrab.Common
         public const string AI_EVALUATION_SEXUAL = "Explicit Sexual";
         public const string AI_EVALUATION_HATE = "Harassment & Bullying";
         public const string AI_EVALUATION_SELFHARM = "Self Harm";
+
+        public const string Registry_XSOverlay_Level = "XS_OVERLAY_LEVEL";
+        public const string XSOverlay_Level_None = "None";
+
+        public static AlertTypeEnum AlertTypeEnumFromString(string alertType)
+        {
+            return alertType switch
+            {
+                "Watch" => AlertTypeEnum.Watch,
+                "Nuisance" => AlertTypeEnum.Nuisance,
+                "Crasher" => AlertTypeEnum.Crasher,
+                _ => AlertTypeEnum.None
+            };
+        }
     }
 }

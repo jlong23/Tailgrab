@@ -1228,6 +1228,11 @@ Title="Tailgrab Player Panel"
 
                                         <Label Grid.Row="1" Grid.Column="0" Content="Insert Discovered Groups:" VerticalAlignment="Center"/>
                                         <CheckBox Grid.Row="1" Grid.Column="1" Name="DiscoveredGroupCaching" VerticalAlignment="Center" Margin="6,2" ToolTip="When enabled, will include the Group Entries into your group list for flipping the severity."/>
+
+                                        <Label Grid.Row="1" Grid.Column="2" Content="XS Overlay Notifications:" VerticalAlignment="Center"/>
+                                        <ComboBox Name="XSOverlayNotifications" ItemsSource="{Binding DataContext.AlertTypeOptions, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                          SelectedValuePath="Value" DisplayMemberPath="Key" Margin="2,2,2,2" Width="200" Grid.Row="1" Grid.Column="3" HorizontalAlignment="Left"/>
+
                                     </Grid>
                                 </GroupBox>
 
