@@ -835,14 +835,22 @@ public class FileTailer
         tabItemStyle.Setters.Add(new Setter(System.Windows.Controls.Control.BorderBrushProperty, darkControl));
         tabItemStyle.Setters.Add(new Setter(System.Windows.Controls.Control.PaddingProperty, new Thickness(8, 4, 8, 4)));
 
+        // Disabled tab - slightly lighter background
+        var tabDisabledTrigger = new Trigger { Property = System.Windows.Controls.TabItem.IsEnabledProperty, Value = false };
+        tabDisabledTrigger.Setters.Add(new Setter(System.Windows.Controls.Control.BackgroundProperty, new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(55, 55, 58))));
+        tabDisabledTrigger.Setters.Add(new Setter(System.Windows.Controls.Control.ForegroundProperty, new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(130, 130, 130))));
+        tabItemStyle.Triggers.Add(tabDisabledTrigger);
+
+        // Selected tab - highlighted dark theme
         var tabSelectedTrigger = new Trigger { Property = System.Windows.Controls.TabItem.IsSelectedProperty, Value = true };
-        tabSelectedTrigger.Setters.Add(new Setter(System.Windows.Controls.Control.BackgroundProperty, darkWindow));
-        tabSelectedTrigger.Setters.Add(new Setter(System.Windows.Controls.Control.ForegroundProperty, accent));
+        tabSelectedTrigger.Setters.Add(new Setter(System.Windows.Controls.Control.BackgroundProperty, highlightDark));
+        tabSelectedTrigger.Setters.Add(new Setter(System.Windows.Controls.Control.ForegroundProperty, highlightDarkText));
         tabItemStyle.Triggers.Add(tabSelectedTrigger);
 
+        // Mouse over tab - lighter highlight (only for enabled tabs)
         var tabMouseOverTrigger = new Trigger { Property = System.Windows.Controls.TabItem.IsMouseOverProperty, Value = true };
-        tabMouseOverTrigger.Setters.Add(new Setter(System.Windows.Controls.Control.BackgroundProperty, new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(112, 112, 174))));
-        tabMouseOverTrigger.Setters.Add(new Setter(System.Windows.Controls.Control.ForegroundProperty, new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0, 0, 0))));
+        tabMouseOverTrigger.Setters.Add(new Setter(System.Windows.Controls.Control.BackgroundProperty, new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(60, 60, 63))));
+        tabMouseOverTrigger.Setters.Add(new Setter(System.Windows.Controls.Control.ForegroundProperty, lightText));
         tabItemStyle.Triggers.Add(tabMouseOverTrigger);
 
         app.Resources[typeof(System.Windows.Controls.TabItem)] = tabItemStyle;
