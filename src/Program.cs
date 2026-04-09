@@ -457,8 +457,10 @@ public class FileTailer
                     // Migrate the ProfileEvaluation table to add the new PromptMd5Checksum column, which is used to link evaluations to specific prompts.
                     try
                     {
-                        dbContext.ExecuteSql("DROP TABLE IF EXISTS ProfileEvaluation");
+                        dbContext.ExecuteSql("ALTER TABLE ProfileEvaluation RENAME TO ProfileEvaluation_OLD;");
                         dbContext.ExecuteSql("CREATE TABLE IF NOT EXISTS ProfileEvaluation (MD5Checksum TEXT NOT NULL, ProfileText BLOB, Evaluation\tBLOB, LastDateTime TEXT NOT NULL, isIgnored INTEGER NOT NULL DEFAULT 0, PromptMd5Checksum TEXT, CONSTRAINT PK_ProfileEvaluation PRIMARY KEY(MD5Checksum))");
+                        dbContext.ExecuteSql("INSERT INTO ProfileEvaluation SELECT * FROM ProfileEvaluation WHERE 1=1");
+                        dbContext.ExecuteSql("DROP TABLE IF EXISTS ProfileEvaluation_OLD");
                     }
                     catch 
                     { 
