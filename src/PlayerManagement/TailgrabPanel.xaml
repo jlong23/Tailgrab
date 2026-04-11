@@ -182,6 +182,17 @@ Title="Tailgrab Player Panel"
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
 
+                                    <GridViewColumn Width="60">
+                                        <GridViewColumn.Header>
+                                            <GridViewColumnHeader Content="Trust" Tag="Trust" Click="GridViewColumnHeader_Click" HorizontalContentAlignment="Center"/>
+                                        </GridViewColumn.Header>
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding UserTrust, Mode=OneWay}" TextAlignment="Left"/>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+
                                     <GridViewColumn Width="180">
                                         <GridViewColumn.Header>
                                             <GridViewColumnHeader Content="Avatar Name" Tag="AvatarName" Click="GridViewColumnHeader_Click"/>
@@ -204,7 +215,7 @@ Title="Tailgrab Player Panel"
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
 
-                                    <GridViewColumn Width="330">
+                                    <GridViewColumn Width="280">
                                         <GridViewColumn.Header>
                                             <GridViewColumnHeader Content="Alert Messages" Tag="UserId" Click="GridViewColumnHeader_Click"/>
                                         </GridViewColumn.Header>
@@ -429,6 +440,17 @@ Title="Tailgrab Player Panel"
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
 
+                                    <GridViewColumn Width="60">
+                                        <GridViewColumn.Header>
+                                            <GridViewColumnHeader Content="Trust" Tag="Trust" Click="GridViewColumnHeader_Click" HorizontalContentAlignment="Center"/>
+                                        </GridViewColumn.Header>
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding UserTrust, Mode=OneWay}" TextAlignment="Left"/>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+
                                     <GridViewColumn Width="180">
                                         <GridViewColumn.Header>
                                             <GridViewColumnHeader Content="Avatar Name" Tag="AvatarName" Click="GridViewColumnHeader_Click"/>
@@ -451,7 +473,7 @@ Title="Tailgrab Player Panel"
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
 
-                                    <GridViewColumn Width="330">
+                                    <GridViewColumn Width="280">
                                         <GridViewColumn.Header>
                                             <GridViewColumnHeader Content="Alert Messages" Tag="UserId" Click="GridViewColumnHeader_Click"/>
                                         </GridViewColumn.Header>

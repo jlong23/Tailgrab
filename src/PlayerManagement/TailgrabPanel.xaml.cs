@@ -3116,6 +3116,7 @@ namespace Tailgrab.PlayerManagement
                 {
                     { "DisplayName", WindowLayoutManager.DefaultActiveDisplayNameWidth },
                     { "Age", WindowLayoutManager.DefaultActiveAgeWidth },
+                    { "Trust", WindowLayoutManager.DefaultActiveTrustWidth },
                     { "AvatarName", WindowLayoutManager.DefaultActiveAvatarNameWidth },
                     { "InstanceStartTime", WindowLayoutManager.DefaultActiveInstanceStartWidth },
                     { "UserId", WindowLayoutManager.DefaultActiveAlertMessagesWidth },
@@ -3126,6 +3127,7 @@ namespace Tailgrab.PlayerManagement
                 {
                     { "DisplayName", WindowLayoutManager.DefaultPastDisplayNameWidth },
                     { "Age", WindowLayoutManager.DefaultPastAgeWidth },
+                    { "Trust", WindowLayoutManager.DefaultPastTrustWidth },
                     { "AvatarName", WindowLayoutManager.DefaultPastAvatarNameWidth },
                     { "InstanceEndTime", WindowLayoutManager.DefaultPastInstanceEndWidth },
                     { "UserId", WindowLayoutManager.DefaultPastAlertMessagesWidth },
@@ -3913,6 +3915,7 @@ namespace Tailgrab.PlayerManagement
         public ObservableCollection<EmojiInfoViewModel> Emojis { get; private set; } = [];
         private bool IsFriend {  get; set; }
         public string ProfileUrl { get; set; }
+        public string UserTrust { get; set; }
 
 
         private string _AlertColor = "Normal";
@@ -3948,6 +3951,8 @@ namespace Tailgrab.PlayerManagement
             _AlertColor = p.AlertColor;
             IsFriend = p.IsFriend;
             ProfileUrl = p.ProfileImage;
+            UserTrust = p.UserTrust;
+
 
             PopulateCollectionsFromPlayer(p); ;
         }
@@ -3975,6 +3980,7 @@ namespace Tailgrab.PlayerManagement
             if (_AlertColor != p.AlertColor) { _AlertColor = p.AlertColor; changed = true; }
             if (IsFriend != p.IsFriend) { IsFriend = p.IsFriend; changed = true; }
             if (ProfileUrl != p.ProfileImage) { ProfileUrl = p.ProfileImage; changed = true; }
+            if (UserTrust != p.UserTrust) { UserTrust = p.UserTrust; changed = true; }
 
             if (changed) OnPropertyChanged(string.Empty);
 
@@ -4001,6 +4007,7 @@ namespace Tailgrab.PlayerManagement
             sb.AppendLine($"AlertMessages: {AlertMessages}");
             sb.AppendLine($"IsFriend: {IsFriend}");
             sb.AppendLine($"ProfileUrl: {ProfileUrl}");
+            sb.AppendLine($"UserTrust: {UserTrust}");
             return sb.ToString();
         }
         private void PopulateCollectionsFromPlayer(Player p)

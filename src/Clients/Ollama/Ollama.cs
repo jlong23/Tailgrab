@@ -86,6 +86,7 @@ namespace Tailgrab.Clients.Ollama
                             item.IsFriend = profile.IsFriend;
                             item.UserBio = fullProfile;
                             item.ProfileUrl = accountThumbnailUrl;
+                            item.UserTrust = PlayerManager.GetUserTrust(profile.Tags);
 
                             serviceRegistry.GetPlayerManager().UpdatePlayerUserFromVRCProfile(profile, item.MD5Hash);
                             await GetUserGroupInformation(serviceRegistry, dBContext, userGroups, item);
@@ -150,6 +151,7 @@ namespace Tailgrab.Clients.Ollama
                 player.AIEval = System.Text.Encoding.UTF8.GetString(evaluation.Evaluation);
                 player.IsFriend = item.IsFriend;
                 player.ProfileImage = item.ProfileUrl ?? player.ProfileImage;
+                player.UserTrust = item.UserTrust;
 
                 ProfileViewUpdate(player);
             }
@@ -588,6 +590,7 @@ namespace Tailgrab.Clients.Ollama
         public string? UserBio { get; set; }
         public bool IsFriend { get; set; }
         public string? ProfileUrl { get; set; }
+        public string UserTrust { get; set; } = string.Empty;
 
         public string MD5Hash
         {

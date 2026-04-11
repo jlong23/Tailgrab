@@ -100,6 +100,7 @@ namespace Tailgrab.PlayerManagement
         public List<AlertMessage> _AlertMessage = [];
         public string ProfileImage { get; set; } = string.Empty;
 
+        public string UserTrust { get; set; }
 
         public string AlertMessage
         {
@@ -1342,6 +1343,37 @@ namespace Tailgrab.PlayerManagement
             }
 
             return avatarData;
+        }
+
+
+        public static string GetUserTrust(List<string> tags)
+        {
+            string trustLevel = "Visitor";
+            foreach (string tag in tags.ToArray().Reverse())
+            {
+                switch (tag)
+                {
+                    case "system_probable_troll":
+                        trustLevel = "Probable Troll";
+                        return trustLevel;
+                    case "system_troll":
+                        trustLevel = "Nuisance";
+                        return trustLevel;
+                    case "system_trust_basic":
+                        trustLevel = "New User";
+                        return trustLevel;
+                    case "system_trust_known":
+                        trustLevel = "User";
+                        return trustLevel;
+                    case "system_trust_trusted":
+                        trustLevel = "Known User";
+                        return trustLevel;
+                    case "system_trust_veteran":
+                        trustLevel = "Trusted User";
+                        return trustLevel;
+                }
+            }
+            return trustLevel;
         }
     }
     #endregion
