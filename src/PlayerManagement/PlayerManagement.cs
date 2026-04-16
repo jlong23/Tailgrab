@@ -790,7 +790,6 @@ namespace Tailgrab.PlayerManagement
 
         public Player? UpdatePlayerUserFromVRCProfile(User profile, string profileHash)
         {
-            logger.Warn($"Updating UserInfo for user {profile.DisplayName} (ID: {profile.Id}) with DateJoined: {profile.DateJoined} and ProfileHash: {profileHash}");
             if (profile != null && profile.Id != null)
             {
                 TailgrabDBContext dbContext = serviceRegistry.GetDBContext();

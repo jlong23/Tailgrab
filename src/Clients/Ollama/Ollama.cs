@@ -112,6 +112,9 @@ namespace Tailgrab.Clients.Ollama
 
                                             UpdatePlayerWithEvaluation(item, evaluation);
                                         }
+
+                                        // Give a bit of breathing room to avoid hitting rate limits or overwhelming the system if there are many profiles to process
+                                        await Task.Delay(1000);
                                     }
                                     else
                                     {
@@ -133,8 +136,8 @@ namespace Tailgrab.Clients.Ollama
                         break;
                     }
 
-                    // Wait for a short period before checking the queue again
-                    await Task.Delay(2000);
+                    // Wait for a short period before getting next record
+                    await Task.Delay(1000);
                 }
 
                 // Wait for a short period before checking the queue again
