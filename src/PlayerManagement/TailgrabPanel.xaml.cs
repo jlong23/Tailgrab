@@ -584,8 +584,13 @@ namespace Tailgrab.PlayerManagement
 
             if (!string.IsNullOrEmpty(avatarGistUri)) avatarGistUrl.Text = avatarGistUri;
             if (!string.IsNullOrEmpty(groupGistUri)) groupGistUrl.Text = groupGistUri;
-            if(!string.IsNullOrEmpty(xsOverlayLevel) && AlertTypeOptions.Any(o => o.Key == xsOverlayLevel))
+            if (!string.IsNullOrEmpty(xsOverlayLevel) && AlertTypeOptions.Any(o => o.Key == xsOverlayLevel))
                 XSOverlayNotifications.SelectedValue = xsOverlayLevel;
+
+            ModeratedAvatarCaching.IsChecked = ConfigStore.GetStoredKeyBool(CommonConst.Registry_Moderated_Avatar_Caching, true);
+            DiscoveredAvatarCaching.IsChecked = ConfigStore.GetStoredKeyBool(CommonConst.Registry_Discovered_Avatar_Caching, true);
+            DiscoveredGroupCaching.IsChecked = ConfigStore.GetStoredKeyBool(CommonConst.Registry_Discovered_Group_Caching, true);
+
 
             // Populate sound combo boxes
             try
