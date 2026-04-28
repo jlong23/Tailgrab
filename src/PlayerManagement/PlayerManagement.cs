@@ -1096,7 +1096,7 @@ namespace Tailgrab.PlayerManagement
 
         public static async Task AvatarCheckTask(ConcurrentPriorityQueue<IHavePriority<int>, int> priorityQueue, ServiceRegistry serviceRegistry)
         {
-            OllamaClient.logger.Info($"Amplitude Avatar Cache Queue Running");
+            OllamaClient.logger.Info($"Avatar Queue Running");
             TailgrabDBContext dBContext = serviceRegistry.GetDBContext();
             while (true)
             {
@@ -1125,6 +1125,7 @@ namespace Tailgrab.PlayerManagement
                         break;
                     }
                 }
+
                 // Wait for a short period before checking the queue again
                 await Task.Delay(5000);
             }
@@ -1246,7 +1247,7 @@ namespace Tailgrab.PlayerManagement
             }
 
             // Throttle processing to avoid overwhelming the API
-            await Task.Delay(3000);
+            await Task.Delay(1000);
         }
 
 
