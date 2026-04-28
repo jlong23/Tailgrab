@@ -1025,6 +1025,102 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
+        private void ExportAvatarGist_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var context = _serviceRegistry.GetDBContext();
+                if (context == null)
+                {
+                    System.Windows.MessageBox.Show("Database context is not available.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                var avatarInfos = context.AvatarInfos
+                    .Where(a => a.AlertType > AlertTypeEnum.None)
+                    .OrderBy(a => a.AvatarName)
+                    .ToList();
+
+                if (avatarInfos.Count == 0)
+                {
+                    System.Windows.MessageBox.Show("No avatars with alerts found to export.", "Export to Clipboard", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
+                var sb = new StringBuilder();
+                foreach (var avatar in avatarInfos)
+                {
+                    string alertTypeString = avatar.AlertType switch
+                    {
+                        AlertTypeEnum.Watch => "Watch",
+                        AlertTypeEnum.Nuisance => "Nuisance",
+                        AlertTypeEnum.Crasher => "Crasher",
+                        _ => "NONE"
+                    };
+
+                    sb.AppendLine($"\"{avatar.AvatarId}\",\"{avatar.AvatarName}\",\"{alertTypeString}\"");
+                }
+
+                string result = sb.ToString();
+                System.Windows.Clipboard.SetText(result);
+
+                System.Windows.MessageBox.Show($"Exported {avatarInfos.Count} Avatar(s) to clipboard.", "Export to Clipboard", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to export Avatar GIST data");
+                System.Windows.MessageBox.Show($"Failed to export Avatar data: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void ExportGroupGist_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var context = _serviceRegistry.GetDBContext();
+                if (context == null)
+                {
+                    System.Windows.MessageBox.Show("Database context is not available.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                var groupInfos = context.GroupInfos
+                    .Where(g => g.AlertType > AlertTypeEnum.None)
+                    .OrderBy(g => g.GroupName)
+                    .ToList();
+
+                if (groupInfos.Count == 0)
+                {
+                    System.Windows.MessageBox.Show("No avatars with alerts found to export.", "Export to Clipboard", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
+                var sb = new StringBuilder();
+                foreach (var group in groupInfos)
+                {
+                    string alertTypeString = group.AlertType switch
+                    {
+                        AlertTypeEnum.Watch => "Watch",
+                        AlertTypeEnum.Nuisance => "Nuisance",
+                        AlertTypeEnum.Crasher => "Crasher",
+                        _ => "NONE"
+                    };
+
+                    sb.AppendLine($"\"{group.GroupId}\",\"{group.GroupName}\",\"{alertTypeString}\"");
+                }
+
+                string result = sb.ToString();
+                System.Windows.Clipboard.SetText(result);
+
+                System.Windows.MessageBox.Show($"Exported {groupInfos.Count} group(s) to clipboard.", "Export to Clipboard", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to export group GIST data");
+                System.Windows.MessageBox.Show($"Failed to export group data: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
         private static void SetAlertKeyString(string alertKey, AlertTypeEnum alertType, string subType, object value)
         {
             string key = CommonConst.ConfigRegistryPath + "\\" + alertKey + "\\" + alertType.ToString();
@@ -2776,7 +2872,7 @@ namespace Tailgrab.PlayerManagement
                         dbContext.SaveChanges();
                     }
 
-                    // Filter the view to the fetched avatar
+                    // Filter the view to the fetched group
                     ApplyAvatarDbFilter(AvatarDbView, avatar.Name ?? string.Empty);
                     AvatarIdBox.Text = string.Empty;
                 }
@@ -2787,7 +2883,7 @@ namespace Tailgrab.PlayerManagement
             }
             catch (Exception ex)
             {
-                System.Windows.MessageBox.Show($"Failed to fetch avatar: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                System.Windows.MessageBox.Show($"Failed to fetch group: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -2796,7 +2892,7 @@ namespace Tailgrab.PlayerManagement
             try
             {
                 logger.Info($"Opening Avatar URL: {e.Uri}");
-                var uri = new Uri($"https://vrchat.com/home/avatar/{e.Uri}");
+                var uri = new Uri($"https://vrchat.com/home/group/{e.Uri}");
                 var psi = new System.Diagnostics.ProcessStartInfo(uri.AbsoluteUri)
                 {
                     UseShellExecute = true
