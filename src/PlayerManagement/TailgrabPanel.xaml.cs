@@ -1091,7 +1091,7 @@ namespace Tailgrab.PlayerManagement
 
                 if (groupInfos.Count == 0)
                 {
-                    System.Windows.MessageBox.Show("No avatars with alerts found to export.", "Export to Clipboard", MessageBoxButton.OK, MessageBoxImage.Information);
+                    System.Windows.MessageBox.Show("No Groups with alerts found to export.", "Export to Clipboard", MessageBoxButton.OK, MessageBoxImage.Information);
                     return;
                 }
 
