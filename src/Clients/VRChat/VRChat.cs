@@ -238,7 +238,7 @@ namespace Tailgrab.Clients.VRChat
             }
             catch (Exception ex)
             {
-                logger.Error($"Error fetching avatar: {ex.Message}");
+                logger.Error($"Error in GetAvatarById for avatar '{avatarId}': {ex.Message}");
             }
 
             return avatar;
@@ -256,7 +256,7 @@ namespace Tailgrab.Clients.VRChat
             }
             catch (Exception ex)
             {
-                logger.Error($"Error fetching avatar: {ex.Message}");
+                logger.Error($"Error in GetAvatarsByUserId for user '{userId}': {ex.Message}");
             }
 
             return avatars;
@@ -418,7 +418,7 @@ namespace Tailgrab.Clients.VRChat
             }
             catch (Exception ex)
             {
-                logger.Error($"Error fetching Group information: {ex.Message}");
+                logger.Error($"Error fetching Group information for group '{id}': {ex.Message}");
             }
 
             return group;
