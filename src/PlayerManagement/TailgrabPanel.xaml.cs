@@ -516,7 +516,6 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
-
         public TailgrabPanel(ServiceRegistry serviceRegistry)
         {
             _serviceRegistry = serviceRegistry;
@@ -1687,6 +1686,29 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
+        private void BanPlayer_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not System.Windows.Controls.Button btn) return;
+
+            // Find the DataContext for the row (should be PlayerViewModel)
+            if (btn.DataContext is PlayerViewModel pvm)
+            {
+                string userId = pvm.UserId;
+
+                // Set the user ID in Ban Management tab
+                BanMgmtUserIdTextBox.Text = userId;
+
+                // Activate the Config tab (index 4) in main TabControl
+                MainTabControl.SelectedIndex = 4;
+
+                // Activate the Ban Management tab (index 10) in Config TabControl
+                ConfigTabControl.SelectedIndex = 10;
+
+                // Call the load user function
+                BanMgmtLoadUser_Click(sender, e);
+            }
+        }
+
         private void ShowProfileReportOverlay(string userId)
         {
             // Populate the overlay fields
@@ -1898,6 +1920,29 @@ namespace Tailgrab.PlayerManagement
                     System.Windows.MessageBox.Show($"Failed to open Report Profile overlay: {ex.Message}",
                         "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
                 }
+            }
+        }
+
+        private void BanPlayerPast_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not System.Windows.Controls.Button btn) return;
+
+            // Find the DataContext for the row (should be PlayerViewModel)
+            if (btn.DataContext is PlayerViewModel pvm)
+            {
+                string userId = pvm.UserId;
+
+                // Set the user ID in Ban Management tab
+                BanMgmtUserIdTextBox.Text = userId;
+
+                // Activate the Config tab (index 4) in main TabControl
+                MainTabControl.SelectedIndex = 4;
+
+                // Activate the Ban Management tab (index 10) in Config TabControl
+                ConfigTabControl.SelectedIndex = 10;
+
+                // Call the load user function
+                BanMgmtLoadUser_Click(sender, e);
             }
         }
 
@@ -2985,7 +3030,120 @@ namespace Tailgrab.PlayerManagement
                 // Filter the view to the fetched Group
                 ApplyGroupDbFilter(GroupDbView, existing.GroupName ?? string.Empty);
                 GroupIdBox.Text = string.Empty;
+
+                // Populate the group information box
+                PopulateGroupInformation(existing.GroupId);
             }
+        }
+
+        private void GroupDbGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (GroupDbGrid.SelectedItem is GroupInfoViewModel selectedGroup)
+            {
+                PopulateGroupInformation(selectedGroup.GroupId);
+            }
+        }
+
+        private async void PopulateGroupInformation(string groupId)
+        {
+            try
+            {
+                // Get the full group information from VRChat API
+                VRChatClient vrcClient = _serviceRegistry.GetVRChatAPIClient();
+                VRChat.API.Model.Group? group = await Task.Run(() => vrcClient.GetGroupById(groupId));
+
+                if (group != null)
+                {
+                    // Populate the UI fields
+                    BanMgmtGroupName.Text = group.Name ?? string.Empty;
+                    BanMgmtGroupJoinState.Text = group.JoinState?.ToString() ?? string.Empty;
+                    BanMgmtGroupmemberCount.Text = group.MemberCount.ToString();
+                    BanMgmtGroupCreateDate.Text = group.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss");
+
+                    // Combine ShortCode and Discriminator
+                    string shortCode = group.ShortCode ?? string.Empty;
+                    string discriminator = group.Discriminator ?? string.Empty;
+                    BanMgmtGroupShortCode.Text = string.IsNullOrEmpty(shortCode) ? string.Empty : $"{shortCode}.{discriminator}";
+
+                    VRChat.API.Model.User? user = await Task.Run(() => vrcClient.GetProfile(group.OwnerId));
+
+                    BanMgmtGroupOwner.Text = user.DisplayName ?? string.Empty;
+                    BanMgmtGroupOwnerId.Text = group.OwnerId ?? string.Empty;
+                    BanMgmtGroupDesc.Text = group.Description ?? string.Empty;
+                    BanMgmtGroupRules.Text = group.Rules ?? string.Empty;
+
+                    // Load group banner image
+                    if (!string.IsNullOrEmpty(group.BannerUrl))
+                    {
+                        try
+                        {
+                            var bitmap = new System.Windows.Media.Imaging.BitmapImage();
+                            bitmap.BeginInit();
+                            bitmap.UriSource = new Uri(group.BannerUrl);
+                            bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                            bitmap.EndInit();
+                            BanMgmtGroupImage.Source = bitmap;
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.Error(ex, $"Failed to load group banner image for group {groupId}");
+                            BanMgmtGroupImage.Source = null;
+                        }
+                    }
+                    else
+                    {
+                        BanMgmtGroupImage.Source = null;
+                    }
+
+                    // Load group icon image
+                    if (!string.IsNullOrEmpty(group.IconUrl))
+                    {
+                        try
+                        {
+                            var bitmap = new System.Windows.Media.Imaging.BitmapImage();
+                            bitmap.BeginInit();
+                            bitmap.UriSource = new Uri(group.IconUrl);
+                            bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                            bitmap.EndInit();
+                            BanMgmtGroupIcon.Source = bitmap;
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.Error(ex, $"Failed to load group icon image for group {groupId}");
+                            BanMgmtGroupIcon.Source = null;
+                        }
+                    }
+                    else
+                    {
+                        BanMgmtGroupIcon.Source = null;
+                    }
+                }
+                else
+                {
+                    // Clear the fields if group not found
+                    ClearGroupInformation();
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, $"Failed to populate group information for group {groupId}");
+                ClearGroupInformation();
+            }
+        }
+
+        private void ClearGroupInformation()
+        {
+            BanMgmtGroupName.Text = string.Empty;
+            BanMgmtGroupJoinState.Text = string.Empty;
+            BanMgmtGroupmemberCount.Text = string.Empty;
+            BanMgmtGroupCreateDate.Text = string.Empty;
+            BanMgmtGroupShortCode.Text = string.Empty;
+            BanMgmtGroupOwner.Text = string.Empty;
+            BanMgmtGroupOwnerId.Text = string.Empty;
+            BanMgmtGroupDesc.Text = string.Empty;
+            BanMgmtGroupRules.Text = string.Empty;
+            BanMgmtGroupImage.Source = null;
+            BanMgmtGroupIcon.Source = null;
         }
 
         private void GroupHyperlink_RequestNavigate(object? sender, System.Windows.Navigation.RequestNavigateEventArgs e)
@@ -2994,6 +3152,25 @@ namespace Tailgrab.PlayerManagement
             {
                 logger.Info($"Opening group URL: {e.Uri}");
                 var uri = new Uri($"https://vrchat.com/home/group/{e.Uri}");
+                var psi = new System.Diagnostics.ProcessStartInfo(uri.AbsoluteUri)
+                {
+                    UseShellExecute = true
+                };
+                System.Diagnostics.Process.Start(psi);
+            }
+            catch (Exception ex)
+            {
+                logger?.Error(ex, "Failed to open group URL");
+            }
+            e.Handled = true;
+        }
+
+        private void GroupUserHyperlink_RequestNavigate(object? sender, System.Windows.Navigation.RequestNavigateEventArgs e)
+        {
+            try
+            {
+                logger.Info($"Opening User URL: {e.Uri}");
+                var uri = new Uri($"https://vrchat.com/home/user/{e.Uri}");
                 var psi = new System.Diagnostics.ProcessStartInfo(uri.AbsoluteUri)
                 {
                     UseShellExecute = true

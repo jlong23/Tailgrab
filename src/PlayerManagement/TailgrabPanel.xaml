@@ -126,7 +126,7 @@ Title="Tailgrab Player Panel"
         </Grid.RowDefinitions>
 
         <Grid Margin="8" Grid.Row="0">
-            <TabControl>
+            <TabControl x:Name="MainTabControl">
                 <TabItem Header="Active Players">
                     <Grid Name="ActivePlayerLayoutGrid">
                         <Grid.ColumnDefinitions>
@@ -250,6 +250,18 @@ Title="Tailgrab Player Panel"
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
 
+                                    <!-- Ban column -->
+                                    <GridViewColumn Width="60">
+                                        <GridViewColumn.Header>
+                                            <GridViewColumnHeader Content="Ban" />
+                                        </GridViewColumn.Header>
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Button Content="Ban" Click="BanPlayer_Click" Padding="4,2"/>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+
                                 </GridView>
                             </ListView.View>
                         </ListView>
@@ -295,7 +307,9 @@ Title="Tailgrab Player Panel"
 
                             <GridSplitter Name="ActivePlayers_Vert" Grid.Column="1" Width="5" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="#FF3F3F46" ShowsPreview="False" ResizeDirection="Columns" DragCompleted="GridSplitter_DragCompleted"/>
 
-                            <TextBox Name="UserAlertsBox" Grid.Column="2" Height="auto" Margin="4,0,8,0" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" Text="{Binding SelectedActive.History, Mode=OneWay, FallbackValue='', TargetNullValue=''}" />
+                            <ScrollViewer Grid.Column="2" Margin="0,0,4,0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                <TextBox Name="UserAlertsBox" TextWrapping="Wrap" Text="{Binding SelectedActive.History, Mode=OneWay, FallbackValue='', TargetNullValue=''}" />
+                            </ScrollViewer>
                         </Grid>
 
                         <!-- Overlay Panel for Report Profile -->
@@ -503,7 +517,19 @@ Title="Tailgrab Player Panel"
                                         </GridViewColumn.Header>
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate>
-                                                <Button Content="Report" Click="ReportPlayerPast_Click" Padding="4,2" ToolTip="{Binding AIEval}"/>
+                                                <Button Content="Report" Click="ReportPlayerPast_Click" Padding="4,2"/>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+
+                                    <!-- Actions column -->
+                                    <GridViewColumn Width="60">
+                                        <GridViewColumn.Header>
+                                            <GridViewColumnHeader Content="Ban" />
+                                        </GridViewColumn.Header>
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Button Content="Ban" Click="BanPlayerPast_Click" Padding="4,2"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
@@ -1052,7 +1078,7 @@ Title="Tailgrab Player Panel"
                 </TabItem>
 
                 <TabItem Header="Config">
-                    <TabControl>
+                    <TabControl x:Name="ConfigTabControl">
                         <TabItem Header="Known Avatars">
                             <Grid>
                                 <Grid.ColumnDefinitions>
@@ -1118,6 +1144,7 @@ Title="Tailgrab Player Panel"
                                 </Grid.ColumnDefinitions>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
                                     <RowDefinition Height="*" />
                                 </Grid.RowDefinitions>
 
@@ -1131,7 +1158,78 @@ Title="Tailgrab Player Panel"
                                     <Button Content="Fetch Group by ID" Click="GroupFetch_Click" Margin="0,0,0,0"/>
                                 </StackPanel>
 
-                                <DataGrid Name="GroupDbGrid" Grid.Row="1" AutoGenerateColumns="False" CanUserSortColumns="True" IsReadOnly="False" ItemsSource="{Binding GroupDbView}" CellEditEnding="GroupDbGrid_CellEditEnding" Grid.ColumnSpan="2">
+                                <GroupBox Header="Group Information" Grid.Row="1"  Grid.ColumnSpan="2" Margin="0,0,0,12" Name="GroupInfoGroup">
+                                    <Grid Margin="8">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="140"/>
+                                            <ColumnDefinition Width="140"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <!-- Group Image -->
+                                        <Image Grid.Row="0" Grid.Column="0" Grid.RowSpan="3"
+                                               Name="BanMgmtGroupImage"
+                                               Width="120" Height="80"
+                                               Margin="0,0,12,0"
+                                               Stretch="UniformToFill"
+                                               VerticalAlignment="Top"/>
+
+                                        <!-- Group Image -->
+                                        <Image Grid.Row="0" Grid.Column="1" Grid.RowSpan="3"
+                                               Name="BanMgmtGroupIcon"
+                                               Width="120" Height="80"
+                                               Margin="0,0,12,0"
+                                               Stretch="UniformToFill"
+                                               VerticalAlignment="Top"/>
+
+                                        <!-- User Details -->
+                                        <Label Grid.Row="0" Grid.Column="2" Content="Group Name:" FontWeight="Bold" Margin="0,0,8,0"/>
+                                        <TextBlock Grid.Row="0" Grid.Column="3" Name="BanMgmtGroupName" VerticalAlignment="Center"/>
+
+                                        <Label Grid.Row="1" Grid.Column="2" Content="Join State:" FontWeight="Bold" Margin="0,0,8,0"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="3" Name="BanMgmtGroupJoinState" VerticalAlignment="Center"/>
+
+                                        <Label Grid.Row="2" Grid.Column="2" Content="Member Count:" FontWeight="Bold" Margin="0,0,8,0"/>
+                                        <TextBlock Grid.Row="2" Grid.Column="3" Name="BanMgmtGroupmemberCount" VerticalAlignment="Center"/>
+
+                                        <Label Grid.Row="0" Grid.Column="4" Content="Create Date:" FontWeight="Bold" Margin="0,0,8,0"/>
+                                        <TextBlock Grid.Row="0" Grid.Column="5" Name="BanMgmtGroupCreateDate" VerticalAlignment="Center"/>
+
+                                        <Label Grid.Row="1" Grid.Column="4" Content="Short Code:" FontWeight="Bold" Margin="0,0,8,0"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="5" Name="BanMgmtGroupShortCode" VerticalAlignment="Center"/>
+
+                                        <Label Grid.Row="2" Grid.Column="4" Content="Owner:" FontWeight="Bold" Margin="0,0,8,0"/>
+                                        <TextBlock Grid.Row="2" Grid.Column="5" VerticalAlignment="Center">
+                                            <Hyperlink NavigateUri="{Binding ElementName=BanMgmtGroupOwnerId, Path=Text}"
+                                                       RequestNavigate="GroupUserHyperlink_RequestNavigate">
+                                                <TextBlock Name="BanMgmtGroupOwner"/> / <TextBlock Name="BanMgmtGroupOwnerId"/>
+                                            </Hyperlink>
+                                        </TextBlock>
+
+                                        <Label Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Content="Description:" FontWeight="Bold" Margin="0,0,8,0"/>
+                                        <ScrollViewer Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2" MaxHeight="120" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                            <TextBlock Name="BanMgmtGroupDesc" VerticalAlignment="Top" TextWrapping="Wrap"/>
+                                        </ScrollViewer>
+
+                                        <Label Grid.Row="3" Grid.Column="3" Grid.ColumnSpan="4" Content="Rules:" FontWeight="Bold" Margin="0,0,8,0"/>
+                                        <ScrollViewer Grid.Row="4" Grid.Column="3" Grid.ColumnSpan="4" MaxHeight="120" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                            <TextBlock Name="BanMgmtGroupRules" VerticalAlignment="Top" TextWrapping="Wrap"/>
+                                        </ScrollViewer>
+
+                                    </Grid>
+                                </GroupBox>
+
+                                <DataGrid Name="GroupDbGrid" Grid.Row="2" AutoGenerateColumns="False" CanUserSortColumns="True" IsReadOnly="False" ItemsSource="{Binding GroupDbView}" CellEditEnding="GroupDbGrid_CellEditEnding" SelectionChanged="GroupDbGrid_SelectionChanged" Grid.ColumnSpan="2">
                                     <DataGrid.Columns>
                                         <DataGridTemplateColumn Header="Alert" SortMemberPath="AlertType" Width="120">
                                             <DataGridTemplateColumn.CellTemplate>
@@ -2141,7 +2239,7 @@ Title="Tailgrab Player Panel"
                                                VerticalAlignment="Top"/>
 
                                         <!-- User Details -->
-                                        <Label Grid.Row="0" Grid.Column="1" Content="Username:" FontWeight="Bold" Margin="0,0,8,0"/>
+                                        <Label Grid.Row="0" Grid.Column="1" Content="User Name:" FontWeight="Bold" Margin="0,0,8,0"/>
                                         <TextBlock Grid.Row="0" Grid.Column="2" Name="BanMgmtUserName" VerticalAlignment="Center"/>
 
                                         <Label Grid.Row="1" Grid.Column="1" Content="Status:" FontWeight="Bold" Margin="0,0,8,0"/>
