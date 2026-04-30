@@ -876,7 +876,7 @@ namespace Tailgrab.PlayerManagement
             }
             catch (Exception ex)
             {
-                logger.Warn($"Failed to fetch Group: {ex.Message}");
+                logger.Warn($"Failed to fetch Group '{groupId}': {ex.Message}");
             }
 
             return null;
