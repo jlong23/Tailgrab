@@ -1181,6 +1181,7 @@ namespace Tailgrab.PlayerManagement
                 if (avatarInfo == null)
                 {
                     logger.Debug($"Line {watch.LineNumber}: Avatar ID '{watch.AvatarId}' not found in database/vrc, skipping.");
+                    await serviceRegistry.GetVRChatAPIClient().DeleteAvatarGlobal(watch.AvatarId);
                 }
                 else if (avatarInfo.AlertType == AlertTypeEnum.None)
                 {

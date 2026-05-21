@@ -211,7 +211,7 @@ namespace Tailgrab.Clients.VRChat
                 HttpResponseMessage response = await httpClient.DeleteAsync($"{URI_VRC_BASE_API}/api/1/auth/user/avatarmoderations?targetAvatarId={avatarId}&avatarModerationType=block");
                 string responseContent = await response.Content.ReadAsStringAsync();
                 logger.Debug($"Response from Block avatar {avatarId} globally: {responseContent}");
-                logger.Info($"Submitted Block avatar {avatarId} globally.");
+                logger.Info($"Submitted Un-Block avatar {avatarId} globally.");
                 response.EnsureSuccessStatusCode();
 
                 return response.IsSuccessStatusCode;

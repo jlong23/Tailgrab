@@ -65,6 +65,7 @@ namespace Tailgrab
                 bool saveAvatars = ConfigStore.GetStoredKeyBool(CommonConst.Registry_Moderated_Avatar_Caching, true);
                 if (saveAvatars)
                 {
+                    logger.Info("Syncing avatar moderations...");
                     playerManager.SyncAvatarModerations();
                 }
 
