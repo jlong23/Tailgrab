@@ -1709,6 +1709,48 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
+        private void BanAvatarOwner_Click(object sender, RoutedEventArgs e)
+        {
+            // Get the owner ID from the BanMgmtAvatarOwnerId TextBlock
+            string ownerId = BanMgmtAvatarOwnerId.Text;
+
+            if (!string.IsNullOrWhiteSpace(ownerId))
+            {
+                // Set the user ID in Ban Management tab
+                BanMgmtUserIdTextBox.Text = ownerId;
+
+                // Activate the Config tab (index 4) in main TabControl
+                MainTabControl.SelectedIndex = 4;
+
+                // Activate the Ban Management tab (index 10) in Config TabControl
+                ConfigTabControl.SelectedIndex = 10;
+
+                // Call the load user function
+                BanMgmtLoadUser_Click(sender, e);
+            }
+        }
+
+        private void BanGroupOwner_Click(object sender, RoutedEventArgs e)
+        {
+            // Get the owner ID from the BanMgmtGroupOwnerId TextBlock
+            string ownerId = BanMgmtGroupOwnerId.Text;
+
+            if (!string.IsNullOrWhiteSpace(ownerId))
+            {
+                // Set the user ID in Ban Management tab
+                BanMgmtUserIdTextBox.Text = ownerId;
+
+                // Activate the Config tab (index 4) in main TabControl
+                MainTabControl.SelectedIndex = 4;
+
+                // Activate the Ban Management tab (index 10) in Config TabControl
+                ConfigTabControl.SelectedIndex = 10;
+
+                // Call the load user function
+                BanMgmtLoadUser_Click(sender, e);
+            }
+        }
+
         private void ShowProfileReportOverlay(string userId)
         {
             // Populate the overlay fields
@@ -3035,6 +3077,88 @@ namespace Tailgrab.PlayerManagement
                 PopulateGroupInformation(existing.GroupId);
             }
         }
+        private void AvatarDbGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (AvatarDbGrid.SelectedItem is AvatarInfoViewModel selectedAvatar)
+            {
+                PopulateAvatarInformation(selectedAvatar.AvatarId);
+            }
+        }
+
+
+        private async void PopulateAvatarInformation(string avatarId)
+        {
+            try
+            {
+                // Get the full avatar information from VRChat API
+                VRChatClient vrcClient = _serviceRegistry.GetVRChatAPIClient();
+                VRChat.API.Model.Avatar? avatar = await Task.Run(() => vrcClient.GetAvatarById(avatarId));
+
+                if (avatar != null)
+                {
+                    // Populate the UI fields
+                    BanMgmtAvatarName.Text = avatar.Name ?? string.Empty;
+                    BanMgmtPublishDate.Text = avatar.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss");
+                    BanMgmtUpdateDate.Text = avatar.UpdatedAt.ToString("yyyy-MM-dd HH:mm:ss");
+                    BanMgmtAvatarState.Text = avatar.ReleaseStatus.ToString();
+
+
+                    VRChat.API.Model.User? user = await Task.Run(() => vrcClient.GetProfile(avatar.AuthorId));
+
+                    BanMgmtAvatarOwner.Text = user.DisplayName ?? string.Empty;
+                    BanMgmtAvatarOwnerId.Text = avatar.AuthorId ?? string.Empty;
+                    BanMgmtAvatarDesc.Text = avatar.Description ?? string.Empty;
+
+                    // Enable the Ban Owner button if we have an owner ID
+                    BanAvatarOwnerButton.IsEnabled = !string.IsNullOrWhiteSpace(avatar.AuthorId);
+
+                    // Load avatar image
+                    if (!string.IsNullOrEmpty(avatar.ImageUrl))
+                    {
+                        try
+                        {
+                            var bitmap = new System.Windows.Media.Imaging.BitmapImage();
+                            bitmap.BeginInit();
+                            bitmap.UriSource = new Uri(avatar.ImageUrl);
+                            bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                            bitmap.EndInit();
+                            BanMgmtAvatarImage.Source = bitmap;
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.Error(ex, $"Failed to load Avatar image for avatar {avatarId}");
+                            BanMgmtAvatarImage.Source = null;
+                        }
+                    }
+                    else
+                    {
+                        BanMgmtAvatarImage.Source = null;
+                    }
+                }
+                else
+                {
+                    // Clear the fields if avatar not found
+                    ClearAvatarInformation();
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, $"Failed to populate avatar information for avatar {avatarId}");
+                ClearAvatarInformation();
+            }
+        }
+
+        private void ClearAvatarInformation()
+        {
+            BanMgmtAvatarName.Text = string.Empty;
+            BanMgmtPublishDate.Text = string.Empty;
+            BanMgmtUpdateDate.Text = string.Empty;
+            BanMgmtAvatarOwner.Text = string.Empty;
+            BanMgmtAvatarOwnerId.Text = string.Empty;
+            BanMgmtAvatarDesc.Text = string.Empty;
+            BanMgmtAvatarImage.Source = null;
+            BanAvatarOwnerButton.IsEnabled = false;
+        }
 
         private void GroupDbGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -3071,6 +3195,9 @@ namespace Tailgrab.PlayerManagement
                     BanMgmtGroupOwnerId.Text = group.OwnerId ?? string.Empty;
                     BanMgmtGroupDesc.Text = group.Description ?? string.Empty;
                     BanMgmtGroupRules.Text = group.Rules ?? string.Empty;
+
+                    // Enable the Ban Owner button if we have an owner ID
+                    BanGroupOwnerButton.IsEnabled = !string.IsNullOrWhiteSpace(group.OwnerId);
 
                     // Load group banner image
                     if (!string.IsNullOrEmpty(group.BannerUrl))
@@ -3144,6 +3271,7 @@ namespace Tailgrab.PlayerManagement
             BanMgmtGroupRules.Text = string.Empty;
             BanMgmtGroupImage.Source = null;
             BanMgmtGroupIcon.Source = null;
+            BanGroupOwnerButton.IsEnabled = false;
         }
 
         private void GroupHyperlink_RequestNavigate(object? sender, System.Windows.Navigation.RequestNavigateEventArgs e)

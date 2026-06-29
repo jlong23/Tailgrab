@@ -1082,14 +1082,16 @@ Title="Tailgrab Player Panel"
                         <TabItem Header="Known Avatars">
                             <Grid>
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="149*"/>
+                                    <ColumnDefinition Width="904*"/>
                                 </Grid.ColumnDefinitions>
                                 <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
                                     <RowDefinition Height="Auto" />
                                     <RowDefinition Height="*" />
                                 </Grid.RowDefinitions>
 
-                                <StackPanel Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="8">
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="2">
                                     <TextBox Name="AvatarDbFilterBox" Width="300" Margin="0,0,8,0" />
                                     <Button Content="Apply Filter" Click="AvatarDbApplyFilter_Click" Margin="0,0,6,0"/>
                                     <Button Content="Clear Filter" Click="AvatarDbClearFilter_Click"/>
@@ -1099,7 +1101,71 @@ Title="Tailgrab Player Panel"
                                     <Button Content="Fetch Avatar by ID" Click="AvatarFetch_Click" Margin="0,0,0,0"/>
                                 </StackPanel>
 
-                                <DataGrid Name="AvatarDbGrid" Grid.Row="1" AutoGenerateColumns="False" CanUserSortColumns="True" IsReadOnly="False" ItemsSource="{Binding AvatarDbView}" CellEditEnding="AvatarDbGrid_CellEditEnding" Grid.ColumnSpan="8">
+                                <GroupBox Header="Avatar Information" Grid.Row="1"  Grid.ColumnSpan="2" Margin="0,0,0,12" Name="AvatarInfoGroup">
+                                    <Grid Margin="8">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="140"/>
+                                            <ColumnDefinition Width="140"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <!-- Group Image -->
+                                        <Image Grid.Row="0" Grid.Column="0" Grid.RowSpan="3"
+                                               Name="BanMgmtAvatarImage"
+                                               Width="120" Height="80"
+                                               Margin="0,0,12,0"
+                                               Stretch="UniformToFill"
+                                               VerticalAlignment="Top"/>
+
+                                        <!-- User Details -->
+                                        <Label Grid.Row="0" Grid.Column="2" Content="Avatar Name:" FontWeight="Bold" Margin="0,0,8,0"/>
+                                        <TextBlock Grid.Row="0" Grid.Column="3" Name="BanMgmtAvatarName" VerticalAlignment="Center"/>
+
+                                        <Label Grid.Row="1" Grid.Column="2" Content="Avatar State:" FontWeight="Bold" Margin="0,0,8,0"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="3" Name="BanMgmtAvatarState" VerticalAlignment="Center"/>
+
+                                        <Label Grid.Row="0" Grid.Column="4" Content="Publish Date:" FontWeight="Bold" Margin="0,0,8,0"/>
+                                        <TextBlock Grid.Row="2" Grid.Column="3" Name="BanMgmtPublishDate" VerticalAlignment="Center"/>
+
+                                        <Label Grid.Row="1" Grid.Column="4" Content="Update Date:" FontWeight="Bold" Margin="0,0,8,0"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="5" Name="BanMgmtUpdateDate" VerticalAlignment="Center"/>
+
+                                        <Label Grid.Row="2" Grid.Column="4" Content="Owner:" FontWeight="Bold" Margin="0,0,8,0"/>
+                                        <StackPanel Grid.Row="2" Grid.Column="5" Orientation="Horizontal" VerticalAlignment="Center">
+                                            <TextBlock VerticalAlignment="Center">
+                                                <Hyperlink NavigateUri="{Binding ElementName=BanMgmtAvatarOwnerId, Path=Text}"
+                                                           RequestNavigate="GroupUserHyperlink_RequestNavigate">
+                                                    <TextBlock Name="BanMgmtAvatarOwner"/> / <TextBlock Name="BanMgmtAvatarOwnerId"/>
+                                                </Hyperlink>
+                                            </TextBlock>
+                                            <Button Content="Ban Owner" 
+                                                    Name="BanAvatarOwnerButton"
+                                                    Click="BanAvatarOwner_Click" 
+                                                    Margin="8,0,0,0"
+                                                    Padding="6,2"
+                                                    IsEnabled="False"/>
+                                        </StackPanel>
+
+                                        <Label Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="6" Content="Description:" FontWeight="Bold" Margin="0,0,8,0"/>
+                                        <ScrollViewer Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="6" MaxHeight="120" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                            <TextBlock Name="BanMgmtAvatarDesc" VerticalAlignment="Top" TextWrapping="Wrap"/>
+                                        </ScrollViewer>
+
+                                    </Grid>
+                                </GroupBox>
+
+
+                                <DataGrid Name="AvatarDbGrid" Grid.Row="2" AutoGenerateColumns="False" CanUserSortColumns="True" IsReadOnly="False" ItemsSource="{Binding AvatarDbView}" CellEditEnding="AvatarDbGrid_CellEditEnding"  SelectionChanged="AvatarDbGrid_SelectionChanged" Grid.ColumnSpan="2">
                                     <DataGrid.Columns>
                                         <!-- AlertType as template column: display enum name, edit with ComboBox -->
                                         <DataGridTemplateColumn Header="Alert" SortMemberPath="AlertType" Width="80">
@@ -1139,7 +1205,8 @@ Title="Tailgrab Player Panel"
                         <TabItem Header="Known Groups">
                             <Grid>
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="134*"/>
+                                    <ColumnDefinition Width="24*"/>
+                                    <ColumnDefinition Width="109*"/>
                                     <ColumnDefinition Width="919*"/>
                                 </Grid.ColumnDefinitions>
                                 <Grid.RowDefinitions>
@@ -1148,7 +1215,7 @@ Title="Tailgrab Player Panel"
                                     <RowDefinition Height="*" />
                                 </Grid.RowDefinitions>
 
-                                <StackPanel Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="2">
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="3">
                                     <TextBox Name="GroupDbFilterBox" Width="300" Margin="0,0,8,0" />
                                     <Button Content="Apply Filter" Click="GroupDbApplyFilter_Click" Margin="0,0,6,0"/>
                                     <Button Content="Clear Filter" Click="GroupDbClearFilter_Click"/>
@@ -1158,7 +1225,7 @@ Title="Tailgrab Player Panel"
                                     <Button Content="Fetch Group by ID" Click="GroupFetch_Click" Margin="0,0,0,0"/>
                                 </StackPanel>
 
-                                <GroupBox Header="Group Information" Grid.Row="1"  Grid.ColumnSpan="2" Margin="0,0,0,12" Name="GroupInfoGroup">
+                                <GroupBox Header="Group Information" Grid.Row="1"  Grid.ColumnSpan="3" Margin="0,0,0,12" Name="GroupInfoGroup">
                                     <Grid Margin="8">
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="Auto"/>
@@ -1191,7 +1258,7 @@ Title="Tailgrab Player Panel"
                                                Margin="0,0,12,0"
                                                Stretch="UniformToFill"
                                                VerticalAlignment="Top"/>
-
+                                        
                                         <!-- User Details -->
                                         <Label Grid.Row="0" Grid.Column="2" Content="Group Name:" FontWeight="Bold" Margin="0,0,8,0"/>
                                         <TextBlock Grid.Row="0" Grid.Column="3" Name="BanMgmtGroupName" VerticalAlignment="Center"/>
@@ -1209,12 +1276,20 @@ Title="Tailgrab Player Panel"
                                         <TextBlock Grid.Row="1" Grid.Column="5" Name="BanMgmtGroupShortCode" VerticalAlignment="Center"/>
 
                                         <Label Grid.Row="2" Grid.Column="4" Content="Owner:" FontWeight="Bold" Margin="0,0,8,0"/>
-                                        <TextBlock Grid.Row="2" Grid.Column="5" VerticalAlignment="Center">
-                                            <Hyperlink NavigateUri="{Binding ElementName=BanMgmtGroupOwnerId, Path=Text}"
-                                                       RequestNavigate="GroupUserHyperlink_RequestNavigate">
-                                                <TextBlock Name="BanMgmtGroupOwner"/> / <TextBlock Name="BanMgmtGroupOwnerId"/>
-                                            </Hyperlink>
-                                        </TextBlock>
+                                        <StackPanel Grid.Row="2" Grid.Column="5" Orientation="Horizontal" VerticalAlignment="Center">
+                                            <TextBlock VerticalAlignment="Center">
+                                                <Hyperlink NavigateUri="{Binding ElementName=BanMgmtGroupOwnerId, Path=Text}"
+                                                           RequestNavigate="GroupUserHyperlink_RequestNavigate">
+                                                    <TextBlock Name="BanMgmtGroupOwner"/> / <TextBlock Name="BanMgmtGroupOwnerId"/>
+                                                </Hyperlink>
+                                            </TextBlock>
+                                            <Button Content="Ban Owner" 
+                                                    Name="BanGroupOwnerButton"
+                                                    Click="BanGroupOwner_Click" 
+                                                    Margin="8,0,0,0"
+                                                    Padding="6,2"
+                                                    IsEnabled="False"/>
+                                        </StackPanel>
 
                                         <Label Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Content="Description:" FontWeight="Bold" Margin="0,0,8,0"/>
                                         <ScrollViewer Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2" MaxHeight="120" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
@@ -1229,7 +1304,7 @@ Title="Tailgrab Player Panel"
                                     </Grid>
                                 </GroupBox>
 
-                                <DataGrid Name="GroupDbGrid" Grid.Row="2" AutoGenerateColumns="False" CanUserSortColumns="True" IsReadOnly="False" ItemsSource="{Binding GroupDbView}" CellEditEnding="GroupDbGrid_CellEditEnding" SelectionChanged="GroupDbGrid_SelectionChanged" Grid.ColumnSpan="2">
+                                <DataGrid Name="GroupDbGrid" Grid.Row="2" AutoGenerateColumns="False" CanUserSortColumns="True" IsReadOnly="False" ItemsSource="{Binding GroupDbView}" CellEditEnding="GroupDbGrid_CellEditEnding" SelectionChanged="GroupDbGrid_SelectionChanged" Grid.ColumnSpan="3">
                                     <DataGrid.Columns>
                                         <DataGridTemplateColumn Header="Alert" SortMemberPath="AlertType" Width="120">
                                             <DataGridTemplateColumn.CellTemplate>
