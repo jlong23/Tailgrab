@@ -11,7 +11,6 @@ using System.Windows.Media;
 using Tailgrab.Common;
 using Tailgrab.Configuration;
 using Tailgrab.LineHandler;
-using Tailgrab.Models;
 using Tailgrab.PlayerManagement;
 
 namespace Tailgrab;

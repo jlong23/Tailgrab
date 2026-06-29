@@ -4149,6 +4149,395 @@ namespace Tailgrab.PlayerManagement
         }
         #endregion
 
+        #region Ban Management handlers
+        private ObservableCollection<GroupBanItem> _banMgmtGroupList = new ObservableCollection<GroupBanItem>();
+        private string _currentBanMgmtUserId = string.Empty;
+        private User? _currentBanMgmtUser = null;
+
+        private async void BanMgmtLoadUser_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                string userId = BanMgmtUserIdTextBox.Text.Trim();
+
+                if (string.IsNullOrWhiteSpace(userId))
+                {
+                    BanMgmtUserStatusText.Text = "Please enter a User ID";
+                    BanMgmtUserStatusText.Foreground = System.Windows.Media.Brushes.Yellow;
+                    return;
+                }
+
+                if (!userId.StartsWith("usr_"))
+                {
+                    BanMgmtUserStatusText.Text = "Invalid User ID format (must start with usr_)";
+                    BanMgmtUserStatusText.Foreground = System.Windows.Media.Brushes.Red;
+                    return;
+                }
+
+                BanMgmtUserStatusText.Text = "Loading...";
+                BanMgmtUserStatusText.Foreground = System.Windows.Media.Brushes.Yellow;
+
+                // Call GetProfile
+                var user = _serviceRegistry.GetVRChatAPIClient().GetProfile(userId);
+
+                if (user == null || string.IsNullOrEmpty(user.Id))
+                {
+                    BanMgmtUserStatusText.Text = "User not found";
+                    BanMgmtUserStatusText.Foreground = System.Windows.Media.Brushes.Red;
+                    BanMgmtUserInfoGroup.Visibility = Visibility.Collapsed;
+                    return;
+                }
+
+                _currentBanMgmtUser = user;
+                _currentBanMgmtUserId = userId;
+
+                logger.Info($"Fetched user profile for ban management: {user.DisplayName} ({user})");
+
+                // Populate user info
+                BanMgmtUserName.Text = user.DisplayName ?? "Unknown";
+                BanMgmtUserStatusDesc.Text = user.StatusDescription ?? user.Status.ToString();
+                BanMgmtUserPronouns.Text = string.IsNullOrEmpty(user.Pronouns) ? "Not specified" : user.Pronouns;
+                BanMgmtUserJoinDate.Text = user.DateJoined.ToString("yyyy-MM-dd");
+                BanMgmtUserAgeVerified.Text = user.AgeVerified ? "Yes" : "No";
+                BanMgmtUserState.Text = user.State.ToString() ;
+
+
+                string? accountThumbnailUrl = !string.IsNullOrEmpty(user.ProfilePicOverrideThumbnail) ? user.ProfilePicOverrideThumbnail : user.CurrentAvatarThumbnailImageUrl;
+
+                // Load profile image if available
+                if (!string.IsNullOrEmpty(accountThumbnailUrl))
+                {
+                    try
+                    {
+                        var bitmap = new System.Windows.Media.Imaging.BitmapImage();
+                        bitmap.BeginInit();
+                        bitmap.UriSource = new Uri(accountThumbnailUrl);
+                        bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                        bitmap.EndInit();
+                        BanMgmtUserImage.Source = bitmap;
+                    }
+                    catch
+                    {
+                        BanMgmtUserImage.Source = null;
+                    }
+                }
+                else
+                {
+                    BanMgmtUserImage.Source = null;
+                }
+
+                BanMgmtUserStatusText.Text = "User loaded successfully";
+                BanMgmtUserStatusText.Foreground = System.Windows.Media.Brushes.LightGreen;
+                BanMgmtUserInfoGroup.Visibility = Visibility.Visible;
+                BanMgmtGroupListGroup.Visibility = Visibility.Visible;
+
+                // Load groups from database
+                await LoadBanManagementGroupsAsync();
+
+                logger.Info($"Loaded user profile for ban management: {user.DisplayName} ({userId})");
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error loading user for ban management");
+                BanMgmtUserStatusText.Text = $"Error: {ex.Message}";
+                BanMgmtUserStatusText.Foreground = System.Windows.Media.Brushes.Red;
+            }
+        }
+
+        private async Task LoadBanManagementGroupsAsync()
+        {
+            try
+            {
+                _banMgmtGroupList.Clear();
+
+                // Load all groups from the database
+                var groups = _serviceRegistry.GetDBContext().GroupManagements.ToList();
+
+                foreach (var group in groups)
+                {
+                    var item = new GroupBanItem
+                    {
+                        GroupId = group.GroupId,
+                        GroupName = group.GroupName,
+                        Status = "Checking...",
+                        CanBan = false,
+                        CanUnban = false
+                    };
+
+                    _banMgmtGroupList.Add(item);
+
+                    // Check member status asynchronously
+                    _ = Task.Run(async () =>
+                    {
+                        var status = await _serviceRegistry.GetVRChatAPIClient().GetGroupMemberStatus(group.GroupId, _currentBanMgmtUserId);
+
+                        await Dispatcher.InvokeAsync(() =>
+                        {
+                            item.Status = status switch
+                            {
+                                VRChatClient.TGGroupMemberStatus.Member => "Member",
+                                VRChatClient.TGGroupMemberStatus.Banned => "Banned",
+                                VRChatClient.TGGroupMemberStatus.NotMember => "Not Member",
+                                _ => "Unknown"
+                            };
+
+                            item.CanBan = status != VRChatClient.TGGroupMemberStatus.Banned && status != VRChatClient.TGGroupMemberStatus.Unknown;
+                            item.CanUnban = status == VRChatClient.TGGroupMemberStatus.Banned;
+                        });
+                    });
+                }
+
+                BanMgmtGroupList.ItemsSource = _banMgmtGroupList;
+                logger.Info($"Loaded {_banMgmtGroupList.Count} groups for ban management");
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error loading ban management groups");
+            }
+        }
+
+        private async void BanMgmtAddGroup_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                TailgrabDBContext dBContext = _serviceRegistry.GetDBContext();
+                string groupId = BanMgmtAddGroupIdTextBox.Text.Trim();
+
+                if (string.IsNullOrWhiteSpace(groupId))
+                {
+                    System.Windows.MessageBox.Show("Please enter a Group ID", 
+                        "Invalid Input", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                if (!groupId.StartsWith("grp_"))
+                {
+                    System.Windows.MessageBox.Show("Invalid Group ID format (must start with grp_)", 
+                        "Invalid Input", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                // Check if group already exists in database
+                var existingGroup = dBContext.GroupManagements.FirstOrDefault(g => g.GroupId == groupId);
+
+                if (existingGroup != null)
+                {
+                    System.Windows.MessageBox.Show("This group already exists in the database", 
+                        "Duplicate Group", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                // Verify group exists in VRChat
+                var group = _serviceRegistry.GetVRChatAPIClient().GetGroupById(groupId);
+                if (group == null || string.IsNullOrEmpty(group.Id))
+                {
+                    System.Windows.MessageBox.Show("Group not found in VRChat. Please verify the Group ID.", 
+                        "Group Not Found", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                // Add to database
+                var newGroup = new tailgrab.src.Models.GroupManagement
+                {
+                    GroupId = groupId,
+                    GroupName = group.Name ?? "Unknown",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+
+                dBContext.Add(newGroup);
+                dBContext.SaveChanges();
+
+                // Add to the UI list
+                var item = new GroupBanItem
+                {
+                    GroupId = groupId,
+                    GroupName = group.Name ?? "Unknown",
+                    Status = "Checking...",
+                    CanBan = false,
+                    CanUnban = false
+                };
+
+                _banMgmtGroupList.Add(item);
+
+                // Check member status
+                var status = await _serviceRegistry.GetVRChatAPIClient().GetGroupMemberStatus(groupId, _currentBanMgmtUserId);
+
+                item.Status = status switch
+                {
+                    VRChatClient.TGGroupMemberStatus.Member => "Member",
+                    VRChatClient.TGGroupMemberStatus.Banned => "Banned",
+                    VRChatClient.TGGroupMemberStatus.NotMember => "Not Member",
+                    _ => "Unknown"
+                };
+
+                item.CanBan = status != VRChatClient.TGGroupMemberStatus.Banned && status != VRChatClient.TGGroupMemberStatus.Unknown;
+                item.CanUnban = status == VRChatClient.TGGroupMemberStatus.Banned;
+
+                // Clear the text box
+                BanMgmtAddGroupIdTextBox.Text = string.Empty;
+
+                logger.Info($"Added group {groupId} ({group.Name}) to ban management");
+                System.Windows.MessageBox.Show($"Group '{group.Name}' added successfully", 
+                    "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error adding group to ban management");
+                System.Windows.MessageBox.Show($"Error: {ex.Message}", 
+                    "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void BanMgmtRemoveGroup_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                TailgrabDBContext dBContext = _serviceRegistry.GetDBContext();
+                if (sender is System.Windows.Controls.Button button && button.Tag is GroupBanItem item)
+                {
+                    var result = System.Windows.MessageBox.Show(
+                        $"Are you sure you want to remove group '{item.GroupName}' from the list?\n\nThis will remove it from the database.",
+                        "Confirm Remove",
+                        MessageBoxButton.YesNo,
+                        MessageBoxImage.Question);
+
+                    if (result != MessageBoxResult.Yes)
+                    {
+                        return;
+                    }
+
+                    // Remove from database
+                    var dbGroup = dBContext.GroupManagements.FirstOrDefault(g => g.GroupId == item.GroupId);
+
+                    if (dbGroup != null)
+                    {
+                        dBContext.GroupManagements.Remove(dbGroup);
+                        dBContext.SaveChanges();
+                    }
+
+                    // Remove from UI
+                    _banMgmtGroupList.Remove(item);
+
+                    logger.Info($"Removed group {item.GroupId} ({item.GroupName}) from ban management");
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error removing group from ban management");
+                System.Windows.MessageBox.Show($"Error: {ex.Message}", 
+                    "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private async void BanMgmtBanUser_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (sender is System.Windows.Controls.Button button && button.Tag is GroupBanItem item)
+                {
+                    if (string.IsNullOrWhiteSpace(item.GroupId) || string.IsNullOrWhiteSpace(_currentBanMgmtUserId))
+                    {
+                        return;
+                    }
+
+                    var result = MessageBoxResult.Yes;
+                    //var result = System.Windows.MessageBox.Show(
+                    //    $"Are you sure you want to ban {_currentBanMgmtUser?.DisplayName} from group {item.GroupName}?",
+                    //    "Confirm Ban",
+                    //    MessageBoxButton.YesNo,
+                    //    MessageBoxImage.Question);
+
+                    if (result != MessageBoxResult.Yes)
+                    {
+                        return;
+                    }
+
+                    button.IsEnabled = false;
+                    item.Status = "Banning...";
+
+                    bool success = await _serviceRegistry.GetVRChatAPIClient().BanUserFromGroup(item.GroupId, _currentBanMgmtUserId);
+
+                    if (success)
+                    {
+                        item.Status = "Banned";
+                        item.CanBan = false;
+                        item.CanUnban = true;
+                        logger.Info($"Banned user {_currentBanMgmtUserId} from group {item.GroupId}");
+                        //System.Windows.MessageBox.Show("User banned successfully", "Success", 
+                        //    MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                    else
+                    {
+                        item.Status = "Ban Failed";
+                        button.IsEnabled = true;
+                        //System.Windows.MessageBox.Show("Failed to ban user", "Error", 
+                        //    MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error banning user from group");
+                System.Windows.MessageBox.Show($"Error: {ex.Message}", "Error", 
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private async void BanMgmtUnbanUser_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (sender is System.Windows.Controls.Button button && button.Tag is GroupBanItem item)
+                {
+                    if (string.IsNullOrWhiteSpace(item.GroupId) || string.IsNullOrWhiteSpace(_currentBanMgmtUserId))
+                    {
+                        return;
+                    }
+                    var result = MessageBoxResult.Yes;
+                    //var result = System.Windows.MessageBox.Show(
+                    //    $"Are you sure you want to unban {_currentBanMgmtUser?.DisplayName} from group {item.GroupName}?",
+                    //    "Confirm Unban",
+                    //    MessageBoxButton.YesNo,
+                    //    MessageBoxImage.Question);
+
+                    if (result != MessageBoxResult.Yes)
+                    {
+                        return;
+                    }
+
+                    button.IsEnabled = false;
+                    item.Status = "Unbanning...";
+
+                    bool success = await _serviceRegistry.GetVRChatAPIClient().UnbanUserFromGroup(item.GroupId, _currentBanMgmtUserId);
+
+                    if (success)
+                    {
+                        item.Status = "Not Member";
+                        item.CanBan = true;
+                        item.CanUnban = false;
+                        logger.Info($"Unbanned user {_currentBanMgmtUserId} from group {item.GroupId}");
+                        //System.Windows.MessageBox.Show("User unbanned successfully", "Success", 
+                        //    MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                    else
+                    {
+                        item.Status = "Unban Failed";
+                        button.IsEnabled = true;
+                        //System.Windows.MessageBox.Show("Failed to unban user", "Error", 
+                        //    MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error unbanning user from group");
+                System.Windows.MessageBox.Show($"Error: {ex.Message}", "Error", 
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+        #endregion
+
         public event PropertyChangedEventHandler? PropertyChanged;
         protected void OnPropertyChanged(string propertyName)
         {
@@ -4382,6 +4771,24 @@ namespace Tailgrab.PlayerManagement
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
+
+        public void RequestCancellation()
+        {
+            _status.RequestCancellation();
+        }
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+
+        protected void OnPropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+    }
+
+    public class ReportReasonItem(string displayName, string value)
+    {
+        public string DisplayName { get; set; } = displayName;
+        public string Value { get; set; } = value;
     }
 
     public class ReportReasonItem(string displayName, string value)
