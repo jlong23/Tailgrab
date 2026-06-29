@@ -1,15 +1,19 @@
 ﻿using System.IO;
+using System.Text.RegularExpressions;
 
 namespace Tailgrab.Common
 {
     public static class CommonConst
     {
 
-        public static string APPLICATION_LOCAL_DATA_PATH = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Tailgrab" );
+        public static string APPLICATION_LOCAL_DATA_PATH = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Tailgrab");
         public const string APPLICATION_LOCAL_DATABASE = "tailgrab.db";
         public const string ApplicationName = "Tailgrab";
         public const string CompanyName = "DeviousFox";
         public const string ConfigRegistryPath = "Software\\DeviousFox\\Tailgrab\\Config";
+
+        // Registry schema version tracking
+        public const string Registry_Schema_Version = "REGISTRY_SCHEMA_VERSION";
 
         // VRChat Web API registry keys
         public const string Registry_VRChat_Web_UserName = "VRCHAT_USERNAME";
@@ -22,8 +26,8 @@ namespace Tailgrab.Common
         public const string Registry_Ollama_API_Prompt = "OLLAMA_API_PROMPT";
         public const string Registry_Ollama_API_Image_Prompt = "OLLAMA_API_PROMPT_IMAGE";
         public const string Registry_Ollama_API_Model = "OLLAMA_API_Model";
-        public const string Default_Ollama_API_Prompt = "From the following block of text, classify the contents into a single class from the following classes; 'OK' - Where as all text content can be considered PG13; 'Explicit Sexual' - Where as any of the text contained describes sexual acts or intent. Flagged words Bussy, Fagot, Dih; 18+ and 21+ age requirements do not indicate sexual intent. 'Harassment & Bullying' - Where the text is describing acts of trolling or bullying users on Religion, Sexual Orientation or Race. Flagged words of base nigg* and variations of that spelling to hide racism. 'Self Harm' - Any part of the text where it explicitly describes destructive behaviours. If there is not enough information to determine the class, use a default of OK. When replying, return a single line for the Classification and a carriage return, then place the reasoning on subsequent lines, translate any foreign language to English:\n";
-        public const string Default_Ollama_API_Image_Prompt = "From the attached image, reply with a single classification of, 'OK', 'Sexual Content', 'Gore' or 'Racism'. In the following line, give the reasoning for the classifcation.";
+        public const string Default_Ollama_API_Prompt = "```markdown\r\nAnalyze the following text block and classify it into exactly one of these categories:\r\n1. 'OK' - Content is appropriate for general audiences (PG-13 equivalent)\r\n2. 'Explicit Sexual' - Contains descriptions of sexual acts or intent\r\n   - Flagged terms: 'Bussy', 'Faggot', 'Dih'\r\n   - Note: Age requirements (18+, 21+) alone do not indicate sexual content\r\n3. 'Harassment & Bullying' - Contains trolling, bullying, or discrimination based on religion, sexual orientation, or race\r\n   - Includes racial slurs (e.g., variations of 'nigg*') and their intentional misspellings\r\n4. 'Self Harm' - Describes explicit self-destructive behaviors\r\n\r\nClassification Guidelines:\r\n- Use 'OK' if content is ambiguous or lacks sufficient information\r\n- Translate any non-English text to English before classification\r\n- Consider context when evaluating flagged terms\r\n\r\nOutput the results in the following format, excluding brackets:\r\n[Classification]\r\n[Reasoning]\r\n```\r\n";
+        public const string Default_Ollama_API_Image_Prompt = "```markdown\r\nAnalyze the attached image and classify its content using exactly one of these categories:\r\n1. OK\r\n2. Explicit Sexual\r\n3. Self Harm\r\n4. Harassment & Bullying\r\n   - Important: Any slurs - including partial spellings, intentional misspellings, or coded variations - should be classified under 'Harassment & Bullying'.\r\n\r\nClassification Guidelines:\r\n- Use 'OK' if content is ambiguous or lacks sufficient information\r\n- Translate any non-English text to English before classification\r\n\r\n- Consider context when evaluating flagged terms\r\n\r\nOutput the results in the following format, excluding brackets:\r\n[Classification]\r\n[Reasoning]\r\n```\r\n";
         public const string Default_Ollama_API_Endpoint = "https://ollama.com";
         public const string Default_Ollama_API_Model = "gemma3:27b";
 
@@ -85,5 +89,24 @@ namespace Tailgrab.Common
         public const string Registry_Discovered_Avatar_Caching = "DISCOVERED_AVATAR_CACHING";
         public const string Registry_Moderated_Avatar_Caching = "MODERATED_AVATAR_CACHING";
         public const string Registry_Discovered_Group_Caching = "DISCOVERED_GROUP_CACHING";
+
+
+        public const string AI_EVALUATION_SEXUAL = "Explicit Sexual";
+        public const string AI_EVALUATION_HATE = "Harassment & Bullying";
+        public const string AI_EVALUATION_SELFHARM = "Self Harm";
+
+        public const string Registry_XSOverlay_Level = "XS_OVERLAY_LEVEL";
+        public const string XSOverlay_Level_None = "None";
+
+        public static AlertTypeEnum AlertTypeEnumFromString(string alertType)
+        {
+            return alertType switch
+            {
+                "Watch" => AlertTypeEnum.Watch,
+                "Nuisance" => AlertTypeEnum.Nuisance,
+                "Crasher" => AlertTypeEnum.Crasher,
+                _ => AlertTypeEnum.None
+            };
+        }
     }
 }

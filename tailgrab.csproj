@@ -84,6 +84,7 @@
     <MySourceFiles Include="src\config.json" />
     <MySourceFiles Include="src\NLog.config" />
     <MySourceFiles Include="src\pen-network-id.csv" />
+    <PackageReference Include="XSSocket" Version="1.0.0" />
   </ItemGroup>
 
 	<ItemGroup>

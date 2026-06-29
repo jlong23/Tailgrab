@@ -1,0 +1,214 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog 
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog" 
+    xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext" 
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+    <changeSet author="jlong (generated)" id="1775756296547-1">
+        <preConditions onFail="MARK_RAN" onFailMessage="Column verified already exists">
+            <not>
+                <tableExists tableName="AvatarInfo"/>
+            </not>  
+        </preConditions>
+        <createTable tableName="AvatarInfo">
+            <column name="AvatarId" type="TEXT">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="UserId" type="TEXT"/>
+            <column name="AvatarName" type="TEXT"/>
+            <column name="CreatedAt" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="UpdatedAt" type="TEXT"/>
+            <column name="AlertType" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ImageUrl" type="TEXT"/>
+            <column name="UserName" type="TEXT"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="jlong (generated)" id="1775756296547-2">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="GroupInfo"/>   
+            </not>  
+        </preConditions>
+        <createTable tableName="GroupInfo">
+            <column name="GroupId" type="TEXT">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="GroupName" type="TEXT"/>
+            <column name="AlertType" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="createDate" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updateDate" type="TEXT"/>
+        </createTable>
+    </changeSet>    
+    <changeSet author="jlong (generated)" id="1775756296547-3">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="GroupManagement"/>
+            </not>
+        </preConditions>
+        <createTable tableName="GroupManagement">
+            <column name="GroupId" type="TEXT">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="GroupName" type="TEXT"/>
+            <column name="createDate" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updateDate" type="TEXT"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="jlong (generated)" id="1775756296547-4">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="ImageEvaluation"/>
+            </not>
+        </preConditions>
+        <createTable tableName="ImageEvaluation">
+            <column name="InventoryId" type="TEXT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="PK_ImageEvaluation"/>
+            </column>
+            <column name="UserId" type="TEXT"/>
+            <column name="MD5Checksum" type="TEXT"/>
+            <column name="Evaluation" type="BLOB(2000000000)"/>
+            <column name="LastDateTime" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueNumeric="0" name="isIgnored" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="jlong (generated)" id="1775756296547-5">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="ProfileEvaluation"/>    
+            </not>
+        </preConditions>
+        <createTable tableName="ProfileEvaluation">
+            <column name="MD5Checksum" type="TEXT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="PK_ProfileEvaluation"/>
+            </column>
+            <column name="ProfileText" type="BLOB(2000000000)"/>
+            <column name="Evaluation" type="BLOB(2000000000)"/>
+            <column name="LastDateTime" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="jlong (generated)" id="1775756296547-6">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="UserInfo"/>
+            </not>
+        </preConditions>
+        <createTable tableName="UserInfo">
+            <column name="UserId" type="TEXT">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="DisplayName" type="TEXT"/>
+            <column name="ElapsedMinutes" type="FLOAT(2000000000, 10)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="CreatedAt" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="UpdatedAt" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="DateJoined" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="LastProfileChecksum" type="TEXT"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="jlong (generated)" id="1775756296547-9">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="ix_avtr_alert" tableName="AvatarInfo"/>
+            </not>
+        </preConditions>
+        <createIndex indexName="ix_avtr_alert" tableName="AvatarInfo">
+            <column name="AlertType"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="jlong (generated)" id="1775756296547-10">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="ix_avtr_aname" tableName="AvatarInfo"/>
+            </not>
+        </preConditions>
+        <createIndex indexName="ix_avtr_aname" tableName="AvatarInfo">
+            <column name="AvatarName"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="jlong (generated)" id="1775756296547-11">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="ix_avtr_uname" tableName="AvatarInfo"/>
+            </not>
+        </preConditions>
+        <createIndex indexName="ix_avtr_uname" tableName="AvatarInfo">
+            <column name="UserName"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="jlong (generated)" id="1775756296547-12">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="ix_grp_alert" tableName="GroupInfo"/>
+            </not>
+        </preConditions>
+        <createIndex indexName="ix_grp_alert" tableName="GroupInfo">
+            <column name="AlertType"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="jlong (generated)" id="1775756296547-13">   
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="ix_grp_gname" tableName="GroupInfo"/>
+            </not>
+        </preConditions>    
+        <createIndex indexName="ix_grp_gname" tableName="GroupInfo">
+            <column name="GroupName"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="jlong (generated)" id="1775756296547-14">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="ix_grpm_gname" tableName="GroupManagement"/>
+            </not>
+        </preConditions>
+        <createIndex indexName="ix_grpm_gname" tableName="GroupManagement">
+            <column name="GroupName"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="jlong" id="v1.1.3-1">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="ProfileEvaluation" columnName="PromptMd5Checksum"/>
+            </not>
+        </preConditions>
+        <addColumn tableName="ProfileEvaluation">
+            <column name="PromptMd5Checksum" type="TEXT"/>  
+        </addColumn>
+    </changeSet>
+    <changeSet author="jlong" id="v1.1.3-2">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="ProfileEvaluation" columnName="isIgnored"/>
+            </not>
+        </preConditions>
+        <addColumn tableName="ProfileEvaluation">
+            <column name="isIgnored" type="INTEGER" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>

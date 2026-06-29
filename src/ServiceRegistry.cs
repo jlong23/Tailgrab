@@ -4,6 +4,7 @@ using NLog;
 using System.IO;
 using Tailgrab.Clients.Ollama;
 using Tailgrab.Clients.VRChat;
+using Tailgrab.Clients.XSOverlay;
 using Tailgrab.Common;
 using Tailgrab.Configuration;
 using Tailgrab.Models;
@@ -13,13 +14,15 @@ namespace Tailgrab
 {
     public class ServiceRegistry
     {
+        static Logger logger = LogManager.GetCurrentClassLogger();
+
         TailgrabDBContext? dbContext = null;
         VRChatClient vrcAPIClient = new VRChatClient();
         PlayerManager? playerManager = null;
         OllamaClient? ollamaAPIClient = null;
         AvatarBosGistListManager? avatarGistMgr = null;
         GroupBosGistListManager? groupGistMgr = null;
-        static Logger logger = LogManager.GetCurrentClassLogger();
+        OverlayManager xsOverlay = new OverlayManager();
         ServiceCollection services = new ServiceCollection();
 
         public ServiceRegistry()
@@ -62,6 +65,7 @@ namespace Tailgrab
                 bool saveAvatars = ConfigStore.GetStoredKeyBool(CommonConst.Registry_Moderated_Avatar_Caching, true);
                 if (saveAvatars)
                 {
+                    logger.Info("Syncing avatar moderations...");
                     playerManager.SyncAvatarModerations();
                 }
 
@@ -113,6 +117,11 @@ namespace Tailgrab
                 throw new InvalidOperationException("Ollama API Client has not been initialized. Call StartAllServices() first.");
             }
             return ollamaAPIClient;
+        }
+
+        public OverlayManager GetXSOverlay()
+        {
+            return xsOverlay;
         }
 
         public async void ProcessAvatarGist()

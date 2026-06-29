@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Text;
 using Tailgrab.Clients.Ollama;
 using Tailgrab.Clients.VRChat;
+using Tailgrab.Clients.XSOverlay;
 using Tailgrab.Common;
 using Tailgrab.LineHandler;
 using Tailgrab.Models;
@@ -97,6 +98,9 @@ namespace Tailgrab.PlayerManagement
         public string? AIEval { get; set; }
 
         public List<AlertMessage> _AlertMessage = [];
+        public string ProfileImage { get; set; } = string.Empty;
+
+        public string UserTrust { get; set; }
 
         public string AlertMessage
         {
@@ -401,6 +405,8 @@ namespace Tailgrab.PlayerManagement
         public static void UpdateCurrentSession(string worldId, string instanceId)
         {
             CurrentSession = new SessionInfo(worldId, instanceId);
+            OverlayManager overlay = serviceRegistry.GetXSOverlay();
+            overlay.Initialize();
         }
 
         public void PlayerJoined(string userId, string displayName, AbstractLineHandler handler)
@@ -597,6 +603,8 @@ namespace Tailgrab.PlayerManagement
                     {
                         player = AddPlayerEventByDisplayName(displayName, PlayerEvent.EventType.AvatarWatch, $"User has used a watched Avatar : {avatarName} alertType: {watchedAvatar.AlertType}");
                         player?.AddAlertMessage(AlertClassEnum.Avatar, watchedAvatar.AlertType, $"{avatarName}");
+                        OverlayManager overlay = serviceRegistry.GetXSOverlay();
+                        overlay.SendNotification( watchedAvatar.AlertType, $"Player \\b1{displayName}\\b0 has used a watched Avatar \\b1\\i1{avatarName}\\i0\\b0");
                     }
                 }
                 if (player != null)
@@ -782,7 +790,6 @@ namespace Tailgrab.PlayerManagement
 
         public Player? UpdatePlayerUserFromVRCProfile(User profile, string profileHash)
         {
-            logger.Warn($"Updating UserInfo for user {profile.DisplayName} (ID: {profile.Id}) with DateJoined: {profile.DateJoined} and ProfileHash: {profileHash}");
             if (profile != null && profile.Id != null)
             {
                 TailgrabDBContext dbContext = serviceRegistry.GetDBContext();
@@ -869,7 +876,7 @@ namespace Tailgrab.PlayerManagement
             }
             catch (Exception ex)
             {
-                logger.Warn($"Failed to fetch Group: {ex.Message}");
+                logger.Warn($"Failed to fetch Group '{groupId}': {ex.Message}");
             }
 
             return null;
@@ -1089,7 +1096,7 @@ namespace Tailgrab.PlayerManagement
 
         public static async Task AvatarCheckTask(ConcurrentPriorityQueue<IHavePriority<int>, int> priorityQueue, ServiceRegistry serviceRegistry)
         {
-            OllamaClient.logger.Info($"Amplitude Avatar Cache Queue Running");
+            OllamaClient.logger.Info($"Avatar Queue Running");
             TailgrabDBContext dBContext = serviceRegistry.GetDBContext();
             while (true)
             {
@@ -1118,6 +1125,7 @@ namespace Tailgrab.PlayerManagement
                         break;
                     }
                 }
+
                 // Wait for a short period before checking the queue again
                 await Task.Delay(5000);
             }
@@ -1173,6 +1181,7 @@ namespace Tailgrab.PlayerManagement
                 if (avatarInfo == null)
                 {
                     logger.Debug($"Line {watch.LineNumber}: Avatar ID '{watch.AvatarId}' not found in database/vrc, skipping.");
+                    await serviceRegistry.GetVRChatAPIClient().DeleteAvatarGlobal(watch.AvatarId);
                 }
                 else if (avatarInfo.AlertType == AlertTypeEnum.None)
                 {
@@ -1239,7 +1248,7 @@ namespace Tailgrab.PlayerManagement
             }
 
             // Throttle processing to avoid overwhelming the API
-            await Task.Delay(3000);
+            await Task.Delay(1000);
         }
 
 
@@ -1335,6 +1344,37 @@ namespace Tailgrab.PlayerManagement
             }
 
             return avatarData;
+        }
+
+
+        public static string GetUserTrust(List<string> tags)
+        {
+            string trustLevel = "Visitor";
+            foreach (string tag in tags.ToArray().Reverse())
+            {
+                switch (tag)
+                {
+                    case "system_probable_troll":
+                        trustLevel = "Probable Troll";
+                        return trustLevel;
+                    case "system_troll":
+                        trustLevel = "Nuisance";
+                        return trustLevel;
+                    case "system_trust_basic":
+                        trustLevel = "New User";
+                        return trustLevel;
+                    case "system_trust_known":
+                        trustLevel = "User";
+                        return trustLevel;
+                    case "system_trust_trusted":
+                        trustLevel = "Known User";
+                        return trustLevel;
+                    case "system_trust_veteran":
+                        trustLevel = "Trusted User";
+                        return trustLevel;
+                }
+            }
+            return trustLevel;
         }
     }
     #endregion

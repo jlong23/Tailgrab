@@ -18,18 +18,20 @@ namespace Tailgrab.Common
         // Active Players Tab Column Widths
         public const double DefaultActiveDisplayNameWidth = 180;
         public const double DefaultActiveAgeWidth = 60;
+        public const double DefaultActiveTrustWidth = 60;
         public const double DefaultActiveAvatarNameWidth = 180;
         public const double DefaultActiveInstanceStartWidth = 160;
-        public const double DefaultActiveAlertMessagesWidth = 330;
+        public const double DefaultActiveAlertMessagesWidth = 280;
         public const double DefaultActiveCopyWidth = 60;
         public const double DefaultActiveReportWidth = 60;
 
         // Past Players Tab Column Widths
         public const double DefaultPastDisplayNameWidth = 180;
         public const double DefaultPastAgeWidth = 60;
+        public const double DefaultPastTrustWidth = 60;
         public const double DefaultPastAvatarNameWidth = 180;
         public const double DefaultPastInstanceEndWidth = 160;
-        public const double DefaultPastAlertMessagesWidth = 330;
+        public const double DefaultPastAlertMessagesWidth = 128;
         public const double DefaultPastCopyWidth = 60;
         public const double DefaultPastReportWidth = 60;
 

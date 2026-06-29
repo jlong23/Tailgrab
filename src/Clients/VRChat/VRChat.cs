@@ -16,10 +16,27 @@ namespace Tailgrab.Clients.VRChat
     {
         private const string URI_VRC_BASE_API = "https://api.vrchat.cloud";
         private const string APP_NAME = "Tailgrab";
-        private const string API_VERSION = "1.1.2";
+        private static readonly string API_VERSION = LoadVersion();
         private const string APP_CONTACT = "jlong@rabbitearsvideoproduction.com";
-        private const string UserAgent = $"{APP_NAME}/{API_VERSION}";
+        private static readonly string UserAgent = $"{APP_NAME}/{API_VERSION}";
         private static Logger logger = LogManager.GetCurrentClassLogger();
+
+        private static string LoadVersion()
+        {
+            try
+            {
+                string versionFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "BuildVersion.txt");
+                if (System.IO.File.Exists(versionFile))
+                {
+                    return System.IO.File.ReadAllText(versionFile).Trim();
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.GetCurrentClassLogger().Warn($"Failed to load version from BuildVersion.txt: {ex.Message}");
+            }
+            return "1.1.3"; // Fallback version
+        }
 
         private IVRChat? _vrchat;
 
@@ -194,7 +211,7 @@ namespace Tailgrab.Clients.VRChat
                 HttpResponseMessage response = await httpClient.DeleteAsync($"{URI_VRC_BASE_API}/api/1/auth/user/avatarmoderations?targetAvatarId={avatarId}&avatarModerationType=block");
                 string responseContent = await response.Content.ReadAsStringAsync();
                 logger.Debug($"Response from Block avatar {avatarId} globally: {responseContent}");
-                logger.Info($"Submitted Block avatar {avatarId} globally.");
+                logger.Info($"Submitted Un-Block avatar {avatarId} globally.");
                 response.EnsureSuccessStatusCode();
 
                 return response.IsSuccessStatusCode;
@@ -221,7 +238,7 @@ namespace Tailgrab.Clients.VRChat
             }
             catch (Exception ex)
             {
-                logger.Error($"Error fetching avatar: {ex.Message}");
+                logger.Error($"Error in GetAvatarById for avatar '{avatarId}': {ex.Message}");
             }
 
             return avatar;
@@ -239,7 +256,7 @@ namespace Tailgrab.Clients.VRChat
             }
             catch (Exception ex)
             {
-                logger.Error($"Error fetching avatar: {ex.Message}");
+                logger.Error($"Error in GetAvatarsByUserId for user '{userId}': {ex.Message}");
             }
 
             return avatars;
@@ -401,7 +418,7 @@ namespace Tailgrab.Clients.VRChat
             }
             catch (Exception ex)
             {
-                logger.Error($"Error fetching Group information: {ex.Message}");
+                logger.Error($"Error fetching Group information for group '{id}': {ex.Message}");
             }
 
             return group;
