@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Win32;
 using NLog;
 using System.IO;
@@ -11,6 +11,7 @@ using System.Windows.Media;
 using Tailgrab.Common;
 using Tailgrab.Configuration;
 using Tailgrab.LineHandler;
+using Tailgrab.Models;
 using Tailgrab.PlayerManagement;
 
 namespace Tailgrab;
