@@ -668,31 +668,30 @@ Title="Tailgrab Player Panel"
                                                 <TextBlock FontWeight="Bold" Text="{Binding DisplayName}" />
                                                 <TextBlock Margin="8,0,0,0" FontStyle="Italic" Text="{Binding UserId}" />
                                             </StackPanel>
-                                            <ScrollViewer MaxHeight="300" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                                                <ItemsControl ItemsSource="{Binding Prints}">
-                                                    <ItemsControl.ItemTemplate>
-                                                        <DataTemplate>
-                                                            <Grid Margin="0,2,0,2">
-                                                                <Grid.RowDefinitions>
-                                                                    <RowDefinition Height="Auto"/>
-                                                                    <RowDefinition Height="Auto"/>
-                                                                </Grid.RowDefinitions>
-                                                                <Grid.ColumnDefinitions>
-                                                                    <ColumnDefinition Width="300" />
-                                                                    <ColumnDefinition Width="200" />
-                                                                    <ColumnDefinition Width="200" />
-                                                                    <ColumnDefinition Width="100" />
-                                                                    <ColumnDefinition Width="100" />
-                                                                </Grid.ColumnDefinitions>
+                                            <ItemsControl ItemsSource="{Binding Prints}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Grid Margin="0,2,0,2">
+                                                            <Grid.RowDefinitions>
+                                                                <RowDefinition Height="Auto"/>
+                                                                <RowDefinition Height="Auto"/>
+                                                            </Grid.RowDefinitions>
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="300" />
+                                                                <ColumnDefinition Width="200" />
+                                                                <ColumnDefinition Width="200" />
+                                                                <ColumnDefinition Width="100" />
+                                                                <ColumnDefinition Width="100" />
+                                                            </Grid.ColumnDefinitions>
 
-                                                                <!-- First Row -->
-                                                                <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding PrintId}" VerticalAlignment="Center"/>
-                                                                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding AuthorName}" VerticalAlignment="Center"/>
-                                                                <TextBlock Grid.Row="0" Grid.Column="2" Text="{Binding Timestammp, StringFormat={}{0:u}}" VerticalAlignment="Center"/>
-                                                                <TextBlock Grid.Row="0" Grid.Column="3" Text="{Binding AIClass}" VerticalAlignment="Center"/>
+                                                            <!-- First Row -->
+                                                            <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding PrintId}" VerticalAlignment="Center"/>
+                                                            <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding AuthorName}" VerticalAlignment="Center"/>
+                                                            <TextBlock Grid.Row="0" Grid.Column="2" Text="{Binding Timestammp, StringFormat={}{0:u}}" VerticalAlignment="Center"/>
+                                                            <TextBlock Grid.Row="0" Grid.Column="3" Text="{Binding AIClass}" VerticalAlignment="Center"/>
 
-                                                                <!-- Second Row - Button -->
-                                                                <Button Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="4" 
+                                                            <!-- Second Row - Button -->
+                                                            <Button Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="4" 
                                                                         Content="Report Print Item" 
                                                                         Click="ReportPrintInventoryItem_Click"
                                                                         Tag="{Binding}"
@@ -700,24 +699,23 @@ Title="Tailgrab Player Panel"
                                                                         Padding="4,2"
                                                                         HorizontalAlignment="Left"/>
 
-                                                                <!-- Image spanning both rows -->
-                                                                <Border Grid.Row="0" Grid.Column="4" Grid.RowSpan="2" 
+                                                            <!-- Image spanning both rows -->
+                                                            <Border Grid.Row="0" Grid.Column="4" Grid.RowSpan="2" 
                                                                         BorderBrush="Gray" 
                                                                         BorderThickness="1" 
                                                                         Padding="2">
-                                                                    <TextBlock>
+                                                                <TextBlock>
                                                                         <Hyperlink NavigateUri="{Binding PrintUrl}" RequestNavigate="PrintHyperlink_RequestNavigate">
                                                                             <InlineUIContainer>
                                                                                 <Image Source="{Binding PrintUrl}" Width="100" Height="100" Stretch="Uniform" />
                                                                             </InlineUIContainer>
                                                                         </Hyperlink>
-                                                                    </TextBlock>
-                                                                </Border>
-                                                            </Grid>
-                                                        </DataTemplate>
-                                                    </ItemsControl.ItemTemplate>
-                                                </ItemsControl>
-                                            </ScrollViewer>
+                                                                </TextBlock>
+                                                            </Border>
+                                                        </Grid>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
                                         </StackPanel>
                                     </Border>
                                 </DataTemplate>
@@ -887,31 +885,30 @@ Title="Tailgrab Player Panel"
                                                 <TextBlock FontWeight="Bold" Text="{Binding DisplayName}" />
                                                 <TextBlock Margin="8,0,0,0" FontStyle="Italic" Text="{Binding UserId}" />
                                             </StackPanel>
-                                            <ScrollViewer MaxHeight="300" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                                                <ItemsControl ItemsSource="{Binding Emojis}">
-                                                    <ItemsControl.ItemTemplate>
-                                                        <DataTemplate>
-                                                            <Grid Margin="0,2,0,2">
-                                                                <Grid.RowDefinitions>
-                                                                    <RowDefinition Height="Auto"/>
-                                                                    <RowDefinition Height="Auto"/>
-                                                                </Grid.RowDefinitions>
-                                                                <Grid.ColumnDefinitions>
-                                                                    <ColumnDefinition Width="300" />
-                                                                    <ColumnDefinition Width="200" />
-                                                                    <ColumnDefinition Width="200" />
-                                                                    <ColumnDefinition Width="100" />
-                                                                    <ColumnDefinition Width="100" />
-                                                                </Grid.ColumnDefinitions>
+                                            <ItemsControl ItemsSource="{Binding Emojis}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Grid Margin="0,2,0,2">
+                                                            <Grid.RowDefinitions>
+                                                                <RowDefinition Height="Auto"/>
+                                                                <RowDefinition Height="Auto"/>
+                                                            </Grid.RowDefinitions>
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="300" />
+                                                                <ColumnDefinition Width="200" />
+                                                                <ColumnDefinition Width="200" />
+                                                                <ColumnDefinition Width="100" />
+                                                                <ColumnDefinition Width="100" />
+                                                            </Grid.ColumnDefinitions>
 
-                                                                <!-- First Row -->
-                                                                <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding InventoryId}" VerticalAlignment="Center"/>
-                                                                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding InventoryType}" VerticalAlignment="Center"/>
-                                                                <TextBlock Grid.Row="0" Grid.Column="2" Text="{Binding SpawnedAt, StringFormat={}{0:u}}" VerticalAlignment="Center"/>
-                                                                <TextBlock Grid.Row="0" Grid.Column="3" Text="{Binding AIEvalutation}" VerticalAlignment="Center"/>
+                                                            <!-- First Row -->
+                                                            <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding InventoryId}" VerticalAlignment="Center"/>
+                                                            <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding InventoryType}" VerticalAlignment="Center"/>
+                                                            <TextBlock Grid.Row="0" Grid.Column="2" Text="{Binding SpawnedAt, StringFormat={}{0:u}}" VerticalAlignment="Center"/>
+                                                            <TextBlock Grid.Row="0" Grid.Column="3" Text="{Binding AIEvalutation}" VerticalAlignment="Center"/>
 
-                                                                <!-- Second Row - Button -->
-                                                                <Button Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="4" 
+                                                            <!-- Second Row - Button -->
+                                                            <Button Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="4" 
                                                                     Content="Report Inventory Item" 
                                                                     Click="ReportInventoryItem_Click"
                                                                     Tag="{Binding}"
@@ -919,24 +916,23 @@ Title="Tailgrab Player Panel"
                                                                     Padding="4,2"
                                                                     HorizontalAlignment="Left"/>
 
-                                                                <!-- Image spanning both rows -->
-                                                                <Border Grid.Row="0" Grid.Column="4" Grid.RowSpan="2" 
+                                                            <!-- Image spanning both rows -->
+                                                            <Border Grid.Row="0" Grid.Column="4" Grid.RowSpan="2" 
                                                                     BorderBrush="Gray" 
                                                                     BorderThickness="1" 
                                                                     Padding="2">
-                                                                    <TextBlock>
+                                                                <TextBlock>
                                                                     <Hyperlink NavigateUri="{Binding ImageUrl}" RequestNavigate="EmojiHyperlink_RequestNavigate">
                                                                         <InlineUIContainer>
                                                                             <Image Source="{Binding ImageUrl}" Width="100" Height="100" Stretch="Uniform" />
                                                                         </InlineUIContainer>
                                                                     </Hyperlink>
-                                                                    </TextBlock>
-                                                                </Border>
-                                                            </Grid>
-                                                        </DataTemplate>
-                                                    </ItemsControl.ItemTemplate>
-                                                </ItemsControl>
-                                            </ScrollViewer>
+                                                                </TextBlock>
+                                                            </Border>
+                                                        </Grid>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
                                         </StackPanel>
                                     </Border>
                                 </DataTemplate>
@@ -1099,6 +1095,7 @@ Title="Tailgrab Player Panel"
                                     <!-- Fetch avatar by id -->
                                     <TextBox Name="AvatarIdBox" Width="360" Margin="12,0,8,0" ToolTip="Enter Avatar ID to fetch from VRChat" />
                                     <Button Content="Fetch Avatar by ID" Click="AvatarFetch_Click" Margin="0,0,0,0"/>
+                                    <Button Content="Purge NONE Records" Click="AvatarPurgeNoneRecords_Click" Margin="12,0,0,0" Background="#FFCC0000" Foreground="White"/>
                                 </StackPanel>
 
                                 <GroupBox Header="Avatar Information" Grid.Row="1"  Grid.ColumnSpan="2" Margin="0,0,0,12" Name="AvatarInfoGroup">
@@ -1223,6 +1220,7 @@ Title="Tailgrab Player Panel"
                                     <!-- Fetch Group by id -->
                                     <TextBox Name="GroupIdBox" Width="360" Margin="12,0,8,0" ToolTip="Enter Group ID to fetch from VRChat" />
                                     <Button Content="Fetch Group by ID" Click="GroupFetch_Click" Margin="0,0,0,0"/>
+                                    <Button Content="Purge NONE Records" Click="GroupPurgeNoneRecords_Click" Margin="12,0,0,0" Background="#FFCC0000" Foreground="White"/>
                                 </StackPanel>
 
                                 <GroupBox Header="Group Information" Grid.Row="1"  Grid.ColumnSpan="3" Margin="0,0,0,12" Name="GroupInfoGroup">
@@ -1258,7 +1256,7 @@ Title="Tailgrab Player Panel"
                                                Margin="0,0,12,0"
                                                Stretch="UniformToFill"
                                                VerticalAlignment="Top"/>
-                                        
+
                                         <!-- User Details -->
                                         <Label Grid.Row="0" Grid.Column="2" Content="Group Name:" FontWeight="Bold" Margin="0,0,8,0"/>
                                         <TextBlock Grid.Row="0" Grid.Column="3" Name="BanMgmtGroupName" VerticalAlignment="Center"/>
@@ -1341,19 +1339,25 @@ Title="Tailgrab Player Panel"
                         </TabItem>
                         <TabItem Header="Known Users">
                             <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="34*"/>
+                                    <ColumnDefinition Width="141*"/>
+                                    <ColumnDefinition Width="878*"/>
+                                </Grid.ColumnDefinitions>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto" />
                                     <RowDefinition Height="*" />
                                 </Grid.RowDefinitions>
 
-                                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="3">
                                     <TextBox Name="UserDbFilterBox" Width="300" Margin="0,0,8,0" />
                                     <Button Content="Apply Filter" Click="UserDbApplyFilter_Click" Margin="0,0,6,0"/>
                                     <Button Content="Clear Filter" Click="UserDbClearFilter_Click"/>
                                     <Button Content="Refresh" Click="UserDbRefresh_Click" Margin="8,0,0,0"/>
+                                    <Button Content="Purge Inactive Users" Click="PurgeInactiveUsers_Click" Margin="8,0,0,0" Background="#FFCC0000" Foreground="White"/>
                                 </StackPanel>
 
-                                <DataGrid Name="UserDbGrid" Grid.Row="1" AutoGenerateColumns="False" CanUserSortColumns="True" IsReadOnly="False" ItemsSource="{Binding UserDbView}" CellEditEnding="UserDbGrid_CellEditEnding">
+                                <DataGrid Name="UserDbGrid" Grid.Row="1" AutoGenerateColumns="False" CanUserSortColumns="True" IsReadOnly="False" ItemsSource="{Binding UserDbView}" CellEditEnding="UserDbGrid_CellEditEnding" Grid.ColumnSpan="3">
                                     <DataGrid.Columns>
                                         <DataGridTextColumn Header="Display Name" Binding="{Binding DisplayName}" SortMemberPath="DisplayName" Width="*" />
                                         <DataGridTextColumn Header="User ID" Binding="{Binding UserId}" SortMemberPath="UserId" Width="300" />

@@ -2974,6 +2974,65 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
+        private void AvatarPurgeNoneRecords_Click(object sender, RoutedEventArgs e)
+        {
+            // Show confirmation dialog
+            var confirmResult = System.Windows.MessageBox.Show(
+                "This will delete all Avatar Info Records that are marked 'NONE'. Do you want to continue?",
+                "Purge NONE Records",
+                MessageBoxButton.OKCancel,
+                MessageBoxImage.Warning);
+
+            if (confirmResult == MessageBoxResult.OK)
+            {
+                try
+                {
+                    var db = _serviceRegistry.GetDBContext();
+
+                    // Select all AvatarInfo records where AlertType is NONE
+                    var noneRecords = db.AvatarInfos
+                        .Where(a => a.AlertType == AlertTypeEnum.None)
+                        .ToList();
+
+                    int recordCount = noneRecords.Count;
+
+                    // Delete the records
+                    if (recordCount > 0)
+                    {
+                        db.AvatarInfos.RemoveRange(noneRecords);
+                        db.SaveChanges();
+
+                        // Refresh the grid
+                        RefreshAvatarDb();
+
+                        // Show confirmation message
+                        System.Windows.MessageBox.Show(
+                            $"{recordCount} record(s) were successfully removed.",
+                            "Delete Complete",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Information);
+                    }
+                    else
+                    {
+                        System.Windows.MessageBox.Show(
+                            "No records with AlertType 'NONE' were found.",
+                            "Delete Complete",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Information);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.Error(ex, "Failed to delete NONE records");
+                    System.Windows.MessageBox.Show(
+                        $"Failed to delete records: {ex.Message}",
+                        "Error",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error);
+                }
+            }
+        }
+
         private void AvatarHyperlink_RequestNavigate(object? sender, System.Windows.Navigation.RequestNavigateEventArgs e)
         {
             try
@@ -3077,6 +3136,66 @@ namespace Tailgrab.PlayerManagement
                 PopulateGroupInformation(existing.GroupId);
             }
         }
+
+        private void GroupPurgeNoneRecords_Click(object sender, RoutedEventArgs e)
+        {
+            // Show confirmation dialog
+            var confirmResult = System.Windows.MessageBox.Show(
+                "This will delete all Group Info Records that are marked 'NONE'. Do you want to continue?",
+                "Purge NONE Records",
+                MessageBoxButton.OKCancel,
+                MessageBoxImage.Warning);
+
+            if (confirmResult == MessageBoxResult.OK)
+            {
+                try
+                {
+                    var db = _serviceRegistry.GetDBContext();
+
+                    // Select all GroupInfo records where AlertType is NONE
+                    var noneRecords = db.GroupInfos
+                        .Where(g => g.AlertType == AlertTypeEnum.None)
+                        .ToList();
+
+                    int recordCount = noneRecords.Count;
+
+                    // Delete the records
+                    if (recordCount > 0)
+                    {
+                        db.GroupInfos.RemoveRange(noneRecords);
+                        db.SaveChanges();
+
+                        // Refresh the grid
+                        RefreshGroupDb();
+
+                        // Show confirmation message
+                        System.Windows.MessageBox.Show(
+                            $"{recordCount} record(s) were successfully removed.",
+                            "Delete Complete",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Information);
+                    }
+                    else
+                    {
+                        System.Windows.MessageBox.Show(
+                            "No records with AlertType 'NONE' were found.",
+                            "Delete Complete",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Information);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.Error(ex, "Failed to delete NONE records");
+                    System.Windows.MessageBox.Show(
+                        $"Failed to delete records: {ex.Message}",
+                        "Error",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error);
+                }
+            }
+        }
+
         private void AvatarDbGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (AvatarDbGrid.SelectedItem is AvatarInfoViewModel selectedAvatar)
@@ -3391,6 +3510,91 @@ namespace Tailgrab.PlayerManagement
                 logger?.Error(ex, "Failed to open user URL");
             }
             e.Handled = true;
+        }
+
+        private void PurgeInactiveUsers_Click(object sender, RoutedEventArgs e)
+        {
+            // Show confirmation dialog
+            MessageBoxResult confirmResult = System.Windows.MessageBox.Show(
+                "This will purge all user records that have not been seen for two months and that have less than 15 minutes of elapsed time.",
+                "Confirm Purge",
+                MessageBoxButton.OKCancel,
+                MessageBoxImage.Warning);
+
+            if (confirmResult == MessageBoxResult.OK)
+            {
+                try
+                {
+                    var db = _serviceRegistry.GetDBContext();
+
+                    // Calculate the cutoff date (2 months ago)
+                    DateTime cutoffDate = DateTime.UtcNow.AddMonths(-2);
+
+                    // Select all UserInfo records that meet the criteria
+                    var inactiveUsers = db.UserInfos
+                        .Where(u => u.UpdatedAt < cutoffDate && u.ElapsedMinutes < 15)
+                        .ToList();
+
+                    int userCount = inactiveUsers.Count;
+
+                    if (userCount > 0)
+                    {
+                        // Collect LastProfileChecksum ids for ProfileEvaluation deletion
+                        var checksumIds = inactiveUsers
+                            .Where(u => !string.IsNullOrEmpty(u.LastProfileChecksum))
+                            .Select(u => u.LastProfileChecksum)
+                            .Distinct()
+                            .ToList();
+
+                        int profileEvalCount = 0;
+
+                        // Delete matching ProfileEvaluation records
+                        if (checksumIds.Any())
+                        {
+                            var profileEvaluations = db.ProfileEvaluations
+                                .Where(p => checksumIds.Contains(p.Md5checksum))
+                                .ToList();
+
+                            profileEvalCount = profileEvaluations.Count;
+                            if (profileEvalCount > 0)
+                            {
+                                db.ProfileEvaluations.RemoveRange(profileEvaluations);
+                            }
+                        }
+
+                        // Delete the UserInfo records
+                        db.UserInfos.RemoveRange(inactiveUsers);
+                        db.SaveChanges();
+
+                        // Refresh the grid
+                        RefreshUserDb();
+
+                        // Show success message
+                        System.Windows.MessageBox.Show(
+                            $"Successfully removed {userCount} user record(s) and {profileEvalCount} profile evaluation record(s).",
+                            "Purge Complete",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Information);
+                    }
+                    else
+                    {
+                        System.Windows.MessageBox.Show(
+                            "No inactive user records were found matching the criteria.",
+                            "Purge Complete",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Information);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.Error(ex, "Failed to purge inactive users");
+                    System.Windows.MessageBox.Show(
+                        $"Failed to purge records: {ex.Message}",
+                        "Error",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error);
+                }
+            }
         }
 
         #endregion
