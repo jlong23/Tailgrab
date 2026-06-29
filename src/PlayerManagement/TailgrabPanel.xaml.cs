@@ -4147,6 +4147,115 @@ namespace Tailgrab.PlayerManagement
                     MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+
+        private async void BanMgmtBanAllGroups_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(_currentBanMgmtUserId))
+                {
+                    return;
+                }
+
+                if (sender is System.Windows.Controls.Button button)
+                {
+                    button.IsEnabled = false;
+                }
+
+                foreach (var item in _banMgmtGroupList)
+                {
+                    if (string.IsNullOrWhiteSpace(item.GroupId))
+                    {
+                        continue;
+                    }
+
+                    item.Status = "Banning...";
+
+                    bool success = await _serviceRegistry.GetVRChatAPIClient().BanUserFromGroup(item.GroupId, _currentBanMgmtUserId);
+
+                    if (success)
+                    {
+                        item.Status = "Banned";
+                        item.CanBan = false;
+                        item.CanUnban = true;
+                        logger.Info($"Banned user {_currentBanMgmtUserId} from group {item.GroupId}");
+                    }
+                    else
+                    {
+                        item.Status = "Ban Failed";
+                    }
+
+                    // Small delay to avoid overwhelming the API
+                    await Task.Delay(100);
+                }
+
+                if (sender is System.Windows.Controls.Button btn)
+                {
+                    btn.IsEnabled = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error banning user from all groups");
+                System.Windows.MessageBox.Show($"Error: {ex.Message}", "Error", 
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private async void BanMgmtUnbanAllGroups_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(_currentBanMgmtUserId))
+                {
+                    return;
+                }
+
+                if (sender is System.Windows.Controls.Button button)
+                {
+                    button.IsEnabled = false;
+                }
+
+                foreach (var item in _banMgmtGroupList)
+                {
+                    if (string.IsNullOrWhiteSpace(item.GroupId))
+                    {
+                        continue;
+                    }
+
+                    item.Status = "Unbanning...";
+
+                    bool success = await _serviceRegistry.GetVRChatAPIClient().UnbanUserFromGroup(item.GroupId, _currentBanMgmtUserId);
+
+                    if (success)
+                    {
+                        item.Status = "Not Member";
+                        item.CanBan = true;
+                        item.CanUnban = false;
+                        logger.Info($"Unbanned user {_currentBanMgmtUserId} from group {item.GroupId}");
+                    }
+                    else
+                    {
+                        item.Status = "Unban Failed";
+                    }
+
+                    // Small delay to avoid overwhelming the API
+                    await Task.Delay(100);
+                }
+
+                if (sender is System.Windows.Controls.Button btn)
+                {
+                    btn.IsEnabled = true;
+                }
+
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error unbanning user from all groups");
+                System.Windows.MessageBox.Show($"Error: {ex.Message}", "Error", 
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
         #endregion
 
         public event PropertyChangedEventHandler? PropertyChanged;

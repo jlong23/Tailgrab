@@ -2263,12 +2263,95 @@ Title="Tailgrab Player Panel"
                                 <GroupBox Header="Group Ban Status" Grid.Row="3" Margin="0,0,0,0" Name="BanMgmtGroupListGroup" Visibility="Visible">
                                     <Grid Margin="8">
                                         <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
                                             <RowDefinition Height="*"/>
                                             <RowDefinition Height="Auto"/>
                                         </Grid.RowDefinitions>
 
+                                        <!-- Header Row -->
+                                        <Grid Grid.Row="0" Margin="0,0,0,4">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="300"/>
+                                                <ColumnDefinition Width="250"/>
+                                                <ColumnDefinition Width="150"/>
+                                                <ColumnDefinition Width="120"/>
+                                                <ColumnDefinition Width="80"/>
+                                                <ColumnDefinition Width="100"/>
+                                                <ColumnDefinition Width="100"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <TextBlock Grid.Column="0" 
+                                                       Text="Group Id" 
+                                                       FontWeight="Bold"
+                                                       VerticalAlignment="Center"
+                                                       Margin="8,0,4,0"/>
+                                            <TextBlock Grid.Column="1" 
+                                                       Text="Group Name" 
+                                                       FontWeight="Bold"
+                                                       VerticalAlignment="Center"
+                                                       Margin="4,0"/>
+                                            <TextBlock Grid.Column="2" 
+                                                       Text="Status" 
+                                                       FontWeight="Bold"
+                                                       VerticalAlignment="Center"
+                                                       Margin="4,0"/>
+                                            <TextBlock Grid.Column="3" 
+                                                       Text="Remove" 
+                                                       FontWeight="Bold"
+                                                       VerticalAlignment="Center"
+                                                       Margin="4,0"/>
+                                            <TextBlock Grid.Column="4" 
+                                                       Text="" 
+                                                       FontWeight="Bold"
+                                                       VerticalAlignment="Center"
+                                                       Margin="4,0"/>
+                                            <TextBlock Grid.Column="5" 
+                                                       Text="Ban" 
+                                                       FontWeight="Bold"
+                                                       VerticalAlignment="Center"
+                                                       Margin="4,0"/>
+                                            <TextBlock Grid.Column="6" 
+                                                       Text="Unban" 
+                                                       FontWeight="Bold"
+                                                       VerticalAlignment="Center"
+                                                       Margin="4,0"/>
+                                        </Grid>
+
+                                        <!-- All Groups Row -->
+                                        <Border Grid.Row="1" BorderBrush="DarkGray" BorderThickness="0,0,0,2" Padding="4" Margin="0,0,0,4" Background="#FF3E3E42">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="300"/>
+                                                    <ColumnDefinition Width="250"/>
+                                                    <ColumnDefinition Width="150"/>
+                                                    <ColumnDefinition Width="120"/>
+                                                    <ColumnDefinition Width="80"/>
+                                                    <ColumnDefinition Width="100"/>
+                                                    <ColumnDefinition Width="100"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <TextBlock Grid.Column="1" 
+                                                           Text="All Groups" 
+                                                           FontStyle="Italic"
+                                                           FontWeight="SemiBold"
+                                                           VerticalAlignment="Center"
+                                                           Margin="4,0"/>
+                                                <Button Grid.Column="5" 
+                                                        Content="Ban All" 
+                                                        Click="BanMgmtBanAllGroups_Click"
+                                                        Padding="4,2"
+                                                        Margin="4,0"/>
+                                                <Button Grid.Column="6" 
+                                                        Content="Unban All" 
+                                                        Click="BanMgmtUnbanAllGroups_Click"
+                                                        Padding="4,2"
+                                                        Margin="4,0"/>
+                                            </Grid>
+                                        </Border>
+
                                         <!-- Group List -->
-                                        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" Margin="0,0,0,12">
+                                        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Margin="0,0,0,12">
                                             <ItemsControl Name="BanMgmtGroupList">
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate>
@@ -2325,7 +2408,7 @@ Title="Tailgrab Player Panel"
                                         </ScrollViewer>
 
                                         <!-- Add Group Section -->
-                                        <Grid Grid.Row="1">
+                                        <Grid Grid.Row="3">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="Auto"/>
                                                 <ColumnDefinition Width="300"/>
