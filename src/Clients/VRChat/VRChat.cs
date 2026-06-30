@@ -72,8 +72,17 @@ namespace Tailgrab.Clients.VRChat
                         }
                         else if (response.RequiresTwoFactorAuth != null && response.RequiresTwoFactorAuth.Contains("totp"))
                         {
-                            var totp = new Totp(Base32Encoding.ToBytes(twoFactorSecret));
-                            string code = totp.ComputeTotp();
+                            string code = string.Empty;
+                            if (string.IsNullOrEmpty(twoFactorSecret))
+                            {
+                                logger.Error("2FA secret is not set, Prompting user for code.");
+                                code = Microsoft.VisualBasic.Interaction.InputBox("Please enter Authenitcator OTP code (6 digits)");
+                            } 
+                            else
+                            {
+                                var totp = new Totp(Base32Encoding.ToBytes(twoFactorSecret));
+                                code = totp.ComputeTotp();
+                            }
 
                             var otpResponse = await _vrchat.Authentication.Verify2FAAsync(new TwoFactorAuthCode(code));
                         }
