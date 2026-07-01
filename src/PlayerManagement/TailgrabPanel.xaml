@@ -155,6 +155,7 @@ Title="Tailgrab Player Panel"
                                     <MenuItem Header="Filter">
                                         <MenuItem Header="Filter by selected DisplayName" Click="ActiveFilterBySelected_Click"/>
                                     </MenuItem>
+                                    <MenuItem Header="View Groups" Click="ActiveViewUserGroups_Click"/>
                                 </ContextMenu>
                             </ListView.ContextMenu>
 
@@ -258,6 +259,17 @@ Title="Tailgrab Player Panel"
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate>
                                                 <Button Content="Ban" Click="BanPlayer_Click" Padding="4,2"/>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+
+                                    <GridViewColumn Width="60">
+                                        <GridViewColumn.Header>
+                                            <GridViewColumnHeader Content="Groups" />
+                                        </GridViewColumn.Header>
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Button Content="Groups" Click="ActiveViewUserGroups_Click" Padding="4,2"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
@@ -427,6 +439,7 @@ Title="Tailgrab Player Panel"
                                     <MenuItem Header="Filter">
                                         <MenuItem Header="Filter by selected DisplayName" Click="PastFilterBySelected_Click"/>
                                     </MenuItem>
+                                    <MenuItem Header="View Groups" Click="PastViewUserGroups_Click"/>
                                 </ContextMenu>
                             </ListView.ContextMenu>
 
@@ -533,6 +546,18 @@ Title="Tailgrab Player Panel"
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
+
+                                    <GridViewColumn Width="60">
+                                        <GridViewColumn.Header>
+                                            <GridViewColumnHeader Content="Groups" />
+                                        </GridViewColumn.Header>
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Button Content="Groups" Click="ActiveViewUserGroups_Click" Padding="4,2"/>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+
 
                                 </GridView>
                             </ListView.View>
@@ -659,16 +684,20 @@ Title="Tailgrab Player Panel"
                         </StackPanel>
 
                         <!-- Show each player and their prints -->
-                        <ListView Name="PrintListView" Grid.Row="1" ItemsSource="{Binding PrintView}" Grid.ColumnSpan="5">
+                        <ListView Name="PrintListView" Grid.Row="1" ItemsSource="{Binding PrintView}" Grid.ColumnSpan="5" ScrollViewer.CanContentScroll="True">
                             <ListView.ItemTemplate>
                                 <DataTemplate>
                                     <Border BorderBrush="Gray" BorderThickness="0,0,0,1" Padding="6">
-                                        <StackPanel Orientation="Vertical">
-                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                        <Grid>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
+                                            <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,4">
                                                 <TextBlock FontWeight="Bold" Text="{Binding DisplayName}" />
                                                 <TextBlock Margin="8,0,0,0" FontStyle="Italic" Text="{Binding UserId}" />
                                             </StackPanel>
-                                            <ItemsControl ItemsSource="{Binding Prints}">
+                                            <ItemsControl Grid.Row="1" ItemsSource="{Binding Prints}" ScrollViewer.VerticalScrollBarVisibility="Disabled">
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate>
                                                         <Grid Margin="0,2,0,2">
@@ -716,13 +745,13 @@ Title="Tailgrab Player Panel"
                                                     </DataTemplate>
                                                 </ItemsControl.ItemTemplate>
                                             </ItemsControl>
-                                        </StackPanel>
+                                        </Grid>
                                     </Border>
                                 </DataTemplate>
                             </ListView.ItemTemplate>
                         </ListView>
                         <!-- Overlay Panel for Report Inventory -->
-                        <Border Name="ReportPrintInventoryOverlay" 
+                        <Border Name="ReportPrintInventoryOverlay"
                             Grid.Row="0" 
                             Grid.RowSpan="2" 
                             Background="#CC000000" 
@@ -876,16 +905,20 @@ Title="Tailgrab Player Panel"
                         </StackPanel>
 
                         <!-- Show each player and their emojis -->
-                        <ListView Name="EmojiListView" Grid.Row="1" ItemsSource="{Binding EmojiView}" Grid.ColumnSpan="3">
+                        <ListView Name="EmojiListView" Grid.Row="1" ItemsSource="{Binding EmojiView}" Grid.ColumnSpan="3" ScrollViewer.CanContentScroll="True">
                             <ListView.ItemTemplate>
                                 <DataTemplate>
                                     <Border BorderBrush="Gray" BorderThickness="0,0,0,1" Padding="6">
-                                        <StackPanel Orientation="Vertical">
-                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                        <Grid>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
+                                            <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,4">
                                                 <TextBlock FontWeight="Bold" Text="{Binding DisplayName}" />
                                                 <TextBlock Margin="8,0,0,0" FontStyle="Italic" Text="{Binding UserId}" />
                                             </StackPanel>
-                                            <ItemsControl ItemsSource="{Binding Emojis}">
+                                            <ItemsControl Grid.Row="1" ItemsSource="{Binding Emojis}" ScrollViewer.VerticalScrollBarVisibility="Disabled">
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate>
                                                         <Grid Margin="0,2,0,2">
@@ -933,7 +966,7 @@ Title="Tailgrab Player Panel"
                                                     </DataTemplate>
                                                 </ItemsControl.ItemTemplate>
                                             </ItemsControl>
-                                        </StackPanel>
+                                        </Grid>
                                     </Border>
                                 </DataTemplate>
                             </ListView.ItemTemplate>
@@ -1078,7 +1111,8 @@ Title="Tailgrab Player Panel"
                         <TabItem Header="Known Avatars">
                             <Grid>
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="149*"/>
+                                    <ColumnDefinition Width="26*"/>
+                                    <ColumnDefinition Width="123*"/>
                                     <ColumnDefinition Width="904*"/>
                                 </Grid.ColumnDefinitions>
                                 <Grid.RowDefinitions>
@@ -1087,7 +1121,7 @@ Title="Tailgrab Player Panel"
                                     <RowDefinition Height="*" />
                                 </Grid.RowDefinitions>
 
-                                <StackPanel Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="2">
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="3">
                                     <TextBox Name="AvatarDbFilterBox" Width="300" Margin="0,0,8,0" />
                                     <Button Content="Apply Filter" Click="AvatarDbApplyFilter_Click" Margin="0,0,6,0"/>
                                     <Button Content="Clear Filter" Click="AvatarDbClearFilter_Click"/>
@@ -1098,7 +1132,7 @@ Title="Tailgrab Player Panel"
                                     <Button Content="Purge NONE Records" Click="AvatarPurgeNoneRecords_Click" Margin="12,0,0,0" Background="#FFCC0000" Foreground="White"/>
                                 </StackPanel>
 
-                                <GroupBox Header="Avatar Information" Grid.Row="1"  Grid.ColumnSpan="2" Margin="0,0,0,12" Name="AvatarInfoGroup">
+                                <GroupBox Header="Avatar Information" Grid.Row="1"  Grid.ColumnSpan="3" Margin="0,0,0,12" Name="AvatarInfoGroup">
                                     <Grid Margin="8">
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="Auto"/>
@@ -1162,7 +1196,7 @@ Title="Tailgrab Player Panel"
                                 </GroupBox>
 
 
-                                <DataGrid Name="AvatarDbGrid" Grid.Row="2" AutoGenerateColumns="False" CanUserSortColumns="True" IsReadOnly="False" ItemsSource="{Binding AvatarDbView}" CellEditEnding="AvatarDbGrid_CellEditEnding"  SelectionChanged="AvatarDbGrid_SelectionChanged" Grid.ColumnSpan="2">
+                                <DataGrid Name="AvatarDbGrid" Grid.Row="2" AutoGenerateColumns="False" CanUserSortColumns="True" IsReadOnly="False" ItemsSource="{Binding AvatarDbView}" CellEditEnding="AvatarDbGrid_CellEditEnding"  SelectionChanged="AvatarDbGrid_SelectionChanged" Grid.ColumnSpan="3">
                                     <DataGrid.Columns>
                                         <!-- AlertType as template column: display enum name, edit with ComboBox -->
                                         <DataGridTemplateColumn Header="Alert" SortMemberPath="AlertType" Width="80">
@@ -2515,6 +2549,175 @@ Title="Tailgrab Player Panel"
                 </TabItem>
             </TabControl>
         </Grid>
+
+        <!-- Overlay Panel for User Groups Management -->
+        <Border Name="UserGroupsOverlay" 
+                Grid.Row="0" 
+                Background="#CC000000" 
+                Visibility="Collapsed"
+                Panel.ZIndex="2000">
+            <Border Background="#FF2D2D30" 
+                    MaxWidth="1200" 
+                    MaxHeight="700" 
+                    CornerRadius="8"
+                    Padding="16"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Center">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Title -->
+                    <TextBlock Grid.Row="0" 
+                               Text="User Groups Management" 
+                               FontSize="20" 
+                               FontWeight="Bold" 
+                               Foreground="#FFE6E6E6"
+                               Margin="0,0,0,16"/>
+
+                    <!-- User Info Section -->
+                    <GroupBox Grid.Row="1" Header="User Information" Margin="0,0,0,12">
+                        <Grid Margin="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <Label Grid.Row="0" Grid.Column="0" Content="User ID:" FontWeight="Bold" Margin="0,0,8,0"/>
+                            <TextBlock Grid.Row="0" Grid.Column="1" Name="UserGroupsOverlayUserId" VerticalAlignment="Center"/>
+
+                            <Label Grid.Row="1" Grid.Column="0" Content="Display Name:" FontWeight="Bold" Margin="0,0,8,0"/>
+                            <TextBlock Grid.Row="1" Grid.Column="1" Name="UserGroupsOverlayDisplayName" VerticalAlignment="Center"/>
+                        </Grid>
+                    </GroupBox>
+
+                    <!-- Groups List -->
+                    <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Margin="0,0,0,12">
+                        <DataGrid Name="UserGroupsDataGrid" 
+                                  AutoGenerateColumns="False" 
+                                  CanUserSortColumns="True" 
+                                  IsReadOnly="False"
+                                  Background="#FF1E1E1E"
+                                  RowBackground="#FF1E1E1E"
+                                  AlternatingRowBackground="#FF2D2D30">
+                            <DataGrid.Columns>
+                                <!-- Banner Image -->
+                                <DataGridTemplateColumn Header="Banner" Width="110">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Border Width="100" Height="100" BorderBrush="Gray" BorderThickness="1">
+                                                <Image Source="{Binding BannerUrl}" Width="100" Height="100" Stretch="Uniform" />
+                                            </Border>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <!-- Icon Image -->
+                                <DataGridTemplateColumn Header="Icon" Width="110">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Border Width="100" Height="100" BorderBrush="Gray" BorderThickness="1">
+                                                <Image Source="{Binding IconUrl}" Width="100" Height="100" Stretch="Uniform" />
+                                            </Border>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <!-- Name -->
+                                <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="150" IsReadOnly="True"/>
+
+                                <!-- Group ID -->
+                                <DataGridTextColumn Header="Group ID" Binding="{Binding GroupId}" Width="200" IsReadOnly="True"/>
+
+                                <!-- Short Code -->
+                                <DataGridTextColumn Header="Short Code" Binding="{Binding ShortCode}" Width="100" IsReadOnly="True"/>
+
+                                <!-- Join State -->
+                                <DataGridTextColumn Header="Join State" Binding="{Binding JoinState}" Width="100" IsReadOnly="True"/>
+
+                                <!-- Member Count -->
+                                <DataGridTextColumn Header="Members" Binding="{Binding MemberCount}" Width="80" IsReadOnly="True">
+                                    <DataGridTextColumn.ElementStyle>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="HorizontalAlignment" Value="Right"/>
+                                            <Setter Property="TextAlignment" Value="Right"/>
+                                        </Style>
+                                    </DataGridTextColumn.ElementStyle>
+                                </DataGridTextColumn>
+
+                                <!-- Alert Type -->
+                                <DataGridTemplateColumn Header="Alert Type" Width="120">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding AlertType}" 
+                                                       Background="{Binding AlertBackground}"
+                                                       Foreground="{Binding AlertForeground}"
+                                                       Padding="4,2"
+                                                       TextAlignment="Center"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                    <DataGridTemplateColumn.CellEditingTemplate>
+                                        <DataTemplate>
+                                            <ComboBox ItemsSource="{Binding DataContext.AlertTypeOptions, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                      SelectedValuePath="Value" 
+                                                      DisplayMemberPath="Key"
+                                                      SelectedValue="{Binding AlertType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellEditingTemplate>
+                                </DataGridTemplateColumn>
+
+                                <!-- Add Button -->
+                                <DataGridTemplateColumn Header="Action" Width="80">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Button Content="ADD" 
+                                                    Click="UserGroupsAdd_Click" 
+                                                    Tag="{Binding}"
+                                                    Padding="4,2"
+                                                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                    IsEnabled="{Binding CanAdd}"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                            </DataGrid.Columns>
+
+                            <!-- Row Style for highlighting owned groups -->
+                            <DataGrid.RowStyle>
+                                <Style TargetType="DataGridRow">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsOwnedByUser}" Value="True">
+                                            <Setter Property="Background" Value="{Binding DataContext.Class01Background, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                                            <Setter Property="Foreground" Value="{Binding DataContext.Class01Foreground, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </DataGrid.RowStyle>
+                        </DataGrid>
+                    </ScrollViewer>
+
+                    <!-- Action Buttons -->
+                    <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Name="UserGroupsOverlayCancelButton" 
+                                Content="Cancel" 
+                                Width="100" 
+                                Margin="0,0,12,0" 
+                                Click="UserGroupsOverlayCancel_Click"/>
+                        <Button Name="UserGroupsOverlayOkButton" 
+                                Content="OK" 
+                                Width="100" 
+                                Click="UserGroupsOverlayOk_Click"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Border>
 
         <!-- Status Bar -->
         <StatusBar Grid.Row="1" Background="#FF2D2D30" Foreground="#FFE6E6E6">

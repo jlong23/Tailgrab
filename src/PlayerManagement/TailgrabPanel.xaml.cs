@@ -1665,6 +1665,30 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
+        private void ActiveViewUserGroups_Click(object sender, RoutedEventArgs e)
+        {
+
+            if (sender is not System.Windows.Controls.Button btn) return;
+
+            // Find the DataContext for the row (should be PlayerViewModel)
+            if (btn.DataContext is PlayerViewModel pvm)
+            {
+                ShowUserGroupsOverlay(pvm.UserId, pvm.DisplayName);
+            }
+        }
+
+        private void PastViewUserGroups_Click(object sender, RoutedEventArgs e)
+        {
+            if (SelectedPast != null)
+            {
+                ShowUserGroupsOverlay(SelectedPast.UserId, SelectedPast.DisplayName);
+            }
+            else
+            {
+                System.Windows.MessageBox.Show("Please select a player first.", "No Player Selected", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+
         private void ReportPlayer_Click(object sender, RoutedEventArgs e)
         {
             if (sender is not System.Windows.Controls.Button btn) return;
@@ -4134,7 +4158,7 @@ namespace Tailgrab.PlayerManagement
                 _currentBanMgmtUser = user;
                 _currentBanMgmtUserId = userId;
 
-                logger.Info($"Fetched user profile for ban management: {user.DisplayName} ({user})");
+                logger.Info($"Fetched user profile for ban management: {user.DisplayName})");
 
                 // Populate user info
                 BanMgmtUserName.Text = user.DisplayName ?? "Unknown";
@@ -4191,47 +4215,51 @@ namespace Tailgrab.PlayerManagement
         {
             try
             {
-                _banMgmtGroupList.Clear();
+                // Load all groups from the database on background thread
+                var groups = await Task.Run(() => _serviceRegistry.GetDBContext().GroupManagements.ToList());
 
-                // Load all groups from the database
-                var groups = _serviceRegistry.GetDBContext().GroupManagements.ToList();
-
-                foreach (var group in groups)
+                // All UI operations must happen on the UI thread
+                await Dispatcher.InvokeAsync(() =>
                 {
-                    var item = new GroupBanItem
+                    _banMgmtGroupList.Clear();
+
+                    foreach (var group in groups)
                     {
-                        GroupId = group.GroupId,
-                        GroupName = group.GroupName,
-                        Status = "Checking...",
-                        CanBan = false,
-                        CanUnban = false
-                    };
-
-                    _banMgmtGroupList.Add(item);
-
-                    // Check member status asynchronously
-                    _ = Task.Run(async () =>
-                    {
-                        var status = await _serviceRegistry.GetVRChatAPIClient().GetGroupMemberStatus(group.GroupId, _currentBanMgmtUserId);
-
-                        await Dispatcher.InvokeAsync(() =>
+                        var item = new GroupBanItem
                         {
-                            item.Status = status switch
+                            GroupId = group.GroupId,
+                            GroupName = group.GroupName,
+                            Status = "Checking...",
+                            CanBan = false,
+                            CanUnban = false
+                        };
+
+                        _banMgmtGroupList.Add(item);
+
+                        // Check member status asynchronously
+                        _ = Task.Run(async () =>
+                        {
+                            var status = await _serviceRegistry.GetVRChatAPIClient().GetGroupMemberStatus(group.GroupId, _currentBanMgmtUserId);
+
+                            await Dispatcher.InvokeAsync(() =>
                             {
-                                VRChatClient.TGGroupMemberStatus.Member => "Member",
-                                VRChatClient.TGGroupMemberStatus.Banned => "Banned",
-                                VRChatClient.TGGroupMemberStatus.NotMember => "Not Member",
-                                _ => "Unknown"
-                            };
+                                item.Status = status switch
+                                {
+                                    VRChatClient.TGGroupMemberStatus.Member => "Member",
+                                    VRChatClient.TGGroupMemberStatus.Banned => "Banned",
+                                    VRChatClient.TGGroupMemberStatus.NotMember => "Not Member",
+                                    _ => "Unknown"
+                                };
 
-                            item.CanBan = status != VRChatClient.TGGroupMemberStatus.Banned && status != VRChatClient.TGGroupMemberStatus.Unknown;
-                            item.CanUnban = status == VRChatClient.TGGroupMemberStatus.Banned;
+                                item.CanBan = status != VRChatClient.TGGroupMemberStatus.Banned && status != VRChatClient.TGGroupMemberStatus.Unknown;
+                                item.CanUnban = status == VRChatClient.TGGroupMemberStatus.Banned;
+                            });
                         });
-                    });
-                }
+                    }
 
-                BanMgmtGroupList.ItemsSource = _banMgmtGroupList;
-                logger.Info($"Loaded {_banMgmtGroupList.Count} groups for ban management");
+                    BanMgmtGroupList.ItemsSource = _banMgmtGroupList;
+                    logger.Info($"Loaded {_banMgmtGroupList.Count} groups for ban management");
+                });
             }
             catch (Exception ex)
             {
@@ -4611,6 +4639,184 @@ namespace Tailgrab.PlayerManagement
         {
 
         }
+
+        #region User Groups Overlay Management
+
+        public async void ShowUserGroupsOverlay(string userId, string displayName)
+        {
+            try
+            {
+                // Set user information
+                UserGroupsOverlayUserId.Text = userId;
+                UserGroupsOverlayDisplayName.Text = displayName;
+
+                // Clear existing data
+                UserGroupsDataGrid.ItemsSource = null;
+
+                // Show the overlay
+                UserGroupsOverlay.Visibility = Visibility.Visible;
+
+                // Fetch groups asynchronously (already async, no need for Task.Run)
+                var groups = await LoadUserGroupsAsync(userId);
+
+                // Update UI (already on UI thread)
+                UserGroupsDataGrid.ItemsSource = groups;
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, $"Error showing user groups overlay for user {userId}");
+                System.Windows.MessageBox.Show($"Failed to load user groups: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                UserGroupsOverlay.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        private async Task<List<UserGroupViewModel>> LoadUserGroupsAsync(string userId)
+        {
+            var groupViewModels = new List<UserGroupViewModel>();
+
+            try
+            {
+                VRChatClient vrcClient = _serviceRegistry.GetVRChatAPIClient();
+
+                // Fetch groups from API on background thread
+                List<LimitedUserGroups> userGroups = await Task.Run(() => vrcClient.GetProfileGroups(userId));
+                logger.Info($"Fetched {userGroups?.Count ?? 0} groups for user {userId}");
+
+                if (userGroups == null || userGroups.Count == 0)
+                {
+                    logger.Info($"No groups found for user {userId}");
+                    return groupViewModels;
+                }
+
+                // Fetch DB data on background thread
+                var dbContext = _serviceRegistry.GetDBContext();
+                var dbGroupData = await Task.Run(() =>
+                {
+                    var data = new List<(string groupId, bool exists, AlertTypeEnum alertType)>();
+                    foreach (var group in userGroups)
+                    {
+                        var existingGroup = dbContext.GroupInfos.Find(group.GroupId);
+                        if (existingGroup != null)
+                        {
+                            data.Add((group.GroupId ?? string.Empty, true, existingGroup.AlertType));
+                        }
+                        else
+                        {
+                            data.Add((group.GroupId ?? string.Empty, false, AlertTypeEnum.None));
+                        }
+                    }
+                    return data;
+                });
+
+                // Create view models on UI thread (required for WPF Brush creation in UpdateAlertColors)
+                foreach (var group in userGroups)
+                {
+                    try
+                    {
+                        var vm = new UserGroupViewModel
+                        {
+                            GroupId = group.GroupId ?? string.Empty,
+                            Name = group.Name ?? string.Empty,
+                            BannerUrl = group.BannerUrl ?? "https://assets.vrchat.com/www/groups/default_banner.png",
+                            IconUrl = group.IconUrl ?? "https://assets.vrchat.com/www/groups/default_banner.png",
+                            ShortCode = $"{group.ShortCode}.{group.Discriminator}",
+                            Description = group.Description ?? string.Empty,
+                            Rules = string.Empty, // LimitedUserGroups doesn't have Rules field
+                            JoinState = "N/A", // LimitedUserGroups doesn't have MyMember
+                            MemberCount = group.MemberCount,
+                            OwnerId = group.OwnerId ?? string.Empty,
+                            IsOwnedByUser = (group.OwnerId ?? string.Empty) == userId
+                        };
+
+                        // Apply DB data
+                        var dbInfo = dbGroupData.FirstOrDefault(d => d.groupId == vm.GroupId);
+                        vm.ExistsInDatabase = dbInfo.exists;
+                        vm.AlertType = dbInfo.alertType;
+
+                        // UpdateAlertColors creates WPF Brushes - must be on UI thread
+                        vm.UpdateAlertColors();
+
+                        groupViewModels.Add(vm);
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.Error(ex, $"Error processing group {group.Id} for user {userId}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, $"Error loading user groups for {userId}");
+                throw;
+            }
+
+            return groupViewModels;
+        }
+
+        private void UserGroupsOverlayCancel_Click(object sender, RoutedEventArgs e)
+        {
+            UserGroupsOverlay.Visibility = Visibility.Collapsed;
+        }
+
+        private void UserGroupsOverlayOk_Click(object sender, RoutedEventArgs e)
+        {
+            UserGroupsOverlay.Visibility = Visibility.Collapsed;
+        }
+
+        private async void UserGroupsAdd_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (sender is System.Windows.Controls.Button button && button.Tag is UserGroupViewModel vm)
+                {
+                    if (vm.AlertType == AlertTypeEnum.None)
+                    {
+                        System.Windows.MessageBox.Show("Please select an Alert Type before adding.", "Alert Type Required", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        return;
+                    }
+
+                    var dbContext = _serviceRegistry.GetDBContext();
+
+                    // Check if already exists
+                    var existingGroup = dbContext.GroupInfos.Find(vm.GroupId);
+                    if (existingGroup != null)
+                    {
+                        System.Windows.MessageBox.Show("This group already exists in the database.", "Already Exists", MessageBoxButton.OK, MessageBoxImage.Information);
+                        return;
+                    }
+
+                    // Create new group info record
+                    var newGroup = new GroupInfo
+                    {
+                        GroupId = vm.GroupId,
+                        GroupName = vm.Name,
+                        AlertType = vm.AlertType,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    };
+
+                    dbContext.GroupInfos.Add(newGroup);
+                    await dbContext.SaveChangesAsync();
+
+                    // Update view model
+                    vm.ExistsInDatabase = true;
+                    vm.UpdateAlertColors();
+
+                    logger.Info($"Added group {vm.GroupId} ({vm.Name}) with alert type {vm.AlertType}");
+                    System.Windows.MessageBox.Show($"Group '{vm.Name}' added successfully with alert type '{vm.AlertType}'.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                    // Refresh the groups database view if it's visible
+                    RefreshGroupDb();
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error adding group to database");
+                System.Windows.MessageBox.Show($"Failed to add group: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        #endregion
     }
 
     #region ViewModels
