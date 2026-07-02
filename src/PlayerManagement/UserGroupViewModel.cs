@@ -77,7 +77,7 @@ namespace Tailgrab.PlayerManagement
 
         public void UpdateAlertColors()
         {
-            if (ExistsInDatabase && AlertType != AlertTypeEnum.None)
+            if (AlertType != AlertTypeEnum.None)
             {
                 string colorClass = PlayerManager.GetAlertColor(AlertClassEnum.Group, AlertType);
 

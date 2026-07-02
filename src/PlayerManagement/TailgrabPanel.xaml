@@ -2303,6 +2303,7 @@ Title="Tailgrab Player Panel"
                                             <ColumnDefinition Width="Auto"/>
                                             <ColumnDefinition Width="300"/>
                                             <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
                                             <ColumnDefinition Width="*"/>
                                         </Grid.ColumnDefinitions>
 
@@ -2318,8 +2319,14 @@ Title="Tailgrab Player Panel"
                                                 Content="Load User" 
                                                 Click="BanMgmtLoadUser_Click" 
                                                 Width="100"
+                                                Padding="4,2"
+                                                Margin="0,0,8,0"/>
+                                        <Button Grid.Row="0" Grid.Column="3" 
+                                                Content="Check Groups" 
+                                                Click="BanMgmtCheckGroups_Click" 
+                                                Width="100"
                                                 Padding="4,2"/>
-                                        <TextBlock Grid.Row="0" Grid.Column="3"
+                                        <TextBlock Grid.Row="0" Grid.Column="4"
                                                    Name="BanMgmtUserStatusText"
                                                    VerticalAlignment="Center"
                                                    Margin="12,0,0,0"
@@ -2600,14 +2607,15 @@ Title="Tailgrab Player Panel"
                     </GroupBox>
 
                     <!-- Groups List -->
-                    <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Margin="0,0,0,12">
-                        <DataGrid Name="UserGroupsDataGrid" 
+                    <ScrollViewer Name="UserGroupsScrollViewer" Grid.Row="2" VerticalScrollBarVisibility="Auto" Margin="0,0,0,12">
+                        <DataGrid Name="UserGroupsDataGrid"
                                   AutoGenerateColumns="False" 
                                   CanUserSortColumns="True" 
                                   IsReadOnly="False"
                                   Background="#FF1E1E1E"
                                   RowBackground="#FF1E1E1E"
-                                  AlternatingRowBackground="#FF2D2D30">
+                                  AlternatingRowBackground="#FF2D2D30"
+                                  RowDetailsVisibilityMode="Visible">
                             <DataGrid.Columns>
                                 <!-- Banner Image -->
                                 <DataGridTemplateColumn Header="Banner" Width="110">
@@ -2634,11 +2642,11 @@ Title="Tailgrab Player Panel"
                                 <!-- Name -->
                                 <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="150" IsReadOnly="True"/>
 
-                                <!-- Group ID -->
-                                <DataGridTextColumn Header="Group ID" Binding="{Binding GroupId}" Width="200" IsReadOnly="True"/>
-
                                 <!-- Short Code -->
                                 <DataGridTextColumn Header="Short Code" Binding="{Binding ShortCode}" Width="100" IsReadOnly="True"/>
+
+                                <!-- Group ID -->
+                                <DataGridTextColumn Header="Group ID" Binding="{Binding GroupId}" Width="200" IsReadOnly="True"/>
 
                                 <!-- Join State -->
                                 <DataGridTextColumn Header="Join State" Binding="{Binding JoinState}" Width="100" IsReadOnly="True"/>
@@ -2689,17 +2697,57 @@ Title="Tailgrab Player Panel"
                                 </DataGridTemplateColumn>
                             </DataGrid.Columns>
 
-                            <!-- Row Style for highlighting owned groups -->
-                            <DataGrid.RowStyle>
-                                <Style TargetType="DataGridRow">
+                            <!-- Row Details Template for Description and Rules -->
+                            <DataGrid.RowDetailsTemplate>
+                                <DataTemplate>
+                                    <Border BorderBrush="#FF3F3F46" BorderThickness="1" Background="#FF252526" Padding="8" Margin="0,0,0,0">
+                                        <Grid>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
+
+                                            <!-- Description Section -->
+                                            <StackPanel Grid.Row="0" Margin="0,0,0,8">
+                                                <TextBlock Text="Description:" 
+                                                           FontWeight="Bold" 
+                                                           Foreground="#FFE6E6E6" 
+                                                           Margin="0,0,0,4"/>
+                                                <TextBlock Text="{Binding Description}" 
+                                                           TextWrapping="Wrap" 
+                                                           Foreground="#FFE6E6E6"
+                                                           MaxHeight="100"
+                                                           Margin="8,0,0,0"/>
+                                            </StackPanel>
+
+                                            <!-- Rules Section -->
+                                            <StackPanel Grid.Row="1">
+                                                <TextBlock Text="Rules:" 
+                                                           FontWeight="Bold" 
+                                                           Foreground="#FFE6E6E6" 
+                                                           Margin="0,0,0,4"/>
+                                                <TextBlock Text="{Binding Rules}" 
+                                                           TextWrapping="Wrap" 
+                                                           Foreground="#FFE6E6E6"
+                                                           MaxHeight="100"
+                                                           Margin="8,0,0,0"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </DataGrid.RowDetailsTemplate>
+
+                            <!-- Cell Style for highlighting owned groups -->
+                            <DataGrid.CellStyle>
+                                <Style TargetType="DataGridCell">
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding IsOwnedByUser}" Value="True">
-                                            <Setter Property="Background" Value="{Binding DataContext.Class01Background, RelativeSource={RelativeSource AncestorType=Window}}"/>
-                                            <Setter Property="Foreground" Value="{Binding DataContext.Class01Foreground, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                                            <Setter Property="Background" Value="{Binding DataContext.FriendBackground, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                                            <Setter Property="Foreground" Value="{Binding DataContext.FriendForeground, RelativeSource={RelativeSource AncestorType=Window}}"/>
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
-                            </DataGrid.RowStyle>
+                            </DataGrid.CellStyle>
                         </DataGrid>
                     </ScrollViewer>
 

@@ -4211,6 +4211,37 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
+        private void BanMgmtCheckGroups_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                string userId = BanMgmtUserIdTextBox.Text.Trim();
+
+                if (string.IsNullOrWhiteSpace(userId))
+                {
+                    System.Windows.MessageBox.Show("Please enter a User ID first.", "Validation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                if (!userId.StartsWith("usr_"))
+                {
+                    System.Windows.MessageBox.Show("Invalid User ID format (must start with usr_).", "Validation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                // Get display name if user is already loaded, otherwise use userId
+                string displayName = _currentBanMgmtUser?.DisplayName ?? userId;
+
+                // Call ShowUserGroupsOverlay with the userId and display name
+                ShowUserGroupsOverlay(userId, displayName);
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error checking groups for user");
+                System.Windows.MessageBox.Show($"Failed to check groups: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
         private async Task LoadBanManagementGroupsAsync()
         {
             try
@@ -4661,6 +4692,9 @@ namespace Tailgrab.PlayerManagement
 
                 // Update UI (already on UI thread)
                 UserGroupsDataGrid.ItemsSource = groups;
+
+                // Reset ScrollViewer to top
+                UserGroupsScrollViewer.ScrollToTop();
             }
             catch (Exception ex)
             {
@@ -4713,6 +4747,9 @@ namespace Tailgrab.PlayerManagement
                 {
                     try
                     {
+
+                        Group? fullGroup = await Task.Run(() => vrcClient.GetGroupById(group.GroupId));
+
                         var vm = new UserGroupViewModel
                         {
                             GroupId = group.GroupId ?? string.Empty,
@@ -4720,12 +4757,12 @@ namespace Tailgrab.PlayerManagement
                             BannerUrl = group.BannerUrl ?? "https://assets.vrchat.com/www/groups/default_banner.png",
                             IconUrl = group.IconUrl ?? "https://assets.vrchat.com/www/groups/default_banner.png",
                             ShortCode = $"{group.ShortCode}.{group.Discriminator}",
-                            Description = group.Description ?? string.Empty,
-                            Rules = string.Empty, // LimitedUserGroups doesn't have Rules field
-                            JoinState = "N/A", // LimitedUserGroups doesn't have MyMember
-                            MemberCount = group.MemberCount,
-                            OwnerId = group.OwnerId ?? string.Empty,
-                            IsOwnedByUser = (group.OwnerId ?? string.Empty) == userId
+                            Description = fullGroup?.Description ?? string.Empty,
+                            Rules = fullGroup?.Rules ?? string.Empty,
+                            JoinState = fullGroup?.JoinState.ToString() ?? "N/A",
+                            MemberCount = fullGroup?.MemberCount ?? 0,
+                            OwnerId = fullGroup?.OwnerId ?? string.Empty,
+                            IsOwnedByUser = (fullGroup?.OwnerId ?? string.Empty) == userId
                         };
 
                         // Apply DB data
