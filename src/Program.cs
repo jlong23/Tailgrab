@@ -86,10 +86,6 @@ public class FileTailer
             {
                 backup = true;
             }
-            else if (string.Equals(a, "-upgrade", StringComparison.OrdinalIgnoreCase))
-            {
-                upgrade = true;
-            }
         }
 
         if (clearRegistry)
@@ -104,13 +100,6 @@ public class FileTailer
         _serviceRegistry.StartAllServices();
 
         UpgradeApplication(_serviceRegistry);
-
-
-
-        if (upgrade)
-        {
-            UpgradeApplication(_serviceRegistry);
-        }
 
         if (backup)
         {
