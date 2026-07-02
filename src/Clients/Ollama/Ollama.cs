@@ -112,9 +112,6 @@ namespace Tailgrab.Clients.Ollama
 
                                             UpdatePlayerWithEvaluation(item, evaluation);
                                         }
-
-                                        // Give a bit of breathing room to avoid hitting rate limits or overwhelming the system if there are many profiles to process
-                                        await Task.Delay(1000);
                                     }
                                     else
                                     {
