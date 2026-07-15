@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -526,6 +527,9 @@ namespace Tailgrab.PlayerManagement
             System.Windows.DataObject.AddPastingHandler(AvatarDbFilterBox, AvatarDbFilterBox_Pasting);
             // Hook paste event for GroupDbFilterBox to clear on paste
             System.Windows.DataObject.AddPastingHandler(GroupDbFilterBox, GroupDbFilterBox_Pasting);
+            // Hook paste event for BanMgmtUserIdTextBox to clear on paste
+            System.Windows.DataObject.AddPastingHandler(UserDbFilterBox, UserDbFilterBox_Pasting);
+
             // Hook paste event for BanMgmtUserIdTextBox to clear on paste
             System.Windows.DataObject.AddPastingHandler(BanMgmtUserIdTextBox, BanMgmtUserIdTextBox_Pasting);
 
@@ -2902,8 +2906,28 @@ namespace Tailgrab.PlayerManagement
         {
             if (sender is System.Windows.Controls.TextBox textBox)
             {
-                // Clear the current text before pasting
-                textBox.Text = string.Empty;
+                // Cancel the default paste operation
+                e.CancelCommand();
+
+                // Get the pasted text from clipboard
+                if (e.DataObject.GetDataPresent(typeof(string)))
+                {
+                    string pastedText = (string)e.DataObject.GetData(typeof(string));
+
+                    // Regex pattern to match VRChat user IDs (usr_followed by UUID)
+                    var match = Regex.Match(pastedText, @"avtr_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}");
+
+                    if (match.Success)
+                    {
+                        // Extract and set the matched user ID
+                        textBox.Text = match.Value;
+                    }
+                    else
+                    {
+                        // If no match, paste the original text
+                        textBox.Text = pastedText;
+                    }
+                }
             }
         }
 
@@ -3116,8 +3140,28 @@ namespace Tailgrab.PlayerManagement
         {
             if (sender is System.Windows.Controls.TextBox textBox)
             {
-                // Clear the current text before pasting
-                textBox.Text = string.Empty;
+                // Cancel the default paste operation
+                e.CancelCommand();
+
+                // Get the pasted text from clipboard
+                if (e.DataObject.GetDataPresent(typeof(string)))
+                {
+                    string pastedText = (string)e.DataObject.GetData(typeof(string));
+
+                    // Regex pattern to match VRChat user IDs (usr_followed by UUID)
+                    var match = Regex.Match(pastedText, @"grp_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}");
+
+                    if (match.Success)
+                    {
+                        // Extract and set the matched user ID
+                        textBox.Text = match.Value;
+                    }
+                    else
+                    {
+                        // If no match, paste the original text
+                        textBox.Text = pastedText;
+                    }
+                }
             }
         }
 
@@ -3644,6 +3688,37 @@ namespace Tailgrab.PlayerManagement
                 }
             }
         }
+
+        private void UserDbFilterBox_Pasting(object sender, DataObjectPastingEventArgs e)
+        {
+            if (sender is System.Windows.Controls.TextBox textBox)
+            {
+                // Cancel the default paste operation
+                e.CancelCommand();
+
+                // Get the pasted text from clipboard
+                if (e.DataObject.GetDataPresent(typeof(string)))
+                {
+                    string pastedText = (string)e.DataObject.GetData(typeof(string));
+
+                    // Regex pattern to match VRChat user IDs (usr_followed by UUID)
+                    var match = Regex.Match(pastedText, @"usr_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}");
+
+                    if (match.Success)
+                    {
+                        // Extract and set the matched user ID
+                        textBox.Text = match.Value;
+                    }
+                    else
+                    {
+                        // If no match, paste the original text
+                        textBox.Text = pastedText;
+                    }
+                }
+            }
+        }
+
+
 
         #endregion
 
@@ -4239,8 +4314,28 @@ namespace Tailgrab.PlayerManagement
         {
             if (sender is System.Windows.Controls.TextBox textBox)
             {
-                // Clear the current text before pasting
-                textBox.Text = string.Empty;
+                // Cancel the default paste operation
+                e.CancelCommand();
+
+                // Get the pasted text from clipboard
+                if (e.DataObject.GetDataPresent(typeof(string)))
+                {
+                    string pastedText = (string)e.DataObject.GetData(typeof(string));
+
+                    // Regex pattern to match VRChat user IDs (usr_followed by UUID)
+                    var match = Regex.Match(pastedText, @"usr_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}");
+
+                    if (match.Success)
+                    {
+                        // Extract and set the matched user ID
+                        textBox.Text = match.Value;
+                    }
+                    else
+                    {
+                        // If no match, paste the original text
+                        textBox.Text = pastedText;
+                    }
+                }
             }
         }
 
@@ -4781,7 +4876,7 @@ namespace Tailgrab.PlayerManagement
                     try
                     {
 
-                        Group? fullGroup = await Task.Run(() => vrcClient.GetGroupById(group.GroupId));
+                        VRChat.API.Model.Group? fullGroup = await Task.Run(() => vrcClient.GetGroupById(group.GroupId));
 
                         var vm = new UserGroupViewModel
                         {
