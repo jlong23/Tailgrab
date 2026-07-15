@@ -666,7 +666,7 @@ namespace Tailgrab.PlayerManagement
                         itemContent = inventoryItem.Metadata?.ImageUrl ?? itemUrl;
                         inventoryType = inventoryItem.ItemTypeLabel ?? "Unknown Type";
 
-                        logger.Info($"Fetched inventory item: {itemName} / ({inventoryItem.ItemTypeLabel}) for user {userId}");
+                        logger.Info($"Fetched inventory item: {itemName} / ({inventoryItem.ItemTypeLabel}) for user {userId} / URL : {itemUrl}");
                     }
                 }
                 catch (Exception ex)
@@ -760,7 +760,7 @@ namespace Tailgrab.PlayerManagement
                     Player? player = AddPlayerEventByUserId(printInfo.OwnerId, PlayerEvent.EventType.Print, $"Dropped Print {printId}");
                     if (player != null)
                     {
-                        logger.Info($"Fetched print info for print {printId} owned by {player.DisplayName} (ID: {printInfo.OwnerId})");
+                        logger.Info($"Fetched print info for print {printId} owned by {player.DisplayName} (ID: {printInfo.OwnerId}) / URL: {printInfo.Files.Image}");
                         string evaluatedText = "Not Evaluated";
                         string aiClassification = "OK";
                         var ollamaClient = serviceRegistry.GetOllamaAPIClient();

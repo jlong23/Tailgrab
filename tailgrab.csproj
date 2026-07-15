@@ -142,6 +142,10 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="src\test-images\" />
+  </ItemGroup>
+
   <!-- Increment build number for Release builds and Publish -->
   <Target Name="IncrementBuildNumber" BeforeTargets="BeforeBuild" Condition="'$(Configuration)' == 'Release' Or '$(PublishProtocol)' != ''">
     <PropertyGroup>
