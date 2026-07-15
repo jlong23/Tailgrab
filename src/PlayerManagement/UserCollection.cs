@@ -78,8 +78,14 @@ namespace Tailgrab.PlayerManagement
 
                     if (!string.IsNullOrWhiteSpace(_filterText))
                     {
-                        var filterLower = _filterText.ToLower();
-                        query = query.Where(u => u.DisplayName.ToLower().Contains(filterLower));
+                        if (_filterText.StartsWith("usr_", StringComparison.OrdinalIgnoreCase))
+                        {
+                            query = query.Where(u => u.UserId == _filterText);
+                        }
+                        else
+                        {
+                            query = query.Where(u => EF.Functions.Like(u.DisplayName, $"%{_filterText}%"));
+                        }
                     }
 
                     var items = query.OrderBy(a => a.DisplayName).Skip(skip).Take(_pageSize).ToList();

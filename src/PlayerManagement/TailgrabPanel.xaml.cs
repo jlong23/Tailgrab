@@ -524,14 +524,19 @@ namespace Tailgrab.PlayerManagement
             DataContext = this;
 
             // Hook paste event for AvatarDbFilterBox to clear on paste
-            System.Windows.DataObject.AddPastingHandler(AvatarDbFilterBox, AvatarDbFilterBox_Pasting);
-            // Hook paste event for GroupDbFilterBox to clear on paste
-            System.Windows.DataObject.AddPastingHandler(GroupDbFilterBox, GroupDbFilterBox_Pasting);
-            // Hook paste event for BanMgmtUserIdTextBox to clear on paste
-            System.Windows.DataObject.AddPastingHandler(UserDbFilterBox, UserDbFilterBox_Pasting);
+            System.Windows.DataObject.AddPastingHandler(AvatarDbFilterBox, AvatarSelectionTextBox_Pasting);
 
+            // Hook paste event for GroupDbFilterBox to clear on paste
+            System.Windows.DataObject.AddPastingHandler(GroupDbFilterBox, GroupSelectionTextBox_Pasting);
+
+            // Hook paste event for ActiveFilterBox to clear on paste
+            System.Windows.DataObject.AddPastingHandler(ActiveFilterBox, UserSelectionTextBox_Pasting);
+            // Hook paste event for PastFilterBox to clear on paste
+            System.Windows.DataObject.AddPastingHandler(PastFilterBox, UserSelectionTextBox_Pasting);
             // Hook paste event for BanMgmtUserIdTextBox to clear on paste
-            System.Windows.DataObject.AddPastingHandler(BanMgmtUserIdTextBox, BanMgmtUserIdTextBox_Pasting);
+            System.Windows.DataObject.AddPastingHandler(UserDbFilterBox, UserSelectionTextBox_Pasting);
+            // Hook paste event for BanMgmtUserIdTextBox to clear on paste
+            System.Windows.DataObject.AddPastingHandler(BanMgmtUserIdTextBox, UserSelectionTextBox_Pasting);
 
             // Load highlight colors from registry BEFORE setting SelectedValue on color ComboBoxes
             // This ensures AlertColorOptions is populated when WPF binding resolves
@@ -2902,7 +2907,7 @@ namespace Tailgrab.PlayerManagement
             ApplyAvatarDbFilter(AvatarDbView, string.Empty);
         }
 
-        private void AvatarDbFilterBox_Pasting(object sender, DataObjectPastingEventArgs e)
+        private void AvatarSelectionTextBox_Pasting(object sender, DataObjectPastingEventArgs e)
         {
             if (sender is System.Windows.Controls.TextBox textBox)
             {
@@ -3136,7 +3141,7 @@ namespace Tailgrab.PlayerManagement
             ApplyGroupDbFilter(GroupDbView, string.Empty);
         }
 
-        private void GroupDbFilterBox_Pasting(object sender, DataObjectPastingEventArgs e)
+        private void GroupSelectionTextBox_Pasting(object sender, DataObjectPastingEventArgs e)
         {
             if (sender is System.Windows.Controls.TextBox textBox)
             {
@@ -3689,7 +3694,7 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
-        private void UserDbFilterBox_Pasting(object sender, DataObjectPastingEventArgs e)
+        private void UserSelectionTextBox_Pasting(object sender, DataObjectPastingEventArgs e)
         {
             if (sender is System.Windows.Controls.TextBox textBox)
             {
@@ -4208,6 +4213,11 @@ namespace Tailgrab.PlayerManagement
             {
                 if (obj is PlayerViewModel pvm)
                 {
+                    if( filterText.StartsWith("usr_", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return pvm.UserId?.IndexOf(ft, StringComparison.OrdinalIgnoreCase) >= 0;
+                    }
+
                     return pvm.DisplayName?.IndexOf(ft, StringComparison.CurrentCultureIgnoreCase) >= 0;
                 }
                 return false;
@@ -4307,35 +4317,6 @@ namespace Tailgrab.PlayerManagement
                 logger.Error(ex, "Error loading user for ban management");
                 BanMgmtUserStatusText.Text = $"Error: {ex.Message}";
                 BanMgmtUserStatusText.Foreground = System.Windows.Media.Brushes.Red;
-            }
-        }
-
-        private void BanMgmtUserIdTextBox_Pasting(object sender, DataObjectPastingEventArgs e)
-        {
-            if (sender is System.Windows.Controls.TextBox textBox)
-            {
-                // Cancel the default paste operation
-                e.CancelCommand();
-
-                // Get the pasted text from clipboard
-                if (e.DataObject.GetDataPresent(typeof(string)))
-                {
-                    string pastedText = (string)e.DataObject.GetData(typeof(string));
-
-                    // Regex pattern to match VRChat user IDs (usr_followed by UUID)
-                    var match = Regex.Match(pastedText, @"usr_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}");
-
-                    if (match.Success)
-                    {
-                        // Extract and set the matched user ID
-                        textBox.Text = match.Value;
-                    }
-                    else
-                    {
-                        // If no match, paste the original text
-                        textBox.Text = pastedText;
-                    }
-                }
             }
         }
 
