@@ -4901,6 +4901,37 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
+        private void UserGroupsDataGrid_PreviewMouseWheel(object sender, System.Windows.Input.MouseWheelEventArgs e)
+        {
+            // Check if we're over a ComboBox that's open - if so, let it handle the scroll
+            if (e.OriginalSource is FrameworkElement element)
+            {
+                // Walk up the visual tree to see if we're inside a ComboBox
+                DependencyObject parent = element;
+                while (parent != null)
+                {
+                    if (parent is System.Windows.Controls.ComboBox comboBox && comboBox.IsDropDownOpen)
+                    {
+                        // Let the ComboBox handle its own scrolling
+                        return;
+                    }
+                    parent = VisualTreeHelper.GetParent(parent);
+                }
+            }
+
+            // Forward the mouse wheel event to the ScrollViewer
+            if (UserGroupsScrollViewer != null)
+            {
+                e.Handled = true;
+                var scrollEvent = new System.Windows.Input.MouseWheelEventArgs(e.MouseDevice, e.Timestamp, e.Delta)
+                {
+                    RoutedEvent = UIElement.MouseWheelEvent,
+                    Source = sender
+                };
+                UserGroupsScrollViewer.RaiseEvent(scrollEvent);
+            }
+        }
+
         #endregion
     }
 

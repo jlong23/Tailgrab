@@ -2644,7 +2644,8 @@ Title="Tailgrab Player Panel"
                                   Background="#FF1E1E1E"
                                   RowBackground="#FF1E1E1E"
                                   AlternatingRowBackground="#FF2D2D30"
-                                  RowDetailsVisibilityMode="Visible">
+                                  RowDetailsVisibilityMode="Visible"
+                                  PreviewMouseWheel="UserGroupsDataGrid_PreviewMouseWheel">
                             <DataGrid.Columns>
                                 <!-- Banner Image -->
                                 <DataGridTemplateColumn Header="Banner" Width="110">
