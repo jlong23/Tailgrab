@@ -4828,12 +4828,7 @@ namespace Tailgrab.PlayerManagement
                 .ToList();
         }
 
-        private void UserGroupsOverlayCancel_Click(object sender, RoutedEventArgs e)
-        {
-            UserGroupsOverlay.Visibility = Visibility.Collapsed;
-        }
-
-        private void UserGroupsOverlayOk_Click(object sender, RoutedEventArgs e)
+        private void UserGroupsOverlayClose_Click(object sender, RoutedEventArgs e)
         {
             UserGroupsOverlay.Visibility = Visibility.Collapsed;
         }

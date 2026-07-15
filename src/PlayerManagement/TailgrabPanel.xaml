@@ -2676,7 +2676,18 @@ Title="Tailgrab Player Panel"
                                 <DataGridTextColumn Header="Short Code" Binding="{Binding ShortCode}" Width="100" IsReadOnly="True"/>
 
                                 <!-- Group ID -->
-                                <DataGridTextColumn Header="Group ID" Binding="{Binding GroupId}" Width="200" IsReadOnly="True"/>
+                                <DataGridTemplateColumn Header="Group ID" Width="200">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock>
+                                                    <Hyperlink NavigateUri="{Binding GroupId, StringFormat=https://vrchat.com/home/group/{0}}"
+                                                               RequestNavigate="GroupHyperlink_RequestNavigate">
+                                                        <Run Text="{Binding GroupId}" />
+                                                    </Hyperlink>
+                                            </TextBlock>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
 
                                 <!-- Join State -->
                                 <DataGridTextColumn Header="Join State" Binding="{Binding JoinState}" Width="100" IsReadOnly="True"/>
@@ -2725,6 +2736,7 @@ Title="Tailgrab Player Panel"
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
+                                                                
                             </DataGrid.Columns>
 
                             <!-- Row Details Template for Description and Rules -->
@@ -2783,15 +2795,10 @@ Title="Tailgrab Player Panel"
 
                     <!-- Action Buttons -->
                     <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button Name="UserGroupsOverlayCancelButton" 
-                                Content="Cancel" 
+                        <Button Name="UserGroupsOverlayCloseButton" 
+                                Content="Close" 
                                 Width="100" 
-                                Margin="0,0,12,0" 
-                                Click="UserGroupsOverlayCancel_Click"/>
-                        <Button Name="UserGroupsOverlayOkButton" 
-                                Content="OK" 
-                                Width="100" 
-                                Click="UserGroupsOverlayOk_Click"/>
+                                Click="UserGroupsOverlayClose_Click"/>
                     </StackPanel>
                 </Grid>
             </Border>
