@@ -4787,7 +4787,11 @@ namespace Tailgrab.PlayerManagement
                 throw;
             }
 
-            return groupViewModels;
+            return groupViewModels
+                .OrderByDescending(g => g.IsOwnedByUser)
+                .ThenByDescending(g => g.AlertType)
+                .ThenBy(g => g.Name)
+                .ToList();
         }
 
         private void UserGroupsOverlayCancel_Click(object sender, RoutedEventArgs e)
