@@ -1124,11 +1124,10 @@ Title="Tailgrab Player Panel"
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="3">
                                     <TextBox Name="AvatarDbFilterBox" Width="300" Margin="0,0,8,0" />
                                     <Button Content="Apply Filter" Click="AvatarDbApplyFilter_Click" Margin="0,0,6,0"/>
-                                    <Button Content="Clear Filter" Click="AvatarDbClearFilter_Click"/>
-                                    <Button Content="Refresh" Click="AvatarDbRefresh_Click" Margin="8,0,0,0"/>
-                                    <!-- Fetch avatar by id -->
-                                    <Button Content="Fetch Avatar by ID" Click="AvatarFetch_Click" Margin="12,0,0,0"/>
-                                    <Button Content="Purge NONE Records" Click="AvatarPurgeNoneRecords_Click" Margin="12,0,0,0" Background="#FFCC0000" Foreground="White"/>
+                                    <Button Content="Clear Filter" Click="AvatarDbClearFilter_Click" Margin="0,0,6,0"/>
+                                    <Button Content="Refresh" Click="AvatarDbRefresh_Click" Margin="0,0,6,0"/>
+                                    <Button Content="Fetch Avatar by ID" Click="AvatarFetch_Click" Margin="0,0,6,0"/>
+                                    <Button Content="Purge NONE Records" Click="AvatarPurgeNoneRecords_Click" Margin="0,0,6,0" Background="#FFCC0000" Foreground="White"/>
                                 </StackPanel>
 
                                 <GroupBox Header="Avatar Information" Grid.Row="1"  Grid.ColumnSpan="3" Margin="0,0,0,12" Name="AvatarInfoGroup">
@@ -1248,11 +1247,10 @@ Title="Tailgrab Player Panel"
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="3">
                                     <TextBox Name="GroupDbFilterBox" Width="300" Margin="0,0,8,0" />
                                     <Button Content="Apply Filter" Click="GroupDbApplyFilter_Click" Margin="0,0,6,0"/>
-                                    <Button Content="Clear Filter" Click="GroupDbClearFilter_Click"/>
-                                    <Button Content="Refresh" Click="GroupDbRefresh_Click" Margin="8,0,0,0"/>
-                                    <!-- Fetch Group by id -->
-                                    <Button Content="Fetch Group by ID" Click="GroupFetch_Click" Margin="0,0,0,0"/>
-                                    <Button Content="Purge NONE Records" Click="GroupPurgeNoneRecords_Click" Margin="12,0,0,0" Background="#FFCC0000" Foreground="White"/>
+                                    <Button Content="Clear Filter" Click="GroupDbClearFilter_Click" Margin="0,0,6,0"/>
+                                    <Button Content="Refresh" Click="GroupDbRefresh_Click" Margin="0,0,6,0"/>
+                                    <Button Content="Fetch Group by ID" Click="GroupFetch_Click" Margin="0,0,6,0"/>
+                                    <Button Content="Purge NONE Records" Click="GroupPurgeNoneRecords_Click" Margin="0,0,6,0" Background="#FFCC0000" Foreground="White"/>
                                 </StackPanel>
 
                                 <GroupBox Header="Group Information" Grid.Row="1"  Grid.ColumnSpan="3" Margin="0,0,0,12" Name="GroupInfoGroup">
@@ -1384,9 +1382,9 @@ Title="Tailgrab Player Panel"
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="3">
                                     <TextBox Name="UserDbFilterBox" Width="300" Margin="0,0,8,0" />
                                     <Button Content="Apply Filter" Click="UserDbApplyFilter_Click" Margin="0,0,6,0"/>
-                                    <Button Content="Clear Filter" Click="UserDbClearFilter_Click"/>
-                                    <Button Content="Refresh" Click="UserDbRefresh_Click" Margin="8,0,0,0"/>
-                                    <Button Content="Purge Inactive Users" Click="PurgeInactiveUsers_Click" Margin="8,0,0,0" Background="#FFCC0000" Foreground="White"/>
+                                    <Button Content="Clear Filter" Click="UserDbClearFilter_Click" Margin="0,0,6,0"/>
+                                    <Button Content="Refresh" Click="UserDbRefresh_Click" Margin="0,0,6,0"/>
+                                    <Button Content="Purge Inactive Users" Click="PurgeInactiveUsers_Click" Margin="0,0,6,0" Background="#FFCC0000" Foreground="White"/>
                                 </StackPanel>
 
                                 <DataGrid Name="UserDbGrid" Grid.Row="1" AutoGenerateColumns="False" CanUserSortColumns="True" IsReadOnly="False" ItemsSource="{Binding UserDbView}" CellEditEnding="UserDbGrid_CellEditEnding" Grid.ColumnSpan="3">
