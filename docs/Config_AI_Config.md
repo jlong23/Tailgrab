@@ -1,43 +1,9 @@
 [Back](../README.md)
-# Application Configuration
+# AI Config
 
-The TailGrab application configuration panel is on the "Config" tab and then the "Secrets" sub-tab.  All passwords and API keys protected, entering the configuration section hides the values so they cannot be coppied by shoulder surfers or screen recording software.  The values are stored in the Windows Registry in an encrypted format and are loaded on application start.  Hidden values are only written to the registry when there is a new value in the field and you click the "Save Secrets" button, so you can enter your credentials, save them, and then restart the application to get the services working properly.
 
-The TailGrab application will look for the following credentials to connect to your VRChat API and OLLama AI services from the Windows Registry in a encyrpted format.  On the first Run you may receive a Popup Message to set the values on the Config -> Secrets Tab and restart the application to get the services running properly.
+[<img src="./tailgrab_tab_config_ai_config.png" width="400" />](./tailgrab_tab_config_ai_config.png)
 
-[<img src="./tailgrab_tab_configuration.png" width="400" />](./tailgrab_tab_configuration.png)
-
-## VR Chat API Credentials
-
-Tailgrab uses VR Chat's public API to get information about avatars for the BlackListed Database (SQLite Local DB) and to get user profile infoformation for Profile Evaluation with the AI services.
-
-The fields are your Web User Name and Password for VRChat, and the 2 Factor Authentication Key that is generation on account creation or enabling two factor authentication.
-
-**User** - This is your VRChat Username you use to log in to the VRChat website.
-
-**Password** - This is your VRChat Password you use to log in to the VRChat website.
-
-**2FA Key** - This is the [2 Factor Authentication Key](https://docs.vrchat.com/docs/setup-2fa) that is generated when you set up 2 Factor Authentication on your VRChat account, this is used to generate the 2FA codes that are required to authenticate with the VRChat API.  You can see the Key on setup when you see the QRCode there is a link **enter the key manually**; copy this code to a note for entry into Tailgrab.  Lastpass Authenticator allows you to view this code with the edit site button.
-
-> [!IMPORTANT]
-> VRChat's API is not officially supported for third party applications, and may change/break at any time; User credentials are stored in an encrypted format in the Windows Registry and used only to gather needed information about users in the instance you are in.
-> This API is used to get Avatar Information, Profile Information and to Report User profiles and Stickers and Emojis to VRChat Moderation Team.  The application does not perform any actions on your account that you do not explicitly trigger with a user action in the application, such as clicking a button to report a user or an image.
-
-### Getting your VR Chat 2 Factor Authentication key
-
-I certainly hope you are using LastPass Authenticator or Google Authenticator to manage your 2FA codes for VRChat.  If you are not, please stop reading this and go set that up now to protect your Online Accounts. 
-
-On LastPass Authenticator for the your VR Chat Entry, you can use the right Hamburger menu icon to get a dialog of options, one of which is to 'Edit Account', select that and you will see the 'Secret Key' field, copy the 'Secret Key' value to your clipboard and paste to something you can transfer to your PC (Or tediously type it in from the screen).
-
-## Ban On Sight (BOS) Management
-
-If you have a list of Avatars Ids and/or Group Ids that you want to be alerted to when encounted in the instance, you can have them in a shared team resource in the web, placing a publicly accessable URL in theses fields will have the application attempt to download the CSV files from the web and update the local database on startup.  If the fields are blank nothing is downloaded and no changes are made.
-
-The format of the CSV files should be a single column with the header "Id" and then the Ids listed below, EG:
-``` CSV
-Id, Name
-"avtr_12345678-90ab-cdef-1234-567890abcdef","Bad Avatar"
-```
 
 ## Ollama Cloud AI API Credentials & Configuration
 
@@ -56,8 +22,13 @@ OLLama Cloud AI services are used to evaluate user profiles for potential bad ac
 > [!NOTE]
 > If the Ollama API Key is not set, no profile evaluation will be done and the application will not attempt to call the API, so you can use the profile evaluation features without setting up the API credentials if you want to just use it as a local database of good and bad actors.
 
-**Ollama Model Name** - This is the name of the model you have set up in your Ollama Cloud account that you want to use for profile evaluation, ```gemma3:27b``` has been selected to give a good balance of performance and cost, but you can use any model you have set up in your account.
 
+## AI Evaluation Parameters
+
+**Ollama Model Name** - This is the name of the model you have set up in your Ollama Cloud account that you want to use for profile evaluation, ```gemma4:31b``` has been selected to give a good balance of performance and cost, but you can use any model you have set up in your account.  This dropdown is populated once you have a active Ollama Key or using LocalHost instance.
+
+
+### Profile Evaluation Prompt
 **Profile AI Prompt** - This is the custom prompt that you want to use for profile evaluation, you can use any prompt you want, but it should be designed to elicit semi formated response of 
 
 ```
@@ -92,6 +63,10 @@ The default prompt is designed to look for potential sexual predators, but you c
 > The current prompt is defined as:
 > From the following block of text, classify the contents into a single class from the following classes;\r\n'OK' - Where as all text content can be considered PG13;\r\n'Explicit Sexual' - Where as any of the text contained describes sexual acts or intent. Flagged words Bussy, Fagot, Dih;\r\n'Harassment & Bullying' - Where the text is describing acts of trolling or bullying users on Religion, Sexual Orientation or Race. Flagged words of base nigg* and variations of that spelling to hide racism.\r\n'Self Harm' - Any part of the text where it explicitly describes destructive behaviours.\r\nIf there is not enough information to determine the class, use a default of OK. When replying, return a single line for the Classification and a carriage return, then place the reasoning on subsequent lines, translate any foreign language to English:
 
+**User Account to Test** - The text box here can allow you to pull a user profile from VRChat and test the prompt live.  This is a overlay page to view the results, click 'close' button to return to the panel.
+
+### Image Evaluation Prompt
+
 **Image AI Prompt** - This is the custom prompt that you want to evaluate images (Emoji & Stickers), you can use any prompt you want, but it should be designed to elicit semi formated response of 
 
 ```
@@ -120,3 +95,11 @@ The default prompt is designed to look for potential PG13 violation, but you can
 
 > [!NOTE]
 > The system puts the Prompt plus attached copy of the Image thumbnail for evaluation:
+
+**Test with known image set** - The button will run the image evaluation prompt against a known set of images that have been classified as OK, Explicit Sexual, Harassment & Bullying and Self Harm.  The results will be displayed in a overlay page, click 'close' button to return to the panel.
+
+- You can remove or add images to the test set by placing them in the ```Test-Images``` folder in the local/tailgrab configuration directory.  The images should be named with the classification as the prefix, for example: ```Explicit Sexual - image1.png``` or ```OK - image2.png```.  The application will parse the prefix to determine what the expected classification is for that image.
+
+> [!NOTE]
+> The file size and quantity of images affect the time it takes to run the test, so be careful when adding a large number of images to the test set.  The application will display the results of the test in a overlay page, click 'close' button to return to the panel.
+
