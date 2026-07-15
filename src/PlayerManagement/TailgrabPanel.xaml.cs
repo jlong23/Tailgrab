@@ -2945,7 +2945,7 @@ namespace Tailgrab.PlayerManagement
         }
         private void AvatarFetch_Click(object sender, RoutedEventArgs e)
         {
-            string? id = AvatarIdBox.Text?.Trim();
+            string? id = AvatarDbFilterBox.Text?.Trim();
             if (string.IsNullOrEmpty(id)) return;
 
             try
@@ -2985,7 +2985,7 @@ namespace Tailgrab.PlayerManagement
 
                     // Filter the view to the fetched group
                     ApplyAvatarDbFilter(AvatarDbView, avatar.Name ?? string.Empty);
-                    AvatarIdBox.Text = string.Empty;
+                    AvatarDbFilterBox.Text = string.Empty;
                 }
                 else
                 {
@@ -3141,7 +3141,7 @@ namespace Tailgrab.PlayerManagement
 
         private void GroupFetch_Click(object sender, RoutedEventArgs e)
         {
-            string? id = GroupIdBox.Text?.Trim();
+            string? id = GroupDbFilterBox.Text?.Trim();
             if (string.IsNullOrEmpty(id)) return;
 
             GroupInfo? existing = _serviceRegistry.GetPlayerManager().AddUpdateGroupFromVRC(id);
@@ -3154,7 +3154,6 @@ namespace Tailgrab.PlayerManagement
             {
                 // Filter the view to the fetched Group
                 ApplyGroupDbFilter(GroupDbView, existing.GroupName ?? string.Empty);
-                GroupIdBox.Text = string.Empty;
 
                 // Populate the group information box
                 PopulateGroupInformation(existing.GroupId);

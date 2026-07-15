@@ -1127,8 +1127,7 @@ Title="Tailgrab Player Panel"
                                     <Button Content="Clear Filter" Click="AvatarDbClearFilter_Click"/>
                                     <Button Content="Refresh" Click="AvatarDbRefresh_Click" Margin="8,0,0,0"/>
                                     <!-- Fetch avatar by id -->
-                                    <TextBox Name="AvatarIdBox" Width="360" Margin="12,0,8,0" ToolTip="Enter Avatar ID to fetch from VRChat" />
-                                    <Button Content="Fetch Avatar by ID" Click="AvatarFetch_Click" Margin="0,0,0,0"/>
+                                    <Button Content="Fetch Avatar by ID" Click="AvatarFetch_Click" Margin="12,0,0,0"/>
                                     <Button Content="Purge NONE Records" Click="AvatarPurgeNoneRecords_Click" Margin="12,0,0,0" Background="#FFCC0000" Foreground="White"/>
                                 </StackPanel>
 
@@ -1252,7 +1251,6 @@ Title="Tailgrab Player Panel"
                                     <Button Content="Clear Filter" Click="GroupDbClearFilter_Click"/>
                                     <Button Content="Refresh" Click="GroupDbRefresh_Click" Margin="8,0,0,0"/>
                                     <!-- Fetch Group by id -->
-                                    <TextBox Name="GroupIdBox" Width="360" Margin="12,0,8,0" ToolTip="Enter Group ID to fetch from VRChat" />
                                     <Button Content="Fetch Group by ID" Click="GroupFetch_Click" Margin="0,0,0,0"/>
                                     <Button Content="Purge NONE Records" Click="GroupPurgeNoneRecords_Click" Margin="12,0,0,0" Background="#FFCC0000" Foreground="White"/>
                                 </StackPanel>
