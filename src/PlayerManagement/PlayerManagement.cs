@@ -771,7 +771,7 @@ namespace Tailgrab.PlayerManagement
                             if (evaluated != null)
                             {
                                 evaluatedText = System.Text.Encoding.UTF8.GetString(evaluated.Evaluation);
-                                aiClassification = EvaluateImageClass(System.Text.Encoding.UTF8.GetString( evaluated.Evaluation)) ?? "OK";
+                                aiClassification = EvaluateImageClass(evaluatedText) ?? "OK";
                                 logger.Info($"Ollama classification for inventory item {printInfo.Id}: {aiClassification}: {evaluatedText}");
                                 if (!aiClassification.Equals("OK") && !evaluated.IsIgnored)
                                 {
