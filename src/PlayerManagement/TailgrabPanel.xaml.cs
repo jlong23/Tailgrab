@@ -3078,7 +3078,7 @@ namespace Tailgrab.PlayerManagement
             try
             {
                 logger.Info($"Opening Avatar URL: {e.Uri}");
-                var uri = new Uri($"https://vrchat.com/home/group/{e.Uri}");
+                var uri = new Uri($"https://vrchat.com/home/avatar/{e.Uri}");
                 var psi = new System.Diagnostics.ProcessStartInfo(uri.AbsoluteUri)
                 {
                     UseShellExecute = true

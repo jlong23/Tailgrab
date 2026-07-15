@@ -1246,21 +1246,21 @@ Title="Tailgrab Player Panel"
                                             </DataGridTemplateColumn.CellEditingTemplate>
                                         </DataGridTemplateColumn>
                                         <DataGridTextColumn Header="Avatar Name" Binding="{Binding AvatarName}" SortMemberPath="AvatarName" Width="150*" />
-                                        <DataGridTextColumn Header="Avatar ID" Binding="{Binding AvatarId}" SortMemberPath="AvatarId" Width="250" />
-                                        <DataGridTextColumn Header="User Name" Binding="{Binding UserName}" SortMemberPath="UserName" Width="150*" />
-                                        <DataGridTextColumn Header="Last Updated" Binding="{Binding UpdatedAt, StringFormat={}{0:u}}" SortMemberPath="UpdatedAt" Width="150" IsReadOnly="True" />
-                                        <DataGridTemplateColumn Header="Browser" Width="80">
+                                        <DataGridTemplateColumn Header="Avatar ID" SortMemberPath="AvatarId" Width="250">
                                             <DataGridTemplateColumn.CellTemplate>
                                                 <DataTemplate>
                                                     <TextBlock>
                                                     <Hyperlink NavigateUri="{Binding AvatarId, StringFormat=https://vrchat.com/home/avatar/{0}}"
                                                                RequestNavigate="AvatarHyperlink_RequestNavigate">
-                                                        Open
+                                                        <Run Text="{Binding AvatarId}" />
                                                     </Hyperlink>
                                                     </TextBlock>
                                                 </DataTemplate>
                                             </DataGridTemplateColumn.CellTemplate>
                                         </DataGridTemplateColumn>
+
+                                        <DataGridTextColumn Header="User Name" Binding="{Binding UserName}" SortMemberPath="UserName" Width="150*" />
+                                        <DataGridTextColumn Header="Last Updated" Binding="{Binding UpdatedAt, StringFormat={}{0:u}}" SortMemberPath="UpdatedAt" Width="150" IsReadOnly="True" />
                                     </DataGrid.Columns>
                                 </DataGrid>
                             </Grid>
@@ -1383,20 +1383,19 @@ Title="Tailgrab Player Panel"
                                             </DataGridTemplateColumn.CellEditingTemplate>
                                         </DataGridTemplateColumn>
                                         <DataGridTextColumn Header="Group Name" Binding="{Binding GroupName}" SortMemberPath="GroupName" Width="*" />
-                                        <DataGridTextColumn Header="Group ID" Binding="{Binding GroupId}" SortMemberPath="GroupId" Width="300" />
-                                        <DataGridTextColumn Header="Last Updated" Binding="{Binding UpdatedAt, StringFormat={}{0:u}}" SortMemberPath="UpdatedAt" Width="200" IsReadOnly="True" />
-                                        <DataGridTemplateColumn Header="Browser" Width="80">
+                                        <DataGridTemplateColumn Header="Group ID" SortMemberPath="GroupId" Width="300">
                                             <DataGridTemplateColumn.CellTemplate>
                                                 <DataTemplate>
                                                     <TextBlock>
                                                     <Hyperlink NavigateUri="{Binding GroupId, StringFormat=https://vrchat.com/home/group/{0}}"
                                                                RequestNavigate="GroupHyperlink_RequestNavigate">
-                                                        Open
+                                                        <Run Text="{Binding GroupId}" />
                                                     </Hyperlink>
                                                     </TextBlock>
                                                 </DataTemplate>
                                             </DataGridTemplateColumn.CellTemplate>
                                         </DataGridTemplateColumn>
+                                        <DataGridTextColumn Header="Last Updated" Binding="{Binding UpdatedAt, StringFormat={}{0:u}}" SortMemberPath="UpdatedAt" Width="200" IsReadOnly="True" />
                                     </DataGrid.Columns>
                                 </DataGrid>
                             </Grid>
@@ -1424,7 +1423,19 @@ Title="Tailgrab Player Panel"
                                 <DataGrid Name="UserDbGrid" Grid.Row="1" AutoGenerateColumns="False" CanUserSortColumns="True" IsReadOnly="False" ItemsSource="{Binding UserDbView}" CellEditEnding="UserDbGrid_CellEditEnding" Grid.ColumnSpan="3">
                                     <DataGrid.Columns>
                                         <DataGridTextColumn Header="Display Name" Binding="{Binding DisplayName}" SortMemberPath="DisplayName" Width="*" />
-                                        <DataGridTextColumn Header="User ID" Binding="{Binding UserId}" SortMemberPath="UserId" Width="300" />
+                                        <DataGridTemplateColumn Header="User ID" SortMemberPath="UserId" Width="300">
+                                            <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock>
+                                                    <Hyperlink NavigateUri="{Binding UserId, StringFormat=https://vrchat.com/home/user/{0}}"
+                                                               RequestNavigate="UserHyperlink_RequestNavigate">
+                                                        <Run Text="{Binding UserId}" />
+                                                    </Hyperlink>
+                                                    </TextBlock>
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellTemplate>
+                                        </DataGridTemplateColumn>
+
                                         <!-- DataGridTextColumn Header="Elapsed Minutes" Binding="{Binding ElapsedMinutes, StringFormat=N1}" SortMemberPath="ElapsedMinutes" Width="120" -->
                                         <DataGridTextColumn Header="Elapsed Time (hh:mm)" Binding="{Binding ElapsedMinutes, Converter={StaticResource MinutesToHoursMinutesConverter}}" SortMemberPath="ElapsedMinutes" Width="120">
                                             <DataGridTextColumn.ElementStyle>
@@ -1440,18 +1451,6 @@ Title="Tailgrab Player Panel"
                                             </DataGridTextColumn.EditingElementStyle>
                                         </DataGridTextColumn>
                                         <DataGridTextColumn Header="Last Updated" Binding="{Binding UpdatedAt, StringFormat={}{0:u}}" SortMemberPath="UpdatedAt" Width="200" IsReadOnly="True" />
-                                        <DataGridTemplateColumn Header="Browser" Width="80">
-                                            <DataGridTemplateColumn.CellTemplate>
-                                                <DataTemplate>
-                                                    <TextBlock>
-                                                    <Hyperlink NavigateUri="{Binding UserId, StringFormat=https://vrchat.com/home/user/{0}}"
-                                                               RequestNavigate="UserHyperlink_RequestNavigate">
-                                                        Open
-                                                    </Hyperlink>
-                                                    </TextBlock>
-                                                </DataTemplate>
-                                            </DataGridTemplateColumn.CellTemplate>
-                                        </DataGridTemplateColumn>
                                     </DataGrid.Columns>
                                 </DataGrid>
                             </Grid>
