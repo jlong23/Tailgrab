@@ -522,6 +522,13 @@ namespace Tailgrab.PlayerManagement
             InitializeComponent();
             DataContext = this;
 
+            // Hook paste event for AvatarDbFilterBox to clear on paste
+            System.Windows.DataObject.AddPastingHandler(AvatarDbFilterBox, AvatarDbFilterBox_Pasting);
+            // Hook paste event for GroupDbFilterBox to clear on paste
+            System.Windows.DataObject.AddPastingHandler(GroupDbFilterBox, GroupDbFilterBox_Pasting);
+            // Hook paste event for BanMgmtUserIdTextBox to clear on paste
+            System.Windows.DataObject.AddPastingHandler(BanMgmtUserIdTextBox, BanMgmtUserIdTextBox_Pasting);
+
             // Load highlight colors from registry BEFORE setting SelectedValue on color ComboBoxes
             // This ensures AlertColorOptions is populated when WPF binding resolves
             LoadHighlightColors();
@@ -2891,6 +2898,15 @@ namespace Tailgrab.PlayerManagement
             ApplyAvatarDbFilter(AvatarDbView, string.Empty);
         }
 
+        private void AvatarDbFilterBox_Pasting(object sender, DataObjectPastingEventArgs e)
+        {
+            if (sender is System.Windows.Controls.TextBox textBox)
+            {
+                // Clear the current text before pasting
+                textBox.Text = string.Empty;
+            }
+        }
+
         private void ApplyAvatarDbFilter(ICollectionView view, string filterText)
         {
             // Push filter to database for better performance
@@ -3094,6 +3110,15 @@ namespace Tailgrab.PlayerManagement
         {
             GroupDbFilterBox.Text = string.Empty;
             ApplyGroupDbFilter(GroupDbView, string.Empty);
+        }
+
+        private void GroupDbFilterBox_Pasting(object sender, DataObjectPastingEventArgs e)
+        {
+            if (sender is System.Windows.Controls.TextBox textBox)
+            {
+                // Clear the current text before pasting
+                textBox.Text = string.Empty;
+            }
         }
 
         private void ApplyGroupDbFilter(ICollectionView view, string filterText)
@@ -4210,6 +4235,15 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
+        private void BanMgmtUserIdTextBox_Pasting(object sender, DataObjectPastingEventArgs e)
+        {
+            if (sender is System.Windows.Controls.TextBox textBox)
+            {
+                // Clear the current text before pasting
+                textBox.Text = string.Empty;
+            }
+        }
+
         private void BanMgmtCheckGroups_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -4768,6 +4802,7 @@ namespace Tailgrab.PlayerManagement
                         var dbInfo = dbGroupData.FirstOrDefault(d => d.groupId == vm.GroupId);
                         vm.ExistsInDatabase = dbInfo.exists;
                         vm.AlertType = dbInfo.alertType;
+                        vm.DatabaseAlertType = dbInfo.alertType;
 
                         // UpdateAlertColors creates WPF Brushes - must be on UI thread
                         vm.UpdateAlertColors();
@@ -4819,31 +4854,46 @@ namespace Tailgrab.PlayerManagement
 
                     // Check if already exists
                     var existingGroup = dbContext.GroupInfos.Find(vm.GroupId);
+
                     if (existingGroup != null)
                     {
-                        System.Windows.MessageBox.Show("This group already exists in the database.", "Already Exists", MessageBoxButton.OK, MessageBoxImage.Information);
-                        return;
+                        // Update existing record
+                        existingGroup.AlertType = vm.AlertType;
+                        existingGroup.UpdatedAt = DateTime.UtcNow;
+
+                        dbContext.GroupInfos.Update(existingGroup);
+                        await dbContext.SaveChangesAsync();
+
+                        // Synchronize ViewModel with database
+                        vm.DatabaseAlertType = vm.AlertType;
+                        vm.UpdateAlertColors();
+
+                        logger.Info($"Updated group {vm.GroupId} ({vm.Name}) with alert type {vm.AlertType}");
+                        System.Windows.MessageBox.Show($"Group '{vm.Name}' updated successfully with alert type '{vm.AlertType}'.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
                     }
-
-                    // Create new group info record
-                    var newGroup = new GroupInfo
+                    else
                     {
-                        GroupId = vm.GroupId,
-                        GroupName = vm.Name,
-                        AlertType = vm.AlertType,
-                        CreatedAt = DateTime.UtcNow,
-                        UpdatedAt = DateTime.UtcNow
-                    };
+                        // Create new group info record
+                        var newGroup = new GroupInfo
+                        {
+                            GroupId = vm.GroupId,
+                            GroupName = vm.Name,
+                            AlertType = vm.AlertType,
+                            CreatedAt = DateTime.UtcNow,
+                            UpdatedAt = DateTime.UtcNow
+                        };
 
-                    dbContext.GroupInfos.Add(newGroup);
-                    await dbContext.SaveChangesAsync();
+                        dbContext.GroupInfos.Add(newGroup);
+                        await dbContext.SaveChangesAsync();
 
-                    // Update view model
-                    vm.ExistsInDatabase = true;
-                    vm.UpdateAlertColors();
+                        // Update view model to reflect database state
+                        vm.ExistsInDatabase = true;
+                        vm.DatabaseAlertType = vm.AlertType;
+                        vm.UpdateAlertColors();
 
-                    logger.Info($"Added group {vm.GroupId} ({vm.Name}) with alert type {vm.AlertType}");
-                    System.Windows.MessageBox.Show($"Group '{vm.Name}' added successfully with alert type '{vm.AlertType}'.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                        logger.Info($"Added group {vm.GroupId} ({vm.Name}) with alert type {vm.AlertType}");
+                        System.Windows.MessageBox.Show($"Group '{vm.Name}' added successfully with alert type '{vm.AlertType}'.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
 
                     // Refresh the groups database view if it's visible
                     RefreshGroupDb();
@@ -4851,8 +4901,8 @@ namespace Tailgrab.PlayerManagement
             }
             catch (Exception ex)
             {
-                logger.Error(ex, "Error adding group to database");
-                System.Windows.MessageBox.Show($"Failed to add group: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                logger.Error(ex, "Error adding/updating group in database");
+                System.Windows.MessageBox.Show($"Failed to save group: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 

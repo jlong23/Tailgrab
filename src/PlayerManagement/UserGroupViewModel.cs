@@ -29,6 +29,21 @@ namespace Tailgrab.PlayerManagement
         public bool IsOwnedByUser { get; set; }
         public bool ExistsInDatabase { get; set; }
 
+        private AlertTypeEnum _databaseAlertType = AlertTypeEnum.None;
+        public AlertTypeEnum DatabaseAlertType
+        {
+            get => _databaseAlertType;
+            set
+            {
+                if (_databaseAlertType != value)
+                {
+                    _databaseAlertType = value;
+                    OnPropertyChanged(nameof(DatabaseAlertType));
+                    OnPropertyChanged(nameof(CanAdd));
+                }
+            }
+        }
+
         private AlertTypeEnum _alertType = AlertTypeEnum.None;
         public AlertTypeEnum AlertType
         {
@@ -73,7 +88,26 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
-        public bool CanAdd => !ExistsInDatabase && AlertType != AlertTypeEnum.None;
+        public bool CanAdd
+        {
+            get
+            {
+                // If AlertType is None, button is always disabled
+                if (AlertType == AlertTypeEnum.None)
+                    return false;
+
+                // If record doesn't exist in database, button is enabled
+                if (!ExistsInDatabase)
+                    return true;
+
+                // If record exists but AlertType differs from database value, button is enabled
+                if (ExistsInDatabase && AlertType != DatabaseAlertType)
+                    return true;
+
+                // If record exists and AlertType matches database value, button is disabled
+                return false;
+            }
+        }
 
         public void UpdateAlertColors()
         {
