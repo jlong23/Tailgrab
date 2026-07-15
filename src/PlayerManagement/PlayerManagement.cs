@@ -702,6 +702,7 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
+        // Evaluate the image evaluation text to determine if it contains any known classifications
         private static string? EvaluateImageClass(string? imageEvaluation)
         {
             if (string.IsNullOrEmpty(imageEvaluation))
@@ -709,17 +710,17 @@ namespace Tailgrab.PlayerManagement
                 return null;
             }
 
-            if (CheckLines(imageEvaluation, "Sexual Content"))
+            if (CheckLines(imageEvaluation, CommonConst.AI_EVALUATION_SEXUAL))
             {
-                return "Sexual Content";
+                return CommonConst.AI_EVALUATION_SEXUAL;
             }
-            else if (CheckLines(imageEvaluation, "Racism"))
+            else if (CheckLines(imageEvaluation, CommonConst.AI_EVALUATION_HATE))
             {
-                return "Racism";
+                return CommonConst.AI_EVALUATION_HATE;
             }
-            else if (CheckLines(imageEvaluation, "Gore"))
+            else if (CheckLines(imageEvaluation, CommonConst.AI_EVALUATION_SELFHARM))
             {
-                return "Gore";
+                return CommonConst.AI_EVALUATION_SELFHARM;
             }
 
             return null;
