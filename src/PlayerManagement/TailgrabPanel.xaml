@@ -227,6 +227,23 @@ Title="Tailgrab Player Panel"
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
 
+                                    <!-- Browser column -->
+                                    <GridViewColumn Width="80">
+                                        <GridViewColumn.Header>
+                                            <GridViewColumnHeader Content="Browser" />
+                                        </GridViewColumn.Header>
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock>
+                                                <Hyperlink NavigateUri="{Binding UserId, StringFormat=https://vrchat.com/home/user/{0}}"
+                                                           RequestNavigate="UserHyperlink_RequestNavigate">
+                                                    Open
+                                                </Hyperlink>
+                                                </TextBlock>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+
                                     <!-- Actions column -->
                                     <GridViewColumn Width="60">
                                         <GridViewColumn.Header>
@@ -507,6 +524,23 @@ Title="Tailgrab Player Panel"
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate>
                                                 <TextBlock Text="{Binding AlertMessages}" />
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+
+                                    <!-- Browser column -->
+                                    <GridViewColumn Width="80">
+                                        <GridViewColumn.Header>
+                                            <GridViewColumnHeader Content="Browser" />
+                                        </GridViewColumn.Header>
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock>
+                                                <Hyperlink NavigateUri="{Binding UserId, StringFormat=https://vrchat.com/home/user/{0}}"
+                                                           RequestNavigate="UserHyperlink_RequestNavigate">
+                                                    Open
+                                                </Hyperlink>
+                                                </TextBlock>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
