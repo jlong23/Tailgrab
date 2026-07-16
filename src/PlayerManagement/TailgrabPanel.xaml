@@ -1495,7 +1495,7 @@ Title="Tailgrab Player Panel"
                                     </Grid>
                                 </GroupBox>
 
-                                <GroupBox Header="Ban On Sight Management" Margin="0,6,0,6" Grid.Row="1">
+                                <GroupBox Header="Alert List Management" Margin="0,6,0,6" Grid.Row="1">
                                     <Grid Margin="6">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto" />
