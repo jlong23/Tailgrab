@@ -539,6 +539,18 @@ namespace Tailgrab.PlayerManagement
             System.Windows.DataObject.AddPastingHandler(UserDbFilterBox, UserSelectionTextBox_Pasting);
             // Hook paste event for BanMgmtUserIdTextBox to clear on paste
             System.Windows.DataObject.AddPastingHandler(BanMgmtUserIdTextBox, UserSelectionTextBox_Pasting);
+            // Hook paste event for OverlayUserIdTextBox to clear on paste
+            System.Windows.DataObject.AddPastingHandler(OverlayUserIdTextBox, UserSelectionTextBox_Pasting);
+
+            // Hook paste event for EmojiFilterBox to clear on paste
+            System.Windows.DataObject.AddPastingHandler(EmojiFilterBox, InventorySelectionTextBox_Pasting);
+            // Hook paste event for OverlayInventoryIdTextBox to clear on paste
+            System.Windows.DataObject.AddPastingHandler(OverlayInventoryIdTextBox, InventorySelectionTextBox_Pasting);
+
+            // Hook paste event for PrintFilterBox to clear on paste
+            System.Windows.DataObject.AddPastingHandler(PrintFilterBox, PrintSelectionTextBox_Pasting);
+            // Hook paste event for PrintOverlayInventoryIdTextBox to clear on paste
+            System.Windows.DataObject.AddPastingHandler(PrintOverlayInventoryIdTextBox, PrintSelectionTextBox_Pasting);
 
             // Load highlight colors from registry BEFORE setting SelectedValue on color ComboBoxes
             // This ensures AlertColorOptions is populated when WPF binding resolves
@@ -2501,6 +2513,36 @@ namespace Tailgrab.PlayerManagement
                 PrintOverlayInventoryImagePreview.Source = null;
             }
         }
+
+        private void PrintSelectionTextBox_Pasting(object sender, DataObjectPastingEventArgs e)
+        {
+            if (sender is System.Windows.Controls.TextBox textBox)
+            {
+                // Cancel the default paste operation
+                e.CancelCommand();
+
+                // Get the pasted text from clipboard
+                if (e.DataObject.GetDataPresent(typeof(string)))
+                {
+                    string pastedText = (string)e.DataObject.GetData(typeof(string));
+
+                    // Regex pattern to match VRChat print IDs (prnt_followed by UUID)
+                    var match = Regex.Match(pastedText, @"prnt_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}");
+
+                    if (match.Success)
+                    {
+                        // Extract and set the matched print ID
+                        textBox.Text = match.Value;
+                    }
+                    else
+                    {
+                        // If no match, paste the original text
+                        textBox.Text = pastedText;
+                    }
+                }
+            }
+        }
+
         #endregion
 
         //
@@ -2888,6 +2930,36 @@ namespace Tailgrab.PlayerManagement
             }
             e.Handled = true;
         }
+
+        private void InventorySelectionTextBox_Pasting(object sender, DataObjectPastingEventArgs e)
+        {
+            if (sender is System.Windows.Controls.TextBox textBox)
+            {
+                // Cancel the default paste operation
+                e.CancelCommand();
+
+                // Get the pasted text from clipboard
+                if (e.DataObject.GetDataPresent(typeof(string)))
+                {
+                    string pastedText = (string)e.DataObject.GetData(typeof(string));
+
+                    // Regex pattern to match VRChat inventory IDs (inv_followed by UUID)
+                    var match = Regex.Match(pastedText, @"inv_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}");
+
+                    if (match.Success)
+                    {
+                        // Extract and set the matched inventory ID
+                        textBox.Text = match.Value;
+                    }
+                    else
+                    {
+                        // If no match, paste the original text
+                        textBox.Text = pastedText;
+                    }
+                }
+            }
+        }
+
         #endregion
 
         //
