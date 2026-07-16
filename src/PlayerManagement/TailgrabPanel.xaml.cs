@@ -528,6 +528,8 @@ namespace Tailgrab.PlayerManagement
 
             // Hook paste event for GroupDbFilterBox to clear on paste
             System.Windows.DataObject.AddPastingHandler(GroupDbFilterBox, GroupSelectionTextBox_Pasting);
+            // Hook paste event for BanMgmtAddGroupIdTextBox to clear on paste
+            System.Windows.DataObject.AddPastingHandler(BanMgmtAddGroupIdTextBox, GroupSelectionTextBox_Pasting);
 
             // Hook paste event for ActiveFilterBox to clear on paste
             System.Windows.DataObject.AddPastingHandler(ActiveFilterBox, UserSelectionTextBox_Pasting);
