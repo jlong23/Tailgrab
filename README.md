@@ -219,7 +219,7 @@ https://gist.githubusercontent.com/jlong23/2b051df849cabb4da273eaf98225ae4e/raw/
 
 [Config Tab, Line Handlers](./docs/Config_LineHandlers.md) Configure Actions to Trigger based on VRChat Log Events.
 
-[Config Tab, Secrets](./docs/Config_Secrets.md) Configure VR Chat Credentials, Alerting Sourcees and VRChat data collection behaviors.
+[Config Tab, Secrets](./docs/Config_Secrets.md) Configure VR Chat Credentials, Alerting Sources and VRChat data collection behaviors.
 
 [Config Tab, AI Config](./docs/Config_AI_Config.md) Configure AI settings for VR Chat data classification and alerting.
 
@@ -231,4 +231,4 @@ https://gist.githubusercontent.com/jlong23/2b051df849cabb4da273eaf98225ae4e/raw/
 
 [Config Tab, Migrations](./docs/Config_Migrations.md) Migrate V1.0.9 Database to the new database.
 
-[Config Tab, Ban Management](./docs/Config_BanManagement.md) Manage user bans for groups you have rights to manage.
+[Config Tab, Ban Management](./docs/Config_Ban_Management.md) Manage user bans for groups you have rights to manage.

@@ -1,5 +1,5 @@
 [Back](../README.md)
-# Application Configuration
+# Config Secrets
 
 The TailGrab application configuration panel is on the "Config" tab and then the "Secrets" sub-tab.  All passwords and API keys protected, entering the configuration section hides the values so they cannot be coppied by shoulder surfers or screen recording software.  The values are stored in the Windows Registry in an encrypted format and are loaded on application start.  Hidden values are only written to the registry when there is a new value in the field and you click the "Save Secrets" button, so you can enter your credentials, save them, and then restart the application to get the services working properly.
 
