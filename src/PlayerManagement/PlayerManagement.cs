@@ -666,7 +666,7 @@ namespace Tailgrab.PlayerManagement
                         itemContent = inventoryItem.Metadata?.ImageUrl ?? itemUrl;
                         inventoryType = inventoryItem.ItemTypeLabel ?? "Unknown Type";
 
-                        logger.Info($"Fetched inventory item: {itemName} / ({inventoryItem.ItemTypeLabel}) for user {userId}");
+                        logger.Info($"Fetched inventory item: {itemName} / ({inventoryItem.ItemTypeLabel}) for user {userId} / URL : {itemUrl}");
                     }
                 }
                 catch (Exception ex)
@@ -702,6 +702,7 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
+        // Evaluate the image evaluation text to determine if it contains any known classifications
         private static string? EvaluateImageClass(string? imageEvaluation)
         {
             if (string.IsNullOrEmpty(imageEvaluation))
@@ -709,17 +710,17 @@ namespace Tailgrab.PlayerManagement
                 return null;
             }
 
-            if (CheckLines(imageEvaluation, "Sexual Content"))
+            if (CheckLines(imageEvaluation, CommonConst.AI_EVALUATION_SEXUAL))
             {
-                return "Sexual Content";
+                return CommonConst.AI_EVALUATION_SEXUAL;
             }
-            else if (CheckLines(imageEvaluation, "Racism"))
+            else if (CheckLines(imageEvaluation, CommonConst.AI_EVALUATION_HATE))
             {
-                return "Racism";
+                return CommonConst.AI_EVALUATION_HATE;
             }
-            else if (CheckLines(imageEvaluation, "Gore"))
+            else if (CheckLines(imageEvaluation, CommonConst.AI_EVALUATION_SELFHARM))
             {
-                return "Gore";
+                return CommonConst.AI_EVALUATION_SELFHARM;
             }
 
             return null;
@@ -759,7 +760,7 @@ namespace Tailgrab.PlayerManagement
                     Player? player = AddPlayerEventByUserId(printInfo.OwnerId, PlayerEvent.EventType.Print, $"Dropped Print {printId}");
                     if (player != null)
                     {
-                        logger.Info($"Fetched print info for print {printId} owned by {player.DisplayName} (ID: {printInfo.OwnerId})");
+                        logger.Info($"Fetched print info for print {printId} owned by {player.DisplayName} (ID: {printInfo.OwnerId}) / URL: {printInfo.Files.Image}");
                         string evaluatedText = "Not Evaluated";
                         string aiClassification = "OK";
                         var ollamaClient = serviceRegistry.GetOllamaAPIClient();
@@ -771,7 +772,7 @@ namespace Tailgrab.PlayerManagement
                             if (evaluated != null)
                             {
                                 evaluatedText = System.Text.Encoding.UTF8.GetString(evaluated.Evaluation);
-                                aiClassification = EvaluateImageClass(System.Text.Encoding.UTF8.GetString( evaluated.Evaluation)) ?? "OK";
+                                aiClassification = EvaluateImageClass(evaluatedText) ?? "OK";
                                 logger.Info($"Ollama classification for inventory item {printInfo.Id}: {aiClassification}: {evaluatedText}");
                                 if (!aiClassification.Equals("OK") && !evaluated.IsIgnored)
                                 {

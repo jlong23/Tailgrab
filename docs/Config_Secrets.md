@@ -1,5 +1,5 @@
 [Back](../README.md)
-# Application Configuration
+# Config Secrets
 
 The TailGrab application configuration panel is on the "Config" tab and then the "Secrets" sub-tab.  All passwords and API keys protected, entering the configuration section hides the values so they cannot be coppied by shoulder surfers or screen recording software.  The values are stored in the Windows Registry in an encrypted format and are loaded on application start.  Hidden values are only written to the registry when there is a new value in the field and you click the "Save Secrets" button, so you can enter your credentials, save them, and then restart the application to get the services working properly.
 
@@ -17,7 +17,7 @@ The fields are your Web User Name and Password for VRChat, and the 2 Factor Auth
 
 **Password** - This is your VRChat Password you use to log in to the VRChat website.
 
-**2FA Key** - This is the [2 Factor Authentication Key](https://docs.vrchat.com/docs/setup-2fa) that is generated when you set up 2 Factor Authentication on your VRChat account, this is used to generate the 2FA codes that are required to authenticate with the VRChat API.  You can see the Key on setup when you see the QRCode there is a link **enter the key manually**; copy this code to a note for entry into Tailgrab.  Lastpass Authenticator allows you to view this code with the edit site button.
+**2FA Key** - This is the [2 Factor Authentication Seed Key](https://docs.vrchat.com/docs/setup-2fa) that is generated when you set up 2 Factor Authentication on your VRChat account, this is used to generate the 2FA codes that are required to authenticate with the VRChat API.  You can see the Key on setup when you see the QRCode there is a link **enter the key manually**; copy this code to a note for entry into Tailgrab.  Lastpass Authenticator allows you to view this code with the edit site button.  If this is left blank, you can use the OTP Email or OTP code, the application should prompt you each time you start up or the session cookies expires.
 
 > [!IMPORTANT]
 > VRChat's API is not officially supported for third party applications, and may change/break at any time; User credentials are stored in an encrypted format in the Windows Registry and used only to gather needed information about users in the instance you are in.
@@ -35,8 +35,8 @@ If you have a list of Avatars Ids and/or Group Ids that you want to be alerted t
 
 The format of the CSV files should be a single column with the header "Id" and then the Ids listed below, EG:
 ``` CSV
-Id, Name
-"avtr_12345678-90ab-cdef-1234-567890abcdef","Bad Avatar"
+Id, Name, Flag
+"avtr_12345678-90ab-cdef-1234-567890abcdef","Bad Avatar","Crasher"
 ```
 
 ## Ollama Cloud AI API Credentials & Configuration

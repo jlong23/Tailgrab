@@ -15,6 +15,8 @@ Based on the three areas of interest, you can customize the alert sounds that ar
 
 **Profile Alert** - This sound is played when a user in the instance has a profile or Image that is evaluated by the AI services to be of concern based on your custom prompt criteria.
 
+See [Config_Colors](./Config_Colors.md) for more information on the Alert Levels configuration panel.
+
 > [!NOTE]
 > The Profile Alert Severity Levels are hard coded to:
 >

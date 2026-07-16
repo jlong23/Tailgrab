@@ -65,26 +65,28 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="ConcurrentPriorityQueue" Version="3.0.0" />
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.2" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.2">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.2" />
-    <PackageReference Include="NLog.Web.AspNetCore" Version="6.1.0" />
-    <PackageReference Include="OllamaSharp" Version="5.4.16" />
-    <PackageReference Include="Otp.NET" Version="1.4.1" />
+	<PackageReference Include="ConcurrentPriorityQueue" Version="3.0.0" />
+	<PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.2" />
+	<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.2">
+	  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+	  <PrivateAssets>all</PrivateAssets>
+	</PackageReference>
+	<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.2" />
+	<PackageReference Include="NLog.Web.AspNetCore" Version="6.1.0" />
+	<PackageReference Include="OllamaSharp" Version="5.4.16" />
+	<PackageReference Include="Otp.NET" Version="1.4.1" />
 	<PackageReference Include="JsonSubTypes" Version="2.0.1" />
 	<PackageReference Include="Newtonsoft.Json" Version="13.0.5-beta1" />
-    <PackageReference Include="Polly" Version="8.6.5" />
-    <PackageReference Include="SQLite" Version="3.13.0" />
-    <PackageReference Include="System.Speech" Version="10.0.2" />
+	<PackageReference Include="Polly" Version="8.6.5" />
+	<PackageReference Include="SQLite" Version="3.13.0" />
+	<!-- Override vulnerable transitive dependency SQLitePCLRaw.lib.e_sqlite3 2.1.11 with fixed version -->
+	<PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3" />
+	<PackageReference Include="System.Speech" Version="10.0.2" />
 	<PackageReference Include="VRCOscLib" Version="1.6.0" />
-    <MySourceFiles Include="src\config.json" />
-    <MySourceFiles Include="src\NLog.config" />
-    <MySourceFiles Include="src\pen-network-id.csv" />
-    <PackageReference Include="XSSocket" Version="1.0.0" />
+	<MySourceFiles Include="src\config.json" />
+	<MySourceFiles Include="src\NLog.config" />
+	<MySourceFiles Include="src\pen-network-id.csv" />
+	<PackageReference Include="XSSocket" Version="1.0.0" />
   </ItemGroup>
 
 	<ItemGroup>
@@ -138,6 +140,10 @@
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="src\test-images\" />
   </ItemGroup>
 
   <!-- Increment build number for Release builds and Publish -->

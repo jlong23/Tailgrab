@@ -15,8 +15,7 @@ Next to the filter input and buttons is a field that accepts an avatar id, **avt
 The list of avatars are shown below with the following columns:
 
 - Avatar Name: The name of the avatar as reported in the VRChat logs.
-- Avatar ID: The unique identifier for the avatar, this is the value you can use to add an avatar to the list for alerting.
+- Avatar ID: The unique identifier for the avatar, this is the value you can use to add an avatar to the list for alerting. This is a URL link to the avatar in the VRChat Avatar web page, this can help you quickly report the avatar if it is a bad avatar.
 - IsBOS: This is the value that will trigger the alerting for the avatar, if this is set to true, then you will get alerts for users using this avatar in your instance.  This is also the value that will mark the avatar as globally blocked for your VRC Account credentials, preventing crashers from using the avatar in your instance.
 - Last Used: This is the last time this avatar was seen in your instance, this can help you identify if the avatar is currently being used by someone in your instance or if it was used in the past.
-- Browser: This is a URL link to the avatar in the VRChat Avatar web page, this can help you quickly report the avatar if it is a bad avatar.
 

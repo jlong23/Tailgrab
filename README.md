@@ -99,10 +99,13 @@ Your configuration and data files are now stored under ```{UserProfile}/AppData/
                tailgrab.db
 			logs\
                tailgrab_2026-02-28_12-00-00.log
+			test-images\
+			   test_image_1.png
+			   test_image_2.png
 ```
 
 ## Configuration
-[Application Config](./docs/Config_Application.md) for details on how to configure the application to connect to API services.
+[Application Config](./docs/Config_Secrets.md) for details on how to configure the application to connect to API services.
 
 [Config Line Handlers](./docs/Config_LineHandlers.md) for details on how to configure the application to respond to VRChat local game log events.
 
@@ -151,7 +154,10 @@ The TailGrab SQLite database will stored to the ```{UserProfile}/AppData/Local/T
 
 DB Browser for SQLite - https://sqlitebrowser.org/
 
-##### Export SQL For GIST or Team Share
+##### Export SQL For GIST or Team Share 
+
+> [!NOTE]
+> There are new buttons that will export your Avatars and Groups to a GIST on the clipboard for sharing with the community.  The hosted list need only be a public web page you can control to share with your team.  See the [Config Tab, Secrets](./docs/Config_Secrets.md) panel for details.
 
 Avatars:
 
@@ -213,10 +219,16 @@ https://gist.githubusercontent.com/jlong23/2b051df849cabb4da273eaf98225ae4e/raw/
 
 [Config Tab, Line Handlers](./docs/Config_LineHandlers.md) Configure Actions to Trigger based on VRChat Log Events.
 
-[Config Tab, Secrets](./docs/Config_Application.md) Configure API Keys and other application settings.
+[Config Tab, Secrets](./docs/Config_Secrets.md) Configure VR Chat Credentials, Alerting Sources and VRChat data collection behaviors.
+
+[Config Tab, AI Config](./docs/Config_AI_Config.md) Configure AI settings for VR Chat data classification and alerting.
 
 [Config Tab, Alerts](./docs/Config_Alerts.md) Configure Alert Levels sounds and highlight colors.
+
+[Config Tab, Colors](./docs/Config_Colors.md) Configure Data Row color classes.
 
 [Config Tab, Open Logs](./docs/Config_OpenLogs.md) Show and close open logs.
 
 [Config Tab, Migrations](./docs/Config_Migrations.md) Migrate V1.0.9 Database to the new database.
+
+[Config Tab, Ban Management](./docs/Config_Ban_Management.md) Manage user bans for groups you have rights to manage.

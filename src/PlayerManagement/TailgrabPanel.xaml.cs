@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -521,6 +522,35 @@ namespace Tailgrab.PlayerManagement
             _serviceRegistry = serviceRegistry;
             InitializeComponent();
             DataContext = this;
+
+            // Hook paste event for AvatarDbFilterBox to clear on paste
+            System.Windows.DataObject.AddPastingHandler(AvatarDbFilterBox, AvatarSelectionTextBox_Pasting);
+
+            // Hook paste event for GroupDbFilterBox to clear on paste
+            System.Windows.DataObject.AddPastingHandler(GroupDbFilterBox, GroupSelectionTextBox_Pasting);
+            // Hook paste event for BanMgmtAddGroupIdTextBox to clear on paste
+            System.Windows.DataObject.AddPastingHandler(BanMgmtAddGroupIdTextBox, GroupSelectionTextBox_Pasting);
+
+            // Hook paste event for ActiveFilterBox to clear on paste
+            System.Windows.DataObject.AddPastingHandler(ActiveFilterBox, UserSelectionTextBox_Pasting);
+            // Hook paste event for PastFilterBox to clear on paste
+            System.Windows.DataObject.AddPastingHandler(PastFilterBox, UserSelectionTextBox_Pasting);
+            // Hook paste event for BanMgmtUserIdTextBox to clear on paste
+            System.Windows.DataObject.AddPastingHandler(UserDbFilterBox, UserSelectionTextBox_Pasting);
+            // Hook paste event for BanMgmtUserIdTextBox to clear on paste
+            System.Windows.DataObject.AddPastingHandler(BanMgmtUserIdTextBox, UserSelectionTextBox_Pasting);
+            // Hook paste event for OverlayUserIdTextBox to clear on paste
+            System.Windows.DataObject.AddPastingHandler(OverlayUserIdTextBox, UserSelectionTextBox_Pasting);
+
+            // Hook paste event for EmojiFilterBox to clear on paste
+            System.Windows.DataObject.AddPastingHandler(EmojiFilterBox, InventorySelectionTextBox_Pasting);
+            // Hook paste event for OverlayInventoryIdTextBox to clear on paste
+            System.Windows.DataObject.AddPastingHandler(OverlayInventoryIdTextBox, InventorySelectionTextBox_Pasting);
+
+            // Hook paste event for PrintFilterBox to clear on paste
+            System.Windows.DataObject.AddPastingHandler(PrintFilterBox, PrintSelectionTextBox_Pasting);
+            // Hook paste event for PrintOverlayInventoryIdTextBox to clear on paste
+            System.Windows.DataObject.AddPastingHandler(PrintOverlayInventoryIdTextBox, PrintSelectionTextBox_Pasting);
 
             // Load highlight colors from registry BEFORE setting SelectedValue on color ComboBoxes
             // This ensures AlertColorOptions is populated when WPF binding resolves
@@ -1665,6 +1695,30 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
+        private void ActiveViewUserGroups_Click(object sender, RoutedEventArgs e)
+        {
+
+            if (sender is not System.Windows.Controls.Button btn) return;
+
+            // Find the DataContext for the row (should be PlayerViewModel)
+            if (btn.DataContext is PlayerViewModel pvm)
+            {
+                ShowUserGroupsOverlay(pvm.UserId, pvm.DisplayName);
+            }
+        }
+
+        private void PastViewUserGroups_Click(object sender, RoutedEventArgs e)
+        {
+            if (SelectedPast != null)
+            {
+                ShowUserGroupsOverlay(SelectedPast.UserId, SelectedPast.DisplayName);
+            }
+            else
+            {
+                System.Windows.MessageBox.Show("Please select a player first.", "No Player Selected", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+
         private void ReportPlayer_Click(object sender, RoutedEventArgs e)
         {
             if (sender is not System.Windows.Controls.Button btn) return;
@@ -1697,6 +1751,48 @@ namespace Tailgrab.PlayerManagement
 
                 // Set the user ID in Ban Management tab
                 BanMgmtUserIdTextBox.Text = userId;
+
+                // Activate the Config tab (index 4) in main TabControl
+                MainTabControl.SelectedIndex = 4;
+
+                // Activate the Ban Management tab (index 10) in Config TabControl
+                ConfigTabControl.SelectedIndex = 10;
+
+                // Call the load user function
+                BanMgmtLoadUser_Click(sender, e);
+            }
+        }
+
+        private void BanAvatarOwner_Click(object sender, RoutedEventArgs e)
+        {
+            // Get the owner ID from the BanMgmtAvatarOwnerId TextBlock
+            string ownerId = BanMgmtAvatarOwnerId.Text;
+
+            if (!string.IsNullOrWhiteSpace(ownerId))
+            {
+                // Set the user ID in Ban Management tab
+                BanMgmtUserIdTextBox.Text = ownerId;
+
+                // Activate the Config tab (index 4) in main TabControl
+                MainTabControl.SelectedIndex = 4;
+
+                // Activate the Ban Management tab (index 10) in Config TabControl
+                ConfigTabControl.SelectedIndex = 10;
+
+                // Call the load user function
+                BanMgmtLoadUser_Click(sender, e);
+            }
+        }
+
+        private void BanGroupOwner_Click(object sender, RoutedEventArgs e)
+        {
+            // Get the owner ID from the BanMgmtGroupOwnerId TextBlock
+            string ownerId = BanMgmtGroupOwnerId.Text;
+
+            if (!string.IsNullOrWhiteSpace(ownerId))
+            {
+                // Set the user ID in Ban Management tab
+                BanMgmtUserIdTextBox.Text = ownerId;
 
                 // Activate the Config tab (index 4) in main TabControl
                 MainTabControl.SelectedIndex = 4;
@@ -2417,6 +2513,36 @@ namespace Tailgrab.PlayerManagement
                 PrintOverlayInventoryImagePreview.Source = null;
             }
         }
+
+        private void PrintSelectionTextBox_Pasting(object sender, DataObjectPastingEventArgs e)
+        {
+            if (sender is System.Windows.Controls.TextBox textBox)
+            {
+                // Cancel the default paste operation
+                e.CancelCommand();
+
+                // Get the pasted text from clipboard
+                if (e.DataObject.GetDataPresent(typeof(string)))
+                {
+                    string pastedText = (string)e.DataObject.GetData(typeof(string));
+
+                    // Regex pattern to match VRChat print IDs (prnt_followed by UUID)
+                    var match = Regex.Match(pastedText, @"prnt_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}");
+
+                    if (match.Success)
+                    {
+                        // Extract and set the matched print ID
+                        textBox.Text = match.Value;
+                    }
+                    else
+                    {
+                        // If no match, paste the original text
+                        textBox.Text = pastedText;
+                    }
+                }
+            }
+        }
+
         #endregion
 
         //
@@ -2804,6 +2930,36 @@ namespace Tailgrab.PlayerManagement
             }
             e.Handled = true;
         }
+
+        private void InventorySelectionTextBox_Pasting(object sender, DataObjectPastingEventArgs e)
+        {
+            if (sender is System.Windows.Controls.TextBox textBox)
+            {
+                // Cancel the default paste operation
+                e.CancelCommand();
+
+                // Get the pasted text from clipboard
+                if (e.DataObject.GetDataPresent(typeof(string)))
+                {
+                    string pastedText = (string)e.DataObject.GetData(typeof(string));
+
+                    // Regex pattern to match VRChat inventory IDs (inv_followed by UUID)
+                    var match = Regex.Match(pastedText, @"inv_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}");
+
+                    if (match.Success)
+                    {
+                        // Extract and set the matched inventory ID
+                        textBox.Text = match.Value;
+                    }
+                    else
+                    {
+                        // If no match, paste the original text
+                        textBox.Text = pastedText;
+                    }
+                }
+            }
+        }
+
         #endregion
 
         //
@@ -2823,6 +2979,35 @@ namespace Tailgrab.PlayerManagement
         {
             AvatarDbFilterBox.Text = string.Empty;
             ApplyAvatarDbFilter(AvatarDbView, string.Empty);
+        }
+
+        private void AvatarSelectionTextBox_Pasting(object sender, DataObjectPastingEventArgs e)
+        {
+            if (sender is System.Windows.Controls.TextBox textBox)
+            {
+                // Cancel the default paste operation
+                e.CancelCommand();
+
+                // Get the pasted text from clipboard
+                if (e.DataObject.GetDataPresent(typeof(string)))
+                {
+                    string pastedText = (string)e.DataObject.GetData(typeof(string));
+
+                    // Regex pattern to match VRChat user IDs (usr_followed by UUID)
+                    var match = Regex.Match(pastedText, @"avtr_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}");
+
+                    if (match.Success)
+                    {
+                        // Extract and set the matched user ID
+                        textBox.Text = match.Value;
+                    }
+                    else
+                    {
+                        // If no match, paste the original text
+                        textBox.Text = pastedText;
+                    }
+                }
+            }
         }
 
         private void ApplyAvatarDbFilter(ICollectionView view, string filterText)
@@ -2879,7 +3064,7 @@ namespace Tailgrab.PlayerManagement
         }
         private void AvatarFetch_Click(object sender, RoutedEventArgs e)
         {
-            string? id = AvatarIdBox.Text?.Trim();
+            string? id = AvatarDbFilterBox.Text?.Trim();
             if (string.IsNullOrEmpty(id)) return;
 
             try
@@ -2919,7 +3104,7 @@ namespace Tailgrab.PlayerManagement
 
                     // Filter the view to the fetched group
                     ApplyAvatarDbFilter(AvatarDbView, avatar.Name ?? string.Empty);
-                    AvatarIdBox.Text = string.Empty;
+                    AvatarDbFilterBox.Text = string.Empty;
                 }
                 else
                 {
@@ -2932,12 +3117,71 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
+        private void AvatarPurgeNoneRecords_Click(object sender, RoutedEventArgs e)
+        {
+            // Show confirmation dialog
+            var confirmResult = System.Windows.MessageBox.Show(
+                "This will delete all Avatar Info Records that are marked 'NONE'. Do you want to continue?",
+                "Purge NONE Records",
+                MessageBoxButton.OKCancel,
+                MessageBoxImage.Warning);
+
+            if (confirmResult == MessageBoxResult.OK)
+            {
+                try
+                {
+                    var db = _serviceRegistry.GetDBContext();
+
+                    // Select all AvatarInfo records where AlertType is NONE
+                    var noneRecords = db.AvatarInfos
+                        .Where(a => a.AlertType == AlertTypeEnum.None)
+                        .ToList();
+
+                    int recordCount = noneRecords.Count;
+
+                    // Delete the records
+                    if (recordCount > 0)
+                    {
+                        db.AvatarInfos.RemoveRange(noneRecords);
+                        db.SaveChanges();
+
+                        // Refresh the grid
+                        RefreshAvatarDb();
+
+                        // Show confirmation message
+                        System.Windows.MessageBox.Show(
+                            $"{recordCount} record(s) were successfully removed.",
+                            "Delete Complete",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Information);
+                    }
+                    else
+                    {
+                        System.Windows.MessageBox.Show(
+                            "No records with AlertType 'NONE' were found.",
+                            "Delete Complete",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Information);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.Error(ex, "Failed to delete NONE records");
+                    System.Windows.MessageBox.Show(
+                        $"Failed to delete records: {ex.Message}",
+                        "Error",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error);
+                }
+            }
+        }
+
         private void AvatarHyperlink_RequestNavigate(object? sender, System.Windows.Navigation.RequestNavigateEventArgs e)
         {
             try
             {
                 logger.Info($"Opening Avatar URL: {e.Uri}");
-                var uri = new Uri($"https://vrchat.com/home/group/{e.Uri}");
+                var uri = new Uri($"https://vrchat.com/home/avatar/{e.Uri}");
                 var psi = new System.Diagnostics.ProcessStartInfo(uri.AbsoluteUri)
                 {
                     UseShellExecute = true
@@ -2969,6 +3213,35 @@ namespace Tailgrab.PlayerManagement
         {
             GroupDbFilterBox.Text = string.Empty;
             ApplyGroupDbFilter(GroupDbView, string.Empty);
+        }
+
+        private void GroupSelectionTextBox_Pasting(object sender, DataObjectPastingEventArgs e)
+        {
+            if (sender is System.Windows.Controls.TextBox textBox)
+            {
+                // Cancel the default paste operation
+                e.CancelCommand();
+
+                // Get the pasted text from clipboard
+                if (e.DataObject.GetDataPresent(typeof(string)))
+                {
+                    string pastedText = (string)e.DataObject.GetData(typeof(string));
+
+                    // Regex pattern to match VRChat user IDs (usr_followed by UUID)
+                    var match = Regex.Match(pastedText, @"grp_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}");
+
+                    if (match.Success)
+                    {
+                        // Extract and set the matched user ID
+                        textBox.Text = match.Value;
+                    }
+                    else
+                    {
+                        // If no match, paste the original text
+                        textBox.Text = pastedText;
+                    }
+                }
+            }
         }
 
         private void ApplyGroupDbFilter(ICollectionView view, string filterText)
@@ -3016,7 +3289,7 @@ namespace Tailgrab.PlayerManagement
 
         private void GroupFetch_Click(object sender, RoutedEventArgs e)
         {
-            string? id = GroupIdBox.Text?.Trim();
+            string? id = GroupDbFilterBox.Text?.Trim();
             if (string.IsNullOrEmpty(id)) return;
 
             GroupInfo? existing = _serviceRegistry.GetPlayerManager().AddUpdateGroupFromVRC(id);
@@ -3029,11 +3302,152 @@ namespace Tailgrab.PlayerManagement
             {
                 // Filter the view to the fetched Group
                 ApplyGroupDbFilter(GroupDbView, existing.GroupName ?? string.Empty);
-                GroupIdBox.Text = string.Empty;
 
                 // Populate the group information box
                 PopulateGroupInformation(existing.GroupId);
             }
+        }
+
+        private void GroupPurgeNoneRecords_Click(object sender, RoutedEventArgs e)
+        {
+            // Show confirmation dialog
+            var confirmResult = System.Windows.MessageBox.Show(
+                "This will delete all Group Info Records that are marked 'NONE'. Do you want to continue?",
+                "Purge NONE Records",
+                MessageBoxButton.OKCancel,
+                MessageBoxImage.Warning);
+
+            if (confirmResult == MessageBoxResult.OK)
+            {
+                try
+                {
+                    var db = _serviceRegistry.GetDBContext();
+
+                    // Select all GroupInfo records where AlertType is NONE
+                    var noneRecords = db.GroupInfos
+                        .Where(g => g.AlertType == AlertTypeEnum.None)
+                        .ToList();
+
+                    int recordCount = noneRecords.Count;
+
+                    // Delete the records
+                    if (recordCount > 0)
+                    {
+                        db.GroupInfos.RemoveRange(noneRecords);
+                        db.SaveChanges();
+
+                        // Refresh the grid
+                        RefreshGroupDb();
+
+                        // Show confirmation message
+                        System.Windows.MessageBox.Show(
+                            $"{recordCount} record(s) were successfully removed.",
+                            "Delete Complete",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Information);
+                    }
+                    else
+                    {
+                        System.Windows.MessageBox.Show(
+                            "No records with AlertType 'NONE' were found.",
+                            "Delete Complete",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Information);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.Error(ex, "Failed to delete NONE records");
+                    System.Windows.MessageBox.Show(
+                        $"Failed to delete records: {ex.Message}",
+                        "Error",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error);
+                }
+            }
+        }
+
+        private void AvatarDbGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (AvatarDbGrid.SelectedItem is AvatarInfoViewModel selectedAvatar)
+            {
+                PopulateAvatarInformation(selectedAvatar.AvatarId);
+            }
+        }
+
+
+        private async void PopulateAvatarInformation(string avatarId)
+        {
+            try
+            {
+                // Get the full avatar information from VRChat API
+                VRChatClient vrcClient = _serviceRegistry.GetVRChatAPIClient();
+                VRChat.API.Model.Avatar? avatar = await Task.Run(() => vrcClient.GetAvatarById(avatarId));
+
+                if (avatar != null)
+                {
+                    // Populate the UI fields
+                    BanMgmtAvatarName.Text = avatar.Name ?? string.Empty;
+                    BanMgmtPublishDate.Text = avatar.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss");
+                    BanMgmtUpdateDate.Text = avatar.UpdatedAt.ToString("yyyy-MM-dd HH:mm:ss");
+                    BanMgmtAvatarState.Text = avatar.ReleaseStatus.ToString();
+
+
+                    VRChat.API.Model.User? user = await Task.Run(() => vrcClient.GetProfile(avatar.AuthorId));
+
+                    BanMgmtAvatarOwner.Text = user.DisplayName ?? string.Empty;
+                    BanMgmtAvatarOwnerId.Text = avatar.AuthorId ?? string.Empty;
+                    BanMgmtAvatarDesc.Text = avatar.Description ?? string.Empty;
+
+                    // Enable the Ban Owner button if we have an owner ID
+                    BanAvatarOwnerButton.IsEnabled = !string.IsNullOrWhiteSpace(avatar.AuthorId);
+
+                    // Load avatar image
+                    if (!string.IsNullOrEmpty(avatar.ImageUrl))
+                    {
+                        try
+                        {
+                            var bitmap = new System.Windows.Media.Imaging.BitmapImage();
+                            bitmap.BeginInit();
+                            bitmap.UriSource = new Uri(avatar.ImageUrl);
+                            bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                            bitmap.EndInit();
+                            BanMgmtAvatarImage.Source = bitmap;
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.Error(ex, $"Failed to load Avatar image for avatar {avatarId}");
+                            BanMgmtAvatarImage.Source = null;
+                        }
+                    }
+                    else
+                    {
+                        BanMgmtAvatarImage.Source = null;
+                    }
+                }
+                else
+                {
+                    // Clear the fields if avatar not found
+                    ClearAvatarInformation();
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, $"Failed to populate avatar information for avatar {avatarId}");
+                ClearAvatarInformation();
+            }
+        }
+
+        private void ClearAvatarInformation()
+        {
+            BanMgmtAvatarName.Text = string.Empty;
+            BanMgmtPublishDate.Text = string.Empty;
+            BanMgmtUpdateDate.Text = string.Empty;
+            BanMgmtAvatarOwner.Text = string.Empty;
+            BanMgmtAvatarOwnerId.Text = string.Empty;
+            BanMgmtAvatarDesc.Text = string.Empty;
+            BanMgmtAvatarImage.Source = null;
+            BanAvatarOwnerButton.IsEnabled = false;
         }
 
         private void GroupDbGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -3071,6 +3485,9 @@ namespace Tailgrab.PlayerManagement
                     BanMgmtGroupOwnerId.Text = group.OwnerId ?? string.Empty;
                     BanMgmtGroupDesc.Text = group.Description ?? string.Empty;
                     BanMgmtGroupRules.Text = group.Rules ?? string.Empty;
+
+                    // Enable the Ban Owner button if we have an owner ID
+                    BanGroupOwnerButton.IsEnabled = !string.IsNullOrWhiteSpace(group.OwnerId);
 
                     // Load group banner image
                     if (!string.IsNullOrEmpty(group.BannerUrl))
@@ -3144,6 +3561,7 @@ namespace Tailgrab.PlayerManagement
             BanMgmtGroupRules.Text = string.Empty;
             BanMgmtGroupImage.Source = null;
             BanMgmtGroupIcon.Source = null;
+            BanGroupOwnerButton.IsEnabled = false;
         }
 
         private void GroupHyperlink_RequestNavigate(object? sender, System.Windows.Navigation.RequestNavigateEventArgs e)
@@ -3264,6 +3682,122 @@ namespace Tailgrab.PlayerManagement
             }
             e.Handled = true;
         }
+
+        private void PurgeInactiveUsers_Click(object sender, RoutedEventArgs e)
+        {
+            // Show confirmation dialog
+            MessageBoxResult confirmResult = System.Windows.MessageBox.Show(
+                "This will purge all user records that have not been seen for two months and that have less than 15 minutes of elapsed time.",
+                "Confirm Purge",
+                MessageBoxButton.OKCancel,
+                MessageBoxImage.Warning);
+
+            if (confirmResult == MessageBoxResult.OK)
+            {
+                try
+                {
+                    var db = _serviceRegistry.GetDBContext();
+
+                    // Calculate the cutoff date (2 months ago)
+                    DateTime cutoffDate = DateTime.UtcNow.AddMonths(-2);
+
+                    // Select all UserInfo records that meet the criteria
+                    var inactiveUsers = db.UserInfos
+                        .Where(u => u.UpdatedAt < cutoffDate && u.ElapsedMinutes < 15)
+                        .ToList();
+
+                    int userCount = inactiveUsers.Count;
+
+                    if (userCount > 0)
+                    {
+                        // Collect LastProfileChecksum ids for ProfileEvaluation deletion
+                        var checksumIds = inactiveUsers
+                            .Where(u => !string.IsNullOrEmpty(u.LastProfileChecksum))
+                            .Select(u => u.LastProfileChecksum)
+                            .Distinct()
+                            .ToList();
+
+                        int profileEvalCount = 0;
+
+                        // Delete matching ProfileEvaluation records
+                        if (checksumIds.Any())
+                        {
+                            var profileEvaluations = db.ProfileEvaluations
+                                .Where(p => checksumIds.Contains(p.Md5checksum))
+                                .ToList();
+
+                            profileEvalCount = profileEvaluations.Count;
+                            if (profileEvalCount > 0)
+                            {
+                                db.ProfileEvaluations.RemoveRange(profileEvaluations);
+                            }
+                        }
+
+                        // Delete the UserInfo records
+                        db.UserInfos.RemoveRange(inactiveUsers);
+                        db.SaveChanges();
+
+                        // Refresh the grid
+                        RefreshUserDb();
+
+                        // Show success message
+                        System.Windows.MessageBox.Show(
+                            $"Successfully removed {userCount} user record(s) and {profileEvalCount} profile evaluation record(s).",
+                            "Purge Complete",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Information);
+                    }
+                    else
+                    {
+                        System.Windows.MessageBox.Show(
+                            "No inactive user records were found matching the criteria.",
+                            "Purge Complete",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Information);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.Error(ex, "Failed to purge inactive users");
+                    System.Windows.MessageBox.Show(
+                        $"Failed to purge records: {ex.Message}",
+                        "Error",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error);
+                }
+            }
+        }
+
+        private void UserSelectionTextBox_Pasting(object sender, DataObjectPastingEventArgs e)
+        {
+            if (sender is System.Windows.Controls.TextBox textBox)
+            {
+                // Cancel the default paste operation
+                e.CancelCommand();
+
+                // Get the pasted text from clipboard
+                if (e.DataObject.GetDataPresent(typeof(string)))
+                {
+                    string pastedText = (string)e.DataObject.GetData(typeof(string));
+
+                    // Regex pattern to match VRChat user IDs (usr_followed by UUID)
+                    var match = Regex.Match(pastedText, @"usr_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}");
+
+                    if (match.Success)
+                    {
+                        // Extract and set the matched user ID
+                        textBox.Text = match.Value;
+                    }
+                    else
+                    {
+                        // If no match, paste the original text
+                        textBox.Text = pastedText;
+                    }
+                }
+            }
+        }
+
+
 
         #endregion
 
@@ -3753,6 +4287,11 @@ namespace Tailgrab.PlayerManagement
             {
                 if (obj is PlayerViewModel pvm)
                 {
+                    if( filterText.StartsWith("usr_", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return pvm.UserId?.IndexOf(ft, StringComparison.OrdinalIgnoreCase) >= 0;
+                    }
+
                     return pvm.DisplayName?.IndexOf(ft, StringComparison.CurrentCultureIgnoreCase) >= 0;
                 }
                 return false;
@@ -3802,7 +4341,7 @@ namespace Tailgrab.PlayerManagement
                 _currentBanMgmtUser = user;
                 _currentBanMgmtUserId = userId;
 
-                logger.Info($"Fetched user profile for ban management: {user.DisplayName} ({user})");
+                logger.Info($"Fetched user profile for ban management: {user.DisplayName})");
 
                 // Populate user info
                 BanMgmtUserName.Text = user.DisplayName ?? "Unknown";
@@ -3855,51 +4394,86 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
+        private void BanMgmtCheckGroups_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                string userId = BanMgmtUserIdTextBox.Text.Trim();
+
+                if (string.IsNullOrWhiteSpace(userId))
+                {
+                    System.Windows.MessageBox.Show("Please enter a User ID first.", "Validation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                if (!userId.StartsWith("usr_"))
+                {
+                    System.Windows.MessageBox.Show("Invalid User ID format (must start with usr_).", "Validation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                // Get display name if user is already loaded, otherwise use userId
+                string displayName = _currentBanMgmtUser?.DisplayName ?? userId;
+
+                // Call ShowUserGroupsOverlay with the userId and display name
+                ShowUserGroupsOverlay(userId, displayName);
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error checking groups for user");
+                System.Windows.MessageBox.Show($"Failed to check groups: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
         private async Task LoadBanManagementGroupsAsync()
         {
             try
             {
-                _banMgmtGroupList.Clear();
+                // Load all groups from the database on background thread
+                var groups = await Task.Run(() => _serviceRegistry.GetDBContext().GroupManagements.ToList());
 
-                // Load all groups from the database
-                var groups = _serviceRegistry.GetDBContext().GroupManagements.ToList();
-
-                foreach (var group in groups)
+                // All UI operations must happen on the UI thread
+                await Dispatcher.InvokeAsync(() =>
                 {
-                    var item = new GroupBanItem
+                    _banMgmtGroupList.Clear();
+
+                    foreach (var group in groups)
                     {
-                        GroupId = group.GroupId,
-                        GroupName = group.GroupName,
-                        Status = "Checking...",
-                        CanBan = false,
-                        CanUnban = false
-                    };
-
-                    _banMgmtGroupList.Add(item);
-
-                    // Check member status asynchronously
-                    _ = Task.Run(async () =>
-                    {
-                        var status = await _serviceRegistry.GetVRChatAPIClient().GetGroupMemberStatus(group.GroupId, _currentBanMgmtUserId);
-
-                        await Dispatcher.InvokeAsync(() =>
+                        var item = new GroupBanItem
                         {
-                            item.Status = status switch
+                            GroupId = group.GroupId,
+                            GroupName = group.GroupName,
+                            Status = "Checking...",
+                            CanBan = false,
+                            CanUnban = false
+                        };
+
+                        _banMgmtGroupList.Add(item);
+
+                        // Check member status asynchronously
+                        _ = Task.Run(async () =>
+                        {
+                            var status = await _serviceRegistry.GetVRChatAPIClient().GetGroupMemberStatus(group.GroupId, _currentBanMgmtUserId);
+
+                            await Dispatcher.InvokeAsync(() =>
                             {
-                                VRChatClient.TGGroupMemberStatus.Member => "Member",
-                                VRChatClient.TGGroupMemberStatus.Banned => "Banned",
-                                VRChatClient.TGGroupMemberStatus.NotMember => "Not Member",
-                                _ => "Unknown"
-                            };
+                                item.Status = status switch
+                                {
+                                    VRChatClient.TGGroupMemberStatus.Member => "Member",
+                                    VRChatClient.TGGroupMemberStatus.Banned => "Banned",
+                                    VRChatClient.TGGroupMemberStatus.NotMember => "Not Member",
+                                    _ => "Unknown"
+                                };
 
-                            item.CanBan = status != VRChatClient.TGGroupMemberStatus.Banned && status != VRChatClient.TGGroupMemberStatus.Unknown;
-                            item.CanUnban = status == VRChatClient.TGGroupMemberStatus.Banned;
+                                item.CanBan = status != VRChatClient.TGGroupMemberStatus.Banned && status != VRChatClient.TGGroupMemberStatus.Unknown;
+                                item.CanUnban = status == VRChatClient.TGGroupMemberStatus.Banned;
+                            });
                         });
-                    });
-                }
+                    }
 
-                BanMgmtGroupList.ItemsSource = _banMgmtGroupList;
-                logger.Info($"Loaded {_banMgmtGroupList.Count} groups for ban management");
+                    BanMgmtGroupList.ItemsSource = _banMgmtGroupList;
+                    logger.Info($"Loaded {_banMgmtGroupList.Count} groups for ban management");
+                });
             }
             catch (Exception ex)
             {
@@ -4147,6 +4721,115 @@ namespace Tailgrab.PlayerManagement
                     MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+
+        private async void BanMgmtBanAllGroups_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(_currentBanMgmtUserId))
+                {
+                    return;
+                }
+
+                if (sender is System.Windows.Controls.Button button)
+                {
+                    button.IsEnabled = false;
+                }
+
+                foreach (var item in _banMgmtGroupList)
+                {
+                    if (string.IsNullOrWhiteSpace(item.GroupId))
+                    {
+                        continue;
+                    }
+
+                    item.Status = "Banning...";
+
+                    bool success = await _serviceRegistry.GetVRChatAPIClient().BanUserFromGroup(item.GroupId, _currentBanMgmtUserId);
+
+                    if (success)
+                    {
+                        item.Status = "Banned";
+                        item.CanBan = false;
+                        item.CanUnban = true;
+                        logger.Info($"Banned user {_currentBanMgmtUserId} from group {item.GroupId}");
+                    }
+                    else
+                    {
+                        item.Status = "Ban Failed";
+                    }
+
+                    // Small delay to avoid overwhelming the API
+                    await Task.Delay(100);
+                }
+
+                if (sender is System.Windows.Controls.Button btn)
+                {
+                    btn.IsEnabled = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error banning user from all groups");
+                System.Windows.MessageBox.Show($"Error: {ex.Message}", "Error", 
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private async void BanMgmtUnbanAllGroups_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(_currentBanMgmtUserId))
+                {
+                    return;
+                }
+
+                if (sender is System.Windows.Controls.Button button)
+                {
+                    button.IsEnabled = false;
+                }
+
+                foreach (var item in _banMgmtGroupList)
+                {
+                    if (string.IsNullOrWhiteSpace(item.GroupId))
+                    {
+                        continue;
+                    }
+
+                    item.Status = "Unbanning...";
+
+                    bool success = await _serviceRegistry.GetVRChatAPIClient().UnbanUserFromGroup(item.GroupId, _currentBanMgmtUserId);
+
+                    if (success)
+                    {
+                        item.Status = "Not Member";
+                        item.CanBan = true;
+                        item.CanUnban = false;
+                        logger.Info($"Unbanned user {_currentBanMgmtUserId} from group {item.GroupId}");
+                    }
+                    else
+                    {
+                        item.Status = "Unban Failed";
+                    }
+
+                    // Small delay to avoid overwhelming the API
+                    await Task.Delay(100);
+                }
+
+                if (sender is System.Windows.Controls.Button btn)
+                {
+                    btn.IsEnabled = true;
+                }
+
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error unbanning user from all groups");
+                System.Windows.MessageBox.Show($"Error: {ex.Message}", "Error", 
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
         #endregion
 
         public event PropertyChangedEventHandler? PropertyChanged;
@@ -4170,6 +4853,236 @@ namespace Tailgrab.PlayerManagement
         {
 
         }
+
+        #region User Groups Overlay Management
+
+        public async void ShowUserGroupsOverlay(string userId, string displayName)
+        {
+            try
+            {
+                // Set user information
+                UserGroupsOverlayUserId.Text = userId;
+                UserGroupsOverlayDisplayName.Text = displayName;
+
+                // Clear existing data
+                UserGroupsDataGrid.ItemsSource = null;
+
+                // Show the overlay
+                UserGroupsOverlay.Visibility = Visibility.Visible;
+
+                // Fetch groups asynchronously (already async, no need for Task.Run)
+                var groups = await LoadUserGroupsAsync(userId);
+
+                // Update UI (already on UI thread)
+                UserGroupsDataGrid.ItemsSource = groups;
+
+                // Reset ScrollViewer to top
+                UserGroupsScrollViewer.ScrollToTop();
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, $"Error showing user groups overlay for user {userId}");
+                System.Windows.MessageBox.Show($"Failed to load user groups: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                UserGroupsOverlay.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        private async Task<List<UserGroupViewModel>> LoadUserGroupsAsync(string userId)
+        {
+            var groupViewModels = new List<UserGroupViewModel>();
+
+            try
+            {
+                VRChatClient vrcClient = _serviceRegistry.GetVRChatAPIClient();
+
+                // Fetch groups from API on background thread
+                List<LimitedUserGroups> userGroups = await Task.Run(() => vrcClient.GetProfileGroups(userId));
+                logger.Info($"Fetched {userGroups?.Count ?? 0} groups for user {userId}");
+
+                if (userGroups == null || userGroups.Count == 0)
+                {
+                    logger.Info($"No groups found for user {userId}");
+                    return groupViewModels;
+                }
+
+                // Fetch DB data on background thread
+                var dbContext = _serviceRegistry.GetDBContext();
+                var dbGroupData = await Task.Run(() =>
+                {
+                    var data = new List<(string groupId, bool exists, AlertTypeEnum alertType)>();
+                    foreach (var group in userGroups)
+                    {
+                        var existingGroup = dbContext.GroupInfos.Find(group.GroupId);
+                        if (existingGroup != null)
+                        {
+                            data.Add((group.GroupId ?? string.Empty, true, existingGroup.AlertType));
+                        }
+                        else
+                        {
+                            data.Add((group.GroupId ?? string.Empty, false, AlertTypeEnum.None));
+                        }
+                    }
+                    return data;
+                });
+
+                // Create view models on UI thread (required for WPF Brush creation in UpdateAlertColors)
+                foreach (var group in userGroups)
+                {
+                    try
+                    {
+
+                        VRChat.API.Model.Group? fullGroup = await Task.Run(() => vrcClient.GetGroupById(group.GroupId));
+
+                        var vm = new UserGroupViewModel
+                        {
+                            GroupId = group.GroupId ?? string.Empty,
+                            Name = group.Name ?? string.Empty,
+                            BannerUrl = group.BannerUrl ?? "https://assets.vrchat.com/www/groups/default_banner.png",
+                            IconUrl = group.IconUrl ?? "https://assets.vrchat.com/www/groups/default_banner.png",
+                            ShortCode = $"{group.ShortCode}.{group.Discriminator}",
+                            Description = fullGroup?.Description ?? string.Empty,
+                            Rules = fullGroup?.Rules ?? string.Empty,
+                            JoinState = fullGroup?.JoinState.ToString() ?? "N/A",
+                            MemberCount = fullGroup?.MemberCount ?? 0,
+                            OwnerId = fullGroup?.OwnerId ?? string.Empty,
+                            IsOwnedByUser = (fullGroup?.OwnerId ?? string.Empty) == userId
+                        };
+
+                        // Apply DB data
+                        var dbInfo = dbGroupData.FirstOrDefault(d => d.groupId == vm.GroupId);
+                        vm.ExistsInDatabase = dbInfo.exists;
+                        vm.AlertType = dbInfo.alertType;
+                        vm.DatabaseAlertType = dbInfo.alertType;
+
+                        // UpdateAlertColors creates WPF Brushes - must be on UI thread
+                        vm.UpdateAlertColors();
+
+                        groupViewModels.Add(vm);
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.Error(ex, $"Error processing group {group.Id} for user {userId}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, $"Error loading user groups for {userId}");
+                throw;
+            }
+
+            return groupViewModels
+                .OrderByDescending(g => g.IsOwnedByUser)
+                .ThenByDescending(g => g.AlertType)
+                .ThenBy(g => g.Name)
+                .ToList();
+        }
+
+        private void UserGroupsOverlayClose_Click(object sender, RoutedEventArgs e)
+        {
+            UserGroupsOverlay.Visibility = Visibility.Collapsed;
+        }
+
+        private async void UserGroupsAdd_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (sender is System.Windows.Controls.Button button && button.Tag is UserGroupViewModel vm)
+                {
+                    if (vm.AlertType == AlertTypeEnum.None)
+                    {
+                        System.Windows.MessageBox.Show("Please select an Alert Type before adding.", "Alert Type Required", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        return;
+                    }
+
+                    var dbContext = _serviceRegistry.GetDBContext();
+
+                    // Check if already exists
+                    var existingGroup = dbContext.GroupInfos.Find(vm.GroupId);
+
+                    if (existingGroup != null)
+                    {
+                        // Update existing record
+                        existingGroup.AlertType = vm.AlertType;
+                        existingGroup.UpdatedAt = DateTime.UtcNow;
+
+                        dbContext.GroupInfos.Update(existingGroup);
+                        await dbContext.SaveChangesAsync();
+
+                        // Synchronize ViewModel with database
+                        vm.DatabaseAlertType = vm.AlertType;
+                        vm.UpdateAlertColors();
+
+                        logger.Info($"Updated group {vm.GroupId} ({vm.Name}) with alert type {vm.AlertType}");
+                        System.Windows.MessageBox.Show($"Group '{vm.Name}' updated successfully with alert type '{vm.AlertType}'.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                    else
+                    {
+                        // Create new group info record
+                        var newGroup = new GroupInfo
+                        {
+                            GroupId = vm.GroupId,
+                            GroupName = vm.Name,
+                            AlertType = vm.AlertType,
+                            CreatedAt = DateTime.UtcNow,
+                            UpdatedAt = DateTime.UtcNow
+                        };
+
+                        dbContext.GroupInfos.Add(newGroup);
+                        await dbContext.SaveChangesAsync();
+
+                        // Update view model to reflect database state
+                        vm.ExistsInDatabase = true;
+                        vm.DatabaseAlertType = vm.AlertType;
+                        vm.UpdateAlertColors();
+
+                        logger.Info($"Added group {vm.GroupId} ({vm.Name}) with alert type {vm.AlertType}");
+                        System.Windows.MessageBox.Show($"Group '{vm.Name}' added successfully with alert type '{vm.AlertType}'.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+
+                    // Refresh the groups database view if it's visible
+                    RefreshGroupDb();
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error adding/updating group in database");
+                System.Windows.MessageBox.Show($"Failed to save group: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void UserGroupsDataGrid_PreviewMouseWheel(object sender, System.Windows.Input.MouseWheelEventArgs e)
+        {
+            // Check if we're over a ComboBox that's open - if so, let it handle the scroll
+            if (e.OriginalSource is FrameworkElement element)
+            {
+                // Walk up the visual tree to see if we're inside a ComboBox
+                DependencyObject parent = element;
+                while (parent != null)
+                {
+                    if (parent is System.Windows.Controls.ComboBox comboBox && comboBox.IsDropDownOpen)
+                    {
+                        // Let the ComboBox handle its own scrolling
+                        return;
+                    }
+                    parent = VisualTreeHelper.GetParent(parent);
+                }
+            }
+
+            // Forward the mouse wheel event to the ScrollViewer
+            if (UserGroupsScrollViewer != null)
+            {
+                e.Handled = true;
+                var scrollEvent = new System.Windows.Input.MouseWheelEventArgs(e.MouseDevice, e.Timestamp, e.Delta)
+                {
+                    RoutedEvent = UIElement.MouseWheelEvent,
+                    Source = sender
+                };
+                UserGroupsScrollViewer.RaiseEvent(scrollEvent);
+            }
+        }
+
+        #endregion
     }
 
     #region ViewModels

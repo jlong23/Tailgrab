@@ -112,9 +112,6 @@ namespace Tailgrab.Clients.Ollama
 
                                             UpdatePlayerWithEvaluation(item, evaluation);
                                         }
-
-                                        // Give a bit of breathing room to avoid hitting rate limits or overwhelming the system if there are many profiles to process
-                                        await Task.Delay(1000);
                                     }
                                     else
                                     {
@@ -266,15 +263,15 @@ namespace Tailgrab.Clients.Ollama
                 return null;
             }
 
-            if (CheckLines(profileText, "Explicit Sexual"))
+            if (CheckLines(profileText, CommonConst.AI_EVALUATION_SEXUAL))
             {
                 return CommonConst.AI_EVALUATION_SEXUAL;
             }
-            else if (CheckLines(profileText, "Harassment & Bullying"))
+            else if (CheckLines(profileText, CommonConst.AI_EVALUATION_HATE))
             {
                 return CommonConst.AI_EVALUATION_HATE;
             }
-            else if (CheckLines(profileText, "Self Harm"))
+            else if (CheckLines(profileText, CommonConst.AI_EVALUATION_SELFHARM))
             {
                 return CommonConst.AI_EVALUATION_SELFHARM;
             }
