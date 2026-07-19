@@ -718,7 +718,7 @@ Title="Tailgrab Player Panel"
                         </StackPanel>
 
                         <!-- Show each player and their prints -->
-                        <ListView Name="PrintListView" Grid.Row="1" ItemsSource="{Binding PrintView}" Grid.ColumnSpan="5" ScrollViewer.CanContentScroll="True">
+                        <ListView Name="PrintListView" Grid.Row="1" ItemsSource="{Binding PrintView}" Grid.ColumnSpan="5" ScrollViewer.CanContentScroll="False">
                             <ListView.ItemTemplate>
                                 <DataTemplate>
                                     <Border BorderBrush="Gray" BorderThickness="0,0,0,1" Padding="6">
@@ -939,7 +939,7 @@ Title="Tailgrab Player Panel"
                         </StackPanel>
 
                         <!-- Show each player and their emojis -->
-                        <ListView Name="EmojiListView" Grid.Row="1" ItemsSource="{Binding EmojiView}" Grid.ColumnSpan="3" ScrollViewer.CanContentScroll="True">
+                        <ListView Name="EmojiListView" Grid.Row="1" ItemsSource="{Binding EmojiView}" Grid.ColumnSpan="3" ScrollViewer.CanContentScroll="False">
                             <ListView.ItemTemplate>
                                 <DataTemplate>
                                     <Border BorderBrush="Gray" BorderThickness="0,0,0,1" Padding="6">
