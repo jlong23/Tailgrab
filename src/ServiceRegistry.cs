@@ -2,6 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using NLog;
 using System.IO;
+using System.Windows;
 using Tailgrab.Clients.Ollama;
 using Tailgrab.Clients.VRChat;
 using Tailgrab.Clients.XSOverlay;
@@ -9,6 +10,7 @@ using Tailgrab.Common;
 using Tailgrab.Configuration;
 using Tailgrab.Models;
 using Tailgrab.PlayerManagement;
+using static Tailgrab.Clients.VRChat.VRChatClient;
 
 namespace Tailgrab
 {
@@ -78,12 +80,16 @@ namespace Tailgrab
                 _ = Task.Run(() => groupGistMgr.ProcessGroupGistList());
 
                 logger.Info("All services started.");
+
+                await playerManager.GetModerationReports();
+
             }
             catch (Exception ex)
             {
                 logger.Error(ex);
             }
         }
+
 
         public VRChatClient GetVRChatAPIClient()
         {

@@ -1946,6 +1946,7 @@ namespace Tailgrab.PlayerManagement
         // Reusable method to submit profile report - can be called from other places in the future if needed
         private async Task<bool> SubmitProfileReport(string userId, string category, string reportReason, string reportDescription)
         {
+            bool success = true;
             ModerationReportPayload rpt = new()
             {
                 Type = "user",
@@ -1962,14 +1963,16 @@ namespace Tailgrab.PlayerManagement
             };
             rpt.Details = [rptDtls];
 
-            bool success = await _serviceRegistry.GetVRChatAPIClient().SubmitModerationReportAsync(rpt);
-            if (success)
+            ModerationReportResponse response = await _serviceRegistry.GetVRChatAPIClient().SubmitModerationReportAsync(rpt);
+            if (response != null)
             {
                 logger.Info($"Profile Report submitted - UserId: {userId}, Category: {category}, ReportReason: {reportReason}, Description: {reportDescription}");
+                await _serviceRegistry.GetPlayerManager().SaveModerationReport(rpt, response, userId);    
             }
             else
             {
                 logger.Warn($"Failed to submit profile report - UserId: {userId}, Category: {category}, ReportReason: {reportReason}, Description: {reportDescription}");
+                success = false;
             }
             return success;
         }
@@ -2371,6 +2374,7 @@ namespace Tailgrab.PlayerManagement
 
         private async Task<bool> SubmitPrintReport(string userId, string printId, string category, string reportReason, string reportDescription)
         {
+            bool success = true;
             ModerationReportPayload rpt = new()
             {
                 Type = category,
@@ -2388,15 +2392,18 @@ namespace Tailgrab.PlayerManagement
             };
             rpt.Details = [rptDtls];
 
-            bool success = await _serviceRegistry.GetVRChatAPIClient().SubmitModerationReportAsync(rpt);
-            if (success)
+            ModerationReportResponse report = await _serviceRegistry.GetVRChatAPIClient().SubmitModerationReportAsync(rpt);
+            if (report != null)
             {
                 logger.Info($"Print Report submitted - UserId: {userId}, Category: {category}, ReportReason: {reportReason}, Description: {reportDescription}");
+                await _serviceRegistry.GetPlayerManager().SaveModerationReport(rpt, report, userId);
             }
             else
             {
                 logger.Warn($"Failed to submit Print Report - UserId: {userId}, Category: {category}, ReportReason: {reportReason}, Description: {reportDescription}");
+                success = false;
             }
+
             return success;
         }
 
@@ -2776,15 +2783,18 @@ namespace Tailgrab.PlayerManagement
             };
             rpt.Details = [rptDtls];
 
-            bool success = await _serviceRegistry.GetVRChatAPIClient().SubmitModerationReportAsync(rpt);
+            ModerationReportResponse report = await _serviceRegistry.GetVRChatAPIClient().SubmitModerationReportAsync(rpt);
+            bool success = report != null;
             if (success)
             {
                 logger.Info($"Inventory Report submitted - UserId: {userId}, Category: {category}, ReportReason: {reportReason}, Description: {reportDescription}");
+                await _serviceRegistry.GetPlayerManager().SaveModerationReport(rpt, report, userId);
             }
             else
             {
                 logger.Warn($"Failed to submit Inventory Report - UserId: {userId}, Category: {category}, ReportReason: {reportReason}, Description: {reportDescription}");
             }
+
             return success;
         }
 
@@ -5101,7 +5111,7 @@ namespace Tailgrab.PlayerManagement
         public string ProfileElapsedTime { get; private set; } = "N/A";
         public bool IsWatched { get; set; } = false;
         public string History { get; set; } = string.Empty;
-        public string AlertMessages { get; set; } = string.Empty;
+        public List<AlertDisplayItem> AlertMessages { get; set; } = [];
         public ObservableCollection<PrintInfoViewModel> Prints { get; private set; } = [];
         public ObservableCollection<EmojiInfoViewModel> Emojis { get; private set; } = [];
         private bool IsFriend {  get; set; }
@@ -5138,7 +5148,7 @@ namespace Tailgrab.PlayerManagement
             AIEval = p.AIEval ?? "Not Evaluated";
             ProfileElapsedTime = p.ProfileElapsedTime;
             IsWatched = p.IsWatched;
-            AlertMessages = p.AlertMessage;
+            AlertMessages = p.AlertMessages;
             _AlertColor = p.AlertColor;
             IsFriend = p.IsFriend;
             ProfileUrl = p.ProfileImage;
@@ -5167,7 +5177,7 @@ namespace Tailgrab.PlayerManagement
             if (AIEval != (p.AIEval ?? "Not Evaluated")) { AIEval = p.AIEval ?? "Not Evaluated"; changed = true; }
             if (ProfileElapsedTime != p.ProfileElapsedTime) { ProfileElapsedTime = p.ProfileElapsedTime; changed = true; }
             if (IsWatched != p.IsWatched) { IsWatched = p.IsWatched; changed = true; }
-            if (AlertMessages != p.AlertMessage) { AlertMessages = p.AlertMessage ?? string.Empty; changed = true; }
+            if (AlertMessages != p.AlertMessages) { AlertMessages = p.AlertMessages; changed = true; }
             if (_AlertColor != p.AlertColor) { _AlertColor = p.AlertColor; changed = true; }
             if (IsFriend != p.IsFriend) { IsFriend = p.IsFriend; changed = true; }
             if (ProfileUrl != p.ProfileImage) { ProfileUrl = p.ProfileImage; changed = true; }
@@ -5195,7 +5205,7 @@ namespace Tailgrab.PlayerManagement
             sb.AppendLine($"Emojis (Count): {Emojis.Count}");
             sb.AppendLine($"History: {History}");
             sb.AppendLine($"AlertColor: {_AlertColor}");
-            sb.AppendLine($"AlertMessages: {AlertMessages}");
+            sb.AppendLine($"AlertMessages (Count): {AlertMessages.Count}");
             sb.AppendLine($"IsFriend: {IsFriend}");
             sb.AppendLine($"ProfileUrl: {ProfileUrl}");
             sb.AppendLine($"UserTrust: {UserTrust}");
@@ -5264,18 +5274,18 @@ namespace Tailgrab.PlayerManagement
 
     public class TailTaskViewModel : INotifyPropertyChanged
     {
-        private readonly FileTailStatus _status;
+        private readonly FileTailStatus? _status;
 
-        public string FilePath => _status.FilePath;
-        public string FileName => Path.GetFileName(_status.FilePath);
-        public DateTime StartTime => _status.StartTime;
-        public int LinesProcessed => _status.LinesProcessed;
-        public DateTime? LastLineProcessedTime => _status.LastLineProcessedTime;
+        public string FilePath => _status?.FilePath ?? string.Empty;
+        public string FileName => _status != null ? Path.GetFileName(_status.FilePath) : string.Empty;
+        public DateTime StartTime => _status?.StartTime ?? DateTime.MinValue;
+        public int LinesProcessed => _status?.LinesProcessed ?? 0;
+        public DateTime? LastLineProcessedTime => _status?.LastLineProcessedTime;
 
         public string LastLineProcessedTimeFormatted => 
             LastLineProcessedTime.HasValue ? LastLineProcessedTime.Value.ToString("u") : "N/A";
 
-        public TailTaskViewModel(FileTailStatus status) => _status = status;
+        public TailTaskViewModel(FileTailStatus? status) => _status = status;
 
         public void UpdateFromStatus()
         {
@@ -5286,7 +5296,7 @@ namespace Tailgrab.PlayerManagement
 
         public void RequestCancellation()
         {
-            _status.RequestCancellation();
+            _status?.RequestCancellation();
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;

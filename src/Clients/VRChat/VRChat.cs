@@ -7,6 +7,7 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using Tailgrab.Clients.Ollama;
 using Tailgrab.Common;
+using Tailgrab.Models;
 using VRChat.API.Client;
 using VRChat.API.Model;
 
@@ -233,6 +234,25 @@ namespace Tailgrab.Clients.VRChat
             return false;
         }
 
+        #region World Management
+        public World? GetWorldById(string worldId)
+        {
+            World? world = null;
+            try
+            {
+                if (_vrchat != null)
+                {
+                    world = _vrchat.Worlds.GetWorld(worldId);
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error($"Error in GetWorldById for world '{worldId}': {ex.Message}");
+            }
+
+            return world;
+        }
+        #endregion
 
         #region Avatar Management
         public Avatar? GetAvatarById(string avatarId)
@@ -521,14 +541,14 @@ namespace Tailgrab.Clients.VRChat
         #endregion
 
         #region Moderation Management
-        internal async Task<bool> SubmitModerationReportAsync(ModerationReportPayload rpt)
+        internal async Task<ModerationReportResponse> SubmitModerationReportAsync(ModerationReportPayload rpt)
         {
             try
             {
                 if (_vrchat == null)
                 {
                     logger.Error("VRChat client not initialized");
-                    return false;
+                    return null;
                 }
 
                 // Create HTTP client with cookies
@@ -539,15 +559,48 @@ namespace Tailgrab.Clients.VRChat
                 string responseContent = await response.Content.ReadAsStringAsync();
                 logger.Debug($"Response from submitting moderation report for content {rpt.ContentId}: {responseContent}");
                 logger.Info($"Submitted moderation report for content {rpt.ContentId} with reason: {rpt.Reason}\n{responseContent}");
-                response.EnsureSuccessStatusCode();
 
-                return response.IsSuccessStatusCode;
+                response.EnsureSuccessStatusCode();
+                var settings = new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore };
+                ModerationReportResponse reportResponse = JsonConvert.DeserializeObject<ModerationReportResponse>(responseContent, settings);
+
+                return reportResponse;
 
             }
             catch (Exception ex)
             {
                 logger.Error(ex, $"Error Reporting image from URI: {rpt}");
-                return false;
+                return null;
+            }
+        }
+        internal async Task<ModerationReportListResponse> ListModerationReportAsync(int offset)
+        {
+            try
+            {
+                if (_vrchat == null)
+                {
+                    logger.Error("VRChat client not initialized");
+                    return null;
+                }
+
+                // Create HTTP client with cookies
+                using HttpClient httpClient = CreateHttpClientWithCookies();
+
+                // Get the moderation reports
+                HttpResponseMessage response = await httpClient.GetAsync($"{URI_VRC_BASE_API}/api/1/moderationReports?offset={offset}");
+                string responseContent = await response.Content.ReadAsStringAsync();
+                logger.Debug($"Response from listing moderation reports: {responseContent}");
+                logger.Info($"Listed moderation reports:\n{responseContent}");
+                var settings = new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore };
+                ModerationReportListResponse? reportList = JsonConvert.DeserializeObject<ModerationReportListResponse>(responseContent, settings);
+
+                return reportList;
+
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, $"Error Listing moderation reports with offset: {offset}");
+                return null;
             }
         }
         #endregion
@@ -817,6 +870,41 @@ namespace Tailgrab.Clients.VRChat
 
             [JsonProperty("holderId")]
             public string HolderId { get; set; } = string.Empty;
+        }
+
+        public class ModerationReportResponse
+        {
+            [JsonProperty("category")]
+            public string Category { get; set; } = string.Empty;
+            [JsonProperty("contentId")]
+            public string ContentId { get; set; } = string.Empty;
+            [JsonProperty("contentName")]
+            public string ContentName { get; set; } = string.Empty;
+            [JsonProperty("contentThumbnailImageUrl")]
+            public string ContentThumbnailImageUrl { get; set; } = string.Empty;
+            [JsonProperty("description")]
+            public string Description { get; set; } = string.Empty;
+            [JsonProperty("evidenceRequired")]
+            public bool EvidenceRequired { get; set; } = false;
+            [JsonProperty("id")]
+            public string Id { get; set; } = string.Empty;
+            [JsonProperty("reson")] 
+            public string Reason { get; set; } = string.Empty;
+            [JsonProperty("supportRequired")]
+            public bool SupportRequired { get; set; } = false;
+            [JsonProperty("type")]
+            public string Type { get; set; } = string.Empty;    
+        }
+
+        public class ModerationReportListResponse
+        {
+            [JsonProperty("hasNext")]
+            public bool HasNext { get; set; }
+
+            [JsonProperty("results")]
+            public List<ModerationReportResponse> Results { get; set; } = new List<ModerationReportResponse>();
+            [JsonProperty("totalCount")]
+            public int TotalCount { get; set; } = 0;
         }
 
         public class PrintInfo

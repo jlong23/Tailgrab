@@ -6,6 +6,7 @@
         Group = 1,
         Profile = 2,
         Print = 3,
-        EmojiSticker = 4
+        EmojiSticker = 4,
+        Moderation = 5,
     }
 }

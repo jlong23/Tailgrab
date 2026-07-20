@@ -1,8 +1,10 @@
 using ConcurrentPriorityQueue.Core;
 using Microsoft.EntityFrameworkCore;
 using NLog;
+using Polly;
 using System.ComponentModel;
 using System.Text;
+using System.Windows;
 using Tailgrab.Clients.Ollama;
 using Tailgrab.Clients.VRChat;
 using Tailgrab.Clients.XSOverlay;
@@ -10,6 +12,7 @@ using Tailgrab.Common;
 using Tailgrab.LineHandler;
 using Tailgrab.Models;
 using VRChat.API.Model;
+using static Tailgrab.Clients.VRChat.VRChatClient;
 
 namespace Tailgrab.PlayerManagement
 {
@@ -27,7 +30,8 @@ namespace Tailgrab.PlayerManagement
             GroupWatch,
             ProfileWatch,
             AvatarWatch,
-            Emoji
+            Emoji,
+            ModerationReport,
         }
 
         public DateTime EventTime { get; set; } = DateTime.Now;
@@ -110,20 +114,87 @@ namespace Tailgrab.PlayerManagement
 
                 _AlertMessage.Sort((p1, p2) =>
                 {
-                    int result = p2.AlertType.CompareTo(p1.AlertType);
+                    int result = p1.AlertClass.CompareTo(p2.AlertClass);
                     if (result == 0)
                     {
-                        result = p2.Timestamp.CompareTo(p1.Timestamp);
+                        result = p1.AlertType.CompareTo(p2.AlertType);
+                        if (result == 0)
+                        {
+                            result = p1.Timestamp.CompareTo(p2.Timestamp);
+                        }
                     }
                     return result;
                 });
 
-                foreach (AlertMessage alert in _AlertMessage)
+                // @TODO: Change the AlertClass and AlertTypes to Icons
+                var groupedAlerts = _AlertMessage.GroupBy(a => a.AlertClass);
+                foreach (var group in groupedAlerts)
                 {
-                    message += $"[{alert.AlertClass}/{alert.AlertType}] {alert.Message}; ";
+                    message += $"[{group.Key}] ";
+
+                    foreach (AlertMessage alert in group)
+                    {
+                        message += $"{alert.AlertType}: {alert.Message}; ";
+                    }
                 }
 
+                message = message.TrimEnd(' ', ';');
+
                 return message;
+            }
+        }
+
+        /// <summary>
+        /// Returns alert messages as display items with icons for use in UI
+        /// </summary>
+        public List<AlertDisplayItem> AlertMessages
+        {
+            get
+            {
+                List<AlertDisplayItem> displayItems = [];
+
+                _AlertMessage.Sort((p1, p2) =>
+                {
+                    int result = p1.AlertClass.CompareTo(p2.AlertClass);
+                    if (result == 0)
+                    {
+                        result = p1.AlertType.CompareTo(p2.AlertType);
+                        if (result == 0)
+                        {
+                            result = p1.Timestamp.CompareTo(p2.Timestamp);
+                        }
+                    }
+                    return result;
+                });
+
+                var groupedAlerts = _AlertMessage.GroupBy(a => a.AlertType);
+                foreach (var group in groupedAlerts)
+                {
+                    // Add AlertClass icon
+                    displayItems.Add(new AlertDisplayItem
+                    {
+                        IconGeometry = AlertIconMapper.GetAlertTypeIcon(group.Key),
+                        IconBrush = AlertIconMapper.GetAlertTypeIconBrush(group.Key),
+                        IconClass = group.Key.ToString(),
+                        Description = String.Empty,
+                        AlertColor = group.First().Color
+                    });
+
+                    foreach (AlertMessage alert in group)
+                    {
+                        // Add AlertType icon with message
+                        displayItems.Add(new AlertDisplayItem
+                        {
+                            IconGeometry = AlertIconMapper.GetAlertClassIcon(alert.AlertClass),
+                            IconBrush = AlertIconMapper.GetAlertClassIconBrush(alert.AlertClass),
+                            IconClass = alert.AlertClass.ToString(),
+                            Description = $"{alert.Message}",
+                            AlertColor = alert.Color
+                        });
+                    }
+                }
+
+                return displayItems;
             }
         }
 
@@ -604,7 +675,7 @@ namespace Tailgrab.PlayerManagement
                         player = AddPlayerEventByDisplayName(displayName, PlayerEvent.EventType.AvatarWatch, $"User has used a watched Avatar : {avatarName} alertType: {watchedAvatar.AlertType}");
                         player?.AddAlertMessage(AlertClassEnum.Avatar, watchedAvatar.AlertType, $"{avatarName}");
                         OverlayManager overlay = serviceRegistry.GetXSOverlay();
-                        overlay.SendNotification( watchedAvatar.AlertType, $"Player \\b1{displayName}\\b0 has used a watched Avatar \\b1\\i1{avatarName}\\i0\\b0");
+                        overlay.SendNotification(watchedAvatar.AlertType, $"Player \\b1{displayName}\\b0 has used a watched Avatar \\b1\\i1{avatarName}\\i0\\b0");
                     }
                 }
                 if (player != null)
@@ -901,7 +972,7 @@ namespace Tailgrab.PlayerManagement
 
                             lineNumber++;
                             AvatarInfo? existingAvatar = dBContext.AvatarInfos.Find(mod.TargetAvatarId);
-                            if (existingAvatar == null || existingAvatar.AlertType < AlertTypeEnum.Nuisance )
+                            if (existingAvatar == null || existingAvatar.AlertType < AlertTypeEnum.Nuisance)
                             {
                                 QueuedModeratedAvatarWatch watchItem = new(2, mod.TargetAvatarId, AlertTypeEnum.Nuisance, lineNumber);
                                 EnqueueModeratedAvatarForCheck(watchItem);
@@ -1348,37 +1419,201 @@ namespace Tailgrab.PlayerManagement
         }
 
 
-        public static string GetUserTrust(List<string> tags)
+        public static string GetUserTrust(User profile)
         {
-            string trustLevel = "Visitor";
-            foreach (string tag in tags.ToArray().Reverse())
+            string verifiedStatus = String.Empty;
+            if (profile.AgeVerified)
+                verifiedStatus = $" / {profile.AgeVerificationStatus.ToString()}";
+
+            string trustLevel = "Visitor" + verifiedStatus;
+            foreach (string tag in profile.Tags.ToArray().Reverse())
             {
                 switch (tag)
                 {
                     case "system_probable_troll":
-                        trustLevel = "Probable Troll";
+                        trustLevel = "Probable Troll" + verifiedStatus;
                         return trustLevel;
                     case "system_troll":
-                        trustLevel = "Nuisance";
+                        trustLevel = "Nuisance" + verifiedStatus;
                         return trustLevel;
                     case "system_trust_basic":
-                        trustLevel = "New User";
+                        trustLevel = "New User" + verifiedStatus;
                         return trustLevel;
                     case "system_trust_known":
-                        trustLevel = "User";
+                        trustLevel = "User" + verifiedStatus;
                         return trustLevel;
                     case "system_trust_trusted":
-                        trustLevel = "Known User";
+                        trustLevel = "Known User" + verifiedStatus;
                         return trustLevel;
                     case "system_trust_veteran":
-                        trustLevel = "Trusted User";
+                        trustLevel = "Trusted User" + verifiedStatus;
                         return trustLevel;
                 }
             }
+
             return trustLevel;
         }
-    }
-    #endregion
+        #endregion
+
+        #region Moderation Report Management
+        public async Task GetModerationReports()
+        {
+            try
+            {
+                int offset = 0;
+                while (true)
+                {
+                    ModerationReportListResponse reports = await serviceRegistry.GetVRChatAPIClient().ListModerationReportAsync(offset);
+                    foreach (var report in reports.Results)
+                    {
+                        logger.Info($"Report ID: {report.Id}, Type: {report.Type}, ContentId: {report.ContentId}, ContentName: {report.ContentName}");
+                        await SaveModerationReport(report);
+                    }
+                    offset += 60;
+                    if (reports.HasNext == false)
+                    {
+                        logger.Info("No more moderation reports to process.");
+                        break;
+                    }
+                    await Task.Delay(1000); // Delay for 1 second before the next request
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to fetch moderation reports");
+            }
+        }
+
+        public async Task SaveModerationReport(ModerationReportPayload rpt, ModerationReportResponse response, string UserId)
+        {
+            try
+            {
+                TailgrabDBContext dBContext = serviceRegistry.GetDBContext();
+
+                ModerationInfo info = new ModerationInfo
+                {
+                    // We should get the ModerationID from the response, but for now we will generate a new GUID
+                    Id = response.Id ?? Guid.NewGuid().ToString(),
+                    EventDateTime = DateTime.Now,
+                    ContentId = response.ContentId,
+                    ContentName = response.ContentName ?? string.Empty,
+                    ContentType = response.Type ?? string.Empty,
+                    Thumbnail = response.ContentThumbnailImageUrl ?? string.Empty,
+                    Report = System.Text.Encoding.UTF8.GetBytes(rpt.Details.ToArray().ToString()),
+                    UserId = UserId
+                };
+
+                // Save the moderation info to the database
+                dBContext.ModerationInfos.Add(info);
+                await dBContext.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to save moderation report");
+                System.Windows.MessageBox.Show($"Failed to save moderation report: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        public async Task SaveModerationReport(ModerationReportResponse response)
+        {
+            try
+            {
+                TailgrabDBContext dbContext = serviceRegistry.GetDBContext();
+                ModerationInfo? info = dbContext.ModerationInfos.Find(response.Id);
+                if (info != null)
+                {
+                    logger.Info($"Moderation report with ID {response.Id} already exists in the database. Skipping save.");
+                    return;
+                }
+                else
+                {
+                    info = new ModerationInfo
+                    {
+                        // We should get the ModerationID from the response, but for now we will generate a new GUID
+                        Id = response.Id ?? Guid.NewGuid().ToString(),
+                        EventDateTime = DateTime.Now,
+                        ContentId = response.ContentId,
+                        ContentName = response.ContentName ?? string.Empty,
+                        ContentType = response.Type ?? string.Empty,
+                        Thumbnail = response.ContentThumbnailImageUrl ?? string.Empty,
+                        Report = System.Text.Encoding.UTF8.GetBytes(response.Description ?? string.Empty)
+                    };
+
+                    info.UserId = convertModerationsReportTypeToUserId(response);
+
+                    // Save the moderation info to the database
+                    dbContext.ModerationInfos.Add(info);
+                    await dbContext.SaveChangesAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to save moderation report");
+                System.Windows.MessageBox.Show($"Failed to save moderation report: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        internal string convertModerationsReportTypeToUserId(ModerationReportResponse response)
+        {
+            string userId = string.Empty;
+            VRChatClient vrcClient = serviceRegistry.GetVRChatAPIClient();
+            switch (response.Type)
+            {
+                case "avatar":
+                    Avatar? avatar = vrcClient.GetAvatarById(response.ContentId);
+                    if (avatar != null)
+                    {
+                        userId = avatar.AuthorId;
+                    }
+                    break;
+
+                case "world":
+                    World? world = vrcClient.GetWorldById(response.ContentId);
+                    if (world != null)
+                    {
+                        userId = world.AuthorId;
+                    }
+                    break;
+
+                case "group":
+                    Group? group = vrcClient.GetGroupById(response.ContentId);
+                    if (group != null)
+                    {
+                        userId = group.OwnerId;
+
+                    }
+                    break;
+
+                case "user":
+                    userId = response.ContentId;
+                    break;
+
+                case "sticker":
+                    break;
+
+                case "emoji":
+                    break;
+
+                case "print":
+                    break;
+
+                default:
+                    userId = response.ContentId;
+                    break;
+            }
+
+            return userId;
+        }
+
+        public static Task<List<ModerationInfo>> GetModerationReportsByUserId(string userId)
+        {
+            TailgrabDBContext dbContext = serviceRegistry.GetDBContext();
+            return dbContext.ModerationInfos.Where(m => m.UserId == userId).ToListAsync();
+        }
+        #endregion
+}
+    
+
 
     #region Avatar Queue Classes
     internal class QueuedAvatarProcess(int priority, string avatarId) : IHavePriority<int>
