@@ -86,10 +86,11 @@ namespace Tailgrab.Clients.Ollama
                             item.IsFriend = profile.IsFriend;
                             item.UserBio = fullProfile;
                             item.ProfileUrl = accountThumbnailUrl;
-                            item.UserTrust = PlayerManager.GetUserTrust(profile.Tags);
+                            item.UserTrust = PlayerManager.GetUserTrust(profile);
 
                             serviceRegistry.GetPlayerManager().UpdatePlayerUserFromVRCProfile(profile, item.MD5Hash);
                             await GetUserGroupInformation(serviceRegistry, dBContext, userGroups, item);
+                            await GetUserModerations(serviceRegistry, item);
 
                             if (ollamaApi != null)
                             {
@@ -189,6 +190,31 @@ namespace Tailgrab.Clients.Ollama
                 }
             }
             return false;
+        }
+
+        private async static Task<bool> GetUserModerations(ServiceRegistry serviceRegistry, QueuedProcess item)
+        {
+            bool userModerations = false;
+            logger.Debug($"Processing User Group subscription for userId: {item.UserId}");
+            Player? player = PlayerManager.GetPlayerByUserId(item.UserId ?? string.Empty);
+
+            if (player != null)
+            {
+                AlertTypeEnum maxAlertType = AlertTypeEnum.None;
+                List<ModerationInfo> moderationReports = await PlayerManager.GetModerationReportsByUserId(item.UserId ?? string.Empty);
+                if( moderationReports.Any()) 
+                {
+                    userModerations = true;
+                    foreach(ModerationInfo report in moderationReports )
+                    {
+                        player = PlayerManager.AddPlayerEventByUserId(item.UserId ?? string.Empty, PlayerEvent.EventType.AvatarWatch, $"Had Past Moderations : {report.Id} - {report.ContentType} for \"{report.ContentName}\"");
+                    }
+                    player?.AddAlertMessage(AlertClassEnum.Moderation, AlertTypeEnum.Nuisance, "Past Moderations");
+                }
+
+            }
+
+            return userModerations;
         }
 
         private static string UpdateGroupInfo(TailgrabDBContext dBContext, QueuedProcess item, ref Player? player, ref AlertTypeEnum maxAlertType, LimitedUserGroups group, GroupInfo groupInfo)
