@@ -190,7 +190,22 @@ Title="Tailgrab Player Panel"
                                         </GridViewColumn.Header>
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate>
-                                                <TextBlock Text="{Binding UserTrust, Mode=OneWay}" TextAlignment="Left"/>
+                                                <Border ClipToBounds="True" ToolTip="{Binding UserTrust}">
+                                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                        <Viewbox Width="16" Height="16">
+                                                            <Path Data="{Binding UserTrustIconGeometry}" 
+                                                                  Fill="{Binding UserTrustIconBrush}"
+                                                                  Stroke="Yellow"
+                                                                  StrokeThickness="0.5"/>
+                                                        </Viewbox>
+                                                        <Viewbox Width="16" Height="16">
+                                                            <Path Data="{Binding AgeVerifiedIconGeometry}" 
+                                                                  Fill="{Binding AgeVerifiedIconBrush}"
+                                                                  Stroke="Yellow"
+                                                                  StrokeThickness="0.5"/>
+                                                        </Viewbox>
+                                                    </StackPanel>
+                                                </Border>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
@@ -249,7 +264,8 @@ Title="Tailgrab Player Panel"
                                                                                VerticalAlignment="Center"
                                                                                TextWrapping="NoWrap"
                                                                                FontWeight="Bold"
-                                                                               FontSize="12"/>
+                                                                               FontSize="12"
+                                                                               Foreground="{Binding RelativeSource={RelativeSource AncestorType=ListViewItem}, Path=Foreground}"/>
                                                                 </StackPanel>
                                                             </DataTemplate>
                                                         </ItemsControl.ItemTemplate>
@@ -372,94 +388,6 @@ Title="Tailgrab Player Panel"
                                 <TextBox Name="UserAlertsBox" TextWrapping="Wrap" Text="{Binding SelectedActive.History, Mode=OneWay, FallbackValue='', TargetNullValue=''}" />
                             </ScrollViewer>
                         </Grid>
-
-                        <!-- Overlay Panel for Report Profile -->
-                        <Border Name="OverlayProfileReport" 
-                            Grid.Row="0" 
-                            Grid.RowSpan="4"
-                            Grid.ColumnSpan="2"
-                            Background="#CC000000" 
-                            Visibility="Collapsed"
-                            Panel.ZIndex="1000" Margin="0,0,0,100">
-                            <Border Background="#FF2D2D30" 
-                                MaxWidth="650" 
-                                MaxHeight="500" 
-                                CornerRadius="8"
-                                Padding="16"
-                                VerticalAlignment="Center"
-                                HorizontalAlignment="Center">
-                                <Grid>
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="*"/>
-                                        <RowDefinition Height="Auto"/>
-                                    </Grid.RowDefinitions>
-
-                                    <!-- Title -->
-                                    <TextBlock Grid.Row="0" 
-                                           Text="Report User Profile" 
-                                           FontSize="20" 
-                                           FontWeight="Bold" 
-                                           Foreground="#FFE6E6E6"
-                                           Margin="0,0,0,16"/>
-
-                                    <!-- User ID -->
-                                    <StackPanel Grid.Row="1" Margin="0,0,0,12">
-                                        <Label Content="User ID: *" FontWeight="Bold" Foreground="#FFE6E6E6"/>
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
-                                            <TextBox Name="OverlayProfileReportUserIdTextBox" Grid.Column="0" IsReadOnly="True"/>
-                                            <Label Name="OverlayProfileReportUserIdError" 
-                                               Grid.Column="1" 
-                                               Content="Required" 
-                                               Foreground="Red" 
-                                               FontWeight="Bold"
-                                               Margin="8,0,0,0"
-                                               VerticalAlignment="Center"
-                                               Visibility="Collapsed"/>
-                                        </Grid>
-                                    </StackPanel>
-
-                                    <!-- Category -->
-                                    <StackPanel Grid.Row="2" Margin="0,0,0,12">
-                                        <Label Content="Category:" FontWeight="Bold" Foreground="#FFE6E6E6"/>
-                                        <TextBox Name="OverlayProfileReportCategoryTextBox" IsReadOnly="True" Text="Profile"/>
-                                    </StackPanel>
-
-                                    <!-- Report Reason -->
-                                    <StackPanel Grid.Row="3" Margin="0,0,0,12">
-                                        <Label Content="Report Reason:" FontWeight="Bold" Foreground="#FFE6E6E6"/>
-                                        <ComboBox Name="OverlayProfileReportReasonComboBox" 
-                                              DisplayMemberPath="DisplayName"
-                                              SelectedValuePath="Value"/>
-                                    </StackPanel>
-
-                                    <!-- Report Description -->
-                                    <StackPanel Grid.Row="4" Margin="0,0,0,12">
-                                        <Label Content="Report Description (AI Evaluation):" FontWeight="Bold" Foreground="#FFE6E6E6"/>
-                                        <TextBox Name="OverlayProfileReportDescriptionTextBox" 
-                                             TextWrapping="Wrap" 
-                                             AcceptsReturn="True" 
-                                             VerticalScrollBarVisibility="Auto"
-                                             IsReadOnly="False"
-                                             MinHeight="200"/>
-                                    </StackPanel>
-
-                                    <!-- Action Buttons -->
-                                    <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right">
-                                        <Button Name="OverlayProfileReportCancelButton" Content="Cancel" Width="100" Margin="0,0,12,0" Click="OverlayProfileReportCancel_Click"/>
-                                        <Button Name="OverlayProfileReportSubmitButton" Content="Submit" Width="100" Click="OverlayProfileReportSubmit_Click"/>
-                                    </StackPanel>
-                                </Grid>
-                            </Border>
-                        </Border>
-
                     </Grid>
                 </TabItem>
 
@@ -522,7 +450,22 @@ Title="Tailgrab Player Panel"
                                         </GridViewColumn.Header>
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate>
-                                                <TextBlock Text="{Binding UserTrust, Mode=OneWay}" TextAlignment="Left"/>
+                                                <Border ClipToBounds="True" ToolTip="{Binding UserTrust}">
+                                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                        <Viewbox Width="24" Height="24">
+                                                            <Path Data="{Binding UserTrustIconGeometry}" 
+                                                                  Fill="{Binding UserTrustIconBrush}"
+                                                                  Stroke="Yellow"
+                                                                  StrokeThickness="0.5"/>
+                                                        </Viewbox>
+                                                        <Viewbox Width="24" Height="24">
+                                                            <Path Data="{Binding AgeVerifiedIconGeometry}" 
+                                                                  Fill="{Binding AgeVerifiedIconBrush}"
+                                                                  Stroke="Yellow"
+                                                                  StrokeThickness="0.5"/>
+                                                        </Viewbox>
+                                                    </StackPanel>
+                                                </Border>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
@@ -579,7 +522,8 @@ Title="Tailgrab Player Panel"
                                                                                VerticalAlignment="Center"
                                                                                TextWrapping="NoWrap"
                                                                                FontWeight="Bold"
-                                                                               FontSize="12"/>
+                                                                               FontSize="12"
+                                                                               Foreground="{Binding RelativeSource={RelativeSource AncestorType=ListViewItem}, Path=Foreground}"/>
                                                                 </StackPanel>
                                                             </DataTemplate>
                                                         </ItemsControl.ItemTemplate>
@@ -2394,6 +2338,7 @@ Title="Tailgrab Player Panel"
                                             <ColumnDefinition Width="300"/>
                                             <ColumnDefinition Width="Auto"/>
                                             <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
                                             <ColumnDefinition Width="*"/>
                                         </Grid.ColumnDefinitions>
 
@@ -2412,11 +2357,17 @@ Title="Tailgrab Player Panel"
                                                 Padding="4,2"
                                                 Margin="0,0,8,0"/>
                                         <Button Grid.Row="0" Grid.Column="3" 
+                                                Content="Report User" 
+                                                Click="BanMgmtReportUser_Click" 
+                                                Width="100"
+                                                Padding="4,2"
+                                                Margin="0,0,8,0"/>
+                                        <Button Grid.Row="0" Grid.Column="4" 
                                                 Content="Check Groups" 
                                                 Click="BanMgmtCheckGroups_Click" 
                                                 Width="100"
                                                 Padding="4,2"/>
-                                        <TextBlock Grid.Row="0" Grid.Column="4"
+                                        <TextBlock Grid.Row="0" Grid.Column="5"
                                                    Name="BanMgmtUserStatusText"
                                                    VerticalAlignment="Center"
                                                    Margin="12,0,0,0"
@@ -2646,6 +2597,94 @@ Title="Tailgrab Player Panel"
                 </TabItem>
             </TabControl>
         </Grid>
+
+
+        <!-- Overlay Panel for Report Profile -->
+        <Border Name="OverlayProfileReport" 
+                            Grid.Row="0" 
+                            Grid.RowSpan="4"
+                            Grid.ColumnSpan="2"
+                            Background="#CC000000" 
+                            Visibility="Collapsed"
+                            Panel.ZIndex="1000" Margin="0,0,0,100">
+            <Border Background="#FF2D2D30" 
+                                MaxWidth="650" 
+                                MaxHeight="500" 
+                                CornerRadius="8"
+                                Padding="16"
+                                VerticalAlignment="Center"
+                                HorizontalAlignment="Center">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Title -->
+                    <TextBlock Grid.Row="0" 
+                                           Text="Report User Profile" 
+                                           FontSize="20" 
+                                           FontWeight="Bold" 
+                                           Foreground="#FFE6E6E6"
+                                           Margin="0,0,0,16"/>
+
+                    <!-- User ID -->
+                    <StackPanel Grid.Row="1" Margin="0,0,0,12">
+                        <Label Content="User ID: *" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox Name="OverlayProfileReportUserIdTextBox" Grid.Column="0" IsReadOnly="True"/>
+                            <Label Name="OverlayProfileReportUserIdError" 
+                                               Grid.Column="1" 
+                                               Content="Required" 
+                                               Foreground="Red" 
+                                               FontWeight="Bold"
+                                               Margin="8,0,0,0"
+                                               VerticalAlignment="Center"
+                                               Visibility="Collapsed"/>
+                        </Grid>
+                    </StackPanel>
+
+                    <!-- Category -->
+                    <StackPanel Grid.Row="2" Margin="0,0,0,12">
+                        <Label Content="Category:" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                        <TextBox Name="OverlayProfileReportCategoryTextBox" IsReadOnly="True" Text="Profile"/>
+                    </StackPanel>
+
+                    <!-- Report Reason -->
+                    <StackPanel Grid.Row="3" Margin="0,0,0,12">
+                        <Label Content="Report Reason:" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                        <ComboBox Name="OverlayProfileReportReasonComboBox" 
+                                              DisplayMemberPath="DisplayName"
+                                              SelectedValuePath="Value"/>
+                    </StackPanel>
+
+                    <!-- Report Description -->
+                    <StackPanel Grid.Row="4" Margin="0,0,0,12">
+                        <Label Content="Report Description (AI Evaluation):" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                        <TextBox Name="OverlayProfileReportDescriptionTextBox" 
+                                             TextWrapping="Wrap" 
+                                             AcceptsReturn="True" 
+                                             VerticalScrollBarVisibility="Auto"
+                                             IsReadOnly="False"
+                                             MinHeight="200"/>
+                    </StackPanel>
+
+                    <!-- Action Buttons -->
+                    <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Name="OverlayProfileReportCancelButton" Content="Cancel" Width="100" Margin="0,0,12,0" Click="OverlayProfileReportCancel_Click"/>
+                        <Button Name="OverlayProfileReportSubmitButton" Content="Submit" Width="100" Click="OverlayProfileReportSubmit_Click"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Border>
 
         <!-- Overlay Panel for User Groups Management -->
         <Border Name="UserGroupsOverlay" 

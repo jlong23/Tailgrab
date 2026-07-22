@@ -3,11 +3,12 @@ using NLog;
 using OllamaSharp;
 using OllamaSharp.Models;
 using System.Net.Http;
+using Tailgrab.Clients.XSOverlay;
 using Tailgrab.Common;
 using Tailgrab.Models;
 using Tailgrab.PlayerManagement;
 using VRChat.API.Model;
-using Tailgrab.Clients.XSOverlay;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Tailgrab.Clients.Ollama
 {
@@ -38,8 +39,20 @@ namespace Tailgrab.Clients.Ollama
                 QueuedProcess process = new()
                 {
                     UserId = userId,
-                    Priority = 1
+                    Priority = 10
                 };
+
+                string prompt = ConfigStore.GetStoredKeyString(CommonConst.Registry_Ollama_API_Prompt) ?? CommonConst.Default_Ollama_API_Prompt;
+                string model = ConfigStore.GetStoredKeyString(CommonConst.Registry_Ollama_API_Model) ?? CommonConst.Default_Ollama_API_Model;
+                string promptHash = Checksum.MD5Hash(prompt);
+
+                UpdateQueuedProcessWithPlayer(process);
+                ProfileEvaluation? evaluated = _serviceRegistry.GetDBContext().ProfileEvaluations.Find(process.MD5Hash);
+                if (evaluated != null && evaluated.PromptMd5Checksum == promptHash)
+                {
+                    UpdatePlayerWithEvaluation(process, evaluated);
+                    process.Priority = 1; // Lower priority since we already have an evaluation
+                }
 
                 priorityQueue.Enqueue(process);
             }
@@ -50,6 +63,31 @@ namespace Tailgrab.Clients.Ollama
             }
         }
 
+        private void UpdateQueuedProcessWithPlayer(QueuedProcess item)
+        {
+            User profile = _serviceRegistry.GetVRChatAPIClient().GetProfile(item.UserId);
+            string? accountThumbnailUrl = !string.IsNullOrEmpty(profile.ProfilePicOverrideThumbnail) ? profile.ProfilePicOverrideThumbnail : profile.CurrentAvatarThumbnailImageUrl;
+            if (profile != null)
+            {
+                string fullProfile = OllamaClient.FormatProfileText(profile);
+                item.IsFriend = profile.IsFriend;
+                item.UserBio = fullProfile;
+                item.ProfileUrl = accountThumbnailUrl;
+                item.UserTrust = PlayerManager.GetUserTrust(profile);
+                if (profile.AgeVerified)
+                    item.AgeVerificationStatus = profile.AgeVerificationStatus;
+            }
+        }
+
+        private static string FormatProfileText(User profile)
+        {
+            return $"DisplayName: {profile.DisplayName}\n" +
+                   $"StatusDesc: {profile.StatusDescription}\n" +
+                   $"Pronouns: {profile.Pronouns}\n" +
+                   $"UserTrust: {PlayerManager.GetUserTrust(profile)}\n" +
+                   $"UserAgeVerified: {profile.AgeVerified}\n" +
+                   $"ProfileBio: {profile.Bio}\n";
+        }
 
         public static async Task ProfileCheckTask(ConcurrentPriorityQueue<IHavePriority<int>, int> priorityQueue, ServiceRegistry serviceRegistry)
         {
@@ -76,21 +114,12 @@ namespace Tailgrab.Clients.Ollama
                             string promptHash = Checksum.MD5Hash(prompt);
 
                             TailgrabDBContext dBContext = serviceRegistry.GetDBContext();
-                            User profile = serviceRegistry.GetVRChatAPIClient().GetProfile(item.UserId);
-                            string? accountThumbnailUrl = !string.IsNullOrEmpty(profile.ProfilePicOverrideThumbnail) ? profile.ProfilePicOverrideThumbnail : profile.CurrentAvatarThumbnailImageUrl;
-
-
                             List<LimitedUserGroups> userGroups = serviceRegistry.GetVRChatAPIClient().GetProfileGroups(item.UserId);
 
-                            string fullProfile = $"DisplayName: {profile.DisplayName}\nStatusDesc: {profile.StatusDescription}\nPronowns: {profile.Pronouns}\nProfileBio: {profile.Bio}\n";
-                            item.IsFriend = profile.IsFriend;
-                            item.UserBio = fullProfile;
-                            item.ProfileUrl = accountThumbnailUrl;
-                            item.UserTrust = PlayerManager.GetUserTrust(profile);
-
+                            User profile = serviceRegistry.GetVRChatAPIClient().GetProfile(item.UserId);
                             serviceRegistry.GetPlayerManager().UpdatePlayerUserFromVRCProfile(profile, item.MD5Hash);
                             await GetUserGroupInformation(serviceRegistry, dBContext, userGroups, item);
-                            await GetUserModerations(serviceRegistry, item);
+                            await GetUserModerations(item);
 
                             if (ollamaApi != null)
                             {
@@ -153,6 +182,7 @@ namespace Tailgrab.Clients.Ollama
                 player.IsFriend = item.IsFriend;
                 player.ProfileImage = item.ProfileUrl ?? player.ProfileImage;
                 player.UserTrust = item.UserTrust;
+                player.AgeVerified = item.AgeVerificationStatus;
 
                 ProfileViewUpdate(player);
             }
@@ -192,7 +222,7 @@ namespace Tailgrab.Clients.Ollama
             return false;
         }
 
-        private async static Task<bool> GetUserModerations(ServiceRegistry serviceRegistry, QueuedProcess item)
+        private async static Task<bool> GetUserModerations(QueuedProcess item)
         {
             bool userModerations = false;
             logger.Debug($"Processing User Group subscription for userId: {item.UserId}");
@@ -200,9 +230,8 @@ namespace Tailgrab.Clients.Ollama
 
             if (player != null)
             {
-                AlertTypeEnum maxAlertType = AlertTypeEnum.None;
                 List<ModerationInfo> moderationReports = await PlayerManager.GetModerationReportsByUserId(item.UserId ?? string.Empty);
-                if( moderationReports.Any()) 
+                if( moderationReports.Count != 0) 
                 {
                     userModerations = true;
                     foreach(ModerationInfo report in moderationReports )
@@ -510,7 +539,7 @@ namespace Tailgrab.Clients.Ollama
             return profileEvaluation;
         }
 
-        public async Task<string> TestImagePrompt(string model, string prompt, string imagePath)
+        public static async Task<string> TestImagePrompt(string model, string prompt, string imagePath)
         {
             string imageEvaluation = string.Empty;
             logger.Debug($"Testing image URI: {imagePath}, {model}, {prompt}");
@@ -617,6 +646,7 @@ namespace Tailgrab.Clients.Ollama
         public bool IsFriend { get; set; }
         public string? ProfileUrl { get; set; }
         public string UserTrust { get; set; } = string.Empty;
+        public AgeVerificationStatus? AgeVerificationStatus { get; set; } = null;
 
         public string MD5Hash
         {

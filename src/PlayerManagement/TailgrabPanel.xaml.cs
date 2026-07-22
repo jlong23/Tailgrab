@@ -2,6 +2,7 @@ using Microsoft.Win32;
 using NLog;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Drawing;
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -885,7 +886,7 @@ namespace Tailgrab.PlayerManagement
                         if (imagePath != null)
                         {
 
-                            string evaluation = await ollamaClient.TestImagePrompt(model, prompt, imagePath);
+                            string evaluation = await OllamaClient.TestImagePrompt(model, prompt, imagePath);
 
                             Models.TestImageAIEvalItem item = new()
                             {
@@ -2137,8 +2138,7 @@ namespace Tailgrab.PlayerManagement
             catch (Exception ex)
             {
                 logger.Error(ex, "Failed to submit profile report");
-                System.Windows.MessageBox.Show($"Failed to submit report: {ex.Message}",
-                    "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                System.Windows.MessageBox.Show($"Failed to submit report: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
@@ -2363,8 +2363,7 @@ namespace Tailgrab.PlayerManagement
             catch (Exception ex)
             {
                 logger.Error(ex, "Failed to submit print report");
-                System.Windows.MessageBox.Show($"Failed to submit report: {ex.Message}",
-                    "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                System.Windows.MessageBox.Show($"Failed to submit report: {ex.Message}", "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
             }
             finally
             {
@@ -2755,8 +2754,7 @@ namespace Tailgrab.PlayerManagement
             catch (Exception ex)
             {
                 logger.Error(ex, "Failed to submit inventory report");
-                System.Windows.MessageBox.Show($"Failed to submit report: {ex.Message}",
-                    "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                System.Windows.MessageBox.Show($"Failed to submit report: {ex.Message}", "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
             }
             finally
             {
@@ -2936,7 +2934,7 @@ namespace Tailgrab.PlayerManagement
             }
             catch (Exception ex)
             {
-                logger?.Error(ex, "Failed to open group URL");
+                logger.Error(ex, "Failed to open group URL");
             }
             e.Handled = true;
         }
@@ -3397,7 +3395,7 @@ namespace Tailgrab.PlayerManagement
                 if (avatar != null)
                 {
                     // Populate the UI fields
-                    BanMgmtAvatarName.Text = avatar.Name ?? string.Empty;
+                    BanMgmtAvatarName.Text = avatar.Name ?? "Unknown";
                     BanMgmtPublishDate.Text = avatar.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss");
                     BanMgmtUpdateDate.Text = avatar.UpdatedAt.ToString("yyyy-MM-dd HH:mm:ss");
                     BanMgmtAvatarState.Text = avatar.ReleaseStatus.ToString();
@@ -3405,7 +3403,7 @@ namespace Tailgrab.PlayerManagement
 
                     VRChat.API.Model.User? user = await Task.Run(() => vrcClient.GetProfile(avatar.AuthorId));
 
-                    BanMgmtAvatarOwner.Text = user.DisplayName ?? string.Empty;
+                    BanMgmtAvatarOwner.Text = user.DisplayName ?? "Unknown";
                     BanMgmtAvatarOwnerId.Text = avatar.AuthorId ?? string.Empty;
                     BanMgmtAvatarDesc.Text = avatar.Description ?? string.Empty;
 
@@ -4052,13 +4050,23 @@ namespace Tailgrab.PlayerManagement
         {
             foreach (var column in dataGrid.Columns)
             {
-                string columnName = column.Header?.ToString() ?? "";
-                if (!string.IsNullOrEmpty(columnName) && defaults.TryGetValue(columnName, out double value))
+                var dpd = DependencyPropertyDescriptor.FromProperty(
+                    DataGridColumn.ActualWidthProperty,
+                    typeof(DataGridColumn));
+
+                dpd?.AddValueChanged(column, (s, e) =>
                 {
-                    double width = WindowLayoutManager.LoadColumnWidth(
-                        $"{dataGrid.Name}_{columnName}", value);
-                    column.Width = new DataGridLength(width);
-                }
+                    if (s is DataGridColumn col)
+                    {
+                        string columnName = col.Header?.ToString() ?? "";
+                        if (!string.IsNullOrEmpty(columnName))
+                        {
+                            WindowLayoutManager.SaveColumnWidth(
+                                $"{dataGrid.Name}_{columnName}",
+                                col.ActualWidth);
+                        }
+                    }
+                });
             }
         }
 
@@ -4376,8 +4384,9 @@ namespace Tailgrab.PlayerManagement
                         bitmap.EndInit();
                         BanMgmtUserImage.Source = bitmap;
                     }
-                    catch
+                    catch (Exception ex)
                     {
+                        logger.Error(ex, $"Failed to load Avatar image for User {userId}");
                         BanMgmtUserImage.Source = null;
                     }
                 }
@@ -4403,6 +4412,35 @@ namespace Tailgrab.PlayerManagement
                 BanMgmtUserStatusText.Foreground = System.Windows.Media.Brushes.Red;
             }
         }
+
+        private void BanMgmtReportUser_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                string userId = BanMgmtUserIdTextBox.Text.Trim();
+
+                if (string.IsNullOrWhiteSpace(userId))
+                {
+                    System.Windows.MessageBox.Show("Please enter a User ID first.", "Validation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                if (!userId.StartsWith("usr_"))
+                {
+                    System.Windows.MessageBox.Show("Invalid User ID format (must start with usr_).", "Validation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                    ShowProfileReportOverlay(userId);
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to open Report Profile overlay");
+                System.Windows.MessageBox.Show($"Failed to open Report Profile overlay: {ex.Message}",
+                    "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+            }
+        }
+
 
         private void BanMgmtCheckGroups_Click(object sender, RoutedEventArgs e)
         {
@@ -4500,14 +4538,14 @@ namespace Tailgrab.PlayerManagement
 
                 if (string.IsNullOrWhiteSpace(groupId))
                 {
-                    System.Windows.MessageBox.Show("Please enter a Group ID", 
+                    System.Windows.MessageBox.Show("Please enter a Group ID",
                         "Invalid Input", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
 
                 if (!groupId.StartsWith("grp_"))
                 {
-                    System.Windows.MessageBox.Show("Invalid Group ID format (must start with grp_)", 
+                    System.Windows.MessageBox.Show("Invalid Group ID format (must start with grp_)",
                         "Invalid Input", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
@@ -4517,7 +4555,7 @@ namespace Tailgrab.PlayerManagement
 
                 if (existingGroup != null)
                 {
-                    System.Windows.MessageBox.Show("This group already exists in the database", 
+                    System.Windows.MessageBox.Show("This group already exists in the database",
                         "Duplicate Group", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
@@ -4526,7 +4564,7 @@ namespace Tailgrab.PlayerManagement
                 var group = _serviceRegistry.GetVRChatAPIClient().GetGroupById(groupId);
                 if (group == null || string.IsNullOrEmpty(group.Id))
                 {
-                    System.Windows.MessageBox.Show("Group not found in VRChat. Please verify the Group ID.", 
+                    System.Windows.MessageBox.Show("Group not found in VRChat. Please verify the Group ID.",
                         "Group Not Found", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
@@ -4573,13 +4611,13 @@ namespace Tailgrab.PlayerManagement
                 BanMgmtAddGroupIdTextBox.Text = string.Empty;
 
                 logger.Info($"Added group {groupId} ({group.Name}) to ban management");
-                System.Windows.MessageBox.Show($"Group '{group.Name}' added successfully", 
+                System.Windows.MessageBox.Show($"Group '{group.Name}' added successfully",
                     "Success", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
                 logger.Error(ex, "Error adding group to ban management");
-                System.Windows.MessageBox.Show($"Error: {ex.Message}", 
+                System.Windows.MessageBox.Show($"Error: {ex.Message}",
                     "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
@@ -4620,7 +4658,7 @@ namespace Tailgrab.PlayerManagement
             catch (Exception ex)
             {
                 logger.Error(ex, "Error removing group from ban management");
-                System.Windows.MessageBox.Show($"Error: {ex.Message}", 
+                System.Windows.MessageBox.Show($"Error: {ex.Message}",
                     "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
@@ -5117,7 +5155,49 @@ namespace Tailgrab.PlayerManagement
         private bool IsFriend {  get; set; }
         public string ProfileUrl { get; set; }
         public string UserTrust { get; set; }
+        public AgeVerificationStatus? AgeVerified { get; set; }
 
+        public System.Windows.Media.Geometry UserTrustIconGeometry
+        {
+            get
+            {
+                var trustEnum = ParseUserTrustToEnum(UserTrust);
+                return AlertIconMapper.GetUserTrustIcon(trustEnum);
+            }
+        }
+
+        public System.Windows.Media.Brush UserTrustIconBrush
+        {
+            get
+            {
+                var trustEnum = ParseUserTrustToEnum(UserTrust);
+                return AlertIconMapper.GetUserTrustIconBrush(trustEnum);
+            }
+        }
+
+        public System.Windows.Media.Geometry AgeVerifiedIconGeometry
+        {
+            get
+            {
+                if (AgeVerified.HasValue)
+                {
+                    return AlertIconMapper.GetUserVerifiedStatusIcon(AgeVerified.Value);
+                }
+                return Geometry.Empty;
+            }
+        }
+
+        public System.Windows.Media.Brush AgeVerifiedIconBrush
+        {
+            get
+            {
+                if (AgeVerified.HasValue)
+                {
+                    return AlertIconMapper.GetUserVerifiedStatusBrush(AgeVerified.Value);
+                }
+                return System.Windows.Media.Brushes.Transparent;
+            }
+        }
 
         private string _AlertColor = "Normal";
         public string HighlightClass
@@ -5153,6 +5233,7 @@ namespace Tailgrab.PlayerManagement
             IsFriend = p.IsFriend;
             ProfileUrl = p.ProfileImage;
             UserTrust = p.UserTrust;
+            AgeVerified = p.AgeVerified;
 
 
             PopulateCollectionsFromPlayer(p); ;
@@ -5182,6 +5263,7 @@ namespace Tailgrab.PlayerManagement
             if (IsFriend != p.IsFriend) { IsFriend = p.IsFriend; changed = true; }
             if (ProfileUrl != p.ProfileImage) { ProfileUrl = p.ProfileImage; changed = true; }
             if (UserTrust != p.UserTrust) { UserTrust = p.UserTrust; changed = true; }
+            if (AgeVerified != p.AgeVerified) { AgeVerified = p.AgeVerified; changed = true; }
 
             if (changed) OnPropertyChanged(string.Empty);
 
@@ -5209,8 +5291,31 @@ namespace Tailgrab.PlayerManagement
             sb.AppendLine($"IsFriend: {IsFriend}");
             sb.AppendLine($"ProfileUrl: {ProfileUrl}");
             sb.AppendLine($"UserTrust: {UserTrust}");
+            sb.AppendLine($"AgeVerified: {AgeVerified}");
             return sb.ToString();
         }
+
+        private TrustClassEnum ParseUserTrustToEnum(string userTrust)
+        {
+            if (string.IsNullOrWhiteSpace(userTrust))
+                return TrustClassEnum.VISITOR;
+
+            // Remove age verification status if present (e.g., "New User / verified" -> "New User")
+            string trustLevel = userTrust.Split('/')[0].Trim();
+
+            return trustLevel switch
+            {
+                "Visitor" => TrustClassEnum.VISITOR,
+                "New User" => TrustClassEnum.NEW_USER,
+                "User" => TrustClassEnum.USER,
+                "Known User" => TrustClassEnum.KNOWN_USER,
+                "Trusted User" => TrustClassEnum.TRUSTED_USER,
+                "Probable Troll" => TrustClassEnum.PROBABLE_TROLL,
+                "Nuisance" => TrustClassEnum.NUISANCE,
+                _ => TrustClassEnum.VISITOR,
+            };
+        }
+
         private void PopulateCollectionsFromPlayer(Player p)
         {
             // Print Collection

@@ -103,8 +103,9 @@ namespace Tailgrab.PlayerManagement
 
         public List<AlertMessage> _AlertMessage = [];
         public string ProfileImage { get; set; } = string.Empty;
-
         public string UserTrust { get; set; }
+
+        public AgeVerificationStatus? AgeVerified { get; set; } = null;
 
         public string AlertMessage
         {
@@ -114,13 +115,13 @@ namespace Tailgrab.PlayerManagement
 
                 _AlertMessage.Sort((p1, p2) =>
                 {
-                    int result = p1.AlertClass.CompareTo(p2.AlertClass);
+                    int result = p1.AlertClass.CompareTo(p2.AlertClass);  // Ascending
                     if (result == 0)
                     {
-                        result = p1.AlertType.CompareTo(p2.AlertType);
+                        result = p2.AlertType.CompareTo(p1.AlertType);    // Descending
                         if (result == 0)
                         {
-                            result = p1.Timestamp.CompareTo(p2.Timestamp);
+                            result = p1.Timestamp.CompareTo(p2.Timestamp); // Ascending
                         }
                     }
                     return result;
@@ -418,7 +419,6 @@ namespace Tailgrab.PlayerManagement
 
         private static ConcurrentPriorityQueue<IHavePriority<int>, int> priorityQueue = new();
         private static Dictionary<String, DateTime> recentlyProcessedAvatars = [];
-
 
         public static Player? GetPlayerByDisplayName(string displayName)
         {
@@ -1453,6 +1453,38 @@ namespace Tailgrab.PlayerManagement
 
             return trustLevel;
         }
+
+        public static TrustClassEnum ConvertUserTrust(User profile)
+        {
+            TrustClassEnum trustLevel = TrustClassEnum.VISITOR;
+            foreach (string tag in profile.Tags.ToArray().Reverse())
+            {
+                switch (tag)
+                {
+                    case "system_probable_troll":
+                        trustLevel = TrustClassEnum.PROBABLE_TROLL;
+                        return trustLevel;
+                    case "system_troll":
+                        trustLevel = TrustClassEnum.NUISANCE;
+                        return trustLevel;
+                    case "system_trust_basic":
+                        trustLevel = TrustClassEnum.NEW_USER;
+                        return trustLevel;
+                    case "system_trust_known":
+                        trustLevel = TrustClassEnum.USER;
+                        return trustLevel;
+                    case "system_trust_trusted":
+                        trustLevel = TrustClassEnum.KNOWN_USER;
+                        return trustLevel;
+                    case "system_trust_veteran":
+                        trustLevel = TrustClassEnum.TRUSTED_USER;
+                        return trustLevel;
+                }
+            }
+
+            return trustLevel;
+        }
+
         #endregion
 
         #region Moderation Report Management
