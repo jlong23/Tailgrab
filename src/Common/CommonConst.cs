@@ -94,7 +94,7 @@ namespace Tailgrab.Common
         public const string AI_EVALUATION_SEXUAL = "Explicit Sexual";
         public const string AI_EVALUATION_HATE = "Harassment & Bullying";
         public const string AI_EVALUATION_SELFHARM = "Self Harm";
-        public const string AI_EVALUATION_OK = "No issues detected";
+        public const string AI_EVALUATION_OK = "OK";
         public const string AI_EVALUATION_NOT_AVAILABLE = "Not Available";
         public const string AI_EVALUATION_INVALID_RESPONSE = "Invalid Response";
 

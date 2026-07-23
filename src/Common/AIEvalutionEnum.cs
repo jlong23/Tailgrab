@@ -22,6 +22,9 @@ namespace Tailgrab.Common
             if (string.IsNullOrEmpty(imageEvaluation))
                 return AIEvalutionEnum.NOT_AVAILABLE;
 
+            if (CheckLines(imageEvaluation, CommonConst.AI_EVALUATION_OK))
+                return AIEvalutionEnum.OK;
+
             if (CheckLines(imageEvaluation, CommonConst.AI_EVALUATION_SEXUAL))
                 return AIEvalutionEnum.EXPLICIT_SEXUAL;
 
@@ -32,23 +35,6 @@ namespace Tailgrab.Common
                 return AIEvalutionEnum.SELF_HARM;
 
             return AIEvalutionEnum.INVALID_RESPONSE;
-        }
-
-        public static string? MapEvaluationToString(string? imageEvaluation)
-        {
-            if (string.IsNullOrEmpty(imageEvaluation))
-                return CommonConst.AI_EVALUATION_NOT_AVAILABLE;
-
-            if (CheckLines(imageEvaluation, CommonConst.AI_EVALUATION_SEXUAL))
-                return CommonConst.AI_EVALUATION_SEXUAL;
-
-            if (CheckLines(imageEvaluation, CommonConst.AI_EVALUATION_HATE))
-                return CommonConst.AI_EVALUATION_HATE;
-
-            if (CheckLines(imageEvaluation, CommonConst.AI_EVALUATION_SELFHARM))
-                return CommonConst.AI_EVALUATION_SELFHARM;
-
-            return CommonConst.AI_EVALUATION_INVALID_RESPONSE;
         }
 
         public static string MapEnumToDescription(AIEvalutionEnum aIEvalutionEnum)

@@ -46,6 +46,7 @@ namespace Tailgrab.PlayerManagement
         public string ItemUrl { get; set; } = itemUrl;
         public string InventoryType { get; set; } = inventoryType;
         public string AIEvaluation { get; set; } = aIEvaluation;
+        public AlertDisplayItem AlertInfo { get; set; } = AIEvalutionEnumMapper.MapEnumToAlertDisplayItem(AIEvalutionEnumMapper.MapEvaluationToEnum(aIEvaluation));
         public DateTime SpawnedAt { get; set; } = DateTime.Now;
     }
 
@@ -58,6 +59,7 @@ namespace Tailgrab.PlayerManagement
         public string PrintUrl { get; set; } = p.Files.Image;
         public string AIEvaluation { get; set; } = aiEvaluation;
         public string AIClass { get; set; } = aiClassification;
+        public AlertDisplayItem AlertInfo { get; set; } = AIEvalutionEnumMapper.MapEnumToAlertDisplayItem(AIEvalutionEnumMapper.MapEvaluationToEnum(aiEvaluation));
         public string AuthorName { get; set; } = p.AuthorName;
     }
 
@@ -105,7 +107,7 @@ namespace Tailgrab.PlayerManagement
         public string ProfileImage { get; set; } = string.Empty;
         public TrustClassEnum UserTrustClass { get; set; }
 
-        public AgeVerificationStatus? AgeVerified { get; set; } = null;
+        public AgeVerificationEnum AgeVerified { get; set; }
 
         public string AlertMessage
         {
@@ -477,7 +479,7 @@ namespace Tailgrab.PlayerManagement
         {
             CurrentSession = new SessionInfo(worldId, instanceId);
             OverlayManager overlay = serviceRegistry.GetXSOverlay();
-            using var _ = overlay.Initialize();
+            overlay.Initialize();
         }
 
         public void PlayerJoined(string userId, string displayName, AbstractLineHandler handler)

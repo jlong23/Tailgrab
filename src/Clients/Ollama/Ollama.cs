@@ -76,7 +76,7 @@ namespace Tailgrab.Clients.Ollama
                 item.ProfileUrl = accountThumbnailUrl;
                 item.UserTrustClass = TrustClassEnumMapper.MapTagsToEnum(profile.Tags);
                 if (profile.AgeVerified)
-                    item.AgeVerificationStatus = profile.AgeVerificationStatus;
+                    item.AgeVerification = AgeVerificationEnumMapper.MapAgeVerificationStatusToEnum(profile.AgeVerificationStatus);
             }
         }
 
@@ -184,7 +184,7 @@ namespace Tailgrab.Clients.Ollama
                 player.IsFriend = item.IsFriend;
                 player.ProfileImage = item.ProfileUrl ?? player.ProfileImage;
                 player.UserTrustClass = item.UserTrustClass;
-                player.AgeVerified = item.AgeVerificationStatus;
+                player.AgeVerified = item.AgeVerification;
 
                 ProfileViewUpdate(player);
             }
@@ -639,7 +639,7 @@ namespace Tailgrab.Clients.Ollama
         public bool IsFriend { get; set; }
         public string? ProfileUrl { get; set; }
         public TrustClassEnum UserTrustClass { get; set; } = TrustClassEnum.VISITOR;
-        public AgeVerificationStatus? AgeVerificationStatus { get; set; } = null;
+        public AgeVerificationEnum AgeVerification { get; set; }
 
         public string MD5Hash
         {

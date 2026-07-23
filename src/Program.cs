@@ -68,7 +68,6 @@ public class FileTailer
         // -backup          : create a backup of the database and exit
         string? explicitPath = null;
         bool clearRegistry = false;
-        bool upgrade = false;
         bool backup = false;
         for (int i = 0; i < args.Length; i++)
         {

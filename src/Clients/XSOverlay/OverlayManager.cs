@@ -20,7 +20,7 @@ namespace Tailgrab.Clients.XSOverlay
             if (connector == null)
             {
                 connector = new XSSocket.XSSocket("tailgrab");
-                connector.ConnectAsync().ConfigureAwait(false);
+                await connector.ConnectAsync().ConfigureAwait(false);
                 while (connector.State == WebSocketState.Connecting)
                 {
                     logger.Info("Connecting to OverlayManager...");

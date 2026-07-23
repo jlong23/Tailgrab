@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using Tailgrab.PlayerManagement;
 
 namespace Tailgrab.Models;
 
@@ -6,6 +7,7 @@ public class TestImageAIEvalItem : INotifyPropertyChanged
 {
     private string? _imagePath;
     private string? _aiEvaluation;
+    public AlertDisplayItem? AlertInfo { get; set; }
 
     public string? ImagePath
     {

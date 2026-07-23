@@ -140,7 +140,7 @@ namespace Tailgrab.PlayerManagement
             }
         }
     
-        public string ToString()
+        public override string ToString()
         {
             return $"UserGroupViewModel: GroupId={GroupId}, Name={Name}, BannerUrl={BannerUrl}, IconUrl={IconUrl}, ShortCode={ShortCode}, Description={Description}, Rules={Rules}, JoinState={JoinState}, MemberCount={MemberCount}, OwnerId={OwnerId}, IsOwnedByUser={IsOwnedByUser}, ExistsInDatabase={ExistsInDatabase}, AlertType={AlertType}";
         }

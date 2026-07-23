@@ -194,15 +194,11 @@ Title="Tailgrab Player Panel"
                                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                                                         <Viewbox Width="16" Height="16">
                                                             <Path Data="{Binding UserTrustIconGeometry}" 
-                                                                  Fill="{Binding UserTrustIconBrush}"
-                                                                  Stroke="Yellow"
-                                                                  StrokeThickness="0.5"/>
+                                                                  Fill="{Binding UserTrustIconBrush}"/>
                                                         </Viewbox>
                                                         <Viewbox Width="16" Height="16">
                                                             <Path Data="{Binding AgeVerifiedIconGeometry}" 
-                                                                  Fill="{Binding AgeVerifiedIconBrush}"
-                                                                  Stroke="Yellow"
-                                                                  StrokeThickness="0.5"/>
+                                                                  Fill="{Binding AgeVerifiedIconBrush}"/>
                                                         </Viewbox>
                                                     </StackPanel>
                                                 </Border>
@@ -255,9 +251,7 @@ Title="Tailgrab Player Panel"
                                                                              Margin="0,0,4,0">
                                                                         <Canvas Width="24" Height="24">
                                                                             <Path Data="{Binding IconGeometry}" 
-                                                                                  Fill="{Binding IconBrush}"
-                                                                                  Stroke="Yellow"
-                                                                                  StrokeThickness="0.5"/>
+                                                                                  Fill="{Binding IconBrush}"/>
                                                                         </Canvas>
                                                                     </Viewbox>
                                                                     <TextBlock Text="{Binding Description}" 
@@ -454,15 +448,11 @@ Title="Tailgrab Player Panel"
                                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                                                         <Viewbox Width="24" Height="24">
                                                             <Path Data="{Binding UserTrustIconGeometry}" 
-                                                                  Fill="{Binding UserTrustIconBrush}"
-                                                                  Stroke="Yellow"
-                                                                  StrokeThickness="0.5"/>
+                                                                  Fill="{Binding UserTrustIconBrush}"/>
                                                         </Viewbox>
                                                         <Viewbox Width="24" Height="24">
                                                             <Path Data="{Binding AgeVerifiedIconGeometry}" 
-                                                                  Fill="{Binding AgeVerifiedIconBrush}"
-                                                                  Stroke="Yellow"
-                                                                  StrokeThickness="0.5"/>
+                                                                  Fill="{Binding AgeVerifiedIconBrush}"/>
                                                         </Viewbox>
                                                     </StackPanel>
                                                 </Border>
@@ -513,9 +503,7 @@ Title="Tailgrab Player Panel"
                                                                              Margin="0,0,4,0">
                                                                         <Canvas Width="24" Height="24">
                                                                             <Path Data="{Binding IconGeometry}" 
-                                                                                  Fill="{Binding IconBrush}"
-                                                                                  Stroke="Yellow"
-                                                                                  StrokeThickness="0.5"/>
+                                                                                  Fill="{Binding IconBrush}"/>
                                                                         </Canvas>
                                                                     </Viewbox>
                                                                     <TextBlock Text="{Binding Description}" 
@@ -756,7 +744,28 @@ Title="Tailgrab Player Panel"
                                                             <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding PrintId}" VerticalAlignment="Center"/>
                                                             <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding AuthorName}" VerticalAlignment="Center"/>
                                                             <TextBlock Grid.Row="0" Grid.Column="2" Text="{Binding Timestammp, StringFormat={}{0:u}}" VerticalAlignment="Center"/>
-                                                            <TextBlock Grid.Row="0" Grid.Column="3" Text="{Binding AIClass}" VerticalAlignment="Center"/>
+
+                                                            <Border Grid.Row="0" Grid.Column="3" ClipToBounds="True" TextElement.Foreground="Black"
+                                                                    ToolTip="{Binding AlertInfo.IconClass}">
+                                                                <StackPanel Orientation="Horizontal" Margin="0,0,5,0">
+                                                                    <Viewbox Width="32" Height="32" 
+                                                                             VerticalAlignment="Center"
+                                                                             Margin="0,0,4,0">
+                                                                        <Canvas Width="32" Height="32">
+                                                                            <Path Data="{Binding AlertInfo.IconGeometry}" 
+                                                                                  Fill="{Binding AlertInfo.IconBrush}"
+                                                                                  Stretch="UniformToFill"
+                                                                                  Width="24" Height="24"/>
+                                                                        </Canvas>
+                                                                    </Viewbox>
+                                                                    <TextBlock Text="{Binding AlertInfo.Description}" 
+                                                                               VerticalAlignment="Center"
+                                                                               TextWrapping="NoWrap"
+                                                                               FontWeight="Bold"
+                                                                               FontSize="12"
+                                                                               Foreground="{Binding RelativeSource={RelativeSource AncestorType=ListViewItem}, Path=Foreground}"/>
+                                                                </StackPanel>
+                                                            </Border>
 
                                                             <!-- Second Row - Button -->
                                                             <Button Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="4" 
@@ -977,9 +986,28 @@ Title="Tailgrab Player Panel"
                                                             <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding InventoryId}" VerticalAlignment="Center"/>
                                                             <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding InventoryType}" VerticalAlignment="Center"/>
                                                             <TextBlock Grid.Row="0" Grid.Column="2" Text="{Binding SpawnedAt, StringFormat={}{0:u}}" VerticalAlignment="Center"/>
-                                                            
-                                                            <!-- Put Icon here -->
-                                                            <TextBlock Grid.Row="0" Grid.Column="3" Text="{Binding AIEvalutation}" VerticalAlignment="Center"/>
+
+                                                            <Border Grid.Row="0" Grid.Column="3" ClipToBounds="True" TextElement.Foreground="Black"
+                                                                    ToolTip="{Binding AlertInfo.IconClass}">
+                                                                <StackPanel Orientation="Horizontal" Margin="0,0,5,0">
+                                                                    <Viewbox Width="32" Height="32" 
+                                                                             VerticalAlignment="Center"
+                                                                             Margin="0,0,4,0">
+                                                                        <Canvas Width="32" Height="32">
+                                                                            <Path Data="{Binding AlertInfo.IconGeometry}" 
+                                                                                  Fill="{Binding AlertInfo.IconBrush}"
+                                                                                  Stretch="UniformToFill"
+                                                                                  Width="24" Height="24"/>
+                                                                        </Canvas>
+                                                                    </Viewbox>
+                                                                    <TextBlock Text="{Binding AlertInfo.Description}" 
+                                                                               VerticalAlignment="Center"
+                                                                               TextWrapping="NoWrap"
+                                                                               FontWeight="Bold"
+                                                                               FontSize="12"
+                                                                               Foreground="{Binding RelativeSource={RelativeSource AncestorType=ListViewItem}, Path=Foreground}"/>
+                                                                </StackPanel>
+                                                            </Border>
 
                                                             <!-- Second Row - Button -->
                                                             <Button Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="4" 
@@ -1741,7 +1769,8 @@ Title="Tailgrab Player Panel"
                                     Visibility="Collapsed"
                                     Panel.ZIndex="1000">
                                     <Border Background="#FF2D2D30" 
-                                        MaxWidth="850" 
+                                        Width="800"
+                                        MaxWidth="1200" 
                                         MaxHeight="700" 
                                         CornerRadius="8"
                                         Padding="16"
@@ -1769,7 +1798,9 @@ Title="Tailgrab Player Panel"
                                                       Margin="0,0,0,12"
                                                       Background="#FF2D2D30"
                                                       BorderBrush="#FF3F3F46"
-                                                      BorderThickness="1">
+                                                      BorderThickness="1"
+                                                      ScrollViewer.CanContentScroll="True"
+                                                      ScrollViewer.VerticalScrollBarVisibility="Auto">
                                                 <ListView.ItemTemplate>
                                                     <DataTemplate>
                                                         <Border BorderBrush="#FF3F3F46" 
@@ -1780,6 +1811,7 @@ Title="Tailgrab Player Panel"
                                                                 <Grid.ColumnDefinitions>
                                                                     <ColumnDefinition Width="200"/>
                                                                     <ColumnDefinition Width="*"/>
+                                                                    <ColumnDefinition Width="Auto"/>
                                                                 </Grid.ColumnDefinitions>
 
                                                                 <!-- Image Display -->
@@ -1801,15 +1833,32 @@ Title="Tailgrab Player Panel"
                                                                         BorderThickness="1"
                                                                         Padding="8"
                                                                         Background="#FF1E1E1E">
-                                                                    <ScrollViewer VerticalScrollBarVisibility="Auto"
+
+                                                                        <ScrollViewer VerticalScrollBarVisibility="Auto"
                                                                                   HorizontalScrollBarVisibility="Disabled">
                                                                         <TextBlock Text="{Binding AIEvaluation}" 
                                                                                    TextWrapping="Wrap"
                                                                                    Foreground="#FFE6E6E6"
                                                                                    FontFamily="Consolas"
-                                                                                   FontSize="12" Width="500" Height="200"/>
-                                                                    </ScrollViewer>
+                                                                                   FontSize="12" Width="450" Height="200"/>
+                                                                        </ScrollViewer>
+
                                                                 </Border>
+
+                                                                <Border Grid.Column="2">
+                                                                    <StackPanel Orientation="Horizontal" Margin="0,0,5,0">
+                                                                        <Viewbox Width="32" Height="32" 
+                                                                             VerticalAlignment="Center"
+                                                                             Margin="0,0,4,0">
+                                                                            <Canvas Width="32" Height="32">
+                                                                                <Path Data="{Binding AlertInfo.IconGeometry}" 
+                                                                                      Fill="{Binding AlertInfo.IconBrush}"
+                                                                                      Stretch="UniformToFill"
+                                                                                      Width="32" Height="32"/>
+                                                                            </Canvas>
+                                                                        </Viewbox>
+                                                                    </StackPanel>
+                                                                </Border>                                                                
                                                             </Grid>
                                                         </Border>
                                                     </DataTemplate>

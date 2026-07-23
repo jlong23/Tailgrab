@@ -891,7 +891,8 @@ namespace Tailgrab.PlayerManagement
                             Models.TestImageAIEvalItem item = new()
                             {
                                 ImagePath = imagePath,
-                                AIEvaluation = evaluation
+                                AIEvaluation = evaluation,
+                                AlertInfo = AIEvalutionEnumMapper.MapEnumToAlertDisplayItem(AIEvalutionEnumMapper.MapEvaluationToEnum(evaluation))
                             };
 
                             TestImageAIEvalItems.Add(item);
@@ -5161,7 +5162,7 @@ namespace Tailgrab.PlayerManagement
         public string ProfileUrl { get; set; }
         public TrustClassEnum UserTrustClass { get; set; }
 
-        public AgeVerificationStatus? AgeVerified { get; set; }
+        public AgeVerificationEnum AgeVerified { get; set; }
 
         public System.Windows.Media.Geometry UserTrustIconGeometry
         {
@@ -5183,11 +5184,7 @@ namespace Tailgrab.PlayerManagement
         {
             get
             {
-                if (AgeVerified.HasValue)
-                {
-                    return AlertIconMapper.GetUserVerifiedStatusIcon(AgeVerified.Value);
-                }
-                return Geometry.Empty;
+                return AgeVerificationEnumMapper.MapEnumToIcon(AgeVerified);
             }
         }
 
@@ -5195,11 +5192,7 @@ namespace Tailgrab.PlayerManagement
         {
             get
             {
-                if (AgeVerified.HasValue)
-                {
-                    return AlertIconMapper.GetUserVerifiedStatusBrush(AgeVerified.Value);
-                }
-                return System.Windows.Media.Brushes.Transparent;
+                return AgeVerificationEnumMapper.MapEnumToBrush(AgeVerified);
             }
         }
 
@@ -5299,27 +5292,6 @@ namespace Tailgrab.PlayerManagement
             return sb.ToString();
         }
 
-        private TrustClassEnum ParseUserTrustToEnum(string userTrust)
-        {
-            if (string.IsNullOrWhiteSpace(userTrust))
-                return TrustClassEnum.VISITOR;
-
-            // Remove age verification status if present (e.g., "New User / verified" -> "New User")
-            string trustLevel = userTrust.Split('/')[0].Trim();
-
-            return trustLevel switch
-            {
-                "Visitor" => TrustClassEnum.VISITOR,
-                "New User" => TrustClassEnum.NEW_USER,
-                "User" => TrustClassEnum.USER,
-                "Known User" => TrustClassEnum.KNOWN_USER,
-                "Trusted User" => TrustClassEnum.TRUSTED_USER,
-                "Probable Troll" => TrustClassEnum.PROBABLE_TROLL,
-                "Nuisance" => TrustClassEnum.NUISANCE,
-                _ => TrustClassEnum.VISITOR,
-            };
-        }
-
         private void PopulateCollectionsFromPlayer(Player p)
         {
             // Print Collection
@@ -5361,6 +5333,7 @@ namespace Tailgrab.PlayerManagement
         public string PrintUrl { get; set; } = p.PrintUrl;
         public string AIEvaluation { get; set; } = p.AIEvaluation;
         public string AIClass { get; set; } = p.AIClass;
+        public AlertDisplayItem AlertInfo { get; set; } = p.AlertInfo;
         public string AuthorName { get; set; } = p.AuthorName;
 
         public event PropertyChangedEventHandler? PropertyChanged;
@@ -5379,6 +5352,7 @@ namespace Tailgrab.PlayerManagement
         public string ImageUrl { get; set; } = i.ItemUrl;
         public string InventoryType { get; set; } = i.InventoryType;
         public string AIEvalutation { get; set; } = i.AIEvaluation;
+        public AlertDisplayItem AlertInfo { get; set; } = i.AlertInfo;
     }
 
     public class TailTaskViewModel(FileTailStatus? status) : INotifyPropertyChanged
