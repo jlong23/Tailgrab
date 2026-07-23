@@ -94,9 +94,20 @@ namespace Tailgrab.Common
         public const string AI_EVALUATION_SEXUAL = "Explicit Sexual";
         public const string AI_EVALUATION_HATE = "Harassment & Bullying";
         public const string AI_EVALUATION_SELFHARM = "Self Harm";
+        public const string AI_EVALUATION_OK = "No issues detected";
+        public const string AI_EVALUATION_NOT_AVAILABLE = "Not Available";
+        public const string AI_EVALUATION_INVALID_RESPONSE = "Invalid Response";
 
         public const string Registry_XSOverlay_Level = "XS_OVERLAY_LEVEL";
         public const string XSOverlay_Level_None = "None";
+
+
+        public const string SYSTEM_USER_TRUST_PROBABLE_TROLL = "system_probable_troll";
+        public const string SYSTEM_USER_TRUST_TROLL = "system_troll";
+        public const string SYSTEM_USER_TRUST_BASIC = "system_trust_basic";
+        public const string SYSTEM_USER_TRUST_KNOWN = "system_trust_known";
+        public const string SYSTEM_USER_TRUST_TRUSTED = "system_trust_trusted";
+        public const string SYSTEM_USER_TRUST_VETERAN = "system_trust_veteran";
 
         public static AlertTypeEnum AlertTypeEnumFromString(string alertType)
         {

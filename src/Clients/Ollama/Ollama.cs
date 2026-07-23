@@ -2,6 +2,7 @@
 using NLog;
 using OllamaSharp;
 using OllamaSharp.Models;
+using System.Diagnostics;
 using System.Net.Http;
 using Tailgrab.Clients.XSOverlay;
 using Tailgrab.Common;
@@ -73,7 +74,7 @@ namespace Tailgrab.Clients.Ollama
                 item.IsFriend = profile.IsFriend;
                 item.UserBio = fullProfile;
                 item.ProfileUrl = accountThumbnailUrl;
-                item.UserTrust = PlayerManager.GetUserTrust(profile);
+                item.UserTrustClass = TrustClassEnumMapper.MapTagsToEnum(profile.Tags);
                 if (profile.AgeVerified)
                     item.AgeVerificationStatus = profile.AgeVerificationStatus;
             }
@@ -84,11 +85,12 @@ namespace Tailgrab.Clients.Ollama
             return $"DisplayName: {profile.DisplayName}\n" +
                    $"StatusDesc: {profile.StatusDescription}\n" +
                    $"Pronouns: {profile.Pronouns}\n" +
-                   $"UserTrust: {PlayerManager.GetUserTrust(profile)}\n" +
+                   $"UserTrust : {TrustClassEnumMapper.MapTagsToString(profile.Tags, profile.AgeVerified, profile.AgeVerificationStatus.ToString())}\n" +
                    $"UserAgeVerified: {profile.AgeVerified}\n" +
                    $"ProfileBio: {profile.Bio}\n";
         }
 
+        #region profile Evaluation
         public static async Task ProfileCheckTask(ConcurrentPriorityQueue<IHavePriority<int>, int> priorityQueue, ServiceRegistry serviceRegistry)
         {
             using OllamaApiClient? ollamaApi = GetClient();
@@ -181,13 +183,45 @@ namespace Tailgrab.Clients.Ollama
                 player.AIEval = System.Text.Encoding.UTF8.GetString(evaluation.Evaluation);
                 player.IsFriend = item.IsFriend;
                 player.ProfileImage = item.ProfileUrl ?? player.ProfileImage;
-                player.UserTrust = item.UserTrust;
+                player.UserTrustClass = item.UserTrustClass;
                 player.AgeVerified = item.AgeVerificationStatus;
 
                 ProfileViewUpdate(player);
             }
         }
 
+        private static void ProfileViewUpdate(Player player)
+        {
+            AIEvalutionEnum evaluationEnum = AIEvalutionEnumMapper.MapEvaluationToEnum(player.AIEval);
+
+            if (evaluationEnum > AIEvalutionEnum.OK)
+            {
+                switch (evaluationEnum)
+                {
+                    case AIEvalutionEnum.HARASSMENT_AND_BULLYING:
+                        player.AddAlertMessage(AlertClassEnum.Profile, AlertTypeEnum.Nuisance, "Hate");
+                        SoundManager.PlayAlertSound(CommonConst.Profile_Alert_Key, AlertTypeEnum.Nuisance);
+                        break;
+                    case AIEvalutionEnum.EXPLICIT_SEXUAL:
+                        player.AddAlertMessage(AlertClassEnum.Profile, AlertTypeEnum.Nuisance, "Sexual");
+                        SoundManager.PlayAlertSound(CommonConst.Profile_Alert_Key, AlertTypeEnum.Nuisance);
+                        break;
+                    case AIEvalutionEnum.SELF_HARM:
+                        player.AddAlertMessage(AlertClassEnum.Profile, AlertTypeEnum.Watch, "Self-Harm");
+                        SoundManager.PlayAlertSound(CommonConst.Profile_Alert_Key, AlertTypeEnum.Watch);
+                        break;
+                }
+
+                PlayerManager.AddPlayerEventByUserId(player.UserId ?? string.Empty,
+                PlayerEvent.EventType.ProfileWatch, $"User profile was flagged by the AI : {AIEvalutionEnumMapper.MapEnumToDescription(evaluationEnum)}");
+            }
+
+            PlayerManager.OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Updated, player);
+        }
+        #endregion
+
+
+        #region Group Evaluation
         private async static Task<bool> GetUserGroupInformation(ServiceRegistry serviceRegistry, TailgrabDBContext dBContext, List<LimitedUserGroups> userGroups, QueuedProcess item)
         {
             bool saveGroups = ConfigStore.GetStoredKeyBool(CommonConst.Registry_Discovered_Group_Caching, true);
@@ -213,37 +247,13 @@ namespace Tailgrab.Clients.Ollama
                 if (player != null && player.IsWatched)
                 {
                     OverlayManager overlay = serviceRegistry.GetXSOverlay();
-                    overlay.SendNotification(maxAlertType, $"Player \b1{player.DisplayName}\b0 has questionable group memberships:\r\n{groupNames}");
+                    await overlay.SendNotification(maxAlertType, $"Player \b1{player.DisplayName}\b0 has questionable group memberships:\r\n{groupNames}");
 
                     SoundManager.PlayAlertSound(CommonConst.Group_Alert_Key, maxAlertType);
                     return true;
                 }
             }
             return false;
-        }
-
-        private async static Task<bool> GetUserModerations(QueuedProcess item)
-        {
-            bool userModerations = false;
-            logger.Debug($"Processing User Group subscription for userId: {item.UserId}");
-            Player? player = PlayerManager.GetPlayerByUserId(item.UserId ?? string.Empty);
-
-            if (player != null)
-            {
-                List<ModerationInfo> moderationReports = await PlayerManager.GetModerationReportsByUserId(item.UserId ?? string.Empty);
-                if( moderationReports.Count != 0) 
-                {
-                    userModerations = true;
-                    foreach(ModerationInfo report in moderationReports )
-                    {
-                        player = PlayerManager.AddPlayerEventByUserId(item.UserId ?? string.Empty, PlayerEvent.EventType.AvatarWatch, $"Had Past Moderations : {report.Id} - {report.ContentType} for \"{report.ContentName}\"");
-                    }
-                    player?.AddAlertMessage(AlertClassEnum.Moderation, AlertTypeEnum.Nuisance, "Past Moderations");
-                }
-
-            }
-
-            return userModerations;
         }
 
         private static string UpdateGroupInfo(TailgrabDBContext dBContext, QueuedProcess item, ref Player? player, ref AlertTypeEnum maxAlertType, LimitedUserGroups group, GroupInfo groupInfo)
@@ -283,70 +293,33 @@ namespace Tailgrab.Clients.Ollama
 
             return groupInfo;
         }
+        #endregion
 
-        private static void ProfileViewUpdate(Player player)
+        #region Moderation Evaluation
+        private async static Task<bool> GetUserModerations(QueuedProcess item)
         {
-            string? profileWatch = EvaluateProfile(player.AIEval);
-            if (profileWatch != null)
+            bool userModerations = false;
+            logger.Debug($"Processing User Group subscription for userId: {item.UserId}");
+            Player? player = PlayerManager.GetPlayerByUserId(item.UserId ?? string.Empty);
+
+            if (player != null)
             {
-                switch (profileWatch)
+                List<ModerationInfo> moderationReports = await PlayerManager.GetModerationReportsByUserId(item.UserId ?? string.Empty);
+                if( moderationReports.Count != 0) 
                 {
-                    case CommonConst.AI_EVALUATION_HATE: 
-                        player.AddAlertMessage(AlertClassEnum.Profile, AlertTypeEnum.Nuisance, "Hate");
-                        SoundManager.PlayAlertSound(CommonConst.Profile_Alert_Key, AlertTypeEnum.Nuisance);
-                        break;
-                    case CommonConst.AI_EVALUATION_SEXUAL:
-                        player.AddAlertMessage(AlertClassEnum.Profile, AlertTypeEnum.Nuisance, "Sexual");
-                        SoundManager.PlayAlertSound(CommonConst.Profile_Alert_Key, AlertTypeEnum.Nuisance);
-                        break;
-                    case CommonConst.AI_EVALUATION_SELFHARM:
-                        player.AddAlertMessage(AlertClassEnum.Profile, AlertTypeEnum.Watch, "Self-Harm");
-                        SoundManager.PlayAlertSound(CommonConst.Profile_Alert_Key, AlertTypeEnum.Watch);
-                        break;
+                    userModerations = true;
+                    foreach(ModerationInfo report in moderationReports )
+                    {
+                        player = PlayerManager.AddPlayerEventByUserId(item.UserId ?? string.Empty, PlayerEvent.EventType.AvatarWatch, $"Had Past Moderations : {report.Id} - {report.ContentType} for \"{report.ContentName}\"");
+                    }
+                    player?.AddAlertMessage(AlertClassEnum.Moderation, AlertTypeEnum.Nuisance, "Past Moderations");
                 }
 
-                PlayerManager.AddPlayerEventByUserId(player.UserId ?? string.Empty,
-                    PlayerEvent.EventType.ProfileWatch, $"User profile was flagged by the AI : {profileWatch}");
             }
-            PlayerManager.OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Updated, player);
+
+            return userModerations;
         }
-
-        private static string? EvaluateProfile(string? profileText)
-        {
-            if (string.IsNullOrEmpty(profileText))
-            {
-                return null;
-            }
-
-            if (CheckLines(profileText, CommonConst.AI_EVALUATION_SEXUAL))
-            {
-                return CommonConst.AI_EVALUATION_SEXUAL;
-            }
-            else if (CheckLines(profileText, CommonConst.AI_EVALUATION_HATE))
-            {
-                return CommonConst.AI_EVALUATION_HATE;
-            }
-            else if (CheckLines(profileText, CommonConst.AI_EVALUATION_SELFHARM))
-            {
-                return CommonConst.AI_EVALUATION_SELFHARM;
-            }
-
-            return null;
-        }
-
-        private static bool CheckLines(string input, string knownString)
-        {
-            string[] lines = input.Split(['\n'], StringSplitOptions.RemoveEmptyEntries);
-
-            if (lines.Length < 2)
-            {
-                return false;
-            }
-
-            bool firstLineContains = lines[0].Contains(knownString);
-
-            return firstLineContains;
-        }
+        #endregion
 
         #region Image Classification
         internal async Task<ImageEvaluation?> ClassifyImageList(string userId, string assetId, List<string> imageUrlList)
@@ -444,6 +417,8 @@ namespace Tailgrab.Clients.Ollama
 
             return null;
         }
+        #endregion
+
 
         private static OllamaApiClient? GetClient()
         {
@@ -585,12 +560,22 @@ namespace Tailgrab.Clients.Ollama
 
             try
             {
+                // Create and start the stopwatch
+                Stopwatch stopwatch = new();
+                stopwatch.Start();
+
                 await ollamaApi.GenerateAsync(request).StreamToEndAsync(responseTask =>
                 {
                     string response = responseTask?.Response ?? string.Empty;
                     string logProblems = responseTask?.Logprobs != null ? string.Join(", ", responseTask.Logprobs) : "No logprobs";
                     evaluation.Evaluation = System.Text.Encoding.UTF8.GetBytes(response);
                 });
+
+                // Stop and retrieve elapsed time
+                stopwatch.Stop();
+                TimeSpan ts = stopwatch.Elapsed;
+
+                logger.Info($"Ollama API Call Time elapsed: {ts.TotalMilliseconds} ms");
 
                 return evaluation;
             }
@@ -607,6 +592,10 @@ namespace Tailgrab.Clients.Ollama
             string evaluation = string.Empty;
             try
             {
+                // Create and start the stopwatch
+                Stopwatch stopwatch = new();
+                stopwatch.Start();
+
                 byte[] contentBytes = System.IO.File.ReadAllBytes(imagePath);
                 string contentB64 = Convert.ToBase64String(contentBytes);
 
@@ -624,6 +613,12 @@ namespace Tailgrab.Clients.Ollama
                     evaluation = response;
                 });
 
+                // Stop and retrieve elapsed time
+                stopwatch.Stop();
+                TimeSpan ts = stopwatch.Elapsed;
+
+                logger.Info($"Ollama Image API Call Time elapsed: {ts.TotalMilliseconds} ms");
+
                 return evaluation;
             }
             catch (Exception ex)
@@ -633,19 +628,17 @@ namespace Tailgrab.Clients.Ollama
 
             return evaluation;
         }
-
-        #endregion
     }
 
-        // Simplest implementation of IHavePriority<T>
-        public class QueuedProcess : IHavePriority<int>
+    // Simplest implementation of IHavePriority<T>
+    public class QueuedProcess : IHavePriority<int>
     {
         public int Priority { get; set; }
-        public string? UserId { get; set; }
+        public required string UserId { get; set; }
         public string? UserBio { get; set; }
         public bool IsFriend { get; set; }
         public string? ProfileUrl { get; set; }
-        public string UserTrust { get; set; } = string.Empty;
+        public TrustClassEnum UserTrustClass { get; set; } = TrustClassEnum.VISITOR;
         public AgeVerificationStatus? AgeVerificationStatus { get; set; } = null;
 
         public string MD5Hash

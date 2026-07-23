@@ -977,6 +977,8 @@ Title="Tailgrab Player Panel"
                                                             <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding InventoryId}" VerticalAlignment="Center"/>
                                                             <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding InventoryType}" VerticalAlignment="Center"/>
                                                             <TextBlock Grid.Row="0" Grid.Column="2" Text="{Binding SpawnedAt, StringFormat={}{0:u}}" VerticalAlignment="Center"/>
+                                                            
+                                                            <!-- Put Icon here -->
                                                             <TextBlock Grid.Row="0" Grid.Column="3" Text="{Binding AIEvalutation}" VerticalAlignment="Center"/>
 
                                                             <!-- Second Row - Button -->

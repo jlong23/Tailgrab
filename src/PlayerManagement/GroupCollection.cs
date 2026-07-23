@@ -10,7 +10,7 @@ namespace Tailgrab.PlayerManagement
     {
         private readonly ServiceRegistry _services;
         private readonly int _pageSize = 100;
-        private readonly Dictionary<int, List<GroupInfoViewModel>> _pages = new Dictionary<int, List<GroupInfoViewModel>>();
+        private readonly Dictionary<int, List<GroupInfoViewModel>> _pages = [];
         private int _count = -1;
         private string? _filterText;
 
@@ -90,7 +90,7 @@ namespace Tailgrab.PlayerManagement
                     }
 
                     var items = query.OrderBy(a => a.GroupName).Skip(skip).Take(_pageSize).ToList();
-                    list = items.Select(a => new GroupInfoViewModel(a)).ToList();
+                    list = [.. items.Select(a => new GroupInfoViewModel(a))];
                     _pages[page] = list;
                     var keep = new HashSet<int> { page, page - 1, page + 1 };
                     var keys = _pages.Keys.ToList();
@@ -101,7 +101,7 @@ namespace Tailgrab.PlayerManagement
                 }
                 catch
                 {
-                    list = new List<GroupInfoViewModel>();
+                    list = [];
                 }
             }
             var idxInPage = index % _pageSize;

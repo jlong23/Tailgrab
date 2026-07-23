@@ -103,7 +103,7 @@ namespace Tailgrab.PlayerManagement
 
         public List<AlertMessage> _AlertMessage = [];
         public string ProfileImage { get; set; } = string.Empty;
-        public string UserTrust { get; set; }
+        public TrustClassEnum UserTrustClass { get; set; }
 
         public AgeVerificationStatus? AgeVerified { get; set; } = null;
 
@@ -174,8 +174,8 @@ namespace Tailgrab.PlayerManagement
                     // Add AlertClass icon
                     displayItems.Add(new AlertDisplayItem
                     {
-                        IconGeometry = AlertIconMapper.GetAlertTypeIcon(group.Key),
-                        IconBrush = AlertIconMapper.GetAlertTypeIconBrush(group.Key),
+                        IconGeometry = AlertTypeEnumMapper.MapEnumToIcon(group.Key),
+                        IconBrush = AlertTypeEnumMapper.MapEnumToIconBrush(group.Key),
                         IconClass = group.Key.ToString(),
                         Description = String.Empty,
                         AlertColor = group.First().Color
@@ -186,8 +186,8 @@ namespace Tailgrab.PlayerManagement
                         // Add AlertType icon with message
                         displayItems.Add(new AlertDisplayItem
                         {
-                            IconGeometry = AlertIconMapper.GetAlertClassIcon(alert.AlertClass),
-                            IconBrush = AlertIconMapper.GetAlertClassIconBrush(alert.AlertClass),
+                            IconGeometry = AlertClassEnumMapper.GetAlertClassIcon(alert.AlertClass),
+                            IconBrush = AlertClassEnumMapper.GetAlertClassIconBrush(alert.AlertClass),
                             IconClass = alert.AlertClass.ToString(),
                             Description = $"{alert.Message}",
                             AlertColor = alert.Color
@@ -477,7 +477,7 @@ namespace Tailgrab.PlayerManagement
         {
             CurrentSession = new SessionInfo(worldId, instanceId);
             OverlayManager overlay = serviceRegistry.GetXSOverlay();
-            overlay.Initialize();
+            using var _ = overlay.Initialize();
         }
 
         public void PlayerJoined(string userId, string displayName, AbstractLineHandler handler)
@@ -675,7 +675,7 @@ namespace Tailgrab.PlayerManagement
                         player = AddPlayerEventByDisplayName(displayName, PlayerEvent.EventType.AvatarWatch, $"User has used a watched Avatar : {avatarName} alertType: {watchedAvatar.AlertType}");
                         player?.AddAlertMessage(AlertClassEnum.Avatar, watchedAvatar.AlertType, $"{avatarName}");
                         OverlayManager overlay = serviceRegistry.GetXSOverlay();
-                        overlay.SendNotification(watchedAvatar.AlertType, $"Player \\b1{displayName}\\b0 has used a watched Avatar \\b1\\i1{avatarName}\\i0\\b0");
+                        _ = overlay.SendNotification(watchedAvatar.AlertType, $"Player \\b1{displayName}\\b0 has used a watched Avatar \\b1\\i1{avatarName}\\i0\\b0");
                     }
                 }
                 if (player != null)
@@ -1418,73 +1418,6 @@ namespace Tailgrab.PlayerManagement
             return avatarData;
         }
 
-
-        public static string GetUserTrust(User profile)
-        {
-            string verifiedStatus = String.Empty;
-            if (profile.AgeVerified)
-                verifiedStatus = $" / {profile.AgeVerificationStatus.ToString()}";
-
-            string trustLevel = "Visitor" + verifiedStatus;
-            foreach (string tag in profile.Tags.ToArray().Reverse())
-            {
-                switch (tag)
-                {
-                    case "system_probable_troll":
-                        trustLevel = "Probable Troll" + verifiedStatus;
-                        return trustLevel;
-                    case "system_troll":
-                        trustLevel = "Nuisance" + verifiedStatus;
-                        return trustLevel;
-                    case "system_trust_basic":
-                        trustLevel = "New User" + verifiedStatus;
-                        return trustLevel;
-                    case "system_trust_known":
-                        trustLevel = "User" + verifiedStatus;
-                        return trustLevel;
-                    case "system_trust_trusted":
-                        trustLevel = "Known User" + verifiedStatus;
-                        return trustLevel;
-                    case "system_trust_veteran":
-                        trustLevel = "Trusted User" + verifiedStatus;
-                        return trustLevel;
-                }
-            }
-
-            return trustLevel;
-        }
-
-        public static TrustClassEnum ConvertUserTrust(User profile)
-        {
-            TrustClassEnum trustLevel = TrustClassEnum.VISITOR;
-            foreach (string tag in profile.Tags.ToArray().Reverse())
-            {
-                switch (tag)
-                {
-                    case "system_probable_troll":
-                        trustLevel = TrustClassEnum.PROBABLE_TROLL;
-                        return trustLevel;
-                    case "system_troll":
-                        trustLevel = TrustClassEnum.NUISANCE;
-                        return trustLevel;
-                    case "system_trust_basic":
-                        trustLevel = TrustClassEnum.NEW_USER;
-                        return trustLevel;
-                    case "system_trust_known":
-                        trustLevel = TrustClassEnum.USER;
-                        return trustLevel;
-                    case "system_trust_trusted":
-                        trustLevel = TrustClassEnum.KNOWN_USER;
-                        return trustLevel;
-                    case "system_trust_veteran":
-                        trustLevel = TrustClassEnum.TRUSTED_USER;
-                        return trustLevel;
-                }
-            }
-
-            return trustLevel;
-        }
-
         #endregion
 
         #region Moderation Report Management
@@ -1522,7 +1455,8 @@ namespace Tailgrab.PlayerManagement
             {
                 TailgrabDBContext dBContext = serviceRegistry.GetDBContext();
 
-                ModerationInfo info = new ModerationInfo
+
+                ModerationInfo info = new()
                 {
                     // We should get the ModerationID from the response, but for now we will generate a new GUID
                     Id = response.Id ?? Guid.NewGuid().ToString(),
@@ -1531,7 +1465,7 @@ namespace Tailgrab.PlayerManagement
                     ContentName = response.ContentName ?? string.Empty,
                     ContentType = response.Type ?? string.Empty,
                     Thumbnail = response.ContentThumbnailImageUrl ?? string.Empty,
-                    Report = System.Text.Encoding.UTF8.GetBytes(rpt.Details.ToArray().ToString()),
+                    Report = System.Text.Encoding.UTF8.GetBytes(response.Description ?? string.Empty),
                     UserId = UserId
                 };
 
@@ -1568,10 +1502,9 @@ namespace Tailgrab.PlayerManagement
                         ContentName = response.ContentName ?? string.Empty,
                         ContentType = response.Type ?? string.Empty,
                         Thumbnail = response.ContentThumbnailImageUrl ?? string.Empty,
-                        Report = System.Text.Encoding.UTF8.GetBytes(response.Description ?? string.Empty)
+                        Report = System.Text.Encoding.UTF8.GetBytes(response.Description ?? string.Empty),
+                        UserId = convertModerationsReportTypeToUserId(response)
                     };
-
-                    info.UserId = convertModerationsReportTypeToUserId(response);
 
                     // Save the moderation info to the database
                     dbContext.ModerationInfos.Add(info);

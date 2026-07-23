@@ -2980,13 +2980,13 @@ namespace Tailgrab.PlayerManagement
 
         private void AvatarDbApplyFilter_Click(object sender, RoutedEventArgs e)
         {
-            ApplyAvatarDbFilter(AvatarDbView, AvatarDbFilterBox.Text);
+            ApplyAvatarDbFilter(AvatarDbFilterBox.Text);
         }
 
         private void AvatarDbClearFilter_Click(object sender, RoutedEventArgs e)
         {
             AvatarDbFilterBox.Text = string.Empty;
-            ApplyAvatarDbFilter(AvatarDbView, string.Empty);
+            ApplyAvatarDbFilter(string.Empty);
         }
 
         private void AvatarSelectionTextBox_Pasting(object sender, DataObjectPastingEventArgs e)
@@ -3018,7 +3018,7 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
-        private void ApplyAvatarDbFilter(ICollectionView view, string filterText)
+        private void ApplyAvatarDbFilter(string filterText)
         {
             // Push filter to database for better performance
             if (string.IsNullOrWhiteSpace(filterText))
@@ -3111,7 +3111,7 @@ namespace Tailgrab.PlayerManagement
                     }
 
                     // Filter the view to the fetched group
-                    ApplyAvatarDbFilter(AvatarDbView, avatar.Name ?? string.Empty);
+                    ApplyAvatarDbFilter(avatar.Name ?? string.Empty);
                     AvatarDbFilterBox.Text = string.Empty;
                 }
                 else
@@ -3214,13 +3214,13 @@ namespace Tailgrab.PlayerManagement
 
         private void GroupDbApplyFilter_Click(object sender, RoutedEventArgs e)
         {
-            ApplyGroupDbFilter(GroupDbView, GroupDbFilterBox.Text);
+            ApplyGroupDbFilter(GroupDbFilterBox.Text);
         }
 
         private void GroupDbClearFilter_Click(object sender, RoutedEventArgs e)
         {
             GroupDbFilterBox.Text = string.Empty;
-            ApplyGroupDbFilter(GroupDbView, string.Empty);
+            ApplyGroupDbFilter(string.Empty);
         }
 
         private void GroupSelectionTextBox_Pasting(object sender, DataObjectPastingEventArgs e)
@@ -3252,7 +3252,7 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
-        private void ApplyGroupDbFilter(ICollectionView view, string filterText)
+        private void ApplyGroupDbFilter(string filterText)
         {
             // Push filter to database for better performance
             if (string.IsNullOrWhiteSpace(filterText))
@@ -3309,7 +3309,7 @@ namespace Tailgrab.PlayerManagement
             else
             {
                 // Filter the view to the fetched Group
-                ApplyGroupDbFilter(GroupDbView, existing.GroupName ?? string.Empty);
+                ApplyGroupDbFilter(existing.GroupName ?? string.Empty);
 
                 // Populate the group information box
                 PopulateGroupInformation(existing.GroupId);
@@ -3630,16 +3630,16 @@ namespace Tailgrab.PlayerManagement
 
         private void UserDbApplyFilter_Click(object sender, RoutedEventArgs e)
         {
-            ApplyUserDbFilter(UserDbView, UserDbFilterBox.Text);
+            ApplyUserDbFilter(UserDbFilterBox.Text);
         }
 
         private void UserDbClearFilter_Click(object sender, RoutedEventArgs e)
         {
             UserDbFilterBox.Text = string.Empty;
-            ApplyUserDbFilter(UserDbView, string.Empty);
+            ApplyUserDbFilter(string.Empty);
         }
 
-        private void ApplyUserDbFilter(ICollectionView view, string filterText)
+        private void ApplyUserDbFilter(string filterText)
         {
             // Push filter to database for better performance
             if (string.IsNullOrWhiteSpace(filterText))
@@ -4981,31 +4981,9 @@ namespace Tailgrab.PlayerManagement
 
                         VRChat.API.Model.Group? fullGroup = await Task.Run(() => vrcClient.GetGroupById(group.GroupId));
 
-                        var vm = new UserGroupViewModel
-                        {
-                            GroupId = group.GroupId ?? string.Empty,
-                            Name = group.Name ?? string.Empty,
-                            BannerUrl = group.BannerUrl ?? "https://assets.vrchat.com/www/groups/default_banner.png",
-                            IconUrl = group.IconUrl ?? "https://assets.vrchat.com/www/groups/default_banner.png",
-                            ShortCode = $"{group.ShortCode}.{group.Discriminator}",
-                            Description = fullGroup?.Description ?? string.Empty,
-                            Rules = fullGroup?.Rules ?? string.Empty,
-                            JoinState = fullGroup?.JoinState.ToString() ?? "N/A",
-                            MemberCount = fullGroup?.MemberCount ?? 0,
-                            OwnerId = fullGroup?.OwnerId ?? string.Empty,
-                            IsOwnedByUser = (fullGroup?.OwnerId ?? string.Empty) == userId
-                        };
+                        UserGroupViewModel item = BuildUserGroupViewItem(group, dbGroupData);
 
-                        // Apply DB data
-                        var dbInfo = dbGroupData.FirstOrDefault(d => d.groupId == vm.GroupId);
-                        vm.ExistsInDatabase = dbInfo.exists;
-                        vm.AlertType = dbInfo.alertType;
-                        vm.DatabaseAlertType = dbInfo.alertType;
-
-                        // UpdateAlertColors creates WPF Brushes - must be on UI thread
-                        vm.UpdateAlertColors();
-
-                        groupViewModels.Add(vm);
+                        groupViewModels.Add(item);
                     }
                     catch (Exception ex)
                     {
@@ -5019,11 +4997,38 @@ namespace Tailgrab.PlayerManagement
                 throw;
             }
 
-            return groupViewModels
+            return [.. groupViewModels
                 .OrderByDescending(g => g.IsOwnedByUser)
                 .ThenByDescending(g => g.AlertType)
-                .ThenBy(g => g.Name)
-                .ToList();
+                .ThenBy(g => g.Name)];
+        }
+
+        private UserGroupViewModel BuildUserGroupViewItem(LimitedUserGroups group, List<(string groupId, bool exists, AlertTypeEnum alertType)> dbGroup)
+        {
+            UserGroupViewModel item = new()
+            {
+                GroupId = group.GroupId ?? string.Empty,
+                Name = group.Name ?? string.Empty,
+                BannerUrl = group.BannerUrl ?? "https://assets.vrchat.com/www/groups/default_banner.png",
+                IconUrl = group.IconUrl ?? "https://assets.vrchat.com/www/groups/default_banner.png",
+                ShortCode = $"{group.ShortCode}.{group.Discriminator}",
+                Description = string.Empty, // Will be filled later
+                Rules = string.Empty, // Will be filled later
+                JoinState = "N/A", // Will be filled later
+                MemberCount = 0, // Will be filled later
+                OwnerId = string.Empty, // Will be filled later
+                IsOwnedByUser = false // Will be filled later
+            };
+
+            // Apply DB data
+            var (groupId, exists, alertType) = dbGroup.FirstOrDefault(d => d.groupId == item.GroupId);
+            item.ExistsInDatabase = exists;
+            item.AlertType = alertType;
+            item.DatabaseAlertType = alertType;
+
+            item.UpdateAlertColors();
+
+            return item;
         }
 
         private void UserGroupsOverlayClose_Click(object sender, RoutedEventArgs e)
@@ -5154,15 +5159,15 @@ namespace Tailgrab.PlayerManagement
         public ObservableCollection<EmojiInfoViewModel> Emojis { get; private set; } = [];
         private bool IsFriend {  get; set; }
         public string ProfileUrl { get; set; }
-        public string UserTrust { get; set; }
+        public TrustClassEnum UserTrustClass { get; set; }
+
         public AgeVerificationStatus? AgeVerified { get; set; }
 
         public System.Windows.Media.Geometry UserTrustIconGeometry
         {
             get
             {
-                var trustEnum = ParseUserTrustToEnum(UserTrust);
-                return AlertIconMapper.GetUserTrustIcon(trustEnum);
+                return TrustClassEnumMapper.MapEnumToIcon(UserTrustClass);
             }
         }
 
@@ -5170,8 +5175,7 @@ namespace Tailgrab.PlayerManagement
         {
             get
             {
-                var trustEnum = ParseUserTrustToEnum(UserTrust);
-                return AlertIconMapper.GetUserTrustIconBrush(trustEnum);
+                return TrustClassEnumMapper.MapEnumToBrush(UserTrustClass);
             }
         }
 
@@ -5232,7 +5236,7 @@ namespace Tailgrab.PlayerManagement
             _AlertColor = p.AlertColor;
             IsFriend = p.IsFriend;
             ProfileUrl = p.ProfileImage;
-            UserTrust = p.UserTrust;
+            UserTrustClass = p.UserTrustClass;
             AgeVerified = p.AgeVerified;
 
 
@@ -5262,7 +5266,7 @@ namespace Tailgrab.PlayerManagement
             if (_AlertColor != p.AlertColor) { _AlertColor = p.AlertColor; changed = true; }
             if (IsFriend != p.IsFriend) { IsFriend = p.IsFriend; changed = true; }
             if (ProfileUrl != p.ProfileImage) { ProfileUrl = p.ProfileImage; changed = true; }
-            if (UserTrust != p.UserTrust) { UserTrust = p.UserTrust; changed = true; }
+            if (UserTrustClass != p.UserTrustClass) { UserTrustClass = p.UserTrustClass; changed = true; }
             if (AgeVerified != p.AgeVerified) { AgeVerified = p.AgeVerified; changed = true; }
 
             if (changed) OnPropertyChanged(string.Empty);
@@ -5290,7 +5294,7 @@ namespace Tailgrab.PlayerManagement
             sb.AppendLine($"AlertMessages (Count): {AlertMessages.Count}");
             sb.AppendLine($"IsFriend: {IsFriend}");
             sb.AppendLine($"ProfileUrl: {ProfileUrl}");
-            sb.AppendLine($"UserTrust: {UserTrust}");
+            sb.AppendLine($"UserTrustClass: {UserTrustClass}");
             sb.AppendLine($"AgeVerified: {AgeVerified}");
             return sb.ToString();
         }
@@ -5377,9 +5381,9 @@ namespace Tailgrab.PlayerManagement
         public string AIEvalutation { get; set; } = i.AIEvaluation;
     }
 
-    public class TailTaskViewModel : INotifyPropertyChanged
+    public class TailTaskViewModel(FileTailStatus? status) : INotifyPropertyChanged
     {
-        private readonly FileTailStatus? _status;
+        private readonly FileTailStatus? _status = status;
 
         public string FilePath => _status?.FilePath ?? string.Empty;
         public string FileName => _status != null ? Path.GetFileName(_status.FilePath) : string.Empty;
@@ -5389,8 +5393,6 @@ namespace Tailgrab.PlayerManagement
 
         public string LastLineProcessedTimeFormatted => 
             LastLineProcessedTime.HasValue ? LastLineProcessedTime.Value.ToString("u") : "N/A";
-
-        public TailTaskViewModel(FileTailStatus? status) => _status = status;
 
         public void UpdateFromStatus()
         {
