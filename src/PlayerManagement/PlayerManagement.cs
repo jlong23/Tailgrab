@@ -39,14 +39,14 @@ namespace Tailgrab.PlayerManagement
         public string EventDescription { get; set; } = eventDescription;
     }
 
-    public class PlayerInventory(string inventoryId, string itemName, string itemUrl, string inventoryType, string aIEvaluation)
+    public class PlayerInventory(string inventoryId, string itemName, string itemUrl, string inventoryType, string aIEvaluation, string evaluatedText)
     {
         public string InventoryId { get; set; } = inventoryId;
         public string ItemName { get; set; } = itemName;
         public string ItemUrl { get; set; } = itemUrl;
         public string InventoryType { get; set; } = inventoryType;
         public string AIEvaluation { get; set; } = aIEvaluation;
-        public AlertDisplayItem AlertInfo { get; set; } = AIEvalutionEnumMapper.MapEnumToAlertDisplayItem(AIEvalutionEnumMapper.MapEvaluationToEnum(aIEvaluation));
+        public AlertDisplayItem AlertInfo { get; set; } = AIEvalutionEnumMapper.MapEnumToAlertDisplayItem(AIEvalutionEnumMapper.MapEvaluationToEnum(evaluatedText));
         public DateTime SpawnedAt { get; set; } = DateTime.Now;
     }
 
@@ -766,7 +766,7 @@ namespace Tailgrab.PlayerManagement
                         }
                     }
 
-                    PlayerInventory inventory = new(inventoryId, itemName, itemContent, inventoryType, aiClassification);
+                    PlayerInventory inventory = new(inventoryId, itemName, itemContent, inventoryType, aiClassification, evaluatedText);
                     player.Inventory.Add(inventory);
 
                     AddPlayerEventByUserId(userId, PlayerEvent.EventType.Emoji, $"Spawned Item: {itemName} ({inventoryId})");
