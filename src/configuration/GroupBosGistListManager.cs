@@ -24,25 +24,47 @@ namespace Tailgrab.Configuration
             _httpClient = new HttpClient();
         }
 
+        private int gistRecordCount = 0;
+        private int gistProcessedCount = 0;
+
+        public string GetQueueSize()
+        {
+            if( gistRecordCount > 0)
+            {
+                int percentComplete = (int)((double)gistProcessedCount / gistRecordCount * 100);
+                return $"Group GIST Processing: {gistProcessedCount} of {gistRecordCount} ({percentComplete}%)";
+            }
+
+            return string.Empty;
+        }
+
         /// <summary>
         /// Downloads a GIST content file, verifies its checksum against registry, 
         /// and processes AvatarIds if the file is new or changed.
         /// </summary>
         /// <param name="gistUrl">The URL of the GIST raw content to download</param>
         /// <returns>True if processing was successful, false otherwise</returns>
-        public async Task<bool> ProcessGroupGistList()
+        public async Task<bool> ProcessGroupGistList( string? tempUrl, bool ignoreChecksum )
         {
-            string? gistUrl = GetStoredUri();
+            string? gistUrl = string.Empty;
+            if ( !string.IsNullOrWhiteSpace(tempUrl))
+            {
+                gistUrl = tempUrl;
+            }
+            else
+            {
+                gistUrl = GetStoredUri();
+            }
+            
             if (string.IsNullOrWhiteSpace(gistUrl))
             {
-                logger.Error("Group GIST URL was empty, no update.");
+                logger.Error("Group GIST URL passed was empty, cannot update.");
                 return false;
             }
 
             try
             {
                 logger.Info($"Downloading GIST content from: {gistUrl}");
-
                 // Download the GIST content
                 string gistContent = await DownloadGistContentAsync(gistUrl);
 
@@ -50,27 +72,31 @@ namespace Tailgrab.Configuration
                 {
                     logger.Warn("Downloaded GIST content is empty.");
                     return false;
-                }
+                } 
+
+                logger.Info($"Downloaded GIST content length (bytes): {gistContent.Length}");
 
                 // Calculate MD5 checksum of the downloaded content
                 string currentChecksum = CalculateMD5Checksum(gistContent);
-                logger.Debug($"Calculated checksum: {currentChecksum}");
+                logger.Info($"Downloaded GIST content calculated checksum: {currentChecksum}");
 
-                // Get the stored checksum from registry
-                string? storedChecksum = GetStoredChecksum();
-
-                // Compare checksums
-                if (storedChecksum != null && storedChecksum.Equals(currentChecksum, StringComparison.OrdinalIgnoreCase))
+                if( ignoreChecksum == false ) 
                 {
-                    logger.Info("GIST content has not changed (checksum match). Skipping processing.");
-                    return true;
+                    // Get the stored checksum from registry
+                    string? storedChecksum = GetStoredChecksum();
+
+                    // Compare checksums
+                    if (storedChecksum != null && storedChecksum.Equals(currentChecksum, StringComparison.OrdinalIgnoreCase))
+                    {
+                        logger.Info("GIST content has not changed (checksum match). Skipping processing.");
+                        return true;
+                    }
+
+                    logger.Info("GIST content is new or has changed. Processing Group IDs...");
                 }
 
-                logger.Info("GIST content is new or has changed. Processing Group IDs...");
-
                 // Process the file line by line
-                int processedCount = await ProcessGroupIdsAsync(gistContent);
-
+                int processedCount = await ProcessGroupListData(gistContent);  //await ProcessGroupIdsAsync(gistContent);
                 logger.Info($"Processed {processedCount} Group IDs from GIST.");
 
                 // Save the new checksum to registry
@@ -187,104 +213,138 @@ namespace Tailgrab.Configuration
             }
         }
 
-        private async Task<int> ProcessGroupIdsAsync(string gistContent)
+        private async Task<int> ProcessGroupListData(string gistContent)
         {
-            int processedCount = 0;
-
+            List<GroupImportItem> importList = new List<GroupImportItem>();
             using (System.IO.StringReader reader = new System.IO.StringReader(gistContent))
             {
                 string? line;
                 int lineNumber = 0;
-
                 while ((line = await reader.ReadLineAsync()) != null)
                 {
                     lineNumber++;
-
                     if (string.IsNullOrWhiteSpace(line))
                     {
                         continue;
                     }
 
-                    // Split by whitespace or comma to get the first column
-                    //string[] columns = line.Split(new[] { ' ', '\t', ',' }, StringSplitOptions.RemoveEmptyEntries);
-                    string pattern = @",(?=(?:[^""]*""[^""]*"")*[^""]*$)";
-                    string[] columns = Regex.Split(line, pattern); //.Split(new[] { ' ', '\t', ',' }, StringSplitOptions.RemoveEmptyEntries);
-
-
-                    if (columns.Length < 3)
+                    GroupImportItem? item = ProcessGroupLineItem(line, lineNumber);
+                    if (item != null)
                     {
-                        logger.Warn($"Line {lineNumber}: Expected at least 3 columns (GroupId, GroupName, AlertType), but got {columns.Length}. Skipping line.");
+                        importList.Add(item);
+                    }
+                }
+
+                logger.Info($"Total valid GroupImportItems parsed: {importList.Count}");
+            }
+
+            return await ProcessGroupListData(importList);
+        }
+
+        private GroupImportItem ProcessGroupLineItem( string line, int lineNumber)
+        {
+            // Split by whitespace or comma to get the first column
+            string pattern = @",(?=(?:[^""]*""[^""]*"")*[^""]*$)";
+            string[] columns = Regex.Split(line, pattern);
+            if (columns.Length < 3)
+            {
+                logger.Warn($"Line {lineNumber}: Expected at least 3 columns (GroupId, GroupName, AlertType), but got {columns.Length}. Skipping line.");
+                logger.Warn(line);
+                return null;
+            }
+            string groupId = columns[0].Trim().Trim('"');
+            string groupName = columns[1].Trim().Trim('"');
+            string groupAlert = columns[2].Trim().Trim('"');
+
+            if (string.IsNullOrWhiteSpace(groupId))
+            {
+                logger.Warn($"Line {lineNumber}: Empty Group ID, skipping.");
+                logger.Warn(line);
+                return null;    
+            }
+            
+            // Convert the alert type string to the AlertTypeEnum, defaulting to None if parsing fails
+            AlertTypeEnum alertType = AlertTypeEnum.None;
+            if (!Enum.TryParse<AlertTypeEnum>(groupAlert, out alertType))
+            {
+                logger.Warn($"Line {lineNumber}: Invalid AlertType '{groupAlert}' for Group ID '{groupId}', defaulting to None.");
+            }
+
+            return new GroupImportItem(lineNumber, groupId, groupName, alertType);
+        }
+
+        private async Task<int> ProcessGroupListData(List<GroupImportItem> importList)
+        {
+            gistRecordCount = importList.Count();
+            gistProcessedCount = 0;
+            int processedCount = 0;
+            foreach (GroupImportItem item in importList)
+            {
+                logger.Info($"Line {item.LineNumber}: Processing {item.ToString()}");
+                try
+                {
+                    // Fetch/Refresh the GroupInfo from VRC 
+                    GroupInfo? groupInfo = playerManager.AddUpdateGroupFromVRC(item.GroupId);
+                    if (groupInfo == null)
+                    {
+                        logger.Debug($"Line {item.LineNumber}: Group ID '{item.GroupId}' not found, skipping.");
                         continue;
                     }
 
-                    string groupId = columns[0].Trim().Trim('"');
-                    string groupName = columns[1].Trim().Trim('"');
-                    string groupAlert = columns[2].Trim().Trim('"');
-
-                    if (string.IsNullOrWhiteSpace(groupId))
+                    // Update alert types only if the current AlertType is lower than the new one (i.e., None < Watch < Nuisance < Crasher)
+                    if (groupInfo.AlertType < item.AlertType)
                     {
-                        logger.Warn($"Line {lineNumber}: Empty Group ID, skipping.");
-                        continue;
-                    }
-
-                    // Convert the alert type string to the AlertTypeEnum, defaulting to None if parsing fails
-                    AlertTypeEnum alertType = AlertTypeEnum.None;
-                    if (Enum.TryParse<AlertTypeEnum>(groupAlert, out alertType))
-                    {
-                        // Declared and Defaulted above
+                        groupInfo.AlertType = item.AlertType;
+                        groupInfo.UpdatedAt = DateTime.UtcNow;
+                        dbContext.GroupInfos.Update(groupInfo);
+                        processedCount++;
+                        logger.Debug($"Line {item.LineNumber}: Set AlertType for Group ID '{item.GroupId}' to '{item.AlertType}'");
                     }
                     else
                     {
-                        logger.Warn($"Line {lineNumber}: Invalid AlertType '{groupAlert}' for Group ID '{groupId}', defaulting to None.");
+                        logger.Debug($"Line {item.LineNumber}: Group ID '{item.GroupId}' already has AlertType, skipping.");
                     }
 
-                    try
+                    gistProcessedCount++;
+                    if( item.LineNumber % 50 == 0)
                     {
-                        // Fetch the GroupInfo record
-                        GroupInfo? groupInfo = playerManager.AddUpdateGroupFromVRC(groupId);
-                        if (groupInfo == null)
-                        {
-                            logger.Debug($"Line {lineNumber}: Group ID '{groupId}' not found in database, skipping.");
-                            continue;
-                        }
-
-                        // Set IsBOS to true
-                        if (groupInfo.AlertType == AlertTypeEnum.None)
-                        {
-                            groupInfo.AlertType = alertType;
-                            groupInfo.UpdatedAt = DateTime.UtcNow;
-                            dbContext.GroupInfos.Update(groupInfo);
-                            processedCount++;
-                            logger.Debug($"Line {lineNumber}: Set AlertType for Group ID '{groupId}'");
-                        }
-                        else
-                        {
-                            logger.Debug($"Line {lineNumber}: Group ID '{groupId}' already has AlertType, skipping.");
-                        }
+                        logger.Info($"GIST Group Processed {item.LineNumber} of {importList.Count()} records so far...");
                     }
-                    catch (Exception ex)
-                    {
-                        logger.Error(ex, $"Line {lineNumber}: Error processing Group ID '{groupId}'");
-                    }
-
-                    // Throttle processing to avoid overwhelming the API
-                    await Task.Delay(1000);
                 }
+                catch (Exception ex)
+                {
+                    logger.Error(ex, $"Line {item.LineNumber}: Error processing Group ID '{item.GroupId}'");                    
+                }
+
+                // Throttle processing to avoid overwhelming the API
+                await Task.Delay(1000);
             }
 
-            // Save all changes to the database
-            try
-            {
-                await dbContext.SaveChangesAsync();
-                logger.Info($"Successfully saved {processedCount} changes to the database.");
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex, "Failed to save changes to the database.");
-                throw;
-            }
+            logger.Info($"GIST Group Updated/Added {processedCount} records");
+            gistRecordCount = 0;
+            gistProcessedCount = 0;
 
             return processedCount;
         }
+    }
+
+    public class GroupImportItem
+    {
+        public int LineNumber { get; set; }
+        public string GroupId { get; set; }
+        public string GroupName { get; set; }
+        public AlertTypeEnum AlertType { get; set; }
+        public GroupImportItem(int lineNumber, string groupId, string groupName, AlertTypeEnum alertType)
+        {
+            LineNumber = lineNumber;
+            GroupId = groupId;
+            GroupName = groupName;
+            AlertType = alertType;
+        }
+
+        public override string ToString()
+        {
+            return $"Line {LineNumber}: GroupId={GroupId}, GroupName={GroupName}, AlertType={AlertType}";
+        }   
     }
 }
