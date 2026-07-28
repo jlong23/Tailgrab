@@ -49,12 +49,12 @@ namespace Tailgrab.Common
         {
             return alertClass switch
             {
-                AlertClassEnum.Avatar => WpfBrushes.Green,
-                AlertClassEnum.Group => WpfBrushes.Blue,
-                AlertClassEnum.Profile => WpfBrushes.Purple,     // PLACEHOLDER: Purple
-                AlertClassEnum.Print => WpfBrushes.Orange,       // PLACEHOLDER: Orange
-                AlertClassEnum.EmojiSticker => WpfBrushes.Yellow,// PLACEHOLDER: Yellow
-                AlertClassEnum.Moderation => WpfBrushes.Red,  // PLACEHOLDER: Red
+                AlertClassEnum.Avatar => WpfBrushes.White,
+                AlertClassEnum.Group => WpfBrushes.White,
+                AlertClassEnum.Profile => WpfBrushes.White,     // PLACEHOLDER: Purple
+                AlertClassEnum.Print => WpfBrushes.White,       // PLACEHOLDER: Orange
+                AlertClassEnum.EmojiSticker => WpfBrushes.White,// PLACEHOLDER: Yellow
+                AlertClassEnum.Moderation => WpfBrushes.White,  // PLACEHOLDER: Red
                 _ => WpfBrushes.White,                          // PLACEHOLDER: White
             };
         }
