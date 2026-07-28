@@ -77,7 +77,7 @@ namespace Tailgrab
 
                 logger.Info("Starting Group GIST Manager...");
                 groupGistMgr = new GroupBosGistListManager(dbContext, playerManager);
-                _ = Task.Run(() => groupGistMgr.ProcessGroupGistList());
+                _ = Task.Run(() => groupGistMgr.ProcessGroupGistList( null, false ));
 
                 logger.Info("All services started.");
 
@@ -130,7 +130,25 @@ namespace Tailgrab
             return xsOverlay;
         }
 
-        public async void ProcessAvatarGist()
+        public AvatarBosGistListManager GetAvatarGistManager()
+        {
+            if (avatarGistMgr == null)
+            {
+                throw new InvalidOperationException("Avatar GIST Manager has not been initialized. Call StartAllServices() first.");
+            }
+            return avatarGistMgr;
+        }
+
+        public GroupBosGistListManager GetGroupGistManager()
+        {
+            if (groupGistMgr == null)
+            {
+                throw new InvalidOperationException("Group GIST Manager has not been initialized. Call StartAllServices() first.");
+            }
+            return groupGistMgr;
+        }
+
+        public async Task ProcessAvatarGist()
         {
             if (avatarGistMgr == null)
             {
@@ -143,7 +161,7 @@ namespace Tailgrab
             logger.Info("Avatar GIST list processing completed.");
         }
 
-        public async void ProcessGroupGist()
+        public async Task ProcessGroupGist( string gistUrl, bool ignoreChecksum )
         {
             if (groupGistMgr == null)
             {
@@ -156,7 +174,7 @@ namespace Tailgrab
             }
 
             logger.Info("Processing Group GIST list on demand...");
-            await groupGistMgr.ProcessGroupGistList();
+            await groupGistMgr.ProcessGroupGistList( gistUrl, ignoreChecksum );
             logger.Info("Group GIST list processing completed.");
         }
     }
