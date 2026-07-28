@@ -81,6 +81,10 @@
       "logOutputColor": "Default",
       "actions": [
         {
+          "actionTypeValue": "PlaySoundAction",
+          "soundFile": "retard"
+        },
+        {
           "actionTypeValue": "OSCAction",
           "parameterName": "/avatar/parameters/VF67_Go/Mayu/Feral",
           "oscValueType": "Bool",

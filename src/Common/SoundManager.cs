@@ -97,11 +97,16 @@ namespace Tailgrab.Common
             }
 
             // Treat as filename under ./sounds
+            PlaySoundFromApplicationPath(name);
+        }
+
+        public static void PlaySoundFromApplicationPath(string soundFileName)
+        {
             try
             {
                 var soundsDir = Path.Combine(CommonConst.APPLICATION_LOCAL_DATA_PATH, "sounds");
 
-                string candidate = name;
+                string candidate = soundFileName;
                 // If an absolute or relative path was passed, respect it
                 if (Path.IsPathRooted(candidate))
                 {
@@ -134,11 +139,11 @@ namespace Tailgrab.Common
                     }
                 }
 
-                Logger.Warn($"Sound file not found for '{name}' in '{soundsDir}'");
+                Logger.Warn($"Sound file not found for '{soundFileName}' in '{soundsDir}'");
             }
             catch (Exception ex)
             {
-                Logger.Warn(ex, $"Failed to play sound '{name}'");
+                Logger.Warn(ex, $"Failed to play sound '{soundFileName}'");
             }
         }
 

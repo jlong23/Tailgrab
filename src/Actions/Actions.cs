@@ -4,6 +4,7 @@ using NLog;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
+using Tailgrab.Common;
 
 
 namespace Tailgrab.Actions
@@ -326,6 +327,36 @@ namespace Tailgrab.Actions
             //synthesizer.Speak(Text);
             logger.Info($"TTSAction: (Simulated) Speaking Text: '{Text}' with Volume: {Volume} and Rate: {Rate}.");
 
+        }
+    }
+
+    public class PlaySoundAction : IAction
+    {
+        public Logger logger = LogManager.GetCurrentClassLogger();
+
+        private OscAvatarConfig? oscAvatarConfig = OscAvatarConfig.CreateAtCurrent();
+
+        public string soundFile { get; set; }
+
+        public PlaySoundAction(string soundFile)
+        {
+            this.soundFile = soundFile;
+
+            logger.Info($"Added PlaySoundAction: SoundFile: '{soundFile}'.");
+        }
+
+        public void PerformAction()
+        {
+            var soundFile = this.soundFile;
+            if (string.IsNullOrEmpty(soundFile))
+            {
+                return;
+            }
+
+            // Play the sound file
+            // (Implementation depends on the audio library you are using)
+            logger.Info($"PlaySoundAction: Playing SoundFile: '{soundFile}'.");
+            SoundManager.PlaySound(soundFile);
         }
     }
 }
