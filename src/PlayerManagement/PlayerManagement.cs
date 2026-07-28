@@ -46,6 +46,8 @@ namespace Tailgrab.PlayerManagement
         public string ItemUrl { get; set; } = itemUrl;
         public string InventoryType { get; set; } = inventoryType;
         public string AIEvaluation { get; set; } = aIEvaluation;
+        public string EvaluatedText { get; set; } = evaluatedText;  
+
         public AlertDisplayItem AlertInfo { get; set; } = AIEvalutionEnumMapper.MapEnumToAlertDisplayItem(AIEvalutionEnumMapper.MapEvaluationToEnum(evaluatedText));
         public DateTime SpawnedAt { get; set; } = DateTime.Now;
     }
@@ -749,13 +751,14 @@ namespace Tailgrab.PlayerManagement
 
                 if (inventoryType.Contains("Emoji") || inventoryType.Contains("Sticker"))
                 {
+                    string evaluatedText = string.Empty;
                     var ollamaClient = serviceRegistry.GetOllamaAPIClient();
                     if (ollamaClient != null)
                     {
                         ImageEvaluation? evaluated = await ollamaClient.ClassifyImageList(userId, inventoryId, [itemUrl, itemContent]);
                         if (evaluated != null)
                         {
-                            string evaluatedText = System.Text.Encoding.UTF8.GetString(evaluated.Evaluation);
+                            evaluatedText = System.Text.Encoding.UTF8.GetString(evaluated.Evaluation);
                             aiClassification = EvaluateImageClass(evaluatedText) ?? "OK";
                             logger.Info($"Ollama classification for inventory item {inventoryId}: {aiClassification}: {evaluatedText}");
                             if (!aiClassification.Equals("OK") && !evaluated.IsIgnored)

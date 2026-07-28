@@ -77,6 +77,19 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
+        private string _groupGistStatus = string.Empty;
+        public string GroupGistStatus
+        {
+            get => _groupGistStatus;
+            set
+            {
+                if (_groupGistStatus != value)
+                {
+                    _groupGistStatus = value;
+                    OnPropertyChanged(nameof(GroupGistStatus));
+                }
+            }
+        }
 
         private int _avatarQueueLength;
         public int AvatarQueueLength
@@ -1037,12 +1050,13 @@ namespace Tailgrab.PlayerManagement
         {
             try
             {
-                groupGistCheckButton.IsEnabled = false;
-                groupGistCheckButton.Content = "Checking...";
-
-                await Task.Run(() => _serviceRegistry.ProcessGroupGist());
-
-                System.Windows.MessageBox.Show("Group GIST list processing in the background.", "Check Group GIST", MessageBoxButton.OK, MessageBoxImage.Information);
+                if (groupGistUrl.Text != null)
+                {
+                    groupGistCheckButton.IsEnabled = false;
+                    groupGistCheckButton.Content = "Checking...";
+                    //System.Windows.MessageBox.Show("Group GIST list processing in the background.", "Check Group GIST", MessageBoxButton.OK, MessageBoxImage.Information);
+                    await _serviceRegistry.ProcessGroupGist(groupGistUrl.Text, true);
+                }
             }
             catch (Exception ex)
             {
@@ -1351,6 +1365,7 @@ namespace Tailgrab.PlayerManagement
 
                 AvatarQueueLength = PlayerManager.GetQueueCount();
                 OllamaQueueLength = ollamaClient?.GetQueueSize() ?? 0;
+                GroupGistStatus = _serviceRegistry.GetGroupGistManager().GetQueueSize();
 
                 // Update Open Logs collection
                 RefreshOpenLogs();
@@ -5352,6 +5367,7 @@ namespace Tailgrab.PlayerManagement
         public string ImageUrl { get; set; } = i.ItemUrl;
         public string InventoryType { get; set; } = i.InventoryType;
         public string AIEvalutation { get; set; } = i.AIEvaluation;
+        public string EvaluatedText { get; set; } = i.EvaluatedText;
         public AlertDisplayItem AlertInfo { get; set; } = i.AlertInfo;
     }
 

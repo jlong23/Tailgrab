@@ -736,14 +736,14 @@ Title="Tailgrab Player Panel"
                                                                 <ColumnDefinition Width="300" />
                                                                 <ColumnDefinition Width="200" />
                                                                 <ColumnDefinition Width="200" />
-                                                                <ColumnDefinition Width="100" />
+                                                                <ColumnDefinition Width="300" />
                                                                 <ColumnDefinition Width="100" />
                                                             </Grid.ColumnDefinitions>
 
                                                             <!-- First Row -->
                                                             <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding PrintId}" VerticalAlignment="Center"/>
                                                             <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding AuthorName}" VerticalAlignment="Center"/>
-                                                            <TextBlock Grid.Row="0" Grid.Column="2" Text="{Binding Timestammp, StringFormat={}{0:u}}" VerticalAlignment="Center"/>
+                                                            <TextBlock Grid.Row="0" Grid.Column="2" Text="{Binding Timestamp, StringFormat={}{0:u}}" VerticalAlignment="Center"/>
 
                                                             <Border Grid.Row="0" Grid.Column="3" ClipToBounds="True" TextElement.Foreground="Black"
                                                                     ToolTip="{Binding AlertInfo.IconClass}">
@@ -768,13 +768,20 @@ Title="Tailgrab Player Panel"
                                                             </Border>
 
                                                             <!-- Second Row - Button -->
-                                                            <Button Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="4" 
+                                                            <Button Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="1" 
                                                                         Content="Report Print Item" 
                                                                         Click="ReportPrintInventoryItem_Click"
                                                                         Tag="{Binding}"
                                                                         Margin="0,4,0,0"
                                                                         Padding="4,2"
                                                                         HorizontalAlignment="Left"/>
+
+                                                            <!-- Second Row - AI Evaluation -->
+                                                            <TextBlock Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3"
+                                                                       Text="{Binding AIEvaluation}" 
+                                                                       VerticalAlignment="Top"
+                                                                       Margin="4,0,0,0"
+                                                                       TextWrapping="Wrap"/>
 
                                                             <!-- Image spanning both rows -->
                                                             <Border Grid.Row="0" Grid.Column="4" Grid.RowSpan="2" 
@@ -976,9 +983,9 @@ Title="Tailgrab Player Panel"
                                                             </Grid.RowDefinitions>
                                                             <Grid.ColumnDefinitions>
                                                                 <ColumnDefinition Width="300" />
-                                                                <ColumnDefinition Width="200" />
-                                                                <ColumnDefinition Width="200" />
                                                                 <ColumnDefinition Width="100" />
+                                                                <ColumnDefinition Width="200" />
+                                                                <ColumnDefinition Width="300" />
                                                                 <ColumnDefinition Width="100" />
                                                             </Grid.ColumnDefinitions>
 
@@ -1009,15 +1016,6 @@ Title="Tailgrab Player Panel"
                                                                 </StackPanel>
                                                             </Border>
 
-                                                            <!-- Second Row - Button -->
-                                                            <Button Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="4" 
-                                                                    Content="Report Inventory Item" 
-                                                                    Click="ReportInventoryItem_Click"
-                                                                    Tag="{Binding}"
-                                                                    Margin="0,4,0,0"
-                                                                    Padding="4,2"
-                                                                    HorizontalAlignment="Left"/>
-
                                                             <!-- Image spanning both rows -->
                                                             <Border Grid.Row="0" Grid.Column="4" Grid.RowSpan="2" 
                                                                     BorderBrush="Gray" 
@@ -1031,6 +1029,24 @@ Title="Tailgrab Player Panel"
                                                                     </Hyperlink>
                                                                 </TextBlock>
                                                             </Border>
+
+                                                            <!-- Second Row - Button -->
+                                                            <Button Grid.Row="1" Grid.Column="0" 
+                                                                    Content="Report Inventory Item" 
+                                                                    Click="ReportInventoryItem_Click"
+                                                                    Tag="{Binding}"
+                                                                    Margin="0,4,0,0"
+                                                                    Padding="4,2"
+                                                                    HorizontalAlignment="Left"/>
+                                                            
+                                                            <TextBlock Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3"
+                                                                       Text="{Binding EvaluatedText}"
+                                                                       VerticalAlignment="Center"
+                                                                       TextWrapping="Wrap"
+                                                                       FontWeight="Bold"
+                                                                       FontSize="12"
+                                                                       Foreground="{Binding RelativeSource={RelativeSource AncestorType=ListViewItem}, Path=Foreground}"/>
+
                                                         </Grid>
                                                     </DataTemplate>
                                                 </ItemsControl.ItemTemplate>
@@ -2975,6 +2991,12 @@ Title="Tailgrab Player Panel"
                 <TextBlock>
                     <Run Text="AI Queue: "/>
                     <Run Text="{Binding OllamaQueueLength, Mode=OneWay}" FontWeight="Bold"/>
+                </TextBlock>
+            </StatusBarItem>
+            <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" />
+            <StatusBarItem HorizontalAlignment="Right">
+                <TextBlock>
+                    <Run Text="{Binding GroupGistStatus, Mode=OneWay}" FontWeight="Bold"/>
                 </TextBlock>
             </StatusBarItem>
             <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" />
