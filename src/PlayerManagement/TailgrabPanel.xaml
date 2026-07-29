@@ -12,7 +12,6 @@ Title="Tailgrab Player Panel"
     <Window.Resources>
         <local:MinutesToHoursMinutesConverter x:Key="MinutesToHoursMinutesConverter"/>
         <local:SoundNotNoneConverter x:Key="SoundNotNoneConverter"/>
-        <local:DebugConverter x:Key="DebugConverter"/>
 
         <!-- Dark theme TabItem style with template -->
         <Style TargetType="{x:Type TabItem}">
@@ -240,7 +239,7 @@ Title="Tailgrab Player Panel"
                                             <DataTemplate>
                                                 <Border ClipToBounds="True" TextElement.Foreground="Black"
                                                         ToolTip="{Binding AlertMessages.Count}">
-                                                    <ItemsControl ItemsSource="{Binding AlertMessages, Converter={StaticResource DebugConverter}}">
+                                                    <ItemsControl ItemsSource="{Binding AlertMessages}">
                                                         <ItemsControl.ItemsPanel>
                                                             <ItemsPanelTemplate>
                                                                 <StackPanel Orientation="Horizontal"/>
@@ -391,6 +390,10 @@ Title="Tailgrab Player Panel"
 
                 <TabItem Header="Past Players">
                     <Grid Name="PastPlayerLayoutGrid">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="172*"/>
+                            <ColumnDefinition Width="357*"/>
+                        </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="20*"/>
                             <RowDefinition Height="267*"/>
@@ -398,13 +401,13 @@ Title="Tailgrab Player Panel"
                             <RowDefinition x:Name="PastPlayerGridRow" Height="*" MinHeight="100"/>
                         </Grid.RowDefinitions>
 
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6" Grid.Row="0">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6" Grid.Row="0" Grid.ColumnSpan="2">
                             <TextBox Name="PastFilterBox" Width="300" Margin="0,0,8,0" />
                             <Button Content="Apply Filter" Click="PastApplyFilter_Click" Margin="0,0,6,0"/>
                             <Button Content="Clear Filter" Click="PastClearFilter_Click"/>
                         </StackPanel>
 
-                        <ListView Name="PastListView" Grid.Row="1" ItemsSource="{Binding PastView}" SelectedItem="{Binding SelectedPast, Mode=TwoWay}">
+                        <ListView Name="PastListView" ItemsSource="{Binding PastView}" SelectedItem="{Binding SelectedPast, Mode=TwoWay}" Grid.ColumnSpan="2" Margin="0,26,0,0" Grid.RowSpan="2">
                             <ListView.ItemContainerStyle>
                                 <StaticResource ResourceKey="PlayerListViewItemStyle"/>
                             </ListView.ItemContainerStyle>
@@ -497,7 +500,7 @@ Title="Tailgrab Player Panel"
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate>
                                                 <Border ClipToBounds="True" TextElement.Foreground="Black">
-                                                    <ItemsControl ItemsSource="{Binding AlertMessages, Converter={StaticResource DebugConverter}}">
+                                                    <ItemsControl ItemsSource="{Binding AlertMessages}">
                                                         <ItemsControl.ItemsPanel>
                                                             <ItemsPanelTemplate>
                                                                 <StackPanel Orientation="Horizontal"/>
@@ -598,27 +601,50 @@ Title="Tailgrab Player Panel"
                             </ListView.View>
                         </ListView>
 
-                        <GridSplitter Name="PastPlayers_Horz" Grid.Row="2" Height="5" HorizontalAlignment="Stretch" VerticalAlignment="Center" Background="#FF3F3F46" ShowsPreview="False" ResizeDirection="Rows" DragCompleted="GridSplitter_DragCompleted"/>
+                        <GridSplitter Name="PastPlayers_Horz" Grid.Row="2" Height="5" HorizontalAlignment="Stretch" VerticalAlignment="Center" Background="#FF3F3F46" ShowsPreview="False" ResizeDirection="Rows" Grid.ColumnSpan="2" DragCompleted="GridSplitter_DragCompleted"/>
 
-                        <Grid Margin="0,0,0,6" Grid.Row="3">
+                        <Grid Margin="0,0,0,6" Grid.Row="3" Grid.ColumnSpan="2">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" Name="PastPlayerGridColumn"/>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
 
-                            <TextBox Name="UserPofileBoxPast" Grid.Column="0" Height="auto" Margin="0,0,4,0" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto">
-                                <TextBox.Text>
-                                    <MultiBinding StringFormat="{}User Profile:&#x0a;{0}&#x0a;&#x0a;AI Evaluation:&#x0a;{1}" Mode="OneWay">
-                                        <Binding Path="SelectedPast.Profile" Mode="OneWay" FallbackValue="" TargetNullValue=""/>
-                                        <Binding Path="SelectedPast.AIEval" Mode="OneWay" FallbackValue="" TargetNullValue=""/>
-                                    </MultiBinding>
-                                </TextBox.Text>
-                            </TextBox>
+                            <ScrollViewer Grid.Column="0" Margin="0,0,4,0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                <StackPanel>
+                                    <Image Source="{Binding SelectedPast.ProfileUrl, Mode=OneWay}" 
+                                           Width="100" 
+                                           Height="100"
+                                           HorizontalAlignment="Left"
+                                           Margin="0,0,0,4">
+                                        <Image.Style>
+                                            <Style TargetType="Image">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding SelectedPast.ProfileUrl, Converter={x:Static local:StringNotNullOrEmptyConverter.Instance}}" Value="True">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Image.Style>
+                                    </Image>
+
+                                    <TextBlock Name="UserPofileBoxPast" TextWrapping="Wrap" Foreground="#FFE6E6E6">
+                                        <TextBlock.Text>
+                                            <MultiBinding StringFormat="{}User Profile:&#x0a;{0}&#x0a;&#x0a;AI Evaluation:&#x0a;{1}" Mode="OneWay">
+                                                <Binding Path="SelectedPast.Profile" Mode="OneWay" FallbackValue="" TargetNullValue=""/>
+                                                <Binding Path="SelectedPast.AIEval" Mode="OneWay" FallbackValue="" TargetNullValue=""/>
+                                            </MultiBinding>
+                                        </TextBlock.Text>
+                                    </TextBlock>
+                                </StackPanel>
+                            </ScrollViewer>
 
                             <GridSplitter Name="PastPlayers_Vert" Grid.Column="1" Width="5" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="#FF3F3F46" ShowsPreview="False" ResizeDirection="Columns" DragCompleted="GridSplitter_DragCompleted"/>
 
-                            <TextBox Name="UserAlertsBoxPast" Grid.Column="2" Height="auto" Margin="4,0,8,0" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" Text="{Binding SelectedPast.History, Mode=OneWay, FallbackValue='', TargetNullValue=''}" />
+                            <ScrollViewer Grid.Column="2" Margin="0,0,4,0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                <TextBox Name="UserAlertsBoxPast" Grid.Column="2" Height="auto" Margin="4,0,8,0" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" Text="{Binding SelectedPast.History, Mode=OneWay, FallbackValue='', TargetNullValue=''}" />
+                            </ScrollViewer>
                         </Grid>
 
                         <!-- Overlay Panel for Report Profile -->
