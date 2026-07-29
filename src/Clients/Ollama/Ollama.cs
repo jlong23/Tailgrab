@@ -16,6 +16,7 @@ namespace Tailgrab.Clients.Ollama
 
     public class OllamaClient
     {
+        public const int MaxRetries = 3;
         public static readonly Logger logger = LogManager.GetCurrentClassLogger();
         private ConcurrentPriorityQueue<IHavePriority<int>, int> priorityQueue = new();
         private ServiceRegistry _serviceRegistry;
@@ -106,56 +107,18 @@ namespace Tailgrab.Clients.Ollama
                 while (true)
                 {
                     var result = priorityQueue.Dequeue();
-                    if (result.IsSuccess && result.Value is QueuedProcess item && item.UserId != null)
+                    if (result.IsSuccess)
                     {
-                        try
+                        if (result.Value is QueuedProcess item && item.UserId != null)
                         {
-                            string prompt = ConfigStore.GetStoredKeyString(CommonConst.Registry_Ollama_API_Prompt) ?? CommonConst.Default_Ollama_API_Prompt;
-                            string model = ConfigStore.GetStoredKeyString(CommonConst.Registry_Ollama_API_Model) ?? CommonConst.Default_Ollama_API_Model;
-                            string promptHash = Checksum.MD5Hash(prompt);
-
-                            TailgrabDBContext dBContext = serviceRegistry.GetDBContext();
-                            List<LimitedUserGroups> userGroups = serviceRegistry.GetVRChatAPIClient().GetProfileGroups(item.UserId);
-
-                            User profile = serviceRegistry.GetVRChatAPIClient().GetProfile(item.UserId);
-                            serviceRegistry.GetPlayerManager().UpdatePlayerUserFromVRCProfile(profile, item.MD5Hash);
-                            await GetUserGroupInformation(serviceRegistry, dBContext, userGroups, item);
-                            await GetUserModerations(item);
-
-                            if (ollamaApi != null)
-                            {
-                                logger.Debug($"Processing AI Evaluation Queued item for userId: {item.UserId}");
-                                // Process the dequeued item
-                                if (!string.IsNullOrEmpty(item.MD5Hash))
-                                {
-                                    // Only when the Item has a valid hash 
-                                    // Check if already profileText
-                                    ProfileEvaluation? evaluated = serviceRegistry.GetDBContext().ProfileEvaluations.Find(item.MD5Hash);
-                                    if (evaluated == null || evaluated.PromptMd5Checksum != promptHash )
-                                    {
-                                        ProfileEvaluation evaluation = await PerformOllamaGeneration(ollamaApi, item, model, prompt);
-
-                                        // if we got a response save it to the database
-                                        if (evaluation != null)
-                                        {
-                                            dBContext.Add(evaluation);
-                                            dBContext.SaveChanges();
-
-                                            UpdatePlayerWithEvaluation(item, evaluation);
-                                        }
-                                    }
-                                    else
-                                    {
-                                        UpdatePlayerWithEvaluation(item, evaluated);
-                                    }
-                                }
-                            }
-
-                            PlayerManager.OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Updated, profile.DisplayName);
+                            await ProfileEvaluateItem(priorityQueue, serviceRegistry, ollamaApi, item);
+                            continue;
                         }
-                        catch (Exception ex)
+                        
+                        if (result.Value is ImageReference imageReference)
                         {
-                            logger.Error(ex, $"Error fetching user profile for userId: {item.UserId}");
+                            OllamaClient.logger.Warn($"Failed to dequeue item: {imageReference}");
+                            continue;
                         }
                     }
                     else
@@ -171,6 +134,74 @@ namespace Tailgrab.Clients.Ollama
                 // Wait for a short period before checking the queue again
                 await Task.Delay(10000);
             }
+        }
+
+        private static async Task<bool> ProfileEvaluateItem(ConcurrentPriorityQueue<IHavePriority<int>, int> priorityQueue, ServiceRegistry serviceRegistry, OllamaApiClient? ollamaApi, QueuedProcess item)
+        {
+            try
+            {
+                string prompt = ConfigStore.GetStoredKeyString(CommonConst.Registry_Ollama_API_Prompt) ?? CommonConst.Default_Ollama_API_Prompt;
+                string model = ConfigStore.GetStoredKeyString(CommonConst.Registry_Ollama_API_Model) ?? CommonConst.Default_Ollama_API_Model;
+                string promptHash = Checksum.MD5Hash(prompt);
+
+                TailgrabDBContext dBContext = serviceRegistry.GetDBContext();
+                List<LimitedUserGroups> userGroups = serviceRegistry.GetVRChatAPIClient().GetProfileGroups(item.UserId);
+
+                User profile = serviceRegistry.GetVRChatAPIClient().GetProfile(item.UserId);
+                serviceRegistry.GetPlayerManager().UpdatePlayerUserFromVRCProfile(profile, item.MD5Hash);
+                await GetUserGroupInformation(serviceRegistry, dBContext, userGroups, item);
+                await GetUserModerations(item);
+
+                if (ollamaApi != null)
+                {
+                    logger.Debug($"Processing AI Evaluation Queued item for userId: {item.UserId}");
+                    // Process the dequeued item
+                    if (!string.IsNullOrEmpty(item.MD5Hash))
+                    {
+                        // Only when the Item has a valid hash 
+                        // Check if already profileText
+                        ProfileEvaluation? evaluated = serviceRegistry.GetDBContext().ProfileEvaluations.Find(item.MD5Hash);
+                        if (evaluated == null || evaluated.PromptMd5Checksum != promptHash)
+                        {
+                            if (item.retries >= MaxRetries)
+                            {
+                                logger.Warn($"Max retries reached for userId: {item.UserId}. Skipping evaluation.");
+                                return false;
+                            }
+
+                            ProfileEvaluation? evaluation = await PerformOllamaGeneration(ollamaApi, item, model, prompt);
+
+                            // if we got a response save it to the database
+                            if (evaluation != null)
+                            {
+                                dBContext.Add(evaluation);
+                                dBContext.SaveChanges();
+
+                                UpdatePlayerWithEvaluation(item, evaluation);
+                            }
+                            else
+                            {
+                                // Retry the item by re-enqueuing it with incremented retries
+                                item.retries++;
+                                logger.Warn($"Ollama evaluation failed for userId: {item.UserId}. Retrying ({item.retries}/{MaxRetries})...");
+                                priorityQueue.Enqueue(item);
+                            }
+                        }
+                        else
+                        {
+                            UpdatePlayerWithEvaluation(item, evaluated);
+                        }
+                    }
+                }
+
+                PlayerManager.OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Updated, profile.DisplayName);
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, $"Error fetching user profile for userId: {item.UserId}");
+            }
+
+            return true;
         }
 
         private static void UpdatePlayerWithEvaluation(QueuedProcess item, ProfileEvaluation evaluation)
@@ -540,25 +571,25 @@ namespace Tailgrab.Clients.Ollama
         }
 
 
-        public static async Task<ProfileEvaluation> PerformOllamaGeneration(OllamaApiClient ollamaApi, QueuedProcess item, string model, string prompt)
+        public static async Task<ProfileEvaluation?> PerformOllamaGeneration(OllamaApiClient ollamaApi, QueuedProcess item, string model, string prompt)
         {
-            ProfileEvaluation evaluation = new()
-            {
-                Md5checksum = item.MD5Hash ?? string.Empty,
-                PromptMd5Checksum = Checksum.MD5Hash(prompt),
-                ProfileText = System.Text.Encoding.UTF8.GetBytes(item.UserBio ?? string.Empty),
-                LastDateTime = DateTime.UtcNow
-            };
-
-            GenerateRequest request = new()
-            {
-                Model = model,
-                Prompt = string.Concat(prompt, item.UserBio ?? string.Empty),
-                Stream = false
-            };
-
             try
             {
+                GenerateRequest request = new()
+                {
+                    Model = model,
+                    Prompt = string.Concat(prompt, item.UserBio ?? string.Empty),
+                    Stream = false
+                };
+
+                ProfileEvaluation? evaluation = new()
+                {
+                    Md5checksum = item.MD5Hash ?? string.Empty,
+                    PromptMd5Checksum = Checksum.MD5Hash(prompt),
+                    ProfileText = System.Text.Encoding.UTF8.GetBytes(item.UserBio ?? string.Empty),
+                    LastDateTime = DateTime.UtcNow
+                };
+
                 // Create and start the stopwatch
                 Stopwatch stopwatch = new();
                 stopwatch.Start();
@@ -583,7 +614,7 @@ namespace Tailgrab.Clients.Ollama
                 logger.Error(ex, $"Error processing Ollama request for userId: {item.UserId} - {ex.Message}");
             }
 
-            return evaluation;
+            return null;
         }
 
         public static async Task<string> PerformOllamaImageGeneration(OllamaApiClient ollamaApi, string model, string prompt, string imagePath)
@@ -633,6 +664,7 @@ namespace Tailgrab.Clients.Ollama
     public class QueuedProcess : IHavePriority<int>
     {
         public int Priority { get; set; }
+        public int retries { get; set; } = 0;
         public required string UserId { get; set; }
         public string? UserBio { get; set; }
         public bool IsFriend { get; set; }
@@ -655,11 +687,13 @@ namespace Tailgrab.Clients.Ollama
         }
     }
 
-    public class ImageReference
+    public class ImageReference : IHavePriority<int> 
     {
+        public int Priority { get; set; }
         public List<string> Base64Data { get; set; } = [];
         public string Md5Hash { get; set; } = string.Empty;
         public string InventoryId { get; set; } = string.Empty;
         public string UserId { get; set; } = string.Empty;
+        public int retries { get; set; } = 0;
     }
 }
