@@ -134,7 +134,7 @@ Title="Tailgrab Player Panel"
                             <ColumnDefinition Width="357*"/>
                         </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="20*"/>
+                            <RowDefinition Height="Auto"/>
                             <RowDefinition Height="267*"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition x:Name="ActivePlayerGridRow" Height="*" MinHeight="100"/>
@@ -395,7 +395,7 @@ Title="Tailgrab Player Panel"
                             <ColumnDefinition Width="357*"/>
                         </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="20*"/>
+                            <RowDefinition Height="Auto"/>
                             <RowDefinition Height="267*"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition x:Name="PastPlayerGridRow" Height="*" MinHeight="100"/>
