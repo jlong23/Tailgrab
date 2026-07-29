@@ -840,7 +840,7 @@ namespace Tailgrab.PlayerManagement
                 }
 
                 // Call Ollama test method
-                ProfileEvaluation result = await Clients.Ollama.OllamaClient.TestProfilePrompt(_serviceRegistry, userId, prompt, model);
+                ProfileEvaluation? result = await Clients.Ollama.OllamaClient.TestProfilePrompt(_serviceRegistry, userId, prompt, model);
                 if (result != null) {
                     logger.Info("Profile prompt test successful for user {UserId} with model {Model} as {Evaluation}", userId, model, result.Evaluation);
 

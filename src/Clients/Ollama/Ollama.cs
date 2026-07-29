@@ -495,7 +495,7 @@ namespace Tailgrab.Clients.Ollama
         /// <param name="prompt">AI prompt to use for evaluation</param>
         /// <param name="model">Ollama model name to use</param>
         /// <returns>AI evaluation result</returns>
-        public static async Task<ProfileEvaluation> TestProfilePrompt(ServiceRegistry serviceRegistry, string userId, string prompt, string model)
+        public static async Task<ProfileEvaluation?> TestProfilePrompt(ServiceRegistry serviceRegistry, string userId, string prompt, string model)
         {
             ProfileEvaluation profileEvaluation = new();
 
@@ -529,7 +529,7 @@ namespace Tailgrab.Clients.Ollama
                 // Process the dequeued item
                 if (!string.IsNullOrEmpty(item.MD5Hash))
                 {
-                    ProfileEvaluation evaluation = await PerformOllamaGeneration(ollamaClient, item, model, prompt);
+                    ProfileEvaluation? evaluation = await PerformOllamaGeneration(ollamaClient, item, model, prompt);
                     return evaluation;
                 }
 
