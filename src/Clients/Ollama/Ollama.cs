@@ -97,7 +97,6 @@ namespace Tailgrab.Clients.Ollama
             if (ollamaApi is null)
             {
                 System.Windows.MessageBox.Show("Ollama API Credentials are not set.\nThis is not nessasary for limited operation, the Profiles will not be profileText.\nOtherwise use the Config / Secrets tab to update credenials and restart Tailgrab.", "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
-                return;
             }
 
             OllamaClient.logger.Info($"Profile/Group Queue Running");
