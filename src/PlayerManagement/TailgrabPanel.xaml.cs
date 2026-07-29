@@ -1980,7 +1980,7 @@ namespace Tailgrab.PlayerManagement
             };
             rpt.Details = [rptDtls];
 
-            ModerationReportResponse response = await _serviceRegistry.GetVRChatAPIClient().SubmitModerationReportAsync(rpt);
+            ModerationReportResponse? response = await _serviceRegistry.GetVRChatAPIClient().SubmitModerationReportAsync(rpt);
             if (response != null)
             {
                 logger.Info($"Profile Report submitted - UserId: {userId}, Category: {category}, ReportReason: {reportReason}, Description: {reportDescription}");
@@ -2407,7 +2407,7 @@ namespace Tailgrab.PlayerManagement
             };
             rpt.Details = [rptDtls];
 
-            ModerationReportResponse report = await _serviceRegistry.GetVRChatAPIClient().SubmitModerationReportAsync(rpt);
+            ModerationReportResponse? report = await _serviceRegistry.GetVRChatAPIClient().SubmitModerationReportAsync(rpt);
             if (report != null)
             {
                 logger.Info($"Print Report submitted - UserId: {userId}, Category: {category}, ReportReason: {reportReason}, Description: {reportDescription}");
@@ -2797,9 +2797,9 @@ namespace Tailgrab.PlayerManagement
             };
             rpt.Details = [rptDtls];
 
-            ModerationReportResponse report = await _serviceRegistry.GetVRChatAPIClient().SubmitModerationReportAsync(rpt);
+            ModerationReportResponse? report = await _serviceRegistry.GetVRChatAPIClient().SubmitModerationReportAsync(rpt);
             bool success = report != null;
-            if (success)
+            if (report != null)
             {
                 logger.Info($"Inventory Report submitted - UserId: {userId}, Category: {category}, ReportReason: {reportReason}, Description: {reportDescription}");
                 await _serviceRegistry.GetPlayerManager().SaveModerationReport(rpt, report, userId);

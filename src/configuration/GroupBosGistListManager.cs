@@ -241,7 +241,7 @@ namespace Tailgrab.Configuration
             return await ProcessGroupListData(importList);
         }
 
-        private GroupImportItem ProcessGroupLineItem( string line, int lineNumber)
+        private GroupImportItem? ProcessGroupLineItem( string line, int lineNumber)
         {
             // Split by whitespace or comma to get the first column
             string pattern = @",(?=(?:[^""]*""[^""]*"")*[^""]*$)";

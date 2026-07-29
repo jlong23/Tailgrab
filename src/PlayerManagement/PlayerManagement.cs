@@ -1433,7 +1433,10 @@ namespace Tailgrab.PlayerManagement
                 int offset = 0;
                 while (true)
                 {
-                    ModerationReportListResponse reports = await serviceRegistry.GetVRChatAPIClient().ListModerationReportAsync(offset);
+                    ModerationReportListResponse? reports = await serviceRegistry.GetVRChatAPIClient().ListModerationReportAsync(offset);
+                    if (reports == null)
+                        break;
+
                     foreach (var report in reports.Results)
                     {
                         logger.Info($"Report ID: {report.Id}, Type: {report.Type}, ContentId: {report.ContentId}, ContentName: {report.ContentName}");

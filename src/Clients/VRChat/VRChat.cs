@@ -541,7 +541,7 @@ namespace Tailgrab.Clients.VRChat
         #endregion
 
         #region Moderation Management
-        internal async Task<ModerationReportResponse> SubmitModerationReportAsync(ModerationReportPayload rpt)
+        internal async Task<ModerationReportResponse?> SubmitModerationReportAsync(ModerationReportPayload rpt)
         {
             try
             {
@@ -562,7 +562,7 @@ namespace Tailgrab.Clients.VRChat
 
                 response.EnsureSuccessStatusCode();
                 var settings = new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore };
-                ModerationReportResponse reportResponse = JsonConvert.DeserializeObject<ModerationReportResponse>(responseContent, settings);
+                ModerationReportResponse? reportResponse = JsonConvert.DeserializeObject<ModerationReportResponse>(responseContent, settings);
 
                 return reportResponse;
 
@@ -573,7 +573,7 @@ namespace Tailgrab.Clients.VRChat
                 return null;
             }
         }
-        internal async Task<ModerationReportListResponse> ListModerationReportAsync(int offset)
+        internal async Task<ModerationReportListResponse?> ListModerationReportAsync(int offset)
         {
             try
             {
