@@ -201,44 +201,76 @@ namespace Tailgrab.Configuration
                         continue;
                     }
 
-                    // Split by whitespace or comma to get the first column
-                    string pattern = @",(?=(?:[^""]*""[^""]*"")*[^""]*$)";
-                    string[] columns = Regex.Split(line, pattern); //.Split(new[] { ' ', '\t', ',' }, StringSplitOptions.RemoveEmptyEntries);
-
-                    if (columns.Length < 3)
+                    AvatarImportItem? importItem = ProcessAvatarLineItem(line, lineNumber);
+                    if (importItem != null)
                     {
-                        logger.Warn($"Line {lineNumber}: Expected at least 3 columns (AvatarId, AvatarName, AlertType), but got {columns.Length}. Skipping line.");
-                        continue;
+                        QueuedAvatarWatch watchItem = new QueuedAvatarWatch(1, importItem.AvatarId, importItem.AlertType, lineNumber);
+                        PlayerManager.EnqueueWatchAvatarForCheck(watchItem);
+                        processedCount++;
                     }
-
-                    string avatarId = columns[0].Trim().Trim('"');
-                    string avatarName = columns[1].Trim().Trim('"');
-                    string avatarAlert = columns[2].Trim().Trim('"');
-
-                    if (string.IsNullOrWhiteSpace(avatarId))
-                    {
-                        logger.Warn($"Line {lineNumber}: Empty avatar ID, skipping.");
-                        continue;
-                    }
-
-                    // Convert the alert type string to the AlertTypeEnum, defaulting to None if parsing fails
-                    AlertTypeEnum alertType = AlertTypeEnum.None;
-                    if (Enum.TryParse<AlertTypeEnum>(avatarAlert, out alertType))
-                    {
-                        // Declared and Defaulted above
-                    }
-                    else
-                    {
-                        logger.Warn($"Line {lineNumber}: Invalid AlertType '{avatarAlert}' for Avatar ID '{avatarId}', defaulting to None.");
-                    }
-
-                    QueuedAvatarWatch watchItem = new QueuedAvatarWatch(1, avatarId, alertType, lineNumber);
-                    PlayerManager.EnqueueWatchAvatarForCheck(watchItem);
-                    processedCount++;
                 }
+
+                logger.Info($"Total valid AvatarImportItems parsed: {processedCount}");
+
             }
 
             return processedCount;
         }
+
+        private AvatarImportItem? ProcessAvatarLineItem(string line, int lineNumber)
+        {
+            // Split by whitespace or comma to get the first column
+            string pattern = @",(?=(?:[^""]*""[^""]*"")*[^""]*$)";
+            string[] columns = Regex.Split(line, pattern); //.Split(new[] { ' ', '\t', ',' }, StringSplitOptions.RemoveEmptyEntries);
+
+            if (columns.Length < 3)
+            {
+                logger.Warn($"Line {lineNumber}: Expected at least 3 columns (AvatarId, AvatarName, AlertType), but got {columns.Length}. Skipping line.");
+                logger.Warn(line);
+                return null;
+            }
+
+            string avatarId = columns[0].Trim().Trim('"');
+            string avatarName = columns[1].Trim().Trim('"');
+            string avatarAlert = columns[2].Trim().Trim('"');
+
+            if (string.IsNullOrWhiteSpace(avatarId))
+            {
+                logger.Warn($"Line {lineNumber}: Empty avatar ID, skipping.");
+                logger.Warn(line);
+                return null;
+            }
+
+            // Convert the alert type string to the AlertTypeEnum, defaulting to None if parsing fails
+            AlertTypeEnum alertType = AlertTypeEnum.None;
+            if (!Enum.TryParse<AlertTypeEnum>(avatarAlert, out alertType))
+            {
+                logger.Warn($"Line {lineNumber}: Invalid AlertType '{avatarAlert}' for Avatar ID '{avatarId}', defaulting to None.");
+            }
+
+            return new AvatarImportItem(lineNumber, avatarId, avatarName, alertType);
+        }
     }
+
+
+    public class AvatarImportItem
+    {
+        public int LineNumber { get; set; }
+        public string AvatarId { get; set; }
+        public string AvatarName { get; set; }
+        public AlertTypeEnum AlertType { get; set; }
+        public AvatarImportItem(int lineNumber, string avatarId, string avatarName, AlertTypeEnum alertType)
+        {
+            LineNumber = lineNumber;
+            AvatarId = avatarId;
+            AvatarName = avatarName;
+            AlertType = alertType;
+        }
+
+        public override string ToString()
+        {
+            return $"Line {LineNumber}: AvatarId={AvatarId}, AvatarName={AvatarName}, AlertType={AlertType}";
+        }
+    }
+
 }
