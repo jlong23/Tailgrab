@@ -56,7 +56,10 @@ namespace Tailgrab.Clients.Ollama
                     process.Priority = 1; // Lower priority since we already have an evaluation
                 }
 
-                priorityQueue.Enqueue(process);
+                if (!priorityQueue.Contains(process))
+                {
+                    priorityQueue.Enqueue(process);
+                }
             }
             catch (Exception ex)
             {
@@ -184,7 +187,10 @@ namespace Tailgrab.Clients.Ollama
                                 // Retry the item by re-enqueuing it with incremented retries
                                 item.retries++;
                                 logger.Warn($"Ollama evaluation failed for userId: {item.UserId}. Retrying ({item.retries}/{MaxRetries})...");
-                                priorityQueue.Enqueue(item);
+                                if (!priorityQueue.Contains(item))
+                                {
+                                    priorityQueue.Enqueue(item);
+                                }
                             }
                         }
                         else
