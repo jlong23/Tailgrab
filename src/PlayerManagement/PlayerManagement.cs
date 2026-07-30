@@ -16,6 +16,7 @@ using static Tailgrab.Clients.VRChat.VRChatClient;
 
 namespace Tailgrab.PlayerManagement
 {
+    #region Player and Event Classes
     public class PlayerEvent(PlayerEvent.EventType type, string eventDescription)
     {
         public enum EventType
@@ -396,6 +397,15 @@ namespace Tailgrab.PlayerManagement
         public ChangeType Type { get; } = type;
         public Player Player { get; } = player;
     }
+
+    public class GroupInfoDTO(string groupId, AlertTypeEnum alertType, bool exists)
+    {
+        public string GroupId { get; set; } = groupId;
+        public AlertTypeEnum AlertType { get; set; } = alertType;
+        public bool Exists { get; set; } = exists;
+    }
+    #endregion
+
 
     public class PlayerManager
     {
@@ -992,6 +1002,106 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
+        #region Group Management
+        public async Task<List<UserGroupViewModel>> LoadUserGroupsAsync(string userId)
+        {
+            var groupViewModels = new List<UserGroupViewModel>();
+
+            try
+            {
+                VRChatClient vrcClient = serviceRegistry.GetVRChatAPIClient();
+
+                // Fetch groups from API on background thread
+                List<LimitedUserGroups> usersLimitedGroups = await Task.Run(() => vrcClient.GetProfileGroups(userId));
+                logger.Info($"Fetched {usersLimitedGroups?.Count ?? 0} groups for user {userId}");
+
+                if (usersLimitedGroups == null || usersLimitedGroups.Count == 0)
+                {
+                    logger.Info($"No groups found for user {userId}");
+                    return groupViewModels;
+                }
+
+
+                // Fetch DB data on background thread
+                List<GroupInfoDTO> dbGroupDataList = await FindMatchingWatchGroupInfo(usersLimitedGroups);
+
+                // Create view models on UI thread (required for WPF Brush creation in UpdateAlertColors)
+                foreach (var group in usersLimitedGroups)
+                {
+                    try
+                    {
+                        UserGroupViewModel item = await BuildUserGroupViewItem(userId, group, dbGroupDataList);
+
+                        groupViewModels.Add(item);
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.Error(ex, $"Error processing group {group.Id} for user {userId}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, $"Error loading user groups for {userId}");
+                throw;
+            }
+
+            return [.. groupViewModels
+                .OrderByDescending(g => g.IsOwnedByUser)
+                .ThenByDescending(g => g.AlertType)
+                .ThenBy(g => g.Name)];
+        }
+
+        private async Task<List<GroupInfoDTO>> FindMatchingWatchGroupInfo(List<LimitedUserGroups> groupList)
+        {
+            List<GroupInfoDTO> matchingGroups = new List<GroupInfoDTO>();
+            // Fetch DB data on background thread
+            TailgrabDBContext dbContext = serviceRegistry.GetDBContext();
+            foreach (var group in groupList)
+            {
+                GroupInfo? existingGroup = dbContext.GroupInfos.Find(group.GroupId);
+                GroupInfoDTO groupInfoDTO = new(group.GroupId ?? string.Empty,
+                    existingGroup?.AlertType ?? AlertTypeEnum.None,
+                    existingGroup != null
+                );
+                matchingGroups.Add(groupInfoDTO);
+            }
+            return matchingGroups;
+        }
+
+        private async Task<UserGroupViewModel> BuildUserGroupViewItem(string ownerId, LimitedUserGroups group, List<GroupInfoDTO> dbGroup)
+        {
+
+            VRChatClient vrcClient = serviceRegistry.GetVRChatAPIClient();
+            VRChat.API.Model.Group? fullGroup = await Task.Run(() => vrcClient.GetGroupById(group.GroupId));
+
+            UserGroupViewModel item = new()
+            {
+                GroupId = group.GroupId ?? string.Empty,
+                Name = group.Name ?? string.Empty,
+                BannerUrl = group.BannerUrl ?? "https://assets.vrchat.com/www/groups/default_banner.png",
+                IconUrl = group.IconUrl ?? "https://assets.vrchat.com/www/groups/default_banner.png",
+                ShortCode = $"{group.ShortCode}.{group.Discriminator}",
+                Description = fullGroup?.Description ?? string.Empty,
+                Rules = fullGroup?.Rules ?? string.Empty,
+                JoinState = fullGroup?.JoinState.ToString() ?? "N/A",
+                MemberCount = fullGroup?.MemberCount ?? 0,
+                OwnerId = fullGroup?.OwnerId ?? string.Empty,
+                IsOwnedByUser = fullGroup?.OwnerId == ownerId
+            };
+
+            // Apply DB data
+            GroupInfoDTO? watchedItem = dbGroup.FirstOrDefault(d => d.GroupId == item.GroupId);
+            item.ExistsInDatabase = watchedItem?.Exists ?? false;
+            item.AlertType = watchedItem?.AlertType ?? AlertTypeEnum.None;
+            item.DatabaseAlertType = watchedItem?.AlertType ?? AlertTypeEnum.None;
+
+            item.UpdateAlertColors();
+
+            return item;
+        }
+        #endregion
+
         #region Alert Color Management
         public static string GetAlertColor(AlertClassEnum alertClass, AlertTypeEnum alertType)
         {
@@ -1011,7 +1121,6 @@ namespace Tailgrab.PlayerManagement
         }
 
         #endregion
-
 
         #region Avatar Management
         public static int GetQueueCount()
@@ -1422,7 +1531,6 @@ namespace Tailgrab.PlayerManagement
 
             return avatarData;
         }
-
         #endregion
 
         #region Moderation Report Management

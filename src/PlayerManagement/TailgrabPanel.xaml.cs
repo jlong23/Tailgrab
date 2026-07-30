@@ -1,3 +1,4 @@
+using BuildSoft.OscCore;
 using Microsoft.Win32;
 using NLog;
 using System.Collections.ObjectModel;
@@ -4935,7 +4936,7 @@ namespace Tailgrab.PlayerManagement
                 UserGroupsOverlay.Visibility = Visibility.Visible;
 
                 // Fetch groups asynchronously (already async, no need for Task.Run)
-                var groups = await LoadUserGroupsAsync(userId);
+                List<UserGroupViewModel> groups = await _serviceRegistry.GetPlayerManager().LoadUserGroupsAsync(userId);
 
                 // Update UI (already on UI thread)
                 UserGroupsDataGrid.ItemsSource = groups;
@@ -4949,102 +4950,6 @@ namespace Tailgrab.PlayerManagement
                 System.Windows.MessageBox.Show($"Failed to load user groups: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 UserGroupsOverlay.Visibility = Visibility.Collapsed;
             }
-        }
-
-        private async Task<List<UserGroupViewModel>> LoadUserGroupsAsync(string userId)
-        {
-            var groupViewModels = new List<UserGroupViewModel>();
-
-            try
-            {
-                VRChatClient vrcClient = _serviceRegistry.GetVRChatAPIClient();
-
-                // Fetch groups from API on background thread
-                List<LimitedUserGroups> userGroups = await Task.Run(() => vrcClient.GetProfileGroups(userId));
-                logger.Info($"Fetched {userGroups?.Count ?? 0} groups for user {userId}");
-
-                if (userGroups == null || userGroups.Count == 0)
-                {
-                    logger.Info($"No groups found for user {userId}");
-                    return groupViewModels;
-                }
-
-                // Fetch DB data on background thread
-                var dbContext = _serviceRegistry.GetDBContext();
-                var dbGroupData = await Task.Run(() =>
-                {
-                    var data = new List<(string groupId, bool exists, AlertTypeEnum alertType)>();
-                    foreach (var group in userGroups)
-                    {
-                        var existingGroup = dbContext.GroupInfos.Find(group.GroupId);
-                        if (existingGroup != null)
-                        {
-                            data.Add((group.GroupId ?? string.Empty, true, existingGroup.AlertType));
-                        }
-                        else
-                        {
-                            data.Add((group.GroupId ?? string.Empty, false, AlertTypeEnum.None));
-                        }
-                    }
-                    return data;
-                });
-
-                // Create view models on UI thread (required for WPF Brush creation in UpdateAlertColors)
-                foreach (var group in userGroups)
-                {
-                    try
-                    {
-
-                        VRChat.API.Model.Group? fullGroup = await Task.Run(() => vrcClient.GetGroupById(group.GroupId));
-
-                        UserGroupViewModel item = BuildUserGroupViewItem(group, dbGroupData);
-
-                        groupViewModels.Add(item);
-                    }
-                    catch (Exception ex)
-                    {
-                        logger.Error(ex, $"Error processing group {group.Id} for user {userId}");
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex, $"Error loading user groups for {userId}");
-                throw;
-            }
-
-            return [.. groupViewModels
-                .OrderByDescending(g => g.IsOwnedByUser)
-                .ThenByDescending(g => g.AlertType)
-                .ThenBy(g => g.Name)];
-        }
-
-        private UserGroupViewModel BuildUserGroupViewItem(LimitedUserGroups group, List<(string groupId, bool exists, AlertTypeEnum alertType)> dbGroup)
-        {
-            UserGroupViewModel item = new()
-            {
-                GroupId = group.GroupId ?? string.Empty,
-                Name = group.Name ?? string.Empty,
-                BannerUrl = group.BannerUrl ?? "https://assets.vrchat.com/www/groups/default_banner.png",
-                IconUrl = group.IconUrl ?? "https://assets.vrchat.com/www/groups/default_banner.png",
-                ShortCode = $"{group.ShortCode}.{group.Discriminator}",
-                Description = string.Empty, // Will be filled later
-                Rules = string.Empty, // Will be filled later
-                JoinState = "N/A", // Will be filled later
-                MemberCount = 0, // Will be filled later
-                OwnerId = string.Empty, // Will be filled later
-                IsOwnedByUser = false // Will be filled later
-            };
-
-            // Apply DB data
-            var (groupId, exists, alertType) = dbGroup.FirstOrDefault(d => d.groupId == item.GroupId);
-            item.ExistsInDatabase = exists;
-            item.AlertType = alertType;
-            item.DatabaseAlertType = alertType;
-
-            item.UpdateAlertColors();
-
-            return item;
         }
 
         private void UserGroupsOverlayClose_Click(object sender, RoutedEventArgs e)
