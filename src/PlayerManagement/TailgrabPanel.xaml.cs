@@ -30,6 +30,8 @@ namespace Tailgrab.PlayerManagement
         private readonly DispatcherTimer fallbackTimer;
         private readonly DispatcherTimer statusBarTimer;
 
+        private string SelectedAvatarId = string.Empty;
+
         public ObservableCollection<PlayerViewModel> ActivePlayers { get; } = [];
         public ObservableCollection<PlayerViewModel> PastPlayers { get; } = [];
         public ObservableCollection<PlayerViewModel> PrintPlayers { get; } = [];
@@ -3400,17 +3402,20 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
-
         private async void PopulateAvatarInformation(string avatarId)
         {
             try
             {
+
                 // Get the full avatar information from VRChat API
                 VRChatClient vrcClient = _serviceRegistry.GetVRChatAPIClient();
                 VRChat.API.Model.Avatar? avatar = await Task.Run(() => vrcClient.GetAvatarById(avatarId));
 
                 if (avatar != null)
                 {
+                    UseAvatarButton.IsEnabled = true;
+                    SelectedAvatarId = avatar.Id;
+
                     // Populate the UI fields
                     BanMgmtAvatarName.Text = avatar.Name ?? "Unknown";
                     BanMgmtPublishDate.Text = avatar.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss");
@@ -3473,7 +3478,19 @@ namespace Tailgrab.PlayerManagement
             BanMgmtAvatarDesc.Text = string.Empty;
             BanMgmtAvatarImage.Source = null;
             BanAvatarOwnerButton.IsEnabled = false;
+            UseAvatarButton.IsEnabled = false;
+            SelectedAvatarId = string.Empty;
         }
+
+        private async void UseAvatarButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!string.IsNullOrWhiteSpace(SelectedAvatarId))
+            {
+                // Call the load user function
+                await _serviceRegistry.GetPlayerManager().SwitchAvatar(SelectedAvatarId);
+            }
+        }
+
 
         private void GroupDbGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {

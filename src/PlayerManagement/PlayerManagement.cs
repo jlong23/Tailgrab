@@ -1586,6 +1586,31 @@ namespace Tailgrab.PlayerManagement
 
             return avatarData;
         }
+
+
+        public async Task<bool> SwitchAvatar( string avatarId)
+        {
+            try
+            {
+                Tailgrab.Clients.VRChat.VRChatClient vrcClient = serviceRegistry.GetVRChatAPIClient();
+                bool avatarResult = await vrcClient.ChangeIntoAvatar(avatarId);
+                if (avatarResult)
+                {
+                    logger.Info($"Successfully switched avatar to {avatarId}");
+                    return true;
+                }
+                else
+                {
+                    logger.Error($"Failed to switch avatar to {avatarId}");
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, $"Error switching avatar to {avatarId}");
+                return false;
+            }
+        }
         #endregion
 
         #region Moderation Report Management

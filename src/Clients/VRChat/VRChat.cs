@@ -7,7 +7,6 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using Tailgrab.Clients.Ollama;
 using Tailgrab.Common;
-using Tailgrab.Models;
 using VRChat.API.Client;
 using VRChat.API.Model;
 
@@ -153,6 +152,8 @@ namespace Tailgrab.Clients.VRChat
 
         #endregion
 
+
+        #region Avatar
         public List<AvatarModeration> GetAvatarModerations()
         {
             List<AvatarModeration> moderations = [];
@@ -233,6 +234,28 @@ namespace Tailgrab.Clients.VRChat
 
             return false;
         }
+
+        public async Task<bool> ChangeIntoAvatar(string avatarId)
+        {
+            try
+            {
+                if (_vrchat == null)
+                {
+                    logger.Info($"Failed to switch into avatar {avatarId}, not logged in.");
+                    return false;
+                }
+
+                CurrentUser currentUser = _vrchat.Avatars.SelectAvatar(avatarId);
+
+                return currentUser != null;
+            }
+            catch (Exception ex)
+            {
+                logger.Error($"Error switching into avatar {avatarId}: {ex.Message}");
+            }
+            return false;
+        }
+        #endregion
 
         #region World Management
         public World? GetWorldById(string worldId)

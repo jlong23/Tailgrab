@@ -1276,19 +1276,28 @@ Title="Tailgrab Player Panel"
                                                VerticalAlignment="Top"/>
 
                                         <!-- User Details -->
-                                        <Label Grid.Row="0" Grid.Column="2" Content="Avatar Name:" FontWeight="Bold" Margin="0,0,8,0"/>
+                                        <Label Grid.Row="0" Grid.Column="2" Content="Avatar Name:" FontWeight="Bold" Margin="0,0,8,0" HorizontalAlignment="Right"/>
                                         <TextBlock Grid.Row="0" Grid.Column="3" Name="BanMgmtAvatarName" VerticalAlignment="Center"/>
 
-                                        <Label Grid.Row="1" Grid.Column="2" Content="Avatar State:" FontWeight="Bold" Margin="0,0,8,0"/>
+                                        <Label Grid.Row="1" Grid.Column="2" Content="Avatar State:" FontWeight="Bold" Margin="0,0,8,0" HorizontalAlignment="Right"/>
                                         <TextBlock Grid.Row="1" Grid.Column="3" Name="BanMgmtAvatarState" VerticalAlignment="Center"/>
 
-                                        <Label Grid.Row="0" Grid.Column="4" Content="Publish Date:" FontWeight="Bold" Margin="0,0,8,0"/>
-                                        <TextBlock Grid.Row="2" Grid.Column="3" Name="BanMgmtPublishDate" VerticalAlignment="Center"/>
+                                        <Label Grid.Row="2" Grid.Column="2" Content="Use Avatar:" FontWeight="Bold" Margin="0,0,8,0" HorizontalAlignment="Right"/>
+                                        <StackPanel Grid.Row="2" Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
+                                            <Button Content="Switch into Avatar" 
+                                                   Name="UseAvatarButton"
+                                                   Click="UseAvatarButton_Click" 
+                                                   Margin="2,0,0,0"
+                                                   IsEnabled="False"/>
+                                        </StackPanel>
 
-                                        <Label Grid.Row="1" Grid.Column="4" Content="Update Date:" FontWeight="Bold" Margin="0,0,8,0"/>
+                                        <Label Grid.Row="0" Grid.Column="4" Content="Publish Date:" FontWeight="Bold" Margin="0,0,8,0" HorizontalAlignment="Right"/>
+                                        <TextBlock Grid.Row="0" Grid.Column="5" Name="BanMgmtPublishDate" VerticalAlignment="Center"/>
+
+                                        <Label Grid.Row="1" Grid.Column="4" Content="Update Date:" FontWeight="Bold" Margin="0,0,8,0" HorizontalAlignment="Right"/>
                                         <TextBlock Grid.Row="1" Grid.Column="5" Name="BanMgmtUpdateDate" VerticalAlignment="Center"/>
 
-                                        <Label Grid.Row="2" Grid.Column="4" Content="Owner:" FontWeight="Bold" Margin="0,0,8,0"/>
+                                        <Label Grid.Row="2" Grid.Column="4" Content="Owner:" FontWeight="Bold" Margin="0,0,8,0" HorizontalAlignment="Right"/>
                                         <StackPanel Grid.Row="2" Grid.Column="5" Orientation="Horizontal" VerticalAlignment="Center">
                                             <TextBlock VerticalAlignment="Center">
                                                 <Hyperlink NavigateUri="{Binding ElementName=BanMgmtAvatarOwnerId, Path=Text}"
@@ -1407,22 +1416,22 @@ Title="Tailgrab Player Panel"
                                                VerticalAlignment="Top"/>
 
                                         <!-- User Details -->
-                                        <Label Grid.Row="0" Grid.Column="2" Content="Group Name:" FontWeight="Bold" Margin="0,0,8,0"/>
+                                        <Label Grid.Row="0" Grid.Column="2" Content="Group Name:" FontWeight="Bold" Margin="0,0,8,0" HorizontalAlignment="Right"/>
                                         <TextBlock Grid.Row="0" Grid.Column="3" Name="BanMgmtGroupName" VerticalAlignment="Center"/>
 
-                                        <Label Grid.Row="1" Grid.Column="2" Content="Join State:" FontWeight="Bold" Margin="0,0,8,0"/>
+                                        <Label Grid.Row="1" Grid.Column="2" Content="Join State:" FontWeight="Bold" Margin="0,0,8,0" HorizontalAlignment="Right"/>
                                         <TextBlock Grid.Row="1" Grid.Column="3" Name="BanMgmtGroupJoinState" VerticalAlignment="Center"/>
 
-                                        <Label Grid.Row="2" Grid.Column="2" Content="Member Count:" FontWeight="Bold" Margin="0,0,8,0"/>
+                                        <Label Grid.Row="2" Grid.Column="2" Content="Member Count:" FontWeight="Bold" Margin="0,0,8,0" HorizontalAlignment="Right"/>
                                         <TextBlock Grid.Row="2" Grid.Column="3" Name="BanMgmtGroupmemberCount" VerticalAlignment="Center"/>
 
-                                        <Label Grid.Row="0" Grid.Column="4" Content="Create Date:" FontWeight="Bold" Margin="0,0,8,0"/>
+                                        <Label Grid.Row="0" Grid.Column="4" Content="Create Date:" FontWeight="Bold" Margin="0,0,8,0" HorizontalAlignment="Right"/>
                                         <TextBlock Grid.Row="0" Grid.Column="5" Name="BanMgmtGroupCreateDate" VerticalAlignment="Center"/>
 
-                                        <Label Grid.Row="1" Grid.Column="4" Content="Short Code:" FontWeight="Bold" Margin="0,0,8,0"/>
+                                        <Label Grid.Row="1" Grid.Column="4" Content="Short Code:" FontWeight="Bold" Margin="0,0,8,0" HorizontalAlignment="Right"/>
                                         <TextBlock Grid.Row="1" Grid.Column="5" Name="BanMgmtGroupShortCode" VerticalAlignment="Center"/>
 
-                                        <Label Grid.Row="2" Grid.Column="4" Content="Owner:" FontWeight="Bold" Margin="0,0,8,0"/>
+                                        <Label Grid.Row="2" Grid.Column="4" Content="Owner:" FontWeight="Bold" Margin="0,0,8,0" HorizontalAlignment="Right"/>
                                         <StackPanel Grid.Row="2" Grid.Column="5" Orientation="Horizontal" VerticalAlignment="Center">
                                             <TextBlock VerticalAlignment="Center">
                                                 <Hyperlink NavigateUri="{Binding ElementName=BanMgmtGroupOwnerId, Path=Text}"
@@ -2501,22 +2510,22 @@ Title="Tailgrab Player Panel"
                                                VerticalAlignment="Top"/>
 
                                         <!-- User Details -->
-                                        <Label Grid.Row="0" Grid.Column="1" Content="User Name:" FontWeight="Bold" Margin="0,0,8,0"/>
+                                        <Label Grid.Row="0" Grid.Column="1" Content="User Name:" FontWeight="Bold" Margin="0,0,8,0" HorizontalAlignment="Right"/>
                                         <TextBlock Grid.Row="0" Grid.Column="2" Name="BanMgmtUserName" VerticalAlignment="Center"/>
 
-                                        <Label Grid.Row="1" Grid.Column="1" Content="Status:" FontWeight="Bold" Margin="0,0,8,0"/>
+                                        <Label Grid.Row="1" Grid.Column="1" Content="Status:" FontWeight="Bold" Margin="0,0,8,0" HorizontalAlignment="Right"/>
                                         <TextBlock Grid.Row="1" Grid.Column="2" Name="BanMgmtUserStatusDesc" VerticalAlignment="Center"/>
 
-                                        <Label Grid.Row="2" Grid.Column="1" Content="Pronouns:" FontWeight="Bold" Margin="0,0,8,0"/>
+                                        <Label Grid.Row="2" Grid.Column="1" Content="Pronouns:" FontWeight="Bold" Margin="0,0,8,0" HorizontalAlignment="Right"/>
                                         <TextBlock Grid.Row="2" Grid.Column="2" Name="BanMgmtUserPronouns" VerticalAlignment="Center"/>
 
-                                        <Label Grid.Row="0" Grid.Column="3" Content="Join Date:" FontWeight="Bold" Margin="0,0,8,0"/>
+                                        <Label Grid.Row="0" Grid.Column="3" Content="Join Date:" FontWeight="Bold" Margin="0,0,8,0" HorizontalAlignment="Right"/>
                                         <TextBlock Grid.Row="0" Grid.Column="4" Name="BanMgmtUserJoinDate" VerticalAlignment="Center"/>
 
-                                        <Label Grid.Row="1" Grid.Column="3" Content="Age Verified:" FontWeight="Bold" Margin="0,0,8,0"/>
+                                        <Label Grid.Row="1" Grid.Column="3" Content="Age Verified:" FontWeight="Bold" Margin="0,0,8,0" HorizontalAlignment="Right"/>
                                         <TextBlock Grid.Row="1" Grid.Column="4" Name="BanMgmtUserAgeVerified" VerticalAlignment="Center"/>
 
-                                        <Label Grid.Row="2" Grid.Column="3" Content="State:" FontWeight="Bold" Margin="0,0,8,0"/>
+                                        <Label Grid.Row="2" Grid.Column="3" Content="State:" FontWeight="Bold" Margin="0,0,8,0" HorizontalAlignment="Right"/>
                                         <TextBlock Grid.Row="2" Grid.Column="4" Name="BanMgmtUserState" VerticalAlignment="Center"/>
                                     </Grid>
                                 </GroupBox>
