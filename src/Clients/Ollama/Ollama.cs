@@ -56,7 +56,7 @@ namespace Tailgrab.Clients.Ollama
                     process.Priority = 1; // Lower priority since we already have an evaluation
                 }
 
-                if (!priorityQueue.Contains(process))
+                if (!IsUserProfileInQueue(process.UserId))
                 {
                     priorityQueue.Enqueue(process);
                 }
@@ -66,6 +66,11 @@ namespace Tailgrab.Clients.Ollama
                 logger.Error(ex, $"Error fetching user profile for userId: {userId}");
 
             }
+        }
+
+        private bool IsUserProfileInQueue(string userId)
+        {
+            return priorityQueue.Any(item => ((QueuedProcess)item).UserId == userId);
         }
 
         private void UpdateQueuedProcessWithPlayer(QueuedProcess item)
@@ -177,7 +182,20 @@ namespace Tailgrab.Clients.Ollama
                             // if we got a response save it to the database
                             if (evaluation != null)
                             {
-                                dBContext.Add(evaluation);
+                                ProfileEvaluation evaluationDb = dBContext.ProfileEvaluations.FirstOrDefault(evaluation => evaluation.Md5checksum == item.MD5Hash);
+                                if( evaluationDb != null) 
+                                {
+                                    evaluationDb.Evaluation = evaluation.Evaluation;
+                                    evaluationDb.LastDateTime = DateTime.UtcNow;
+                                    evaluationDb.PromptMd5Checksum = promptHash;
+                                    dBContext.Update(evaluationDb);
+                                }
+                                else
+                                {
+                                    evaluation.Md5checksum = item.MD5Hash ?? string.Empty;
+                                    evaluation.PromptMd5Checksum = promptHash;
+                                    dBContext.Add(evaluation);
+                                }
                                 dBContext.SaveChanges();
 
                                 UpdatePlayerWithEvaluation(item, evaluation);
@@ -187,7 +205,7 @@ namespace Tailgrab.Clients.Ollama
                                 // Retry the item by re-enqueuing it with incremented retries
                                 item.retries++;
                                 logger.Warn($"Ollama evaluation failed for userId: {item.UserId}. Retrying ({item.retries}/{MaxRetries})...");
-                                if (!priorityQueue.Contains(item))
+                                if (!priorityQueue.Any(items => ((QueuedProcess)items).UserId == item.UserId))
                                 {
                                     priorityQueue.Enqueue(item);
                                 }

@@ -65,6 +65,7 @@
   </ItemGroup>
 
   <ItemGroup>
+	<PackageReference Include="ConcurrentDataStructures" Version="0.2.0" />
 	<PackageReference Include="ConcurrentPriorityQueue" Version="3.0.0" />
 	<PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.2" />
 	<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.2">
