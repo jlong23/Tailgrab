@@ -3312,12 +3312,12 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
-        private void GroupFetch_Click(object sender, RoutedEventArgs e)
+        private async void GroupFetch_Click(object sender, RoutedEventArgs e)
         {
             string? id = GroupDbFilterBox.Text?.Trim();
             if (string.IsNullOrEmpty(id)) return;
 
-            GroupInfo? existing = _serviceRegistry.GetPlayerManager().AddUpdateGroupFromVRC(id);
+            GroupInfo? existing = await _serviceRegistry.GetPlayerManager().AddUpdateGroupFromVRC(id);
 
             if (existing == null)
             {
@@ -3489,7 +3489,8 @@ namespace Tailgrab.PlayerManagement
             {
                 // Get the full group information from VRChat API
                 VRChatClient vrcClient = _serviceRegistry.GetVRChatAPIClient();
-                VRChat.API.Model.Group? group = await Task.Run(() => vrcClient.GetGroupById(groupId));
+                Result<VRChat.API.Model.Group?> groupResult = await Task.Run(() => vrcClient.GetGroupById(groupId));
+                VRChat.API.Model.Group? group = groupResult.Value;
 
                 if (group != null)
                 {
@@ -4578,8 +4579,9 @@ namespace Tailgrab.PlayerManagement
                 }
 
                 // Verify group exists in VRChat
-                var group = _serviceRegistry.GetVRChatAPIClient().GetGroupById(groupId);
-                if (group == null || string.IsNullOrEmpty(group.Id))
+                Result<VRChat.API.Model.Group?> groupResult = _serviceRegistry.GetVRChatAPIClient().GetGroupById(groupId);
+                VRChat.API.Model.Group? group = groupResult.Value;
+                if (!groupResult.HasException && string.IsNullOrEmpty(groupResult.Value?.Id))
                 {
                     System.Windows.MessageBox.Show("Group not found in VRChat. Please verify the Group ID.",
                         "Group Not Found", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -4590,7 +4592,7 @@ namespace Tailgrab.PlayerManagement
                 var newGroup = new tailgrab.src.Models.GroupManagement
                 {
                     GroupId = groupId,
-                    GroupName = group.Name ?? "Unknown",
+                    GroupName = group?.Name ?? "Unknown",
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
                 };
@@ -4602,7 +4604,7 @@ namespace Tailgrab.PlayerManagement
                 var item = new GroupBanItem
                 {
                     GroupId = groupId,
-                    GroupName = group.Name ?? "Unknown",
+                    GroupName = group?.Name ?? "Unknown",
                     Status = "Checking...",
                     CanBan = false,
                     CanUnban = false
@@ -4627,8 +4629,8 @@ namespace Tailgrab.PlayerManagement
                 // Clear the text box
                 BanMgmtAddGroupIdTextBox.Text = string.Empty;
 
-                logger.Info($"Added group {groupId} ({group.Name}) to ban management");
-                System.Windows.MessageBox.Show($"Group '{group.Name}' added successfully",
+                logger.Info($"Added group {groupId} ({group?.Name}) to ban management");
+                System.Windows.MessageBox.Show($"Group '{group?.Name}' added successfully",
                     "Success", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)

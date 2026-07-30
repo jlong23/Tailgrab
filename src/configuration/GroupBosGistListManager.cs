@@ -280,11 +280,11 @@ namespace Tailgrab.Configuration
             int processedCount = 0;
             foreach (GroupImportItem item in importList)
             {
-                logger.Info($"Line {item.LineNumber}: Processing {item.ToString()}");
+                logger.Debug($"Line {item.LineNumber}: Processing {item.ToString()}");
                 try
                 {
                     // Fetch/Refresh the GroupInfo from VRC 
-                    GroupInfo? groupInfo = playerManager.AddUpdateGroupFromVRC(item.GroupId);
+                    GroupInfo? groupInfo = await playerManager.AddUpdateGroupFromVRC(item.GroupId);
                     if (groupInfo == null)
                     {
                         logger.Debug($"Line {item.LineNumber}: Group ID '{item.GroupId}' not found, skipping.");
@@ -308,16 +308,13 @@ namespace Tailgrab.Configuration
                     gistProcessedCount++;
                     if( item.LineNumber % 50 == 0)
                     {
-                        logger.Info($"GIST Group Processed {item.LineNumber} of {importList.Count()} records so far...");
+                        logger.Info($"GIST Group Processed {item.LineNumber} of {importList.Count()} records.");
                     }
                 }
                 catch (Exception ex)
                 {
                     logger.Error(ex, $"Line {item.LineNumber}: Error processing Group ID '{item.GroupId}'");                    
                 }
-
-                // Throttle processing to avoid overwhelming the API
-                await Task.Delay(1000);
             }
 
             logger.Info($"GIST Group Updated/Added {processedCount} records");

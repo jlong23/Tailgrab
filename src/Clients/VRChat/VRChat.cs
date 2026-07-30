@@ -435,7 +435,7 @@ namespace Tailgrab.Clients.VRChat
         #endregion
 
         #region Group Management
-        internal Group? GetGroupById(string id)
+        internal Result<Group?> GetGroupById(string id)
         {
             Group? group = null;
             try
@@ -448,9 +448,10 @@ namespace Tailgrab.Clients.VRChat
             catch (Exception ex)
             {
                 logger.Error($"Error fetching Group information for group '{id}': {ex.Message}");
+                return new Result<Group?> { Exception = ex };
             }
 
-            return group;
+            return new Result<Group?> { Value = group };
         }
 
         public async Task<TGGroupMemberStatus> GetGroupMemberStatus(string groupId, string userId)
@@ -951,6 +952,14 @@ namespace Tailgrab.Clients.VRChat
             NotMember,
             Member,
             Banned
+        }
+
+        public class Result<T>
+        {
+            public T? Value { get; set; }
+            public Exception? Exception { get; set; }
+            public bool HasException => Exception != null;
+
         }
         #endregion
     }

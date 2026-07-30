@@ -11,6 +11,7 @@ using Tailgrab.Clients.XSOverlay;
 using Tailgrab.Common;
 using Tailgrab.LineHandler;
 using Tailgrab.Models;
+using VRChat.API.Client;
 using VRChat.API.Model;
 using static Tailgrab.Clients.VRChat.VRChatClient;
 
@@ -921,21 +922,69 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
-        public GroupInfo? AddUpdateGroupFromVRC(string? groupId)
+        public async Task<GroupInfo?> AddUpdateGroupFromVRC(string? groupId)
         {
             if (string.IsNullOrEmpty(groupId))
                 return null;
 
+            TailgrabDBContext dbContext = serviceRegistry.GetDBContext();
+            GroupInfo? existing = dbContext.GroupInfos.Find(groupId);
+
             try
             {
-                VRChatClient vrcClient = serviceRegistry.GetVRChatAPIClient();
-                VRChat.API.Model.Group? group = vrcClient.GetGroupById(groupId);
-                if (group != null)
+                bool shouldUpdate = false;
+                // Only update if the existing record is older than 12 hours
+                if (existing != null ) { 
+                    if (existing.UpdatedAt < DateTime.UtcNow.AddHours(-12))
+                        shouldUpdate = true;
+                } 
+                else
                 {
-                    TailgrabDBContext dbContext = serviceRegistry.GetDBContext();
-                    GroupInfo? existing = dbContext.GroupInfos.Find(group.Id);
+                    shouldUpdate = true;
+                }
+
+
+                if( shouldUpdate )
+                {
+                    // Throttle processing to avoid overwhelming the API
+                    await Task.Delay(1000);
+
+                    Tailgrab.Clients.VRChat.VRChatClient vrcClient = serviceRegistry.GetVRChatAPIClient();
+                    Result<Group?> groupResult = vrcClient.GetGroupById(groupId);
+                    Group? group = groupResult.Value;
+
+                    if (groupResult.HasException)
+                    {
+                        if (groupResult.Exception is ApiException apiException)
+                        {
+                            if (apiException.ErrorCode == 404)
+                            {
+                                logger.Warn($"Group '{groupId}' not found in VRChat API.");
+                                if(existing != null)
+                                {
+                                    dbContext.GroupInfos.Remove(existing);
+                                    dbContext.SaveChanges();
+                                    logger.Info($"Removed Group '{groupId}' from local database as it no longer exists in VRChat API.");
+                                }
+                                return null;
+                            }
+                            else
+                            {
+                                logger.Warn($"Failed to fetch Group '{groupId}': {apiException.Message}");
+                                return null;
+                            }
+                        }                        
+                    }
+
                     if (existing == null)
                     {
+
+                        if (group == null)
+                        {
+                            logger.Warn($"Group '{groupId}' not found in VRChat API.");
+                            return null;
+                        }
+
                         GroupInfo newEntity = new()
                         {
                             GroupId = group.Id,
@@ -950,6 +999,12 @@ namespace Tailgrab.PlayerManagement
                     }
                     else
                     {
+                        if(group == null)
+                        {
+                            logger.Warn($"Group '{groupId}' not found in VRChat API.");
+                            return null;
+                        }
+
                         existing.GroupId = group.Id;
                         existing.GroupName = group.Name ?? string.Empty;
                         existing.CreatedAt = group.CreatedAt;
@@ -958,7 +1013,6 @@ namespace Tailgrab.PlayerManagement
                         dbContext.SaveChanges();
                         return existing;
                     }
-
                 }
             }
             catch (Exception ex)
@@ -966,7 +1020,7 @@ namespace Tailgrab.PlayerManagement
                 logger.Warn($"Failed to fetch Group '{groupId}': {ex.Message}");
             }
 
-            return null;
+            return existing;
         }
 
         public void SyncAvatarModerations()
@@ -974,7 +1028,7 @@ namespace Tailgrab.PlayerManagement
             try
             {
                 TailgrabDBContext dBContext = serviceRegistry.GetDBContext();
-                VRChatClient vrcClient = serviceRegistry.GetVRChatAPIClient();
+                Tailgrab.Clients.VRChat.VRChatClient vrcClient = serviceRegistry.GetVRChatAPIClient();
                 if (dBContext != null && vrcClient != null)
                 {
                     int lineNumber = 0;
@@ -1009,7 +1063,7 @@ namespace Tailgrab.PlayerManagement
 
             try
             {
-                VRChatClient vrcClient = serviceRegistry.GetVRChatAPIClient();
+                Tailgrab.Clients.VRChat.VRChatClient vrcClient = serviceRegistry.GetVRChatAPIClient();
 
                 // Fetch groups from API on background thread
                 List<LimitedUserGroups> usersLimitedGroups = await Task.Run(() => vrcClient.GetProfileGroups(userId));
@@ -1072,8 +1126,9 @@ namespace Tailgrab.PlayerManagement
         private async Task<UserGroupViewModel> BuildUserGroupViewItem(string ownerId, LimitedUserGroups group, List<GroupInfoDTO> dbGroup)
         {
 
-            VRChatClient vrcClient = serviceRegistry.GetVRChatAPIClient();
-            VRChat.API.Model.Group? fullGroup = await Task.Run(() => vrcClient.GetGroupById(group.GroupId));
+            Tailgrab.Clients.VRChat.VRChatClient vrcClient = serviceRegistry.GetVRChatAPIClient();
+            Result<Group?> fullGroupResult = await Task.Run(() => vrcClient.GetGroupById(group.GroupId));
+            Group? fullGroup = fullGroupResult.Value;
 
             UserGroupViewModel item = new()
             {
@@ -1637,7 +1692,7 @@ namespace Tailgrab.PlayerManagement
         internal string convertModerationsReportTypeToUserId(ModerationReportResponse response)
         {
             string userId = string.Empty;
-            VRChatClient vrcClient = serviceRegistry.GetVRChatAPIClient();
+            Tailgrab.Clients.VRChat.VRChatClient vrcClient = serviceRegistry.GetVRChatAPIClient();
             switch (response.Type)
             {
                 case "avatar":
@@ -1657,7 +1712,8 @@ namespace Tailgrab.PlayerManagement
                     break;
 
                 case "group":
-                    Group? group = vrcClient.GetGroupById(response.ContentId);
+                    Result<Group?> groupResult = vrcClient.GetGroupById(response.ContentId);
+                    Group? group = groupResult.Value;
                     if (group != null)
                     {
                         userId = group.OwnerId;
