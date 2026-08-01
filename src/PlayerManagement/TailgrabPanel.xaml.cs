@@ -558,6 +558,8 @@ namespace Tailgrab.PlayerManagement
             System.Windows.DataObject.AddPastingHandler(BanMgmtUserIdTextBox, UserSelectionTextBox_Pasting);
             // Hook paste event for OverlayUserIdTextBox to clear on paste
             System.Windows.DataObject.AddPastingHandler(OverlayUserIdTextBox, UserSelectionTextBox_Pasting);
+            // User Account Test Box for Ollama testing
+            System.Windows.DataObject.AddPastingHandler(UserAccountTestBox, UserSelectionTextBox_Pasting);
 
             // Hook paste event for EmojiFilterBox to clear on paste
             System.Windows.DataObject.AddPastingHandler(EmojiFilterBox, InventorySelectionTextBox_Pasting);
@@ -816,7 +818,6 @@ namespace Tailgrab.PlayerManagement
         {
             CanTestProfilePrompt =
                 !string.IsNullOrEmpty(ConfigStore.GetStoredKeyString(CommonConst.Registry_Ollama_API_Endpoint)) &&
-                !string.IsNullOrEmpty(ConfigStore.LoadSecret(CommonConst.Registry_Ollama_API_Key)) &&
                 !string.IsNullOrEmpty((string)VrOllamaModelBox.SelectedValue) &&
                 (VrOllamaPromptBox.Text?.Length ?? 0) > 60 &&
                 (UserAccountTestBox.Text?.StartsWith("usr_") ?? false);
