@@ -310,6 +310,8 @@ namespace Tailgrab.Configuration
                     {
                         logger.Info($"GIST Group Processed {item.LineNumber} of {importList.Count()} records.");
                     }
+
+                    await Task.Delay( 1000 );
                 }
                 catch (Exception ex)
                 {
