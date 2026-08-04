@@ -5,6 +5,8 @@ using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using Tailgrab.Clients.Ollama;
 using Tailgrab.Common;
 using VRChat.API.Client;
@@ -402,18 +404,18 @@ namespace Tailgrab.Clients.VRChat
                 // Create HTTP client with cookies
                 using HttpClient httpClient = CreateHttpClientWithCookies();
 
-                // Download the image
+                // Download and normalize the image
                 string md5Hash = string.Empty;
                 List<string> imageList = [];
-                int imageCount = 0;
                 foreach (string imageUrl in imageUrlList)
                 {
                     byte[] contentBytes = await httpClient.GetByteArrayAsync(imageUrl);
-                    if (imageCount == 0)
+                    byte[] scaledContentBytes = ScaleImageToMaxSize(contentBytes, 512, 512);
+                    if (scaledContentBytes.Length > 0)
                     {
                         md5Hash = Checksum.CreateMD5(contentBytes);
                     }
-                    string contentB64 = Convert.ToBase64String(contentBytes);
+                    string contentB64 = Convert.ToBase64String(scaledContentBytes);
                     imageList.Add(contentB64);
                 }
 
@@ -433,6 +435,70 @@ namespace Tailgrab.Clients.VRChat
                 logger.Error(ex, $"Error Downloading image from URI: {imageUrlList}");
                 return null;
             }
+        }
+
+        public async Task<List<string>> DownloadContentUrls(List<string> imageUrlList)
+        {
+            List<string> imageList = new List<string>();
+            try
+            {
+                if (_vrchat == null)
+                {
+                    logger.Error("VRChat client not initialized");
+                    return imageList;
+                }
+
+                // Create HTTP client with cookies
+                using HttpClient httpClient = CreateHttpClientWithCookies();
+
+                // Download and normalize the image
+                foreach (string imageUrl in imageUrlList)
+                {
+                    byte[] contentBytes = await httpClient.GetByteArrayAsync(imageUrl);
+                    byte[] scaledContentBytes = ScaleImageToMaxSize(contentBytes, 512, 512);
+                    string contentB64 = Convert.ToBase64String(scaledContentBytes);
+                    imageList.Add(contentB64);
+                }
+
+                return imageList;
+
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, $"Error Downloading file from URI: {imageUrlList}");
+                return imageList;
+            }
+        }
+
+        private static byte[] ScaleImageToMaxSize(byte[] imageBytes, int maxWidth, int maxHeight)
+        {
+            if (imageBytes.Length == 0)
+            {
+                return imageBytes;
+            }
+
+            using MemoryStream inputStream = new(imageBytes);
+            BitmapDecoder decoder = BitmapDecoder.Create(inputStream, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad);
+            BitmapSource source = decoder.Frames[0];
+
+            if (source.PixelWidth <= maxWidth && source.PixelHeight <= maxHeight)
+            {
+                return imageBytes;
+            }
+
+            double scaleX = (double)maxWidth / source.PixelWidth;
+            double scaleY = (double)maxHeight / source.PixelHeight;
+            double scale = Math.Min(scaleX, scaleY);
+
+            TransformedBitmap scaledBitmap = new(source, new ScaleTransform(scale, scale));
+            BitmapFrame frame = BitmapFrame.Create(scaledBitmap);
+
+            BitmapEncoder encoder = new PngBitmapEncoder();
+            encoder.Frames.Add(frame);
+
+            using MemoryStream outputStream = new();
+            encoder.Save(outputStream);
+            return outputStream.ToArray();
         }
         #endregion
 
@@ -624,6 +690,38 @@ namespace Tailgrab.Clients.VRChat
             catch (Exception ex)
             {
                 logger.Error(ex, $"Error Listing moderation reports with offset: {offset}");
+                return null;
+            }
+        }
+        #endregion
+
+        #region User Management
+        public async Task<string?> SearchUserByDisplayName(string displayName)
+        {
+            try
+            {
+                if (_vrchat == null)
+                {
+                    logger.Error("VRChat client not initialized");
+                    return null;
+                }
+
+                List<LimitedUserSearch> results = _vrchat.Users.SearchUsers(displayName);
+
+                foreach (LimitedUserSearch search in results)
+                {
+                    if(search.DisplayName.Equals(displayName, StringComparison.Ordinal))
+                    {
+                        logger.Info($"Found user with display name: {displayName}");
+                        return search.Id;
+                    }
+                }
+
+                return null;
+            }
+            catch (Exception ex)
+            {
+                logger.Error($"Error checking if user {displayName} is in the same instance: {ex.Message}");
                 return null;
             }
         }
@@ -840,6 +938,11 @@ namespace Tailgrab.Clients.VRChat
 
             [JsonProperty("validateUserAttributes")]
             public bool ValidateUserAttributes { get; set; }
+
+            public override string ToString()
+            {
+                return $"VRChatInventoryItem(Id={Id}, Name={Name}, ItemType={ItemType}, ImageUrl={ImageUrl}, HolderId={HolderId}, Metadata={Metadata})";
+            }
         }
 
         public class InventoryItemMetadata
@@ -858,6 +961,11 @@ namespace Tailgrab.Clients.VRChat
 
             [JsonProperty("maskTag")]
             public string MaskTag { get; set; } = string.Empty;
+
+            public override string ToString()
+            {
+                return $"InventoryItemMetadata(Animated={Animated}, AnimationStyle={AnimationStyle}, FileId={FileId}, ImageUrl={ImageUrl}, MaskTag={MaskTag})";
+            }
         }
 
         public class ModerationReportPayload

@@ -4,12 +4,10 @@ using OllamaSharp;
 using OllamaSharp.Models;
 using System.Diagnostics;
 using System.Net.Http;
-using Tailgrab.Clients.XSOverlay;
 using Tailgrab.Common;
 using Tailgrab.Models;
 using Tailgrab.PlayerManagement;
 using VRChat.API.Model;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Tailgrab.Clients.Ollama
 {
@@ -24,7 +22,7 @@ namespace Tailgrab.Clients.Ollama
         public OllamaClient(ServiceRegistry registry)
         {
             _serviceRegistry = registry ?? throw new ArgumentNullException(nameof(registry));
-            _ = Task.Run(() => ProfileCheckTask(priorityQueue, registry));
+            _ = Task.Run(() => ProcessQueueTask(priorityQueue, registry));
         }
 
         public int GetQueueSize()
@@ -32,6 +30,57 @@ namespace Tailgrab.Clients.Ollama
             return priorityQueue.Count;
         }
 
+        public void EnqueuePriorityItem(IHavePriority<int> item)
+        {
+            priorityQueue.Enqueue(item);
+        }
+
+        public static async Task ProcessQueueTask(ConcurrentPriorityQueue<IHavePriority<int>, int> priorityQueue, ServiceRegistry serviceRegistry)
+        {
+            using OllamaApiClient? ollamaApi = GetClient();
+            if (ollamaApi is null)
+            {
+                System.Windows.MessageBox.Show("Ollama API Credentials are not set.\nThis is not nessasary for limited operation, the Profile/Emoji/Stickers will not be profileText.\nOtherwise use the Config / Secrets tab to update credenials and restart Tailgrab.", "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+            }
+
+            OllamaClient.logger.Info($"AI Queue Running");
+            while (true)
+            {
+                // Process items from the priority queue
+                while (true)
+                {
+                    var result = priorityQueue.Dequeue();
+                    if (result.IsSuccess)
+                    {
+                        if (result.Value is QueuedProcess item && item.UserId != null)
+                        {
+                            await ProfileEvaluateItem(priorityQueue, serviceRegistry, ollamaApi, item);
+                            continue;
+                        }
+
+                        if (result.Value is ImageReference imageReference)
+                        {
+                            await ImageReferenceEvaluateItem(priorityQueue, serviceRegistry, ollamaApi, imageReference);
+                            continue;
+                        }
+                    }
+                    else
+                    {
+                        // No more items to process
+                        break;
+                    }
+
+                    // Wait for a short period before getting next record
+                    await Task.Delay(1000);
+                }
+
+                // Wait for a short period before checking the queue again
+                await Task.Delay(10000);
+            }
+        }
+
+
+        #region Profile Evaluation
         public void CheckUserProfile(string userId)
         {
             logger.Debug($"Checking user profile with AI : {userId}");
@@ -79,7 +128,7 @@ namespace Tailgrab.Clients.Ollama
             string? accountThumbnailUrl = !string.IsNullOrEmpty(profile.ProfilePicOverrideThumbnail) ? profile.ProfilePicOverrideThumbnail : profile.CurrentAvatarThumbnailImageUrl;
             if (profile != null)
             {
-                string fullProfile = OllamaClient.FormatProfileText(profile);
+                string fullProfile = FormatProfileText(profile);
                 item.IsFriend = profile.IsFriend;
                 item.UserBio = fullProfile;
                 item.ProfileUrl = accountThumbnailUrl;
@@ -99,51 +148,6 @@ namespace Tailgrab.Clients.Ollama
                    $"ProfileBio: {profile.Bio}\n";
         }
 
-        #region profile Evaluation
-        public static async Task ProfileCheckTask(ConcurrentPriorityQueue<IHavePriority<int>, int> priorityQueue, ServiceRegistry serviceRegistry)
-        {
-            using OllamaApiClient? ollamaApi = GetClient();
-            if (ollamaApi is null)
-            {
-                System.Windows.MessageBox.Show("Ollama API Credentials are not set.\nThis is not nessasary for limited operation, the Profiles will not be profileText.\nOtherwise use the Config / Secrets tab to update credenials and restart Tailgrab.", "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
-            }
-
-            OllamaClient.logger.Info($"Profile/Group Queue Running");
-            while (true)
-            {
-                // Process items from the priority queue
-                while (true)
-                {
-                    var result = priorityQueue.Dequeue();
-                    if (result.IsSuccess)
-                    {
-                        if (result.Value is QueuedProcess item && item.UserId != null)
-                        {
-                            await ProfileEvaluateItem(priorityQueue, serviceRegistry, ollamaApi, item);
-                            continue;
-                        }
-                        
-                        if (result.Value is ImageReference imageReference)
-                        {
-                            OllamaClient.logger.Warn($"Failed to dequeue item: {imageReference}");
-                            continue;
-                        }
-                    }
-                    else
-                    {
-                        // No more items to process
-                        break;
-                    }
-
-                    // Wait for a short period before getting next record
-                    await Task.Delay(1000);
-                }
-
-                // Wait for a short period before checking the queue again
-                await Task.Delay(10000);
-            }
-        }
-
         private static async Task<bool> ProfileEvaluateItem(ConcurrentPriorityQueue<IHavePriority<int>, int> priorityQueue, ServiceRegistry serviceRegistry, OllamaApiClient? ollamaApi, QueuedProcess item)
         {
             try
@@ -157,8 +161,6 @@ namespace Tailgrab.Clients.Ollama
 
                 User profile = serviceRegistry.GetVRChatAPIClient().GetProfile(item.UserId);
                 serviceRegistry.GetPlayerManager().UpdatePlayerUserFromVRCProfile(profile, item.MD5Hash);
-                await GetUserGroupInformation(serviceRegistry, dBContext, userGroups, item);
-                await GetUserModerations(item);
 
                 if (ollamaApi != null)
                 {
@@ -182,7 +184,7 @@ namespace Tailgrab.Clients.Ollama
                             // if we got a response save it to the database
                             if (evaluation != null)
                             {
-                                ProfileEvaluation evaluationDb = dBContext.ProfileEvaluations.FirstOrDefault(evaluation => evaluation.Md5checksum == item.MD5Hash);
+                                ProfileEvaluation? evaluationDb = dBContext.ProfileEvaluations.FirstOrDefault(evaluation => evaluation.Md5checksum == item.MD5Hash);
                                 if( evaluationDb != null) 
                                 {
                                     evaluationDb.Evaluation = evaluation.Evaluation;
@@ -275,107 +277,79 @@ namespace Tailgrab.Clients.Ollama
         #endregion
 
 
-        #region Group Evaluation
-        private async static Task<bool> GetUserGroupInformation(ServiceRegistry serviceRegistry, TailgrabDBContext dBContext, List<LimitedUserGroups> userGroups, QueuedProcess item)
-        {
-            bool saveGroups = ConfigStore.GetStoredKeyBool(CommonConst.Registry_Discovered_Group_Caching, true);
-            logger.Debug($"Processing User Group subscription for userId: {item.UserId}");
-            Player? player = PlayerManager.GetPlayerByUserId(item.UserId ?? string.Empty);
-            if (player != null)
-            {
-                AlertTypeEnum maxAlertType = AlertTypeEnum.None;
-                string groupNames = string.Empty;
-                foreach (LimitedUserGroups group in userGroups)
-                {
-                    GroupInfo? groupInfo = dBContext.GroupInfos.Find(group.GroupId);
-                    if (groupInfo == null)
-                    {
-                        groupInfo = SaveGroupInfo(dBContext, saveGroups, group);
-                    }
-                    else
-                    {
-                        groupNames += UpdateGroupInfo(dBContext, item, ref player, ref maxAlertType, group, groupInfo);
-                    }
-                }
-
-                if (player != null && player.IsWatched)
-                {
-                    OverlayManager overlay = serviceRegistry.GetXSOverlay();
-                    await overlay.SendNotification(maxAlertType, $"Player \b1{player.DisplayName}\b0 has questionable group memberships:\r\n{groupNames}");
-
-                    SoundManager.PlayAlertSound(CommonConst.Group_Alert_Key, maxAlertType);
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        private static string UpdateGroupInfo(TailgrabDBContext dBContext, QueuedProcess item, ref Player? player, ref AlertTypeEnum maxAlertType, LimitedUserGroups group, GroupInfo groupInfo)
-        {
-            // We will update the group name on each lookup in case it changes, but not reset the alert level as that is user defined
-            groupInfo.GroupName = group.Name;
-            dBContext.GroupInfos.Update(groupInfo);
-            dBContext.SaveChanges();
-
-            if (groupInfo.AlertType > AlertTypeEnum.None)
-            {
-                player = PlayerManager.AddPlayerEventByUserId(item.UserId ?? string.Empty, PlayerEvent.EventType.GroupWatch, $"User is member of group: {groupInfo.GroupName} with alert level {groupInfo.AlertType}");
-                player?.AddAlertMessage(AlertClassEnum.Group, groupInfo.AlertType, groupInfo.GroupName);
-                maxAlertType = maxAlertType < groupInfo.AlertType ? groupInfo.AlertType : maxAlertType;
-                return groupInfo.GroupName + "\r\n";
-            }
-
-            return string.Empty;
-        }
-
-        private static GroupInfo SaveGroupInfo(TailgrabDBContext dBContext, bool saveGroups, LimitedUserGroups group)
-        {
-            GroupInfo groupInfo = new()
-            {
-                GroupId = group.GroupId,
-                GroupName = group.Name,
-                AlertType = AlertTypeEnum.None,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            };
-
-            if (saveGroups)
-            {
-                dBContext.GroupInfos.Add(groupInfo);
-                dBContext.SaveChanges();
-            }
-
-            return groupInfo;
-        }
-        #endregion
-
-        #region Moderation Evaluation
-        private async static Task<bool> GetUserModerations(QueuedProcess item)
-        {
-            bool userModerations = false;
-            logger.Debug($"Processing User Group subscription for userId: {item.UserId}");
-            Player? player = PlayerManager.GetPlayerByUserId(item.UserId ?? string.Empty);
-
-            if (player != null)
-            {
-                List<ModerationInfo> moderationReports = await PlayerManager.GetModerationReportsByUserId(item.UserId ?? string.Empty);
-                if( moderationReports.Count != 0) 
-                {
-                    userModerations = true;
-                    foreach(ModerationInfo report in moderationReports )
-                    {
-                        player = PlayerManager.AddPlayerEventByUserId(item.UserId ?? string.Empty, PlayerEvent.EventType.AvatarWatch, $"Had Past Moderations : {report.Id} - {report.ContentType} for \"{report.ContentName}\"");
-                    }
-                    player?.AddAlertMessage(AlertClassEnum.Moderation, AlertTypeEnum.Nuisance, "Past Moderations");
-                }
-
-            }
-
-            return userModerations;
-        }
-        #endregion
-
         #region Image Classification
+        private static async Task ImageReferenceEvaluateItem(ConcurrentPriorityQueue<IHavePriority<int>, int> priorityQueue, ServiceRegistry serviceRegistry, 
+            OllamaApiClient? ollamaApi, ImageReference imageReference)
+        {
+            logger.Debug($"Classifying image from Asset: {imageReference.InventoryId} URI: {imageReference.ItemContentUrl}");
+
+            try
+            {
+                string? ollamaCloudKey = ConfigStore.LoadSecret(CommonConst.Registry_Ollama_API_Key);
+                if (ollamaCloudKey == null)
+                {
+                    logger.Warn("Ollama API credentials are not set");
+                    return;
+                }
+
+                string ollamaEndpoint = ConfigStore.GetStoredKeyString(CommonConst.Registry_Ollama_API_Endpoint) ?? CommonConst.Default_Ollama_API_Endpoint;
+
+                ImageEvaluation? imageEvaluation = CheckImageReferenceReview(imageReference, serviceRegistry);
+                if (imageEvaluation == null)
+                {
+                    string? ollamaModel = ConfigStore.GetStoredKeyString(CommonConst.Registry_Ollama_API_Model) ?? CommonConst.Default_Ollama_API_Model;
+                    ollamaApi.SelectedModel = ollamaModel;
+
+                    string? ollamaPrompt = ConfigStore.GetStoredKeyString(CommonConst.Registry_Ollama_API_Image_Prompt);
+                    GenerateRequest request = new()
+                    {
+                        Model = ollamaApi.SelectedModel,
+                        Prompt = ollamaPrompt ?? CommonConst.Default_Ollama_API_Image_Prompt,
+                        Images = [.. imageReference.Base64Data],
+                        Stream = false
+                    };
+
+                    GenerateDoneResponseStream? response = await ollamaApi.GenerateAsync(request).StreamToEndAsync();
+
+                    logger.Debug($"Image classified for Print InventoryId: {imageReference.InventoryId} as {response?.Response}");
+                    imageEvaluation = SaveImageEvaluation(imageReference, response?.Response, serviceRegistry);
+                }
+                else
+                {
+                    logger.Debug($"Image already classified for AssetId : {imageReference.InventoryId}");
+                }
+
+                if( imageReference.ItemType == "Print" && imageReference.PrintInfo != null)
+                {
+                    serviceRegistry.GetPrintManager().UpdatePlayerPrint(imageReference.PrintInfo, imageEvaluation);
+                }
+                else
+                {
+                    serviceRegistry.GetInventoryManager().UpdatePlayerInventory(imageReference, imageEvaluation);
+                }
+                    
+                return;
+            }
+            catch (Exception)
+            {
+                logger.Warn($"Ollama image classification failed for AssetId: {imageReference.InventoryId} / {imageReference.ItemContentUrl}. Retrying ({imageReference.retries}/{MaxRetries})...");
+                imageReference.retries++;
+                if (imageReference.retries < MaxRetries)
+                {
+                    if (!priorityQueue.Any(items => ((ImageReference)items).InventoryId == imageReference.InventoryId))
+                    {
+                        priorityQueue.Enqueue(imageReference);
+                    }
+                }
+                else
+                {
+                    logger.Warn($"Max retries reached for AssetId: {imageReference.InventoryId}. Skipping classification.");
+                }
+            }
+
+            return;
+        }
+
         internal async Task<ImageEvaluation?> ClassifyImageList(string userId, string assetId, List<string> imageUrlList)
         {
             logger.Debug($"Classifying image from Asset: {assetId} URI: {imageUrlList.ToArray()}");
@@ -394,7 +368,7 @@ namespace Tailgrab.Clients.Ollama
                 ImageReference? imageReference = await _serviceRegistry.GetVRChatAPIClient().GetImageReference(assetId, userId, imageUrlList);
                 if (imageReference != null)
                 {
-                    ImageEvaluation? imageEvaluation = CheckImageReferenceReview(imageReference);
+                    ImageEvaluation? imageEvaluation = CheckImageReferenceReview(imageReference, _serviceRegistry);
                     if (imageEvaluation == null)
                     {
                         using HttpClient ollamaHttpClient = new();
@@ -418,7 +392,7 @@ namespace Tailgrab.Clients.Ollama
                         GenerateDoneResponseStream? response = await ollamaApi.GenerateAsync(request).StreamToEndAsync();
 
                         logger.Debug($"Image classified for InventoryId: {imageReference.InventoryId} as {response?.Response}");
-                        imageEvaluation = SaveImageEvaluation(imageReference, response?.Response);
+                        imageEvaluation = SaveImageEvaluation(imageReference, response?.Response, _serviceRegistry);
 
                         return imageEvaluation;
                     }
@@ -437,9 +411,9 @@ namespace Tailgrab.Clients.Ollama
             return null;
         }
 
-        private ImageEvaluation? CheckImageReferenceReview(ImageReference imageReference)
+        private static ImageEvaluation? CheckImageReferenceReview(ImageReference imageReference, ServiceRegistry serviceRegistry)
         {
-            TailgrabDBContext dBContext = _serviceRegistry.GetDBContext();
+            TailgrabDBContext dBContext = serviceRegistry.GetDBContext();
             ImageEvaluation? evaluated = dBContext.ImageEvaluations.Find(imageReference.InventoryId);
             if (evaluated != null)
             {
@@ -450,7 +424,7 @@ namespace Tailgrab.Clients.Ollama
             return null;
         }
 
-        private ImageEvaluation? SaveImageEvaluation(ImageReference imageReference, string? response)
+        private static ImageEvaluation? SaveImageEvaluation(ImageReference imageReference, string? response, ServiceRegistry serviceRegistry)
         {
             if (response != null)
             {
@@ -463,7 +437,7 @@ namespace Tailgrab.Clients.Ollama
                     LastDateTime = DateTime.UtcNow,
                     IsIgnored = false
                 };
-                TailgrabDBContext dBContext = _serviceRegistry.GetDBContext();
+                TailgrabDBContext dBContext = serviceRegistry.GetDBContext();
                 dBContext.Add(evaluation);
                 dBContext.SaveChanges();
                 return evaluation;
@@ -719,5 +693,9 @@ namespace Tailgrab.Clients.Ollama
         public string InventoryId { get; set; } = string.Empty;
         public string UserId { get; set; } = string.Empty;
         public int retries { get; set; } = 0;
+        public string ItemName { get; set; } = string.Empty;
+        public string ItemContentUrl { get; set; } = string.Empty;
+        public string ItemType { get; set; } = string.Empty;
+        public Print? PrintInfo { get; set; }
     }
 }

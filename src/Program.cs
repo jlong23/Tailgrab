@@ -332,7 +332,7 @@ public class FileTailer
                                 }
                             }
 
-                            PlayerManager.CacheAvatars(avatarIds);
+                            AvatarManager.CacheAvatars(avatarIds);
                         }
                     }
                 }
@@ -341,7 +341,7 @@ public class FileTailer
             // Do something with the extracted avatar IDs; for now log the count and a sample
             if (avatarIds.Count > 0)
             {
-                ServiceRegistryInstance.GetPlayerManager().CompactDatabase();
+                ServiceRegistryInstance.GetAvatarManager().CompactDatabase();
             }
 
         }

@@ -26,7 +26,7 @@ public class EmojiHandler : AbstractLineHandler
             string timestamp = m.Groups[VRC_DATETIME].Value;
             string userId = m.Groups[VRC_USERID].Value;
             string inventoryId = m.Groups[VRC_INVENTORYID].Value;
-            _serviceRegistry.GetPlayerManager().AddInventorySpawn(userId, inventoryId);
+            _serviceRegistry.GetInventoryManager().AddInventorySpawn(userId, inventoryId);
             if (LogOutput)
             {
                 logger.Info($"{COLOR_PREFIX}Emoji/Inventory : {userId} / {inventoryId}{COLOR_RESET.GetAnsiEscape()}");

@@ -755,6 +755,29 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
+        private void Reset2FA_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var result = System.Windows.MessageBox.Show(
+                    "This will erase your Two Factor Authentication Seed Key. Are you sure you want to continue?",
+                    "Confirm 2FA Key Deletion",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning);
+
+                if (result != MessageBoxResult.Yes)
+                    return;
+
+                ConfigStore.DeleteSecret(CommonConst.Registry_VRChat_Web_2FactorKey);
+                Vr2FaBox.Password = string.Empty;
+                Vr2FaBox.ToolTip = null;
+                System.Windows.MessageBox.Show("2FA key reset. Please re-enter your 2FA key or leave blank for Prompting of the One Time Codes.", "Reset 2FA", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"Failed to reset 2FA key: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
 
         private async void SaveAIConfig_Click(object sender, RoutedEventArgs e)
         {
@@ -777,6 +800,36 @@ namespace Tailgrab.PlayerManagement
                 System.Windows.MessageBox.Show($"Failed to save AI configuration: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+
+        private void ResetOllama_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var result = System.Windows.MessageBox.Show(
+                    "This will erase your Ollama Configuration. Are you sure you want to continue?",
+                    "Confirm Ollama Configuration Deletion",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning);
+
+                if (result != MessageBoxResult.Yes)
+                    return;
+
+
+                ConfigStore.DeleteSecret(CommonConst.Registry_Ollama_API_Key);
+                ConfigStore.DeleteSecret(CommonConst.Registry_Ollama_API_Endpoint);
+                ConfigStore.DeleteSecret(CommonConst.Registry_Ollama_API_Model);
+                VrOllamaBox.ToolTip = null;
+                VrOllamaBox.Password = string.Empty;
+                VrOllamaEndpointBox.Text = string.Empty;
+                VrOllamaModelBox.SelectedValue = null;
+                System.Windows.MessageBox.Show("Ollama Configuration reset. Please re-enter your API key or leave blank for no Profile & Image AI Evalutation.", "Reset Ollama Configuration", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"Failed to reset Ollama Configuration: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
 
 
         private async Task LoadOllamaModelsAsync()
@@ -1367,9 +1420,9 @@ namespace Tailgrab.PlayerManagement
             {
                 var ollamaClient = _serviceRegistry.GetOllamaAPIClient();
 
-                AvatarQueueLength = PlayerManager.GetQueueCount();
+                AvatarQueueLength = AvatarManager.GetQueueCount();
                 OllamaQueueLength = ollamaClient?.GetQueueSize() ?? 0;
-                GroupGistStatus = _serviceRegistry.GetGroupGistManager().GetQueueSize();
+                GroupGistStatus = _serviceRegistry.GetGroupManager().GetQueueSize();
 
                 // Update Open Logs collection
                 RefreshOpenLogs();
@@ -1493,6 +1546,11 @@ namespace Tailgrab.PlayerManagement
                 {
                     EmojiPlayers.Add(new PlayerViewModel(p));
                 }
+
+                if (EmojiView.Filter != null)
+                {
+                    EmojiView.Refresh();
+                }
             }
         }
 
@@ -1509,6 +1567,11 @@ namespace Tailgrab.PlayerManagement
                 else
                 {
                     PrintPlayers.Add(new PlayerViewModel(p));
+                }
+
+                if (PrintView.Filter != null)
+                {
+                    PrintView.Refresh();
                 }
             }
         }
@@ -2175,13 +2238,14 @@ namespace Tailgrab.PlayerManagement
 
         private void PrintApplyFilter_Click(object sender, RoutedEventArgs e)
         {
-            ApplyFilter(PrintView, PrintFilterBox.Text);
+            ApplyPrintFilter();
         }
 
         private void PrintClearFilter_Click(object sender, RoutedEventArgs e)
         {
             PrintFilterBox.Text = string.Empty;
-            ApplyFilter(PrintView, string.Empty);
+            PrintAgeMinutesFilterBox.Text = string.Empty;
+            ApplyPrintFilter();
         }
 
         private void PrintFilterBySelected_Click(object sender, RoutedEventArgs e)
@@ -2189,8 +2253,65 @@ namespace Tailgrab.PlayerManagement
             if (SelectedPast != null)
             {
                 PrintFilterBox.Text = SelectedPast.DisplayName;
-                ApplyFilter(PrintView, PastFilterBox.Text);
+                ApplyPrintFilter();
             }
+        }
+
+        private void PrintAgeMinutesFilterBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            ApplyPrintFilter();
+        }
+
+        private void ApplyPrintFilter()
+        {
+            string textFilter = PrintFilterBox.Text?.Trim() ?? string.Empty;
+            bool hasTextFilter = !string.IsNullOrWhiteSpace(textFilter);
+
+            int? ageMinutesFilter = null;
+            if (int.TryParse(PrintAgeMinutesFilterBox.Text?.Trim(), out int parsedMinutes) && parsedMinutes is >= 1 and <= 60)
+            {
+                ageMinutesFilter = parsedMinutes;
+            }
+
+            if (!hasTextFilter && !ageMinutesFilter.HasValue)
+            {
+                PrintView.Filter = null;
+                PrintView.Refresh();
+                return;
+            }
+
+            PrintView.Filter = obj =>
+            {
+                if (obj is not PlayerViewModel pvm)
+                {
+                    return false;
+                }
+
+                if (hasTextFilter)
+                {
+                    if (textFilter.StartsWith("usr_", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (pvm.UserId?.IndexOf(textFilter, StringComparison.OrdinalIgnoreCase) < 0)
+                        {
+                            return false;
+                        }
+                    }
+                    else if (pvm.DisplayName?.IndexOf(textFilter, StringComparison.CurrentCultureIgnoreCase) < 0)
+                    {
+                        return false;
+                    }
+                }
+
+                if (ageMinutesFilter.HasValue)
+                {
+                    DateTime cutoff = DateTime.Now.AddMinutes(-ageMinutesFilter.Value);
+                    return pvm.Prints.Any(print => print.Timestamp <= cutoff);
+                }
+
+                return true;
+            };
+
+            PrintView.Refresh();
         }
 
         private void PrintHyperlink_RequestNavigate(object? sender, System.Windows.Navigation.RequestNavigateEventArgs e)
@@ -2584,13 +2705,14 @@ namespace Tailgrab.PlayerManagement
 
         private void EmojiApplyFilter_Click(object sender, RoutedEventArgs e)
         {
-            ApplyFilter(EmojiView, EmojiFilterBox.Text);
+            ApplyEmojiFilter();
         }
 
         private void EmojiClearFilter_Click(object sender, RoutedEventArgs e)
         {
             EmojiFilterBox.Text = string.Empty;
-            ApplyFilter(EmojiView, string.Empty);
+            EmojiAgeMinutesFilterBox.Text = string.Empty;
+            ApplyEmojiFilter();
         }
 
         private void EmojiFilterBySelected_Click(object sender, RoutedEventArgs e)
@@ -2598,8 +2720,65 @@ namespace Tailgrab.PlayerManagement
             if (SelectedPast != null)
             {
                 EmojiFilterBox.Text = SelectedPast.DisplayName;
-                ApplyFilter(EmojiView, PastFilterBox.Text);
+                ApplyEmojiFilter();
             }
+        }
+
+        private void EmojiAgeMinutesFilterBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            ApplyEmojiFilter();
+        }
+
+        private void ApplyEmojiFilter()
+        {
+            string textFilter = EmojiFilterBox.Text?.Trim() ?? string.Empty;
+            bool hasTextFilter = !string.IsNullOrWhiteSpace(textFilter);
+
+            int? ageMinutesFilter = null;
+            if (int.TryParse(EmojiAgeMinutesFilterBox.Text?.Trim(), out int parsedMinutes) && parsedMinutes is >= 1 and <= 60)
+            {
+                ageMinutesFilter = parsedMinutes;
+            }
+
+            if (!hasTextFilter && !ageMinutesFilter.HasValue)
+            {
+                EmojiView.Filter = null;
+                EmojiView.Refresh();
+                return;
+            }
+
+            EmojiView.Filter = obj =>
+            {
+                if (obj is not PlayerViewModel pvm)
+                {
+                    return false;
+                }
+
+                if (hasTextFilter)
+                {
+                    if (textFilter.StartsWith("usr_", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (pvm.UserId?.IndexOf(textFilter, StringComparison.OrdinalIgnoreCase) < 0)
+                        {
+                            return false;
+                        }
+                    }
+                    else if (pvm.DisplayName?.IndexOf(textFilter, StringComparison.CurrentCultureIgnoreCase) < 0)
+                    {
+                        return false;
+                    }
+                }
+
+                if (ageMinutesFilter.HasValue)
+                {
+                    DateTime cutoff = DateTime.Now.AddMinutes(-ageMinutesFilter.Value);
+                    return pvm.Emojis.Any(emoji => emoji.SpawnedAt <= cutoff);
+                }
+
+                return true;
+            };
+
+            EmojiView.Refresh();
         }
 
         private void ReportInventory_Click(object sender, RoutedEventArgs e)
@@ -3320,7 +3499,7 @@ namespace Tailgrab.PlayerManagement
             string? id = GroupDbFilterBox.Text?.Trim();
             if (string.IsNullOrEmpty(id)) return;
 
-            GroupInfo? existing = await _serviceRegistry.GetPlayerManager().AddUpdateGroupFromVRC(id);
+            GroupInfo? existing = await _serviceRegistry.GetGroupManager().AddUpdateGroupFromVRC(id);
 
             if (existing == null)
             {
@@ -3488,7 +3667,7 @@ namespace Tailgrab.PlayerManagement
             if (!string.IsNullOrWhiteSpace(SelectedAvatarId))
             {
                 // Call the load user function
-                await _serviceRegistry.GetPlayerManager().SwitchAvatar(SelectedAvatarId);
+                await _serviceRegistry.GetAvatarManager().SwitchAvatar(SelectedAvatarId);
             }
         }
 
@@ -4956,7 +5135,7 @@ namespace Tailgrab.PlayerManagement
                 UserGroupsOverlay.Visibility = Visibility.Visible;
 
                 // Fetch groups asynchronously (already async, no need for Task.Run)
-                List<UserGroupViewModel> groups = await _serviceRegistry.GetPlayerManager().LoadUserGroupsAsync(userId);
+                List<UserGroupViewModel> groups = await _serviceRegistry.GetGroupManager().LoadUserGroupsAsync(userId);
 
                 // Update UI (already on UI thread)
                 UserGroupsDataGrid.ItemsSource = groups;

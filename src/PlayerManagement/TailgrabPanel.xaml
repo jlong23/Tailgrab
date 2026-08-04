@@ -741,6 +741,8 @@ Title="Tailgrab Player Panel"
                             <TextBox Name="PrintFilterBox" Width="300" Margin="0,0,8,0" />
                             <Button Content="Apply Filter" Click="PrintApplyFilter_Click" Margin="0,0,6,0"/>
                             <Button Content="Clear Filter" Click="PrintClearFilter_Click"/>
+                            <TextBlock Text="Hide Older Than (min):" VerticalAlignment="Center" Margin="12,0,6,0"/>
+                            <TextBox Name="PrintAgeMinutesFilterBox" Width="60" Margin="0,0,8,0" TextChanged="PrintAgeMinutesFilterBox_TextChanged" ToolTip="Enter 1-60"/>
                             <Button Content="Report Inventory" Click="ReportPrintInventory_Click" HorizontalAlignment="Right" Margin="8,0,0,0"/>
                         </StackPanel>
 
@@ -990,6 +992,8 @@ Title="Tailgrab Player Panel"
                             <TextBox Name="EmojiFilterBox" Width="300" Margin="0,0,8,0" />
                             <Button Content="Apply Filter" Click="EmojiApplyFilter_Click" Margin="0,0,6,0"/>
                             <Button Content="Clear Filter" Click="EmojiClearFilter_Click"/>
+                            <TextBlock Text="Hide Older Than (min):" VerticalAlignment="Center" Margin="12,0,6,0"/>
+                            <TextBox Name="EmojiAgeMinutesFilterBox" Width="60" Margin="0,0,8,0" TextChanged="EmojiAgeMinutesFilterBox_TextChanged" ToolTip="Enter 1-60"/>
                             <Button Content="Report Inventory" Click="ReportInventory_Click" HorizontalAlignment="Right" Margin="8,0,0,0"/>
                         </StackPanel>
 
@@ -1072,7 +1076,7 @@ Title="Tailgrab Player Panel"
                                                                     Margin="0,4,0,0"
                                                                     Padding="4,2"
                                                                     HorizontalAlignment="Left"/>
-                                                            
+
                                                             <TextBlock Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3"
                                                                        Text="{Binding EvaluatedText}"
                                                                        VerticalAlignment="Center"
@@ -1569,8 +1573,8 @@ Title="Tailgrab Player Panel"
                                 <GroupBox Header="VR Chat Credentials" Margin="0,0,0,6" Grid.Row="0">
                                     <Grid Margin="6">
                                         <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto" />
-                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="90*" />
+                                            <ColumnDefinition Width="956*" />
                                         </Grid.ColumnDefinitions>
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="Auto" />
@@ -1579,13 +1583,17 @@ Title="Tailgrab Player Panel"
                                         </Grid.RowDefinitions>
 
                                         <Label Grid.Row="0" Grid.Column="0" Content="User:" VerticalAlignment="Center"/>
-                                        <TextBox Grid.Row="0" Grid.Column="1" Name="VrUserBox" Width="300" Margin="6,2" />
+                                        <TextBox Grid.Row="0" Grid.Column="1" Name="VrUserBox" Width="300" Margin="6,2" HorizontalAlignment="Left"/>
 
                                         <Label Grid.Row="1" Grid.Column="0" Content="Password:" VerticalAlignment="Center"/>
-                                        <PasswordBox Grid.Row="1" Grid.Column="1" Name="VrPassBox" Width="300" Margin="6,2" />
+                                        <PasswordBox Grid.Row="1" Grid.Column="1" Name="VrPassBox" Width="300" Margin="6,2" HorizontalAlignment="Left"/>
 
-                                        <Label Grid.Row="2" Grid.Column="0" Content="2FA Key:" VerticalAlignment="Center"/>
-                                        <PasswordBox Grid.Row="2" Grid.Column="1" Name="Vr2FaBox" Width="300" Margin="6,2" />
+                                        <Label Grid.Row="2" Grid.Column="0" Content="2FA Seed Key:" VerticalAlignment="Center"/>
+                                        <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,6" >
+                                            <PasswordBox Name="Vr2FaBox" Width="300" Margin="6,2" />
+                                            <Button Content="Reset 2FA" Width="120" Margin="6,2" Click="Reset2FA_Click" Background="#FFCC0000" Foreground="White"/>
+                                        </StackPanel>
+
                                     </Grid>
                                 </GroupBox>
 
@@ -1676,11 +1684,13 @@ Title="Tailgrab Player Panel"
                                         </Grid.RowDefinitions>
 
                                         <Label Grid.Row="0" Grid.Column="0" Content="Ollama Endpoint:" VerticalAlignment="Center"/>
-                                        <TextBox Grid.Row="0" Grid.Column="1" Name="VrOllamaEndpointBox" Width="400" Margin="6,2" />
+                                        <TextBox Grid.Row="0" Grid.Column="1" Name="VrOllamaEndpointBox" Width="400" Margin="6,2" HorizontalAlignment="Left" />
 
                                         <Label Grid.Row="1" Grid.Column="0" Content="Ollama API Key:" VerticalAlignment="Center"/>
-                                        <PasswordBox Grid.Row="1" Grid.Column="1" Name="VrOllamaBox" Width="400" Margin="6,2" />
-
+                                        <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,6">
+                                            <PasswordBox Name="VrOllamaBox" Width="400" Margin="6,2" HorizontalAlignment="Left" />
+                                            <Button Content="Reset Ollama" Width="120" Margin="6,2" Click="ResetOllama_Click" Background="#FFCC0000" Foreground="White"/>
+                                        </StackPanel>
                                     </Grid>
                                 </GroupBox>
 
@@ -1704,9 +1714,10 @@ Title="Tailgrab Player Panel"
                                                   ItemsSource="{Binding DataContext.OllamaModelOptions, RelativeSource={RelativeSource AncestorType=Window}}"
                                                   SelectedValuePath="Value" 
                                                   DisplayMemberPath="Key" 
-                                                  Margin="2,2,2,2" 
+                                                  Margin="6,2" 
                                                   Grid.Row="0" 
                                                   Grid.Column="1" 
+                                                  HorizontalAlignment="Left"
                                                   Width="400"
                                                   SelectionChanged="TestProfilePromptInput_Changed"/>
 
@@ -1715,6 +1726,7 @@ Title="Tailgrab Player Panel"
                                         <TextBox Grid.Row="1" Grid.Column="1" Name="VrOllamaPromptBox" Width="800" Height="120" Margin="6,2" 
                                                  TextWrapping="Wrap" 
                                                  AcceptsReturn="True" 
+                                                 HorizontalAlignment="Left"
                                                  VerticalScrollBarVisibility="Auto" 
                                                  HorizontalScrollBarVisibility="Disabled"
                                                  TextChanged="TestProfilePromptInput_Changed"/>
@@ -1729,6 +1741,7 @@ Title="Tailgrab Player Panel"
                                         <TextBox Grid.Row="3" Grid.Column="1" Name="VrOllamaImagePromptBox" Width="800" Height="120" Margin="6,2" 
                                                  TextWrapping="Wrap" 
                                                  AcceptsReturn="True" 
+                                                 HorizontalAlignment="Left"
                                                  VerticalScrollBarVisibility="Auto" 
                                                  HorizontalScrollBarVisibility="Disabled"
                                                  TextChanged="TestProfilePromptInput_Changed"/>
@@ -1893,14 +1906,14 @@ Title="Tailgrab Player Panel"
                                                                         Padding="8"
                                                                         Background="#FF1E1E1E">
 
-                                                                        <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                                                    <ScrollViewer VerticalScrollBarVisibility="Auto"
                                                                                   HorizontalScrollBarVisibility="Disabled">
                                                                         <TextBlock Text="{Binding AIEvaluation}" 
                                                                                    TextWrapping="Wrap"
                                                                                    Foreground="#FFE6E6E6"
                                                                                    FontFamily="Consolas"
                                                                                    FontSize="12" Width="450" Height="200"/>
-                                                                        </ScrollViewer>
+                                                                    </ScrollViewer>
 
                                                                 </Border>
 
@@ -1917,7 +1930,7 @@ Title="Tailgrab Player Panel"
                                                                             </Canvas>
                                                                         </Viewbox>
                                                                     </StackPanel>
-                                                                </Border>                                                                
+                                                                </Border>
                                                             </Grid>
                                                         </Border>
                                                     </DataTemplate>
@@ -2946,7 +2959,7 @@ Title="Tailgrab Player Panel"
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
-                                                                
+
                             </DataGrid.Columns>
 
                             <!-- Row Details Template for Description and Rules -->

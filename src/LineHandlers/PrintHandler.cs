@@ -24,7 +24,7 @@ public class PrintHandler : AbstractLineHandler
         {
             string timestamp = m.Groups[VRC_DATETIME].Value;
             string fileURL = m.Groups[VRC_FILEURL].Value;
-            _serviceRegistry.GetPlayerManager().AddPrintData(fileURL);
+            _serviceRegistry.GetPrintManager().AddPrintSpawn(fileURL);    //.AddPrintData(fileURL);
             if (LogOutput)
             {
                 logger.Info($"{COLOR_PREFIX}Print : {fileURL}{COLOR_RESET.GetAnsiEscape()}");

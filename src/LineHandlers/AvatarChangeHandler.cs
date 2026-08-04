@@ -31,7 +31,7 @@ public class AvatarChangeHandler : AbstractLineHandler
                 logger.Info($"{COLOR_PREFIX}Avatar Change : {userName} to {avatarName}{COLOR_RESET.GetAnsiEscape()}");
             }
 
-            _serviceRegistry.GetPlayerManager().SetAvatarForPlayer(userName, avatarName);
+            _serviceRegistry.GetAvatarManager().SetAvatarForPlayer(userName, avatarName);
 
             ExecuteActions();
             return true;

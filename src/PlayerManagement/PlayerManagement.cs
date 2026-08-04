@@ -1,22 +1,555 @@
 using ConcurrentPriorityQueue.Core;
 using Microsoft.EntityFrameworkCore;
 using NLog;
-using Polly;
 using System.ComponentModel;
 using System.Text;
 using System.Windows;
 using Tailgrab.Clients.Ollama;
-using Tailgrab.Clients.VRChat;
 using Tailgrab.Clients.XSOverlay;
 using Tailgrab.Common;
 using Tailgrab.LineHandler;
 using Tailgrab.Models;
-using VRChat.API.Client;
 using VRChat.API.Model;
 using static Tailgrab.Clients.VRChat.VRChatClient;
 
 namespace Tailgrab.PlayerManagement
 {
+    public class PlayerManager
+    {
+
+        private static ServiceRegistry serviceRegistry;
+        public PlayerManager(ServiceRegistry registry)
+        {   
+            if(registry == null)
+            {
+                throw new ArgumentNullException(nameof(registry), "ServiceRegistry parameter cannot be null.");
+            }
+            serviceRegistry = registry;
+        }
+
+        private static Dictionary<string, Player> playersByUserId = [];
+        private static Dictionary<int, string> userIdByNetworkId = [];
+        private static Dictionary<string, string> userIdByDisplayName = [];
+        private static Dictionary<string, string> avatarByDisplayName = [];
+        private static Dictionary<string, PlayerAvatar> playerAvatarByName = [];
+        public static SessionInfo CurrentSession = new("", "");
+
+        public static readonly AnsiColor COLOR_PREFIX_LEAVE = AnsiColor.Yellow;
+        public static readonly AnsiColor COLOR_PREFIX_JOIN = AnsiColor.Green;
+        public static readonly AnsiColor COLOR_RESET = AnsiColor.Reset;
+        protected static readonly Logger logger = LogManager.GetCurrentClassLogger();
+
+        // Event for UI and other listeners
+        public static event EventHandler<PlayerChangedEventArgs>? PlayerChanged;
+
+        public static Player? GetPlayerByDisplayName(string displayName)
+        {
+            if (userIdByDisplayName.TryGetValue(displayName, out string? userId))
+            {
+                return GetPlayerByUserId(userId);
+            }
+            return null;
+        }
+
+        public static Player? GetPlayerByNetworkId(int networkId)
+        {
+            if (userIdByNetworkId.TryGetValue(networkId, out string? userId))
+            {
+                return GetPlayerByUserId(userId);
+            }
+            return null;
+        }
+
+        public static Player? GetPlayerByUserId(string userId)
+        {
+            playersByUserId.TryGetValue(userId, out Player? player);
+            return player;
+        }
+
+        public static PlayerAvatar? GetPlayerAvatarByName(string avatarName)
+        {
+            if (playerAvatarByName.TryGetValue(avatarName, out PlayerAvatar? playerAvatar))
+            {
+                return playerAvatar;
+            }
+            return null;
+        }
+
+        public static void SetPlayerAvatarByName(string avatarName, PlayerAvatar playerAvatar)
+        {
+            playerAvatarByName[avatarName] = playerAvatar;
+        }
+
+        public static void SetAvatarByDisplayName(string playerName, string avatarName)
+        {
+            avatarByDisplayName[playerName] = avatarName;
+        }
+
+        public static void OnPlayerChanged(PlayerChangedEventArgs.ChangeType changeType, Player player)
+        {
+            try
+            {
+                PlayerChanged?.Invoke(null, new PlayerChangedEventArgs(changeType, player));
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error raising PlayerChanged event");
+            }
+        }
+
+        public static void OnPlayerChanged(PlayerChangedEventArgs.ChangeType changeType, string displayName)
+        {
+            try
+            {
+                Player? player = GetPlayerByDisplayName(displayName);
+                if (player != null)
+                {
+                    PlayerChanged?.Invoke(null, new PlayerChangedEventArgs(changeType, player));
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error raising PlayerChanged event");
+            }
+        }
+
+        public static void UpdateCurrentSession(string worldId, string instanceId)
+        {
+            CurrentSession = new SessionInfo(worldId, instanceId);
+            OverlayManager overlay = serviceRegistry.GetXSOverlay();
+            overlay.Initialize();
+        }
+
+        public void PlayerJoined(string userId, string displayName, AbstractLineHandler handler)
+        {
+            Player? player;
+            if (!playersByUserId.TryGetValue(userId, out Player? value))
+            {
+                player = new Player(userId, displayName, CurrentSession);
+                if (handler.LogOutput)
+                {
+                    logger.Info($"{COLOR_PREFIX_JOIN.GetAnsiEscape()}Player Joined: {displayName} (ID: {userId}){COLOR_RESET.GetAnsiEscape()}");
+                }
+            }
+            else
+            {
+                // If existing, treat as update (display name may have changed etc.)
+                player = value;
+                if (player.DisplayName != displayName)
+                {
+                    // remove old display-name mapping if present
+                    if (!string.IsNullOrEmpty(player.DisplayName))
+                    {
+                        userIdByDisplayName.Remove(player.DisplayName);
+                    }
+                    player.DisplayName = displayName;
+                }
+            }
+
+            if (player == null)
+            {
+                logger.Error("PlayerJoined: Failed to create or retrieve player instance.");
+                return;
+            }
+
+            // Check for existing avatar mapping
+            if (avatarByDisplayName.TryGetValue(displayName, out string? avatarName))
+            {
+                if (avatarName != null)
+                {
+                    player.AvatarName = avatarName;
+                    player.Events.Add(new PlayerEvent(PlayerEvent.EventType.AvatarChange, $"Joined with Avatar: {avatarName}"));
+                    if (handler.LogOutput)
+                    {
+                        logger.Info($"{COLOR_PREFIX_JOIN.GetAnsiEscape()}\tAvatar on Join: {avatarName}{COLOR_RESET.GetAnsiEscape()}");
+                    }
+                }
+            }
+
+            serviceRegistry.GetGroupManager().CheckUserGroups(userId);
+            serviceRegistry.GetOllamaAPIClient().CheckUserProfile(userId);
+            playersByUserId[userId] = player;
+            userIdByDisplayName[displayName] = player.UserId;
+
+            OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Added, player);
+        }
+
+        public void PlayerLeft(string displayName, AbstractLineHandler handler)
+        {
+            Player? player = GetPlayerByDisplayName(displayName);
+            if (player != null)
+            {
+                player.InstanceEndTime = DateTime.Now;
+                TimeSpan timeDifference = (TimeSpan)(player.InstanceEndTime - player.InstanceStartTime);
+                logger.Debug($"{displayName} session time: {timeDifference.TotalMinutes} minutes");
+                TailgrabDBContext dBContext = serviceRegistry.GetDBContext();
+
+                // Update or create UserInfo record with elapsed time
+                UserInfo? user = dBContext.UserInfos.Find(player.UserId);
+                if (user == null)
+                {
+                    user = new UserInfo
+                    {
+                        DisplayName = player.DisplayName,
+                        UserId = player.UserId,
+                        CreatedAt = DateTime.Now,
+                        UpdatedAt = DateTime.Now,
+                        ElapsedMinutes = timeDifference.TotalMinutes
+                    };
+                    dBContext.Add(user);
+                    dBContext.SaveChanges();
+                }
+                else
+                {
+                    user.DisplayName = player.DisplayName;
+                    user.UpdatedAt = DateTime.Now;
+                    user.ElapsedMinutes += timeDifference.TotalMinutes;
+                    dBContext.Update(user);
+                    dBContext.SaveChanges();
+                }
+
+                // Raise event with updated player before removing from internal dictionaries
+                OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Removed, player);
+
+                userIdByDisplayName.Remove(displayName);
+                avatarByDisplayName.Remove(displayName);
+                userIdByNetworkId.Remove(player.NetworkId);
+                playersByUserId.Remove(player.UserId);
+                if (handler.LogOutput)
+                {
+                    PrintPlayerInfo(player);
+                }
+            }
+        }
+
+        public static Player? AssignPlayerNetworkId(string displayName, int networkId)
+        {
+            Player? player = GetPlayerByDisplayName(displayName);
+            if (player != null)
+            {
+                player.NetworkId = networkId;
+                userIdByNetworkId[networkId] = player.UserId;
+            }
+
+            return player;
+        }
+
+        public static IEnumerable<Player> GetAllPlayers()
+        {
+            return playersByUserId.Values;
+        }
+
+        public static void ClearAllPlayers(AbstractLineHandler handler)
+        {
+            foreach (var player in playersByUserId.Values)
+            {
+                player.InstanceEndTime = DateTime.Now;
+                if (handler.LogOutput)
+                {
+                    PrintPlayerInfo(player);
+                }
+                // Notify removed for each player
+                OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Removed, player);
+            }
+
+            userIdByNetworkId.Clear();
+            playersByUserId.Clear();
+            userIdByDisplayName.Clear();
+            playerAvatarByName.Clear();
+
+            // Also a global cleared notification (consumers may want to reset)
+            OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Cleared, new Player("", "", CurrentSession) { InstanceStartTime = DateTime.MinValue });
+        }
+
+        public static int GetPlayerCount()
+        {
+            return playersByUserId.Count;
+        }
+
+        public static void LogAllPlayers(AbstractLineHandler handler)
+        {
+            if (handler.LogOutput)
+            {
+                foreach (var player in playersByUserId.Values)
+                {
+                    PrintPlayerInfo(player);
+                }
+            }
+        }
+
+        public static Player? AddPlayerEventByDisplayName(string displayName, PlayerEvent.EventType eventType, string eventDescription)
+        {
+
+            if (userIdByDisplayName.TryGetValue(displayName, out string? userId))
+            {
+                return AddPlayerEventByUserId(userId, eventType, eventDescription);
+            }
+
+            return null;
+        }
+
+        public static Player? AddPlayerEventByUserId(string userId, PlayerEvent.EventType eventType, string eventDescription)
+        {
+            if (playersByUserId.TryGetValue(userId, out Player? player))
+            {
+                PlayerEvent newEvent = new(eventType, eventDescription);
+                player.AddEvent(newEvent);
+                return player;
+            }
+
+            return null;
+        }
+
+        private static void PrintPlayerInfo(Player player)
+        {
+            logger.Info($"{COLOR_PREFIX_LEAVE.GetAnsiEscape()}Player Left: \n{player}{COLOR_RESET.GetAnsiEscape()}");
+        }
+
+        internal static void AddPenEventByDisplayName(string displayName, string eventText)
+        {
+            Player? player = GetPlayerByDisplayName(displayName);
+            if (player != null)
+            {
+                player.PenActivity = eventText;
+                OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Updated, player);
+            }
+        }
+
+
+        public Player? UpdatePlayerUserFromVRCProfile(User profile, string profileHash)
+        {
+            if (profile != null && profile.Id != null)
+            {
+                TailgrabDBContext dbContext = serviceRegistry.GetDBContext();
+                Player? player = GetPlayerByUserId(profile.Id);
+                if (player != null)
+                {
+                    player.DateJoined = profile.DateJoined;
+                    logger.Debug($"Updated UserInfo for user {profile.DisplayName} (ID: {profile.Id}) with DateJoined: {profile.DateJoined} and ProfileHash: {profileHash}; {player.ProfileElapsedTime}");
+                }
+
+                // Update or create UserInfo record with elapsed time
+                UserInfo? user = dbContext.UserInfos.Find(profile.Id);
+                if (user != null)
+                {
+                    user.DateJoined = profile.DateJoined;
+                    user.UpdatedAt = DateTime.UtcNow;
+                    user.LastProfileChecksum = profileHash;
+                    dbContext.UserInfos.Update(user);
+                }
+                else
+                {
+                    user = new UserInfo
+                    {
+                        DisplayName = profile.DisplayName,
+                        UserId = profile.Id,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow,
+                        DateJoined = profile.DateJoined,
+                        LastProfileChecksum = profileHash
+                    };
+                    dbContext.Add(user);
+                }
+                dbContext.SaveChanges();
+
+
+                return player;
+            }
+            else
+            {
+                logger.Warn($"Attempted to update player user info from VRC profile, but profile was null");
+                return null;
+            }
+        }
+
+        #region Alert Color Management
+        public static string GetAlertColor(AlertClassEnum alertClass, AlertTypeEnum alertType)
+        {
+            string alertKey = alertClass switch
+            {
+                AlertClassEnum.Avatar => CommonConst.Avatar_Alert_Key,
+                AlertClassEnum.Group => CommonConst.Group_Alert_Key,
+                AlertClassEnum.Profile => CommonConst.Profile_Alert_Key,
+                AlertClassEnum.Print => CommonConst.Profile_Alert_Key,
+                AlertClassEnum.EmojiSticker => CommonConst.Profile_Alert_Key,
+                _ => CommonConst.Profile_Alert_Key
+
+            };
+
+            string key = CommonConst.ConfigRegistryPath + "\\" + alertKey + "\\" + alertType.ToString();
+            return ConfigStore.GetStoredKeyString(key, CommonConst.Color_Alert_Key) ?? "None";
+        }
+
+        #endregion
+
+        #region Moderation Report Management
+        public async Task GetModerationReports()
+        {
+            try
+            {
+                int offset = 0;
+                while (true)
+                {
+                    ModerationReportListResponse? reports = await serviceRegistry.GetVRChatAPIClient().ListModerationReportAsync(offset);
+                    if (reports == null)
+                        break;
+
+                    foreach (var report in reports.Results)
+                    {
+                        logger.Info($"Report ID: {report.Id}, Type: {report.Type}, ContentId: {report.ContentId}, ContentName: {report.ContentName}");
+                        await SaveModerationReport(report);
+                    }
+                    offset += 60;
+                    if (reports.HasNext == false)
+                    {
+                        logger.Info("No more moderation reports to process.");
+                        break;
+                    }
+                    await Task.Delay(1000); // Delay for 1 second before the next request
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to fetch moderation reports");
+            }
+        }
+
+        public async Task SaveModerationReport(ModerationReportPayload rpt, ModerationReportResponse response, string UserId)
+        {
+            try
+            {
+                TailgrabDBContext dBContext = serviceRegistry.GetDBContext();
+
+
+                ModerationInfo info = new()
+                {
+                    // We should get the ModerationID from the response, but for now we will generate a new GUID
+                    Id = response.Id ?? Guid.NewGuid().ToString(),
+                    EventDateTime = DateTime.Now,
+                    ContentId = response.ContentId,
+                    ContentName = response.ContentName ?? string.Empty,
+                    ContentType = response.Type ?? string.Empty,
+                    Thumbnail = response.ContentThumbnailImageUrl ?? string.Empty,
+                    Report = System.Text.Encoding.UTF8.GetBytes(response.Description ?? string.Empty),
+                    UserId = UserId
+                };
+
+                // Save the moderation info to the database
+                dBContext.ModerationInfos.Add(info);
+                await dBContext.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to save moderation report");
+                System.Windows.MessageBox.Show($"Failed to save moderation report: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        public async Task SaveModerationReport(ModerationReportResponse response)
+        {
+            try
+            {
+                TailgrabDBContext dbContext = serviceRegistry.GetDBContext();
+                ModerationInfo? info = dbContext.ModerationInfos.Find(response.Id);
+                if (info != null)
+                {
+                    logger.Info($"Moderation report with ID {response.Id} already exists in the database. Skipping save.");
+                    return;
+                }
+                else
+                {
+                    info = new ModerationInfo
+                    {
+                        // We should get the ModerationID from the response, but for now we will generate a new GUID
+                        Id = response.Id ?? Guid.NewGuid().ToString(),
+                        EventDateTime = DateTime.Now,
+                        ContentId = response.ContentId,
+                        ContentName = response.ContentName ?? string.Empty,
+                        ContentType = response.Type ?? string.Empty,
+                        Thumbnail = response.ContentThumbnailImageUrl ?? string.Empty,
+                        Report = System.Text.Encoding.UTF8.GetBytes(response.Description ?? string.Empty),
+                        UserId = convertModerationsReportTypeToUserId(response)
+                    };
+
+                    // Save the moderation info to the database
+                    dbContext.ModerationInfos.Add(info);
+                    await dbContext.SaveChangesAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to save moderation report");
+                System.Windows.MessageBox.Show($"Failed to save moderation report: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        internal string convertModerationsReportTypeToUserId(ModerationReportResponse response)
+        {
+            string userId = string.Empty;
+            Tailgrab.Clients.VRChat.VRChatClient vrcClient = serviceRegistry.GetVRChatAPIClient();
+            switch (response.Type)
+            {
+                case "avatar":
+                    Avatar? avatar = vrcClient.GetAvatarById(response.ContentId);
+                    if (avatar != null)
+                    {
+                        userId = avatar.AuthorId;
+                    }
+                    break;
+
+                case "world":
+                    World? world = vrcClient.GetWorldById(response.ContentId);
+                    if (world != null)
+                    {
+                        userId = world.AuthorId;
+                    }
+                    break;
+
+                case "group":
+                    Result<Group?> groupResult = vrcClient.GetGroupById(response.ContentId);
+                    Group? group = groupResult.Value;
+                    if (group != null)
+                    {
+                        userId = group.OwnerId;
+
+                    }
+                    break;
+
+                case "user":
+                    userId = response.ContentId;
+                    break;
+
+                case "sticker":
+                    break;
+
+                case "emoji":
+                    break;
+
+                case "print":
+                    break;
+
+                default:
+                    userId = response.ContentId;
+                    break;
+            }
+
+            return userId;
+        }
+
+        public static Task<List<ModerationInfo>> GetModerationReportsByUserId(string userId)
+        {
+            TailgrabDBContext dbContext = serviceRegistry.GetDBContext();
+            return dbContext.ModerationInfos.Where(m => m.UserId == userId).ToListAsync();
+        }
+        #endregion
+
+    }
+
+
+
+    #region Avatar Queue Classes
+    #endregion
+
     #region Player and Event Classes
     public class PlayerEvent(PlayerEvent.EventType type, string eventDescription)
     {
@@ -48,23 +581,23 @@ namespace Tailgrab.PlayerManagement
         public string ItemUrl { get; set; } = itemUrl;
         public string InventoryType { get; set; } = inventoryType;
         public string AIEvaluation { get; set; } = aIEvaluation;
-        public string EvaluatedText { get; set; } = evaluatedText;  
+        public string EvaluatedText { get; set; } = evaluatedText;
 
         public AlertDisplayItem AlertInfo { get; set; } = AIEvalutionEnumMapper.MapEnumToAlertDisplayItem(AIEvalutionEnumMapper.MapEvaluationToEnum(evaluatedText));
         public DateTime SpawnedAt { get; set; } = DateTime.Now;
     }
 
-    public class PlayerPrint(VRChat.API.Model.Print p, string aiEvaluation, string aiClassification)
+    public class PlayerPrint(string printId, string ownerId, DateTime createdAt, string printUrl, string authorName, string aiEvaluation, string aiClassification)
     {
-        public string PrintId { get; set; } = p.Id;
-        public string OwnerId { get; set; } = p.OwnerId;
+        public string PrintId { get; set; } = printId;
+        public string OwnerId { get; set; } = ownerId;
         public DateTime Timestamp { get; set; } = DateTime.Now;
-        public DateTime CreatedAt { get; set; } = p.CreatedAt;
-        public string PrintUrl { get; set; } = p.Files.Image;
+        public DateTime CreatedAt { get; set; } = createdAt;
+        public string PrintUrl { get; set; } = printUrl;
         public string AIEvaluation { get; set; } = aiEvaluation;
         public string AIClass { get; set; } = aiClassification;
         public AlertDisplayItem AlertInfo { get; set; } = AIEvalutionEnumMapper.MapEnumToAlertDisplayItem(AIEvalutionEnumMapper.MapEvaluationToEnum(aiEvaluation));
-        public string AuthorName { get; set; } = p.AuthorName;
+        public string AuthorName { get; set; } = authorName;
     }
 
     public class AlertMessage(AlertClassEnum alertClass, AlertTypeEnum alertType, string color, string message)
@@ -239,7 +772,7 @@ namespace Tailgrab.PlayerManagement
                         double years = elapsed.TotalDays / 365.25; // Account for leap years
                         return $"{years:F1}Y";
                     }
-                    else if( elapsed.TotalDays >= 30)
+                    else if (elapsed.TotalDays >= 30)
                     {
                         double months = elapsed.TotalDays / 30.44; // Average days per month
                         return $"{months:F1}M";
@@ -286,24 +819,26 @@ namespace Tailgrab.PlayerManagement
 
 
         private bool _isFriend = false;
-        public bool IsFriend { 
+        public bool IsFriend
+        {
             get
             {
                 return _isFriend;
             }
-            set 
-            { 
-                if( value == true)
+            set
+            {
+                if (value == true)
                 {
                     AlertColor = "Friend";
                 }
                 _isFriend = value;
-            } }
+            }
+        }
 
         public void AddAlertMessage(AlertClassEnum alertClass, AlertTypeEnum alertType, string message)
         {
             string alertColor = PlayerManager.GetAlertColor(alertClass, alertType);
-            AlertMessage newAlert = new (alertClass, alertType, alertColor, message);
+            AlertMessage newAlert = new(alertClass, alertType, alertColor, message);
             _AlertMessage.Add(newAlert);
 
             foreach (AlertMessage alert in _AlertMessage)
@@ -311,7 +846,7 @@ namespace Tailgrab.PlayerManagement
                 if (alert.AlertType > MaxAlertType)
                 {
                     MaxAlertType = alert.AlertType;
-                    if( _isFriend == false)
+                    if (_isFriend == false)
                     {
                         AlertColor = alert.Color;
                     }
@@ -331,7 +866,7 @@ namespace Tailgrab.PlayerManagement
 
         public string ToString(bool full)
         {
-            StringBuilder sb = new ();
+            StringBuilder sb = new();
             sb.AppendLine($"DisplayName: {DisplayName}");
             sb.AppendLine($"UserId: {UserId}");
             sb.AppendLine($"Current Avatar Name: {(string.IsNullOrEmpty(AvatarName) ? string.Empty : AvatarName)}");
@@ -397,1415 +932,6 @@ namespace Tailgrab.PlayerManagement
 
         public ChangeType Type { get; } = type;
         public Player Player { get; } = player;
-    }
-
-    public class GroupInfoDTO(string groupId, AlertTypeEnum alertType, bool exists)
-    {
-        public string GroupId { get; set; } = groupId;
-        public AlertTypeEnum AlertType { get; set; } = alertType;
-        public bool Exists { get; set; } = exists;
-    }
-    #endregion
-
-
-    public class PlayerManager
-    {
-        private static ServiceRegistry serviceRegistry;
-        public PlayerManager(ServiceRegistry registry)
-        {
-            serviceRegistry = registry;
-            _ = Task.Run(() => AvatarCheckTask(priorityQueue, serviceRegistry));
-        }
-
-        private static Dictionary<string, Player> playersByUserId = [];
-        private static Dictionary<int, string> userIdByNetworkId = [];
-        private static Dictionary<string, string> userIdByDisplayName = [];
-        private static Dictionary<string, string> avatarByDisplayName = [];
-        private static Dictionary<string, PlayerAvatar> PlayerAvatarByName = [];
-        public static SessionInfo CurrentSession = new("", "");
-
-        public static readonly AnsiColor COLOR_PREFIX_LEAVE = AnsiColor.Yellow;
-        public static readonly AnsiColor COLOR_PREFIX_JOIN = AnsiColor.Green;
-        public static readonly AnsiColor COLOR_RESET = AnsiColor.Reset;
-        protected static readonly Logger logger = LogManager.GetCurrentClassLogger();
-
-        // Event for UI and other listeners
-        public static event EventHandler<PlayerChangedEventArgs>? PlayerChanged;
-
-        private static ConcurrentPriorityQueue<IHavePriority<int>, int> priorityQueue = new();
-        private static Dictionary<String, DateTime> recentlyProcessedAvatars = [];
-
-        public static Player? GetPlayerByDisplayName(string displayName)
-        {
-            if (userIdByDisplayName.TryGetValue(displayName, out string? userId))
-            {
-                return GetPlayerByUserId(userId);
-            }
-            return null;
-        }
-
-        public static Player? GetPlayerByNetworkId(int networkId)
-        {
-            if (userIdByNetworkId.TryGetValue(networkId, out string? userId))
-            {
-                return GetPlayerByUserId(userId);
-            }
-            return null;
-        }
-
-        public static Player? GetPlayerByUserId(string userId)
-        {
-            playersByUserId.TryGetValue(userId, out Player? player);
-            return player;
-        }
-
-
-        public static void OnPlayerChanged(PlayerChangedEventArgs.ChangeType changeType, Player player)
-        {
-            try
-            {
-                PlayerChanged?.Invoke(null, new PlayerChangedEventArgs(changeType, player));
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex, "Error raising PlayerChanged event");
-            }
-        }
-
-        public static void OnPlayerChanged(PlayerChangedEventArgs.ChangeType changeType, string displayName)
-        {
-            try
-            {
-                Player? player = GetPlayerByDisplayName(displayName);
-                if (player != null)
-                {
-                    PlayerChanged?.Invoke(null, new PlayerChangedEventArgs(changeType, player));
-                }
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex, "Error raising PlayerChanged event");
-            }
-        }
-
-        public static void UpdateCurrentSession(string worldId, string instanceId)
-        {
-            CurrentSession = new SessionInfo(worldId, instanceId);
-            OverlayManager overlay = serviceRegistry.GetXSOverlay();
-            overlay.Initialize();
-        }
-
-        public void PlayerJoined(string userId, string displayName, AbstractLineHandler handler)
-        {
-            Player? player;
-            if (!playersByUserId.TryGetValue(userId, out Player? value))
-            {
-                player = new Player(userId, displayName, CurrentSession);
-                if (handler.LogOutput)
-                {
-                    logger.Info($"{COLOR_PREFIX_JOIN.GetAnsiEscape()}Player Joined: {displayName} (ID: {userId}){COLOR_RESET.GetAnsiEscape()}");
-                }
-            }
-            else
-            {
-                // If existing, treat as update (display name may have changed etc.)
-                player = value;
-                if (player.DisplayName != displayName)
-                {
-                    // remove old display-name mapping if present
-                    if (!string.IsNullOrEmpty(player.DisplayName))
-                    {
-                        userIdByDisplayName.Remove(player.DisplayName);
-                    }
-                    player.DisplayName = displayName;
-                }
-            }
-
-            if (player == null)
-            {
-                logger.Error("PlayerJoined: Failed to create or retrieve player instance.");
-                return;
-            }
-
-            // Check for existing avatar mapping
-            if (avatarByDisplayName.TryGetValue(displayName, out string? avatarName))
-            {
-                if (avatarName != null)
-                {
-                    player.AvatarName = avatarName;
-                    player.Events.Add(new PlayerEvent(PlayerEvent.EventType.AvatarChange, $"Joined with Avatar: {avatarName}"));
-                    if (handler.LogOutput)
-                    {
-                        logger.Info($"{COLOR_PREFIX_JOIN.GetAnsiEscape()}\tAvatar on Join: {avatarName}{COLOR_RESET.GetAnsiEscape()}");
-                    }
-                }
-            }
-
-            serviceRegistry.GetOllamaAPIClient().CheckUserProfile(userId);
-            playersByUserId[userId] = player;
-            userIdByDisplayName[displayName] = player.UserId;
-
-            OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Added, player);
-        }
-
-        public void PlayerLeft(string displayName, AbstractLineHandler handler)
-        {
-            Player? player = GetPlayerByDisplayName(displayName);
-            if (player != null)
-            {
-                player.InstanceEndTime = DateTime.Now;
-                TimeSpan timeDifference = (TimeSpan)(player.InstanceEndTime - player.InstanceStartTime);
-                logger.Debug($"{displayName} session time: {timeDifference.TotalMinutes} minutes");
-                TailgrabDBContext dBContext = serviceRegistry.GetDBContext();
-
-                // Update or create UserInfo record with elapsed time
-                UserInfo? user = dBContext.UserInfos.Find(player.UserId);
-                if (user == null)
-                {
-                    user = new UserInfo
-                    {
-                        DisplayName = player.DisplayName,
-                        UserId = player.UserId,
-                        CreatedAt = DateTime.Now,
-                        UpdatedAt = DateTime.Now,
-                        ElapsedMinutes = timeDifference.TotalMinutes
-                    };
-                    dBContext.Add(user);
-                    dBContext.SaveChanges();
-                }
-                else
-                {
-                    user.DisplayName = player.DisplayName;
-                    user.UpdatedAt = DateTime.Now;
-                    user.ElapsedMinutes += timeDifference.TotalMinutes;
-                    dBContext.Update(user);
-                    dBContext.SaveChanges();
-                }
-
-                // Raise event with updated player before removing from internal dictionaries
-                OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Removed, player);
-
-                userIdByDisplayName.Remove(displayName);
-                avatarByDisplayName.Remove(displayName);
-                userIdByNetworkId.Remove(player.NetworkId);
-                playersByUserId.Remove(player.UserId);
-                if (handler.LogOutput)
-                {
-                    PrintPlayerInfo(player);
-                }
-            }
-        }
-
-        public static Player? AssignPlayerNetworkId(string displayName, int networkId)
-        {
-            Player? player = GetPlayerByDisplayName(displayName);
-            if (player != null)
-            {
-                player.NetworkId = networkId;
-                userIdByNetworkId[networkId] = player.UserId;
-            }
-
-            return player;
-        }
-
-        public static IEnumerable<Player> GetAllPlayers()
-        {
-            return playersByUserId.Values;
-        }
-
-        public static void ClearAllPlayers(AbstractLineHandler handler)
-        {
-            foreach (var player in playersByUserId.Values)
-            {
-                player.InstanceEndTime = DateTime.Now;
-                if (handler.LogOutput)
-                {
-                    PrintPlayerInfo(player);
-                }
-                // Notify removed for each player
-                OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Removed, player);
-            }
-
-            userIdByNetworkId.Clear();
-            playersByUserId.Clear();
-            userIdByDisplayName.Clear();
-            PlayerAvatarByName.Clear();
-
-            // Also a global cleared notification (consumers may want to reset)
-            OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Cleared, new Player("", "", CurrentSession) { InstanceStartTime = DateTime.MinValue });
-        }
-
-        public static int GetPlayerCount()
-        {
-            return playersByUserId.Count;
-        }
-
-        public static void LogAllPlayers(AbstractLineHandler handler)
-        {
-            if (handler.LogOutput)
-            {
-                foreach (var player in playersByUserId.Values)
-                {
-                    PrintPlayerInfo(player);
-                }
-            }
-        }
-
-        public static Player? AddPlayerEventByDisplayName(string displayName, PlayerEvent.EventType eventType, string eventDescription)
-        {
-
-            if (userIdByDisplayName.TryGetValue(displayName, out string? userId))
-            {
-                return AddPlayerEventByUserId(userId, eventType, eventDescription);
-            }
-
-            return null;
-        }
-
-        public static Player? AddPlayerEventByUserId(string userId, PlayerEvent.EventType eventType, string eventDescription)
-        {
-            if (playersByUserId.TryGetValue(userId, out Player? player))
-            {
-                PlayerEvent newEvent = new(eventType, eventDescription);
-                player.AddEvent(newEvent);
-                return player;
-            }
-
-            return null;
-        }
-
-        public void SetAvatarForPlayer(string displayName, string avatarName)
-        {
-            avatarByDisplayName[displayName] = avatarName;
-
-            Player? player = AddPlayerEventByDisplayName(displayName, PlayerEvent.EventType.AvatarWatch, $"User switched to Avatar : {avatarName}"); ;
-            if (player != null)
-            {
-                AvatarInfo? watchedAvatar = PlayerManager.CheckAvatarByName(avatarName);
-                if (watchedAvatar != null)
-                {
-                    logger.Info($"{COLOR_PREFIX_LEAVE.GetAnsiEscape()}Watched Avatar Detected for Player {displayName}: {avatarName} with AlertType {watchedAvatar.AlertType}{COLOR_RESET.GetAnsiEscape()}");
-                    if (watchedAvatar.AlertType > AlertTypeEnum.None)
-                    {
-                        player = AddPlayerEventByDisplayName(displayName, PlayerEvent.EventType.AvatarWatch, $"User has used a watched Avatar : {avatarName} alertType: {watchedAvatar.AlertType}");
-                        player?.AddAlertMessage(AlertClassEnum.Avatar, watchedAvatar.AlertType, $"{avatarName}");
-                        OverlayManager overlay = serviceRegistry.GetXSOverlay();
-                        _ = overlay.SendNotification(watchedAvatar.AlertType, $"Player \\b1{displayName}\\b0 has used a watched Avatar \\b1\\i1{avatarName}\\i0\\b0");
-                    }
-                }
-                if (player != null)
-                {
-                    player.AvatarName = avatarName;
-                    OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Updated, player);
-                }
-            }
-        }
-
-        public static PlayerAvatar UpdatePlayerAvatar(string avatarName, string uploadedBy)
-        {
-
-            if (PlayerAvatarByName.TryGetValue(avatarName, out PlayerAvatar? playerAvatar))
-            {
-                return playerAvatar;
-            }
-            else
-            {
-                playerAvatar = new PlayerAvatar(avatarName, uploadedBy);
-                PlayerAvatarByName[avatarName] = playerAvatar;
-
-            }
-            return playerAvatar;
-        }
-
-        private static void PrintPlayerInfo(Player player)
-        {
-            logger.Info($"{COLOR_PREFIX_LEAVE.GetAnsiEscape()}Player Left: \n{player}{COLOR_RESET.GetAnsiEscape()}");
-        }
-
-        internal static void AddPenEventByDisplayName(string displayName, string eventText)
-        {
-            Player? player = GetPlayerByDisplayName(displayName);
-            if (player != null)
-            {
-                player.PenActivity = eventText;
-                OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Updated, player);
-            }
-        }
-
-        internal async void AddInventorySpawn(string userId, string inventoryId)
-        {
-            Player? player = GetPlayerByUserId(userId);
-            if (player != null)
-            {
-                string itemName = "Unknown Item";
-                string itemUrl = "";
-                string itemContent = "";
-                string inventoryType = "Unknown Type";
-                string aiClassification = "OK";
-                try
-                {
-                    var inventoryItem = await serviceRegistry.GetVRChatAPIClient()?.GetUserInventoryItem(userId, inventoryId)!;
-                    if (inventoryItem != null)
-                    {
-                        itemName = inventoryItem.Name ?? inventoryItem.ItemType ?? "Unknown Item";
-                        itemUrl = inventoryItem.ImageUrl ?? "";
-                        itemContent = inventoryItem.Metadata?.ImageUrl ?? itemUrl;
-                        inventoryType = inventoryItem.ItemTypeLabel ?? "Unknown Type";
-
-                        logger.Info($"Fetched inventory item: {itemName} / ({inventoryItem.ItemTypeLabel}) for user {userId} / URL : {itemUrl}");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    logger.Warn($"Failed to fetch inventory item {inventoryId} / {inventoryType} for user {userId}: {ex.Message}");
-                }
-
-                if (inventoryType.Contains("Emoji") || inventoryType.Contains("Sticker"))
-                {
-                    string evaluatedText = string.Empty;
-                    var ollamaClient = serviceRegistry.GetOllamaAPIClient();
-                    if (ollamaClient != null)
-                    {
-                        ImageEvaluation? evaluated = await ollamaClient.ClassifyImageList(userId, inventoryId, [itemUrl, itemContent]);
-                        if (evaluated != null)
-                        {
-                            evaluatedText = System.Text.Encoding.UTF8.GetString(evaluated.Evaluation);
-                            aiClassification = EvaluateImageClass(evaluatedText) ?? "OK";
-                            logger.Info($"Ollama classification for inventory item {inventoryId}: {aiClassification}: {evaluatedText}");
-                            if (!aiClassification.Equals("OK") && !evaluated.IsIgnored)
-                            {
-                                AddPlayerEventByUserId(userId, PlayerEvent.EventType.Emoji, $"AI Evaluation: Spawned Item {itemName} ({inventoryId}) was classified {aiClassification}");
-                                player.AddAlertMessage(AlertClassEnum.EmojiSticker, AlertTypeEnum.Nuisance, $"{aiClassification}");
-                            }
-                        }
-                    }
-
-                    PlayerInventory inventory = new(inventoryId, itemName, itemContent, inventoryType, aiClassification, evaluatedText);
-                    player.Inventory.Add(inventory);
-
-                    AddPlayerEventByUserId(userId, PlayerEvent.EventType.Emoji, $"Spawned Item: {itemName} ({inventoryId})");
-                    OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Updated, player);
-                }
-            }
-        }
-
-        // Evaluate the image evaluation text to determine if it contains any known classifications
-        private static string? EvaluateImageClass(string? imageEvaluation)
-        {
-            if (string.IsNullOrEmpty(imageEvaluation))
-            {
-                return null;
-            }
-
-            if (CheckLines(imageEvaluation, CommonConst.AI_EVALUATION_SEXUAL))
-            {
-                return CommonConst.AI_EVALUATION_SEXUAL;
-            }
-            else if (CheckLines(imageEvaluation, CommonConst.AI_EVALUATION_HATE))
-            {
-                return CommonConst.AI_EVALUATION_HATE;
-            }
-            else if (CheckLines(imageEvaluation, CommonConst.AI_EVALUATION_SELFHARM))
-            {
-                return CommonConst.AI_EVALUATION_SELFHARM;
-            }
-
-            return null;
-        }
-        private static bool CheckLines(string input, string knownString)
-        {
-            string[] lines = input.Split(['\n'], StringSplitOptions.RemoveEmptyEntries);
-
-            if (lines.Length < 2)
-            {
-                return false;
-            }
-
-            bool firstLineContains = lines[0].Contains(knownString);
-
-            return firstLineContains;
-        }
-
-        internal static void AddStickerEvent(string displayName, string fileURL)
-        {
-            Player? player = GetPlayerByDisplayName(displayName);
-            if (player != null)
-            {
-                player.LastStickerUrl = fileURL;
-                AddPlayerEventByDisplayName(displayName, PlayerEvent.EventType.Sticker, $"Spawned sticker: {fileURL}");
-                OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Updated, player);
-            }
-        }
-
-        internal async void AddPrintData(string printId)
-        {
-            if (serviceRegistry.GetVRChatAPIClient() != null)
-            {
-                Print? printInfo = serviceRegistry.GetVRChatAPIClient().GetPrintInfo(printId);
-                if (printInfo != null)
-                {
-                    Player? player = AddPlayerEventByUserId(printInfo.OwnerId, PlayerEvent.EventType.Print, $"Dropped Print {printId}");
-                    if (player != null)
-                    {
-                        logger.Info($"Fetched print info for print {printId} owned by {player.DisplayName} (ID: {printInfo.OwnerId}) / URL: {printInfo.Files.Image}");
-                        string evaluatedText = "Not Evaluated";
-                        string aiClassification = "OK";
-                        var ollamaClient = serviceRegistry.GetOllamaAPIClient();
-                        if (ollamaClient != null)
-                        {
-                            List<string> imageUrls = [];
-                            imageUrls.Add(printInfo.Files.Image);
-                            ImageEvaluation? evaluated = await ollamaClient.ClassifyImageList(printInfo.OwnerId, printInfo.Id, imageUrls);
-                            if (evaluated != null)
-                            {
-                                evaluatedText = System.Text.Encoding.UTF8.GetString(evaluated.Evaluation);
-                                aiClassification = EvaluateImageClass(evaluatedText) ?? "OK";
-                                logger.Info($"Ollama classification for inventory item {printInfo.Id}: {aiClassification}: {evaluatedText}");
-                                if (!aiClassification.Equals("OK") && !evaluated.IsIgnored)
-                                {
-                                    player = AddPlayerEventByUserId(printInfo.OwnerId, PlayerEvent.EventType.Print, $"AI Evaluation: Print {printId} was classified {aiClassification}");
-                                    player?.AddAlertMessage(AlertClassEnum.Print, AlertTypeEnum.Nuisance, $"{aiClassification}");
-                                }
-                            }
-                        }
-
-                        player?.PrintData[printId] = new PlayerPrint(printInfo, evaluatedText, aiClassification);
-                    }
-                }
-            }
-        }
-
-
-        public Player? UpdatePlayerUserFromVRCProfile(User profile, string profileHash)
-        {
-            if (profile != null && profile.Id != null)
-            {
-                TailgrabDBContext dbContext = serviceRegistry.GetDBContext();
-                Player? player = GetPlayerByUserId(profile.Id);
-                if (player != null)
-                {
-                    player.DateJoined = profile.DateJoined;
-                    logger.Info($"Updated UserInfo for user {profile.DisplayName} (ID: {profile.Id}) with DateJoined: {profile.DateJoined} and ProfileHash: {profileHash}; {player.ProfileElapsedTime}");
-                }
-
-                // Update or create UserInfo record with elapsed time
-                UserInfo? user = dbContext.UserInfos.Find(profile.Id);
-                if (user != null)
-                {
-                    user.DateJoined = profile.DateJoined;
-                    user.UpdatedAt = DateTime.UtcNow;
-                    user.LastProfileChecksum = profileHash;
-                    dbContext.UserInfos.Update(user);
-                }
-                else
-                {
-                    user = new UserInfo
-                    {
-                        DisplayName = profile.DisplayName,
-                        UserId = profile.Id,
-                        CreatedAt = DateTime.UtcNow,
-                        UpdatedAt = DateTime.UtcNow,
-                        DateJoined = profile.DateJoined,
-                        LastProfileChecksum = profileHash
-                    };
-                    dbContext.Add(user);
-                }
-                dbContext.SaveChanges();
-
-
-                return player;
-            }
-            else
-            {
-                logger.Warn($"Attempted to update player user info from VRC profile, but profile was null");
-                return null;
-            }
-        }
-
-        public async Task<GroupInfo?> AddUpdateGroupFromVRC(string? groupId)
-        {
-            if (string.IsNullOrEmpty(groupId))
-                return null;
-
-            TailgrabDBContext dbContext = serviceRegistry.GetDBContext();
-            GroupInfo? existing = dbContext.GroupInfos.Find(groupId);
-
-            try
-            {
-                bool shouldUpdate = false;
-                // Only update if the existing record is older than 12 hours
-                if (existing != null ) { 
-                    if (existing.UpdatedAt < DateTime.UtcNow.AddHours(-12))
-                        shouldUpdate = true;
-                } 
-                else
-                {
-                    shouldUpdate = true;
-                }
-
-
-                if( shouldUpdate )
-                {
-                    // Throttle processing to avoid overwhelming the API
-                    await Task.Delay(1000);
-
-                    Tailgrab.Clients.VRChat.VRChatClient vrcClient = serviceRegistry.GetVRChatAPIClient();
-                    Result<Group?> groupResult = vrcClient.GetGroupById(groupId);
-                    Group? group = groupResult.Value;
-
-                    if (groupResult.HasException)
-                    {
-                        if (groupResult.Exception is ApiException apiException)
-                        {
-                            if (apiException.ErrorCode == 404)
-                            {
-                                logger.Warn($"Group '{groupId}' not found in VRChat API.");
-                                if(existing != null)
-                                {
-                                    dbContext.GroupInfos.Remove(existing);
-                                    dbContext.SaveChanges();
-                                    logger.Info($"Removed Group '{groupId}' from local database as it no longer exists in VRChat API.");
-                                }
-                                return null;
-                            }
-                            else
-                            {
-                                logger.Warn($"Failed to fetch Group '{groupId}': {apiException.Message}");
-                                return null;
-                            }
-                        }                        
-                    }
-
-                    if (existing == null)
-                    {
-
-                        if (group == null)
-                        {
-                            logger.Warn($"Group '{groupId}' not found in VRChat API.");
-                            return null;
-                        }
-
-                        GroupInfo newEntity = new()
-                        {
-                            GroupId = group.Id,
-                            GroupName = group.Name ?? string.Empty,
-                            CreatedAt = group.CreatedAt,
-                            UpdatedAt = DateTime.UtcNow
-                        };
-
-                        dbContext.GroupInfos.Add(newEntity);
-                        dbContext.SaveChanges();
-                        return newEntity;
-                    }
-                    else
-                    {
-                        if(group == null)
-                        {
-                            logger.Warn($"Group '{groupId}' not found in VRChat API.");
-                            return null;
-                        }
-
-                        existing.GroupId = group.Id;
-                        existing.GroupName = group.Name ?? string.Empty;
-                        existing.CreatedAt = group.CreatedAt;
-                        existing.UpdatedAt = DateTime.UtcNow;
-                        dbContext.GroupInfos.Update(existing);
-                        dbContext.SaveChanges();
-                        return existing;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                logger.Warn($"Failed to fetch Group '{groupId}': {ex.Message}");
-            }
-
-            return existing;
-        }
-
-        public void SyncAvatarModerations()
-        {
-            try
-            {
-                TailgrabDBContext dBContext = serviceRegistry.GetDBContext();
-                Tailgrab.Clients.VRChat.VRChatClient vrcClient = serviceRegistry.GetVRChatAPIClient();
-                if (dBContext != null && vrcClient != null)
-                {
-                    int lineNumber = 0;
-                    List<VRChat.API.Model.AvatarModeration> moderations = vrcClient.GetAvatarModerations();
-                    foreach (VRChat.API.Model.AvatarModeration mod in moderations)
-                    {
-                        logger.Debug($"Processing Avatar Moderation for Avatar ID {mod.TargetAvatarId} with Status {mod.AvatarModerationType} and CreatedAt {mod.Created}");
-                        if (mod != null && mod.AvatarModerationType.Equals(AvatarModerationType.Block))
-                        {
-
-                            lineNumber++;
-                            AvatarInfo? existingAvatar = dBContext.AvatarInfos.Find(mod.TargetAvatarId);
-                            if (existingAvatar == null || existingAvatar.AlertType < AlertTypeEnum.Nuisance)
-                            {
-                                QueuedModeratedAvatarWatch watchItem = new(2, mod.TargetAvatarId, AlertTypeEnum.Nuisance, lineNumber);
-                                EnqueueModeratedAvatarForCheck(watchItem);
-                            }
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex, "Failed to clear the database");
-            }
-        }
-
-        #region Group Management
-        public async Task<List<UserGroupViewModel>> LoadUserGroupsAsync(string userId)
-        {
-            var groupViewModels = new List<UserGroupViewModel>();
-
-            try
-            {
-                Tailgrab.Clients.VRChat.VRChatClient vrcClient = serviceRegistry.GetVRChatAPIClient();
-
-                // Fetch groups from API on background thread
-                List<LimitedUserGroups> usersLimitedGroups = await Task.Run(() => vrcClient.GetProfileGroups(userId));
-                logger.Info($"Fetched {usersLimitedGroups?.Count ?? 0} groups for user {userId}");
-
-                if (usersLimitedGroups == null || usersLimitedGroups.Count == 0)
-                {
-                    logger.Info($"No groups found for user {userId}");
-                    return groupViewModels;
-                }
-
-
-                // Fetch DB data on background thread
-                List<GroupInfoDTO> dbGroupDataList = await FindMatchingWatchGroupInfo(usersLimitedGroups);
-
-                // Create view models on UI thread (required for WPF Brush creation in UpdateAlertColors)
-                foreach (var group in usersLimitedGroups)
-                {
-                    try
-                    {
-                        UserGroupViewModel item = await BuildUserGroupViewItem(userId, group, dbGroupDataList);
-
-                        groupViewModels.Add(item);
-                    }
-                    catch (Exception ex)
-                    {
-                        logger.Error(ex, $"Error processing group {group.Id} for user {userId}");
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex, $"Error loading user groups for {userId}");
-                throw;
-            }
-
-            return [.. groupViewModels
-                .OrderByDescending(g => g.IsOwnedByUser)
-                .ThenByDescending(g => g.AlertType)
-                .ThenBy(g => g.Name)];
-        }
-
-        private async Task<List<GroupInfoDTO>> FindMatchingWatchGroupInfo(List<LimitedUserGroups> groupList)
-        {
-            List<GroupInfoDTO> matchingGroups = new List<GroupInfoDTO>();
-            // Fetch DB data on background thread
-            TailgrabDBContext dbContext = serviceRegistry.GetDBContext();
-            foreach (var group in groupList)
-            {
-                GroupInfo? existingGroup = dbContext.GroupInfos.Find(group.GroupId);
-                GroupInfoDTO groupInfoDTO = new(group.GroupId ?? string.Empty,
-                    existingGroup?.AlertType ?? AlertTypeEnum.None,
-                    existingGroup != null
-                );
-                matchingGroups.Add(groupInfoDTO);
-            }
-            return matchingGroups;
-        }
-
-        private async Task<UserGroupViewModel> BuildUserGroupViewItem(string ownerId, LimitedUserGroups group, List<GroupInfoDTO> dbGroup)
-        {
-
-            Tailgrab.Clients.VRChat.VRChatClient vrcClient = serviceRegistry.GetVRChatAPIClient();
-            Result<Group?> fullGroupResult = await Task.Run(() => vrcClient.GetGroupById(group.GroupId));
-            Group? fullGroup = fullGroupResult.Value;
-
-            UserGroupViewModel item = new()
-            {
-                GroupId = group.GroupId ?? string.Empty,
-                Name = group.Name ?? string.Empty,
-                BannerUrl = group.BannerUrl ?? "https://assets.vrchat.com/www/groups/default_banner.png",
-                IconUrl = group.IconUrl ?? "https://assets.vrchat.com/www/groups/default_banner.png",
-                ShortCode = $"{group.ShortCode}.{group.Discriminator}",
-                Description = fullGroup?.Description ?? string.Empty,
-                Rules = fullGroup?.Rules ?? string.Empty,
-                JoinState = fullGroup?.JoinState.ToString() ?? "N/A",
-                MemberCount = fullGroup?.MemberCount ?? 0,
-                OwnerId = fullGroup?.OwnerId ?? string.Empty,
-                IsOwnedByUser = fullGroup?.OwnerId == ownerId
-            };
-
-            // Apply DB data
-            GroupInfoDTO? watchedItem = dbGroup.FirstOrDefault(d => d.GroupId == item.GroupId);
-            item.ExistsInDatabase = watchedItem?.Exists ?? false;
-            item.AlertType = watchedItem?.AlertType ?? AlertTypeEnum.None;
-            item.DatabaseAlertType = watchedItem?.AlertType ?? AlertTypeEnum.None;
-
-            item.UpdateAlertColors();
-
-            return item;
-        }
-        #endregion
-
-        #region Alert Color Management
-        public static string GetAlertColor(AlertClassEnum alertClass, AlertTypeEnum alertType)
-        {
-            string alertKey = alertClass switch
-            {
-                AlertClassEnum.Avatar => CommonConst.Avatar_Alert_Key,
-                AlertClassEnum.Group => CommonConst.Group_Alert_Key,
-                AlertClassEnum.Profile => CommonConst.Profile_Alert_Key,
-                AlertClassEnum.Print => CommonConst.Profile_Alert_Key,
-                AlertClassEnum.EmojiSticker => CommonConst.Profile_Alert_Key,
-                _ => CommonConst.Profile_Alert_Key
-
-            };
-
-            string key = CommonConst.ConfigRegistryPath + "\\" + alertKey + "\\" + alertType.ToString();
-            return ConfigStore.GetStoredKeyString(key, CommonConst.Color_Alert_Key) ?? "None";
-        }
-
-        #endregion
-
-        #region Avatar Management
-        public static int GetQueueCount()
-        {
-            return priorityQueue.Count;
-        }
-
-        public void AddAvatar(AvatarInfo avatar)
-        {
-            try
-            {
-                serviceRegistry.GetDBContext().AvatarInfos.Add(avatar);
-                serviceRegistry.GetDBContext().SaveChanges();
-            }
-            catch (Exception ex)
-            {
-                logger.Error($"Error creating avatar: {ex.Message}");
-            }
-        }
-
-        public static AvatarInfo? GetAvatarById(string avatarId)
-        {
-            return serviceRegistry.GetDBContext().AvatarInfos.Find(avatarId);
-        }
-
-        public void UpdateAvatar(AvatarInfo avatar)
-        {
-            try
-            {
-                avatar.UpdatedAt = DateTime.UtcNow;
-                serviceRegistry.GetDBContext().AvatarInfos.Update(avatar);
-                serviceRegistry.GetDBContext().SaveChanges();
-            }
-            catch (Exception ex)
-            {
-                logger.Error($"Error updating avatar: {ex.Message}");
-            }
-        }
-
-        public void DeleteAvatar(string avatarId)
-        {
-            var avatar = serviceRegistry.GetDBContext().AvatarInfos.Find(avatarId);
-            if (avatar != null)
-            {
-                serviceRegistry.GetDBContext().AvatarInfos.Remove(avatar);
-                serviceRegistry.GetDBContext().SaveChanges();
-            }
-        }
-
-        public static void CacheAvatars(List<string> avatarIdInCache)
-        {
-            foreach (var avatarId in avatarIdInCache)
-            {
-                EnqueueAvatarForCheck(avatarId);
-            }
-        }
-
-        private static void EnqueueAvatarForCheck(string avatarId)
-        {
-            if (recentlyProcessedAvatars.TryGetValue(avatarId, out DateTime dateTime))
-            {
-                if ((DateTime.UtcNow - dateTime).TotalMinutes < 60)
-                {
-                    return;
-                }
-            }
-            recentlyProcessedAvatars.Add(avatarId, DateTime.UtcNow);
-
-            var queuedItem = new QueuedAvatarProcess(5, avatarId);
-
-            priorityQueue.Enqueue(queuedItem);
-        }
-
-        public static void EnqueueWatchAvatarForCheck(QueuedAvatarWatch watch)
-        {
-            priorityQueue.Enqueue(watch);
-        }
-
-        public void EnqueueModeratedAvatarForCheck(QueuedModeratedAvatarWatch watch)
-        {
-            priorityQueue.Enqueue(watch);
-        }
-
-
-        public void GetAvatarsFromUser(string userId, string avatarName)
-        {
-
-            logger.Debug($"Fetching avatars for user {userId} to find avatar named {avatarName}");
-
-            try
-            {
-                // Avatar already exists in the database and was updated within the last 12 hours
-                System.Threading.Thread.Sleep(500);
-                List<Avatar> avatarData = serviceRegistry.GetVRChatAPIClient().GetAvatarsByUserId(userId);
-                foreach (var avatar in avatarData)
-                {
-                    logger.Debug(avatar.ToString());
-                    if (avatar.Name.Equals(avatarName, StringComparison.OrdinalIgnoreCase))
-                    {
-                        AvatarInfo? dbAvatarInfo = GetAvatarById(avatar.Id);
-
-                        if (dbAvatarInfo == null)
-                        {
-                            var avatarInfo = new AvatarInfo
-                            {
-                                AvatarId = avatar.Id,
-                                UserId = avatar.AuthorId,
-                                AvatarName = avatar.Name,
-                                ImageUrl = avatar.ImageUrl,
-                                CreatedAt = avatar.CreatedAt,
-                                UpdatedAt = DateTime.UtcNow,
-                                AlertType = AlertTypeEnum.None,
-                                UserName = avatar.AuthorName
-                            };
-
-                            AddAvatar(avatarInfo);
-                        }
-                        else
-                        {
-                            dbAvatarInfo.UserId = avatar.AuthorId;
-                            dbAvatarInfo.UserName = avatar.AuthorName;
-                            dbAvatarInfo.AvatarName = avatar.Name;
-                            dbAvatarInfo.ImageUrl = avatar.ImageUrl;
-                            dbAvatarInfo.CreatedAt = avatar.CreatedAt;
-                            UpdateAvatar(dbAvatarInfo);
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                logger.Error($"Error fetching avatar: {ex.Message}");
-            }
-        }
-
-        public void CompactDatabase()
-        {
-            serviceRegistry.GetDBContext().Database.ExecuteSqlRaw("VACUUM;");
-        }
-
-        public static AvatarInfo? CheckAvatarByName(string avatarName)
-        {
-            var bannedAvatars = serviceRegistry.GetDBContext().AvatarInfos
-                                         .Where(b => b.AvatarName != null && b.AvatarName.Equals(avatarName) && b.AlertType > 0)
-                                         .OrderByDescending(b => b.AlertType)
-                                         .ToList();
-
-            if (bannedAvatars.Count > 0)
-            {
-                // Play alert sound based on the highest alert type found for the avatar
-                AlertTypeEnum maxAlertType = bannedAvatars[0].AlertType;
-                SoundManager.PlayAlertSound(CommonConst.Avatar_Alert_Key, maxAlertType);
-
-                return bannedAvatars[0];
-            }
-
-            return null;
-        }
-
-        public static async Task AvatarCheckTask(ConcurrentPriorityQueue<IHavePriority<int>, int> priorityQueue, ServiceRegistry serviceRegistry)
-        {
-            OllamaClient.logger.Info($"Avatar Queue Running");
-            TailgrabDBContext dBContext = serviceRegistry.GetDBContext();
-            while (true)
-            {
-                // Process items from the priority queue
-                while (true)
-                {
-                    var result = priorityQueue.Dequeue();
-                    if (result.IsSuccess)
-                    {
-                        if (result.Value is QueuedAvatarProcess item && item.AvatarId != null)
-                        {
-                            await UpdateAmpAvatarRecord(serviceRegistry, dBContext, item.AvatarId);
-                        }
-                        else if (result.Value is QueuedAvatarWatch item2)
-                        {
-                            await UpdateWatchedAvatarRecord(serviceRegistry, dBContext, item2);
-                        }
-                        else if (result.Value is QueuedModeratedAvatarWatch item3)
-                        {
-                            await UpdateModeratedAvatarRecord(serviceRegistry, dBContext, item3);
-                        }
-                    }
-                    else
-                    {
-                        // No more items to process
-                        break;
-                    }
-                }
-
-                // Wait for a short period before checking the queue again
-                await Task.Delay(5000);
-            }
-        }
-
-        private static async Task UpdateAmpAvatarRecord(ServiceRegistry serviceRegistry, TailgrabDBContext dBContext, string avatarId)
-        {
-            try
-            {
-                AvatarInfo? dbAvatarInfo = dBContext.AvatarInfos.Find(avatarId);
-                bool updateNeeded = false;
-                if (dbAvatarInfo == null)
-                {
-                    updateNeeded = true;
-                }
-                else if (dbAvatarInfo.AlertType == AlertTypeEnum.None &&
-                    (!dbAvatarInfo.UpdatedAt.HasValue || dbAvatarInfo.UpdatedAt.Value >= DateTime.UtcNow.AddHours(-2)))
-                {
-                    updateNeeded = true;
-                }
-
-                if (updateNeeded)
-                {
-                    // Adds and Updates avatar info in the database, if it doesn't exist or was last updated more than 2 hours ago
-                    Avatar? avatarData = FetchUpdateAvatarData(serviceRegistry, dBContext, avatarId, dbAvatarInfo);
-
-                    if (avatarData == null && dbAvatarInfo == null)
-                    {
-                        // Private Avatar
-                        CreateAvatarInfoForPrivate(dBContext, avatarId);
-                    }
-
-                    // Wait for a short period before checking the queue again
-                    await Task.Delay(1000);
-                }
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex, $"Error fetching user profile for userId: {avatarId}");
-            }
-        }
-
-
-        private static async Task UpdateModeratedAvatarRecord(ServiceRegistry _serviceRegistry, TailgrabDBContext dbContext, QueuedModeratedAvatarWatch watch)
-        {
-            try
-            {
-                // Fetch the AvatarInfo record
-                AvatarInfo? avatarInfo = await dbContext.AvatarInfos.FindAsync(watch.AvatarId);
-                PlayerManager.FetchUpdateAvatarData(_serviceRegistry, dbContext, watch.AvatarId, avatarInfo);
-                avatarInfo = await dbContext.AvatarInfos.FindAsync(watch.AvatarId);
-
-                if (avatarInfo == null)
-                {
-                    logger.Debug($"Line {watch.LineNumber}: Avatar ID '{watch.AvatarId}' not found in database/vrc, skipping.");
-                    await serviceRegistry.GetVRChatAPIClient().DeleteAvatarGlobal(watch.AvatarId);
-                }
-                else if (avatarInfo.AlertType == AlertTypeEnum.None)
-                {
-                    avatarInfo.AlertType = AlertTypeEnum.Nuisance;
-                    avatarInfo.UpdatedAt = DateTime.UtcNow;
-                    dbContext.AvatarInfos.Update(avatarInfo);
-                    dbContext.SaveChanges();
-                }
-                else
-                {
-                    logger.Debug($"Line {watch.LineNumber}: Avatar ID '{watch.AvatarId}' already has Has an Alert, skipping.");
-                }
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex, $"Line {watch.LineNumber}: Error processing avatar ID '{watch.AvatarId}'");
-            }
-
-            // Throttle processing to avoid overwhelming the API
-            await Task.Delay(1000);
-        }
-
-        private static async Task UpdateWatchedAvatarRecord(ServiceRegistry _serviceRegistry, TailgrabDBContext dbContext, QueuedAvatarWatch watch)
-        {
-            try
-            {
-                // Fetch the AvatarInfo record
-                AvatarInfo? avatarInfo = await dbContext.AvatarInfos.FindAsync(watch.AvatarId);
-                PlayerManager.FetchUpdateAvatarData(_serviceRegistry, dbContext, watch.AvatarId, avatarInfo);
-                avatarInfo = await dbContext.AvatarInfos.FindAsync(watch.AvatarId);
-
-                if (avatarInfo == null)
-                {
-                    logger.Debug($"Line {watch.LineNumber}: Avatar ID '{watch.AvatarId}' not found in database/vrc, skipping.");
-                }
-                else if (avatarInfo.AlertType == AlertTypeEnum.None)
-                {
-
-                    avatarInfo.AlertType = watch.AlertType;
-                    avatarInfo.UpdatedAt = DateTime.UtcNow;
-                    dbContext.AvatarInfos.Update(avatarInfo);
-                    dbContext.SaveChanges();
-
-                    if (avatarInfo.AlertType >= AlertTypeEnum.Nuisance)
-                    {
-                        await _serviceRegistry.GetVRChatAPIClient().BlockAvatarGlobal(avatarInfo.AvatarId);
-                    }
-                    else
-                    {
-                        await _serviceRegistry.GetVRChatAPIClient().DeleteAvatarGlobal(avatarInfo.AvatarId);
-                    }
-
-                    logger.Debug($"Line {watch.LineNumber}: Set Watch State for Avatar ID '{watch.AvatarId}'");
-
-                }
-                else
-                {
-                    logger.Debug($"Line {watch.LineNumber}: Avatar ID '{watch.AvatarId}' already has Has an Alert, skipping.");
-                }
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex, $"Line {watch.LineNumber}: Error processing avatar ID '{watch.AvatarId}'");
-            }
-
-            // Throttle processing to avoid overwhelming the API
-            await Task.Delay(1000);
-        }
-
-
-        private static void CreateAvatarInfoForPrivate(TailgrabDBContext dBContext, string AvatarId)
-        {
-            var avatarInfo = new AvatarInfo
-            {
-                AvatarId = AvatarId,
-                UserId = "",
-                AvatarName = $"Unknown Avatar {AvatarId}",
-                ImageUrl = "",
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            };
-
-            try
-            {
-                dBContext.Add(avatarInfo);
-                dBContext.SaveChanges();
-                logger.Debug($"Adding fallback avatar record for {avatarInfo}");
-            }
-            catch (Exception ex)
-            {
-                logger.Error($"Error adding fallback avatar record for {AvatarId}: {ex.Message}");
-            }
-        }
-
-        public static Avatar? FetchUpdateAvatarData(ServiceRegistry serviceRegistry, TailgrabDBContext dBContext, string AvatarId, AvatarInfo? dbAvatarInfo)
-        {
-            Avatar? avatarData = null;
-            try
-            {
-                // Avatar already exists in the database and was updated within the last 12 hours
-                System.Threading.Thread.Sleep(500);
-                avatarData = serviceRegistry.GetVRChatAPIClient().GetAvatarById(AvatarId);
-                if (avatarData != null)
-                {
-                    if (dbAvatarInfo == null)
-                    {
-                        var avatarInfo = new AvatarInfo
-                        {
-                            AvatarId = avatarData.Id,
-                            UserId = avatarData.AuthorId,
-                            UserName = avatarData.AuthorName,
-                            AvatarName = avatarData.Name,
-                            ImageUrl = avatarData.ImageUrl,
-                            CreatedAt = avatarData.CreatedAt,
-                            UpdatedAt = DateTime.UtcNow
-                        };
-
-                        try
-                        {
-                            dBContext.Add(avatarInfo);
-                            dBContext.SaveChanges();
-                        }
-                        catch (Exception ex)
-                        {
-                            logger.Error($"Error adding avatar record for {AvatarId}: {ex.Message}");
-                        }
-                    }
-                    else
-                    {
-                        // Ensure entity is attached to the dbContext before updating to avoid Detached state errors
-                        var entry = dBContext.Entry(dbAvatarInfo);
-                        if (entry.State == Microsoft.EntityFrameworkCore.EntityState.Detached)
-                        {
-                            dBContext.Attach(dbAvatarInfo);
-                            entry = dBContext.Entry(dbAvatarInfo);
-                        }
-
-                        dbAvatarInfo.UserId = avatarData.AuthorId;
-                        dbAvatarInfo.UserName = avatarData.AuthorName;
-                        dbAvatarInfo.AvatarName = avatarData.Name;
-                        dbAvatarInfo.ImageUrl = avatarData.ImageUrl;
-                        dbAvatarInfo.CreatedAt = avatarData.CreatedAt;
-                        dbAvatarInfo.UpdatedAt = DateTime.UtcNow;
-
-                        try
-                        {
-                            entry.State = Microsoft.EntityFrameworkCore.EntityState.Modified;
-                            dBContext.SaveChanges();
-                        }
-                        catch (Exception ex)
-                        {
-                            logger.Error($"Error updating avatar record for {AvatarId}: {ex.Message}");
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                logger.Error($"Error fetching avatar: {ex.Message}");
-            }
-
-            return avatarData;
-        }
-
-
-        public async Task<bool> SwitchAvatar( string avatarId)
-        {
-            try
-            {
-                Tailgrab.Clients.VRChat.VRChatClient vrcClient = serviceRegistry.GetVRChatAPIClient();
-                bool avatarResult = await vrcClient.ChangeIntoAvatar(avatarId);
-                if (avatarResult)
-                {
-                    logger.Info($"Successfully switched avatar to {avatarId}");
-                    return true;
-                }
-                else
-                {
-                    logger.Error($"Failed to switch avatar to {avatarId}");
-                    return false;
-                }
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex, $"Error switching avatar to {avatarId}");
-                return false;
-            }
-        }
-        #endregion
-
-        #region Moderation Report Management
-        public async Task GetModerationReports()
-        {
-            try
-            {
-                int offset = 0;
-                while (true)
-                {
-                    ModerationReportListResponse? reports = await serviceRegistry.GetVRChatAPIClient().ListModerationReportAsync(offset);
-                    if (reports == null)
-                        break;
-
-                    foreach (var report in reports.Results)
-                    {
-                        logger.Info($"Report ID: {report.Id}, Type: {report.Type}, ContentId: {report.ContentId}, ContentName: {report.ContentName}");
-                        await SaveModerationReport(report);
-                    }
-                    offset += 60;
-                    if (reports.HasNext == false)
-                    {
-                        logger.Info("No more moderation reports to process.");
-                        break;
-                    }
-                    await Task.Delay(1000); // Delay for 1 second before the next request
-                }
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex, "Failed to fetch moderation reports");
-            }
-        }
-
-        public async Task SaveModerationReport(ModerationReportPayload rpt, ModerationReportResponse response, string UserId)
-        {
-            try
-            {
-                TailgrabDBContext dBContext = serviceRegistry.GetDBContext();
-
-
-                ModerationInfo info = new()
-                {
-                    // We should get the ModerationID from the response, but for now we will generate a new GUID
-                    Id = response.Id ?? Guid.NewGuid().ToString(),
-                    EventDateTime = DateTime.Now,
-                    ContentId = response.ContentId,
-                    ContentName = response.ContentName ?? string.Empty,
-                    ContentType = response.Type ?? string.Empty,
-                    Thumbnail = response.ContentThumbnailImageUrl ?? string.Empty,
-                    Report = System.Text.Encoding.UTF8.GetBytes(response.Description ?? string.Empty),
-                    UserId = UserId
-                };
-
-                // Save the moderation info to the database
-                dBContext.ModerationInfos.Add(info);
-                await dBContext.SaveChangesAsync();
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex, "Failed to save moderation report");
-                System.Windows.MessageBox.Show($"Failed to save moderation report: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        public async Task SaveModerationReport(ModerationReportResponse response)
-        {
-            try
-            {
-                TailgrabDBContext dbContext = serviceRegistry.GetDBContext();
-                ModerationInfo? info = dbContext.ModerationInfos.Find(response.Id);
-                if (info != null)
-                {
-                    logger.Info($"Moderation report with ID {response.Id} already exists in the database. Skipping save.");
-                    return;
-                }
-                else
-                {
-                    info = new ModerationInfo
-                    {
-                        // We should get the ModerationID from the response, but for now we will generate a new GUID
-                        Id = response.Id ?? Guid.NewGuid().ToString(),
-                        EventDateTime = DateTime.Now,
-                        ContentId = response.ContentId,
-                        ContentName = response.ContentName ?? string.Empty,
-                        ContentType = response.Type ?? string.Empty,
-                        Thumbnail = response.ContentThumbnailImageUrl ?? string.Empty,
-                        Report = System.Text.Encoding.UTF8.GetBytes(response.Description ?? string.Empty),
-                        UserId = convertModerationsReportTypeToUserId(response)
-                    };
-
-                    // Save the moderation info to the database
-                    dbContext.ModerationInfos.Add(info);
-                    await dbContext.SaveChangesAsync();
-                }
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex, "Failed to save moderation report");
-                System.Windows.MessageBox.Show($"Failed to save moderation report: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        internal string convertModerationsReportTypeToUserId(ModerationReportResponse response)
-        {
-            string userId = string.Empty;
-            Tailgrab.Clients.VRChat.VRChatClient vrcClient = serviceRegistry.GetVRChatAPIClient();
-            switch (response.Type)
-            {
-                case "avatar":
-                    Avatar? avatar = vrcClient.GetAvatarById(response.ContentId);
-                    if (avatar != null)
-                    {
-                        userId = avatar.AuthorId;
-                    }
-                    break;
-
-                case "world":
-                    World? world = vrcClient.GetWorldById(response.ContentId);
-                    if (world != null)
-                    {
-                        userId = world.AuthorId;
-                    }
-                    break;
-
-                case "group":
-                    Result<Group?> groupResult = vrcClient.GetGroupById(response.ContentId);
-                    Group? group = groupResult.Value;
-                    if (group != null)
-                    {
-                        userId = group.OwnerId;
-
-                    }
-                    break;
-
-                case "user":
-                    userId = response.ContentId;
-                    break;
-
-                case "sticker":
-                    break;
-
-                case "emoji":
-                    break;
-
-                case "print":
-                    break;
-
-                default:
-                    userId = response.ContentId;
-                    break;
-            }
-
-            return userId;
-        }
-
-        public static Task<List<ModerationInfo>> GetModerationReportsByUserId(string userId)
-        {
-            TailgrabDBContext dbContext = serviceRegistry.GetDBContext();
-            return dbContext.ModerationInfos.Where(m => m.UserId == userId).ToListAsync();
-        }
-        #endregion
-}
-    
-
-
-    #region Avatar Queue Classes
-    internal class QueuedAvatarProcess(int priority, string avatarId) : IHavePriority<int>
-    {
-        public int Priority { get; set; } = priority;
-
-        public string AvatarId { get; set; } = avatarId;
-    }
-
-
-    public class QueuedAvatarWatch(int priority, string avatarId, AlertTypeEnum alertType, int lineNumber) : IHavePriority<int>
-    {
-        public int Priority { get; set; } = priority;
-
-        public string AvatarId { get; set; } = avatarId;
-
-        public AlertTypeEnum AlertType { get; set; } = alertType;
-
-        public int LineNumber { get; set; } = lineNumber;
-    }
-
-    public class QueuedModeratedAvatarWatch(int priority, string avatarId, AlertTypeEnum alertType, int lineNumber) : IHavePriority<int>
-    {
-        public int Priority { get; set; } = priority;
-
-        public string AvatarId { get; set; } = avatarId;
-
-        public AlertTypeEnum AlertType { get; set; } = alertType;
-
-        public int LineNumber { get; set; } = lineNumber;
     }
     #endregion
 }
