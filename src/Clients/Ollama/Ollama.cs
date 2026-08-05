@@ -119,7 +119,14 @@ namespace Tailgrab.Clients.Ollama
 
         private bool IsUserProfileInQueue(string userId)
         {
-            return priorityQueue.Any(item => ((QueuedProcess)item).UserId == userId);
+            foreach (var item in priorityQueue)
+            {
+                if (item is QueuedProcess queuedProcess && queuedProcess.UserId == userId)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         private void UpdateQueuedProcessWithPlayer(QueuedProcess item)
