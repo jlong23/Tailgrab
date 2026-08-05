@@ -280,7 +280,7 @@ namespace Tailgrab.Clients.VRChat
         #endregion
 
         #region Avatar Management
-        public Avatar? GetAvatarById(string avatarId)
+        public Result<Avatar?> GetAvatarById(string avatarId)
         {
             Avatar? avatar = null;
             try
@@ -293,9 +293,10 @@ namespace Tailgrab.Clients.VRChat
             catch (Exception ex)
             {
                 logger.Error($"Error in GetAvatarById for avatar '{avatarId}': {ex.Message}");
+                return new Result<Avatar?> { Exception = ex };
             }
 
-            return avatar;
+            return new Result<Avatar?> { Value = avatar };
         }
 
         public List<Avatar> GetAvatarsByUserId(string userId)

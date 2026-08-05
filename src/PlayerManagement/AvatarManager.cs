@@ -7,12 +7,14 @@ using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
-using tailgrab.Clients.VRCDB;
+using Tailgrab.Clients.VRCDB;
 using Tailgrab.Clients.Ollama;
 using Tailgrab.Clients.XSOverlay;
 using Tailgrab.Common;
 using Tailgrab.Models;
 using VRChat.API.Model;
+using VRChat.API.Client;
+using static Tailgrab.Clients.VRChat.VRChatClient;
 
 namespace Tailgrab.PlayerManagement
 {
@@ -186,10 +188,10 @@ namespace Tailgrab.PlayerManagement
                 return null;
             }
 
-            Avatar? avatar = serviceRegistry.GetVRChatAPIClient().GetAvatarById(avatarId);
-            if (avatar != null)
+            Result<Avatar?> result = serviceRegistry.GetVRChatAPIClient().GetAvatarById(avatarId);
+            if (result.Value != null)
             {
-                return avatar;
+                return result.Value;
             }
             return null;
         }
@@ -538,9 +540,9 @@ namespace Tailgrab.PlayerManagement
                 if (updateNeeded)
                 {
                     // Adds and Updates avatar info in the database, if it doesn't exist or was last updated more than 2 hours ago
-                    Avatar? avatarData = FetchUpdateAvatarData(serviceRegistry, dBContext, avatarId, dbAvatarInfo);
+                    Result<Avatar?> result = FetchUpdateAvatarData(serviceRegistry, dBContext, avatarId, dbAvatarInfo);
 
-                    if (avatarData == null && dbAvatarInfo == null)
+                    if (result.Value == null && dbAvatarInfo == null)
                     {
                         // Private Avatar
                         CreateAvatarInfoForPrivate(dBContext, avatarId);
@@ -605,6 +607,12 @@ namespace Tailgrab.PlayerManagement
             {
                 // Fetch the AvatarInfo record
                 AvatarInfo? avatarInfo = await dbContext.AvatarInfos.FindAsync(watch.AvatarId);
+                if (avatarInfo != null && avatarInfo.UpdatedAt > DateTime.UtcNow.AddHours(-12))
+                {
+                    // Skip processing if the avatar was updated within the last 12 hours
+                    return;
+                }
+
                 FetchUpdateAvatarData(_serviceRegistry, dbContext, watch.AvatarId, avatarInfo);
                 avatarInfo = await dbContext.AvatarInfos.FindAsync(watch.AvatarId);
 
@@ -671,37 +679,37 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
-        public static Avatar? FetchUpdateAvatarData(ServiceRegistry serviceRegistry, TailgrabDBContext dBContext, string AvatarId, AvatarInfo? dbAvatarInfo)
+        public static Result<Avatar?> FetchUpdateAvatarData(ServiceRegistry serviceRegistry, TailgrabDBContext dBContext, string AvatarId, AvatarInfo? dbAvatarInfo)
         {
+            Result<Avatar?> result = new Result<Avatar?>
+            {
+                Value = null,
+                Exception = new InvalidOperationException("ServiceRegistry is not initialized.")
+            };
+
             if (serviceRegistry == null)
             {
                 logger.Warn("ServiceRegistry is not initialized.");
-                return null;
+                return result;
             }
 
-            Avatar? avatarData = null;
             try
             {
                 // Avatar already exists in the database and was updated within the last 12 hours
                 System.Threading.Thread.Sleep(500);
-                avatarData = serviceRegistry.GetVRChatAPIClient().GetAvatarById(AvatarId);
-                if (avatarData != null)
+                result = serviceRegistry.GetVRChatAPIClient().GetAvatarById(AvatarId);
+                if (result.Value != null)
                 {
                     if (dbAvatarInfo == null)
                     {
-                        var avatarInfo = new AvatarInfo
-                        {
-                            AvatarId = avatarData.Id,
-                            UserId = avatarData.AuthorId,
-                            UserName = avatarData.AuthorName,
-                            AvatarName = avatarData.Name,
-                            ImageUrl = avatarData.ImageUrl,
-                            CreatedAt = avatarData.CreatedAt,
-                            UpdatedAt = DateTime.UtcNow
-                        };
-
                         try
                         {
+                            var avatarInfo = new AvatarInfo
+                            {
+                                AvatarId = result.Value.Id,
+                            };
+                            UpdateAvatarInfoProperties(result.Value, avatarInfo);
+
                             dBContext.Add(avatarInfo);
                             dBContext.SaveChanges();
                         }
@@ -720,12 +728,7 @@ namespace Tailgrab.PlayerManagement
                             entry = dBContext.Entry(dbAvatarInfo);
                         }
 
-                        dbAvatarInfo.UserId = avatarData.AuthorId;
-                        dbAvatarInfo.UserName = avatarData.AuthorName;
-                        dbAvatarInfo.AvatarName = avatarData.Name;
-                        dbAvatarInfo.ImageUrl = avatarData.ImageUrl;
-                        dbAvatarInfo.CreatedAt = avatarData.CreatedAt;
-                        dbAvatarInfo.UpdatedAt = DateTime.UtcNow;
+                        UpdateAvatarInfoProperties(result.Value, dbAvatarInfo);
 
                         try
                         {
@@ -738,15 +741,62 @@ namespace Tailgrab.PlayerManagement
                         }
                     }
                 }
+                else
+                {
+                    if ( result.Exception != null && result.Exception is ApiException )
+                    {
+                        ApiException apiEx = (ApiException)result.Exception;
+                        logger.Warn($"API Exception: StatusCode={apiEx.ErrorCode}, Content={apiEx.ErrorContent}");
+
+                        if( apiEx.ErrorCode == 404)
+                        {
+                            logger.Warn($"Avatar with ID {AvatarId} not found in VRChat API (404 Not Found).");
+                            ResetAvatarRecordToNone(dBContext, AvatarId);
+                            serviceRegistry.GetVRChatAPIClient().DeleteAvatarGlobal(AvatarId);
+                            return result;
+                        }
+                    }
+
+                    logger.Warn($"Avatar with ID {AvatarId} not found in VRChat API.");
+                }
             }
             catch (Exception ex)
             {
                 logger.Error($"Error fetching avatar: {ex.Message}");
             }
 
-            return avatarData;
+            return result;
         }
 
+        private static void UpdateAvatarInfoProperties(Avatar avatar, AvatarInfo avatarInfo)
+        {
+            avatarInfo.UserId = avatar.AuthorId;
+            avatarInfo.UserName = avatar.AuthorName;
+            avatarInfo.AvatarName = avatar.Name;
+            avatarInfo.ImageUrl = avatar.ImageUrl;
+            avatarInfo.CreatedAt = avatar.CreatedAt;
+            avatarInfo.UpdatedAt = DateTime.UtcNow;
+        }
+
+        private static void ResetAvatarRecordToNone(TailgrabDBContext dBContext, string AvatarId)
+        {
+            AvatarInfo? info = dBContext.AvatarInfos.Find(AvatarId);
+            if (info != null)
+            {
+                try
+                {
+                    info.AlertType = AlertTypeEnum.None;
+                    info.UpdatedAt = DateTime.UtcNow;
+                    dBContext.Update(info);
+                    dBContext.SaveChanges();
+                    logger.Info($"Updated AvatarInfo for {AvatarId} to AlertType None due to 404 Not Found.");
+                }
+                catch (Exception ex)
+                {
+                    logger.Error($"Error updating AvatarInfo for {AvatarId}: {ex.Message}");
+                }
+            }
+        }
 
         public async Task<bool> SwitchAvatar(string avatarId)
         {

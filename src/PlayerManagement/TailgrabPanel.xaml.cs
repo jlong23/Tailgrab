@@ -3277,21 +3277,21 @@ namespace Tailgrab.PlayerManagement
             try
             {
                 VRChatClient vrcClient = _serviceRegistry.GetVRChatAPIClient();
-                Avatar? avatar = vrcClient.GetAvatarById(id);
-                if (avatar != null)
+                Result<Avatar?> result = vrcClient.GetAvatarById(id);
+                if (result.Value != null)
                 {
                     TailgrabDBContext dbContext = _serviceRegistry.GetDBContext();
-                    AvatarInfo? existing = dbContext.AvatarInfos.Find(avatar.Id);
+                    AvatarInfo? existing = dbContext.AvatarInfos.Find(result.Value.Id);
                     if (existing == null)
                     {
                         var newEntity = new Tailgrab.Models.AvatarInfo
                         {
-                            AvatarId = avatar.Id,
-                            UserId = avatar.AuthorId ?? string.Empty,
-                            UserName = avatar.AuthorName ?? string.Empty,
-                            AvatarName = avatar.Name ?? string.Empty,
-                            ImageUrl = avatar.ImageUrl ?? string.Empty,
-                            CreatedAt = avatar.CreatedAt,
+                            AvatarId = result.Value.Id,
+                            UserId = result.Value.AuthorId ?? string.Empty,
+                            UserName = result.Value.AuthorName ?? string.Empty,
+                            AvatarName = result.Value.Name ?? string.Empty,
+                            ImageUrl = result.Value.ImageUrl ?? string.Empty,
+                            CreatedAt = result.Value.CreatedAt,
                             UpdatedAt = DateTime.UtcNow,
                             AlertType = AlertTypeEnum.None
                         };
@@ -3300,17 +3300,17 @@ namespace Tailgrab.PlayerManagement
                     }
                     else
                     {
-                        existing.UserId = avatar.AuthorId ?? string.Empty;
-                        existing.AvatarName = avatar.Name ?? string.Empty;
-                        existing.ImageUrl = avatar.ImageUrl ?? string.Empty;
-                        existing.CreatedAt = avatar.CreatedAt;
+                        existing.UserId = result.Value.AuthorId ?? string.Empty;
+                        existing.AvatarName = result.Value.Name ?? string.Empty;
+                        existing.ImageUrl = result.Value.ImageUrl ?? string.Empty;
+                        existing.CreatedAt = result.Value.CreatedAt;
                         existing.UpdatedAt = DateTime.UtcNow;
                         dbContext.AvatarInfos.Update(existing);
                         dbContext.SaveChanges();
                     }
 
                     // Filter the view to the fetched group
-                    ApplyAvatarDbFilter(avatar.Name ?? string.Empty);
+                    ApplyAvatarDbFilter(result.Value.Name ?? string.Empty);
                     AvatarDbFilterBox.Text = string.Empty;
                 }
                 else
@@ -3589,37 +3589,37 @@ namespace Tailgrab.PlayerManagement
 
                 // Get the full avatar information from VRChat API
                 VRChatClient vrcClient = _serviceRegistry.GetVRChatAPIClient();
-                VRChat.API.Model.Avatar? avatar = await Task.Run(() => vrcClient.GetAvatarById(avatarId));
+                Result<Avatar?> result = await Task.Run(() => vrcClient.GetAvatarById(avatarId));
 
-                if (avatar != null)
+                if (result.Value != null)
                 {
                     UseAvatarButton.IsEnabled = true;
-                    SelectedAvatarId = avatar.Id;
+                    SelectedAvatarId = result.Value.Id;
 
                     // Populate the UI fields
-                    BanMgmtAvatarName.Text = avatar.Name ?? "Unknown";
-                    BanMgmtPublishDate.Text = avatar.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss");
-                    BanMgmtUpdateDate.Text = avatar.UpdatedAt.ToString("yyyy-MM-dd HH:mm:ss");
-                    BanMgmtAvatarState.Text = avatar.ReleaseStatus.ToString();
+                    BanMgmtAvatarName.Text = result.Value.Name ?? "Unknown";
+                    BanMgmtPublishDate.Text = result.Value.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss");
+                    BanMgmtUpdateDate.Text = result.Value.UpdatedAt.ToString("yyyy-MM-dd HH:mm:ss");
+                    BanMgmtAvatarState.Text = result.Value.ReleaseStatus.ToString();
 
 
-                    VRChat.API.Model.User? user = await Task.Run(() => vrcClient.GetProfile(avatar.AuthorId));
+                    VRChat.API.Model.User? user = await Task.Run(() => vrcClient.GetProfile(result.Value.AuthorId));
 
                     BanMgmtAvatarOwner.Text = user.DisplayName ?? "Unknown";
-                    BanMgmtAvatarOwnerId.Text = avatar.AuthorId ?? string.Empty;
-                    BanMgmtAvatarDesc.Text = avatar.Description ?? string.Empty;
+                    BanMgmtAvatarOwnerId.Text = result.Value.AuthorId ?? string.Empty;
+                    BanMgmtAvatarDesc.Text = result.Value.Description ?? string.Empty;
 
                     // Enable the Ban Owner button if we have an owner ID
-                    BanAvatarOwnerButton.IsEnabled = !string.IsNullOrWhiteSpace(avatar.AuthorId);
+                    BanAvatarOwnerButton.IsEnabled = !string.IsNullOrWhiteSpace(result.Value.AuthorId);
 
                     // Load avatar image
-                    if (!string.IsNullOrEmpty(avatar.ImageUrl))
+                    if (!string.IsNullOrEmpty(result.Value.ImageUrl))
                     {
                         try
                         {
                             var bitmap = new System.Windows.Media.Imaging.BitmapImage();
                             bitmap.BeginInit();
-                            bitmap.UriSource = new Uri(avatar.ImageUrl);
+                            bitmap.UriSource = new Uri(result.Value.ImageUrl);
                             bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
                             bitmap.EndInit();
                             BanMgmtAvatarImage.Source = bitmap;

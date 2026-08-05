@@ -3,7 +3,7 @@ using System.IO;
 using System.Net.Http;
 using System.Text.Json.Serialization;
 
-namespace tailgrab.Clients.VRCDB
+namespace Tailgrab.Clients.VRCDB
 {
     public class VRCDBClient
     {

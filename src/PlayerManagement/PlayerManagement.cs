@@ -490,10 +490,10 @@ namespace Tailgrab.PlayerManagement
             switch (response.Type)
             {
                 case "avatar":
-                    Avatar? avatar = vrcClient.GetAvatarById(response.ContentId);
-                    if (avatar != null)
+                    Result<Avatar?> result = vrcClient.GetAvatarById(response.ContentId);
+                    if (result.Value != null)
                     {
-                        userId = avatar.AuthorId;
+                        userId = result.Value.AuthorId;
                     }
                     break;
 

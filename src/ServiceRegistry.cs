@@ -2,7 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using NLog;
 using System.IO;
-using tailgrab.Clients.VRCDB;
+using Tailgrab.Clients.VRCDB;
 using Tailgrab.Clients.Ollama;
 using Tailgrab.Clients.VRChat;
 using Tailgrab.Clients.XSOverlay;
