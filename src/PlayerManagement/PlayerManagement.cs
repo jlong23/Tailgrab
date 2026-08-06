@@ -257,6 +257,9 @@ namespace Tailgrab.PlayerManagement
             userIdByDisplayName.Clear();
             playerAvatarByName.Clear();
 
+            serviceRegistry.GetGroupManager().ClearQueue();
+            serviceRegistry.GetOllamaAPIClient().ClearQueue();
+
             // Also a global cleared notification (consumers may want to reset)
             OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Cleared, new Player("", "", CurrentSession) { InstanceStartTime = DateTime.MinValue });
         }
@@ -383,22 +386,23 @@ namespace Tailgrab.PlayerManagement
         #endregion
 
         #region Moderation Report Management
-        public async Task GetModerationReports()
+        public async Task GetModerationReports(bool isClosed)
         {
             try
             {
                 int offset = 0;
                 while (true)
                 {
-                    ModerationReportListResponse? reports = await serviceRegistry.GetVRChatAPIClient().ListModerationReportAsync(offset);
+                    ModerationReportListResponse? reports = await serviceRegistry.GetVRChatAPIClient().ListModerationReportAsync(offset, isClosed);
                     if (reports == null)
                         break;
 
                     foreach (var report in reports.Results)
                     {
-                        logger.Info($"Report ID: {report.Id}, Type: {report.Type}, ContentId: {report.ContentId}, ContentName: {report.ContentName}");
-                        await SaveModerationReport(report);
+                        logger.Debug($"Report ID: {report.Id}, Type: {report.Type}, ContentId: {report.ContentId}, ContentName: {report.ContentName}");
+                        await SaveModerationReport(report, isClosed);
                     }
+
                     offset += 60;
                     if (reports.HasNext == false)
                     {
@@ -414,7 +418,7 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
-        public async Task SaveModerationReport(ModerationReportPayload rpt, ModerationReportResponse response, string UserId)
+        public async Task SaveModerationReport(ModerationReportPayload rpt, ModerationReportResponse response, string UserId, bool isClosed)
         {
             try
             {
@@ -431,7 +435,11 @@ namespace Tailgrab.PlayerManagement
                     ContentType = response.Type ?? string.Empty,
                     Thumbnail = response.ContentThumbnailImageUrl ?? string.Empty,
                     Report = System.Text.Encoding.UTF8.GetBytes(response.Description ?? string.Empty),
-                    UserId = UserId
+                    UserId = UserId,
+                    IsClosed = isClosed,
+                    ClosedDate = isClosed ? DateTime.Now : null,
+                    IsDeleted = false,
+                    DeletedDate = null
                 };
 
                 // Save the moderation info to the database
@@ -445,16 +453,21 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
-        public async Task SaveModerationReport(ModerationReportResponse response)
+        public async Task SaveModerationReport(ModerationReportResponse response, bool isClosed)
         {
             try
             {
                 TailgrabDBContext dbContext = serviceRegistry.GetDBContext();
-                ModerationInfo? info = dbContext.ModerationInfos.Find(response.Id);
+                ModerationInfo? info = await dbContext.ModerationInfos.FindAsync(response.Id);
                 if (info != null)
                 {
-                    logger.Info($"Moderation report with ID {response.Id} already exists in the database. Skipping save.");
-                    return;
+                    if( isClosed && info.ClosedDate == null )
+                    {
+                        info.IsClosed = isClosed;
+                        info.ClosedDate = isClosed ? DateTime.Now : null;
+                        dbContext.ModerationInfos.Update(info);
+                        await dbContext.SaveChangesAsync();
+                    }
                 }
                 else
                 {
@@ -468,7 +481,11 @@ namespace Tailgrab.PlayerManagement
                         ContentType = response.Type ?? string.Empty,
                         Thumbnail = response.ContentThumbnailImageUrl ?? string.Empty,
                         Report = System.Text.Encoding.UTF8.GetBytes(response.Description ?? string.Empty),
-                        UserId = convertModerationsReportTypeToUserId(response)
+                        UserId = convertModerationsReportTypeToUserId(response),
+                        IsClosed = isClosed,
+                        ClosedDate = isClosed ? DateTime.Now : null,
+                        IsDeleted = false,
+                        DeletedDate = null
                     };
 
                     // Save the moderation info to the database
@@ -486,53 +503,59 @@ namespace Tailgrab.PlayerManagement
         internal string convertModerationsReportTypeToUserId(ModerationReportResponse response)
         {
             string userId = string.Empty;
-            Tailgrab.Clients.VRChat.VRChatClient vrcClient = serviceRegistry.GetVRChatAPIClient();
-            switch (response.Type)
+            try
             {
-                case "avatar":
-                    Result<Avatar?> result = vrcClient.GetAvatarById(response.ContentId);
-                    if (result.Value != null)
-                    {
-                        userId = result.Value.AuthorId;
-                    }
-                    break;
+                Tailgrab.Clients.VRChat.VRChatClient vrcClient = serviceRegistry.GetVRChatAPIClient();
+                switch (response.Type)
+                {
+                    case "avatar":
+                        Result<Avatar?> result = vrcClient.GetAvatarById(response.ContentId);
+                        if (result.Value != null)
+                        {
+                            userId = result.Value.AuthorId;
+                        }
+                        break;
 
-                case "world":
-                    World? world = vrcClient.GetWorldById(response.ContentId);
-                    if (world != null)
-                    {
-                        userId = world.AuthorId;
-                    }
-                    break;
+                    case "world":
+                        World? world = vrcClient.GetWorldById(response.ContentId);
+                        if (world != null)
+                        {
+                            userId = world.AuthorId;
+                        }
+                        break;
 
-                case "group":
-                    Result<Group?> groupResult = vrcClient.GetGroupById(response.ContentId);
-                    Group? group = groupResult.Value;
-                    if (group != null)
-                    {
-                        userId = group.OwnerId;
+                    case "group":
+                        Result<Group?> groupResult = vrcClient.GetGroupById(response.ContentId);
+                        Group? group = groupResult.Value;
+                        if (group != null)
+                        {
+                            userId = group.OwnerId;
 
-                    }
-                    break;
+                        }
+                        break;
 
-                case "user":
-                    userId = response.ContentId;
-                    break;
+                    case "user":
+                        userId = response.ContentId;
+                        break;
 
-                case "sticker":
-                    break;
+                    case "sticker":
+                        break;
 
-                case "emoji":
-                    break;
+                    case "emoji":
+                        break;
 
-                case "print":
-                    break;
+                    case "print":
+                        break;
 
-                default:
-                    userId = response.ContentId;
-                    break;
+                    default:
+                        userId = response.ContentId;
+                        break;
+                }
             }
-
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to convert moderation report type to user ID");
+            }
             return userId;
         }
 

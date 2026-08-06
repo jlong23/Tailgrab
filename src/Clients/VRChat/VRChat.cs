@@ -411,12 +411,12 @@ namespace Tailgrab.Clients.VRChat
                 foreach (string imageUrl in imageUrlList)
                 {
                     byte[] contentBytes = await httpClient.GetByteArrayAsync(imageUrl);
-                    byte[] scaledContentBytes = ScaleImageToMaxSize(contentBytes, 512, 512);
-                    if (scaledContentBytes.Length > 0)
+                    //byte[] scaledContentBytes = ScaleImageToMaxSize(contentBytes, 512, 512);
+                    if (contentBytes.Length > 0)
                     {
                         md5Hash = Checksum.CreateMD5(contentBytes);
                     }
-                    string contentB64 = Convert.ToBase64String(scaledContentBytes);
+                    string contentB64 = Convert.ToBase64String(contentBytes);
                     imageList.Add(contentB64);
                 }
 
@@ -632,6 +632,44 @@ namespace Tailgrab.Clients.VRChat
         #endregion
 
         #region Moderation Management
+        internal async Task<bool> DeleteModerationReportAsync(string rptId)
+        {
+            try
+            {
+                if (_vrchat == null)
+                {
+                    logger.Error("VRChat client not initialized");
+                    return false;
+                }
+
+                if( string.IsNullOrEmpty(rptId))
+                {
+                    logger.Error("Report ID is null or empty, cannot delete moderation report.");
+                    return false;
+                }   
+
+                // Create HTTP client with cookies
+                using HttpClient httpClient = CreateHttpClientWithCookies();
+
+                // Submit the moderation report
+                HttpResponseMessage response = await httpClient.DeleteAsync($"{URI_VRC_BASE_API}/api/1/moderationReports/{rptId}");
+                string responseContent = await response.Content.ReadAsStringAsync();
+                logger.Debug($"Response from submitting moderation report for content {rptId}: {responseContent}");
+                logger.Info($"Submitted moderation report for content {rptId}\n{responseContent}");
+
+                response.EnsureSuccessStatusCode();
+                var settings = new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore };
+                return true;
+
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, $"Error Deleting moderation report with ID: {rptId}");
+                return false;
+            }
+        }
+
+
         internal async Task<ModerationReportResponse?> SubmitModerationReportAsync(ModerationReportPayload rpt)
         {
             try
@@ -664,7 +702,8 @@ namespace Tailgrab.Clients.VRChat
                 return null;
             }
         }
-        internal async Task<ModerationReportListResponse?> ListModerationReportAsync(int offset)
+
+        internal async Task<ModerationReportListResponse?> ListModerationReportAsync(int offset, bool isClosed)
         {
             try
             {
@@ -678,10 +717,14 @@ namespace Tailgrab.Clients.VRChat
                 using HttpClient httpClient = CreateHttpClientWithCookies();
 
                 // Get the moderation reports
-                HttpResponseMessage response = await httpClient.GetAsync($"{URI_VRC_BASE_API}/api/1/moderationReports?offset={offset}");
+                string closedRpt = string.Empty;
+                if( isClosed )
+                {
+                    closedRpt = "&status=closed";
+                }
+                HttpResponseMessage response = await httpClient.GetAsync($"{URI_VRC_BASE_API}/api/1/moderationReports?offset={offset}{closedRpt}");
                 string responseContent = await response.Content.ReadAsStringAsync();
                 logger.Debug($"Response from listing moderation reports: {responseContent}");
-                logger.Info($"Listed moderation reports:\n{responseContent}");
                 var settings = new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore };
                 ModerationReportListResponse? reportList = JsonConvert.DeserializeObject<ModerationReportListResponse>(responseContent, settings);
 

@@ -1229,6 +1229,109 @@ Title="Tailgrab Player Panel"
                     </Grid>
                 </TabItem>
 
+                <TabItem Header="Moderation Reports">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="26*"/>
+                            <ColumnDefinition Width="123*"/>
+                            <ColumnDefinition Width="904*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="3">
+                            <TextBlock Text="User ID:" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                            <TextBox Name="ModerationUserIdFilterBox" Width="200" Margin="0,0,8,0" />
+                            <TextBlock Text="Content ID:" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                            <TextBox Name="ModerationContentIdFilterBox" Width="200" Margin="0,0,8,0" />
+                            <Button Content="Apply Filter" Click="ModerationDbApplyFilter_Click" Margin="0,0,6,0"/>
+                            <Button Content="Clear Filter" Click="ModerationDbClearFilter_Click" Margin="0,0,6,0"/>
+                            <Button Content="Refresh" Click="ModerationDbRefresh_Click" Margin="0,0,6,0"/>
+                        </StackPanel>
+
+                        <GroupBox Header="Moderation Report Information" Grid.Row="1" Grid.ColumnSpan="3" Margin="0,0,0,12">
+                            <Grid Margin="8">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="220"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <Border Grid.Row="0" Grid.Column="0" Grid.RowSpan="5"
+                                        BorderBrush="Gray"
+                                        BorderThickness="1"
+                                        Padding="4"
+                                        Margin="0,0,12,0"
+                                        VerticalAlignment="Top"
+                                        HorizontalAlignment="Left">
+                                    <Image Name="ModerationReportThumbnail"
+                                           MaxWidth="200"
+                                           MaxHeight="200"
+                                           Width="200"
+                                           Height="200"
+                                           Stretch="Uniform"/>
+                                </Border>
+
+                                <Label Grid.Row="0" Grid.Column="1" Content="Report ID:" FontWeight="Bold" Margin="0,0,8,0"  VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                                <TextBlock Grid.Row="0" Grid.Column="2" Name="ModerationReportId" VerticalAlignment="Center"/>
+
+                                <Label Grid.Row="0" Grid.Column="3" Content="Content Type:" FontWeight="Bold" Margin="0,0,8,0" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                                <TextBlock Grid.Row="0" Grid.Column="4" Name="ModerationReportContentType" VerticalAlignment="Center"/>
+
+                                <Label Grid.Row="1" Grid.Column="1" Content="User ID:" FontWeight="Bold" Margin="0,0,8,0" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                                <TextBlock Grid.Row="1" Grid.Column="2" Name="ModerationReportUserId" VerticalAlignment="Center"/>
+
+                                <Label Grid.Row="1" Grid.Column="3" Content="Content ID:" FontWeight="Bold" Margin="0,0,8,0" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                                <TextBlock Grid.Row="1" Grid.Column="4" Name="ModerationReportContentId" VerticalAlignment="Center"/>
+
+                                <Label Grid.Row="2" Grid.Column="1" Content="Content Name:" FontWeight="Bold" Margin="0,0,8,0" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                                <TextBlock Grid.Row="2" Grid.Column="2" Grid.ColumnSpan="3" Name="ModerationReportContentName" VerticalAlignment="Center"/>
+
+                                <Label Grid.Row="2" Grid.Column="3" Content="Event Date:" FontWeight="Bold" Margin="0,0,8,0" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                                <TextBlock Grid.Row="2" Grid.Column="4" Name="ModerationReportEventDateTime" VerticalAlignment="Center"/>
+
+                                <Label Grid.Row="3" Grid.Column="3" Content="Close Date:" FontWeight="Bold" Margin="0,0,8,0" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                                <TextBlock Grid.Row="3" Grid.Column="4" Name="ModerationReportCloseDate" VerticalAlignment="Center"/>
+
+                                <Label Grid.Row="3" Grid.Column="1" Content="Status:" FontWeight="Bold" Margin="0,0,8,0" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                                <StackPanel Grid.Row="3" Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Name="ModerationReportStatus" Margin="0,0,12,0"/>
+                                </StackPanel>
+
+                                <Label Grid.Row="4" Grid.Column="1" Content="Report :" FontWeight="Bold" Margin="0,0,8,0" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                                <TextBlock Grid.Row="4" Grid.Column="2" Grid.ColumnSpan="3" Name="ModerationReportText" VerticalAlignment="Center"/>
+
+                            </Grid>
+                        </GroupBox>
+
+                        <DataGrid Name="ModerationDbGrid" Grid.Row="2" Grid.ColumnSpan="3" AutoGenerateColumns="False" 
+                                  CanUserSortColumns="True" IsReadOnly="True" ItemsSource="{Binding ModerationDbView}" 
+                                  SelectionChanged="ModerationDbGrid_SelectionChanged">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="ID" Binding="{Binding Id}" SortMemberPath="Id" Width="250"/>
+                                <DataGridTextColumn Header="Content Type" Binding="{Binding ContentType}" SortMemberPath="ContentType" Width="100"/>
+                                <DataGridTextColumn Header="User ID" Binding="{Binding UserId}" SortMemberPath="UserId" Width="250"/>
+                                <DataGridTextColumn Header="Content ID" Binding="{Binding ContentId}" SortMemberPath="ContentId" Width="250"/>
+                                <DataGridTextColumn Header="Content Name" Binding="{Binding ContentName}" SortMemberPath="ContentName" Width="150*"/>
+                                <DataGridTextColumn Header="Event Date" Binding="{Binding EventDateTime, StringFormat={}{0:yyyy-MM-dd HH:mm:ss}}" SortMemberPath="EventDateTime" Width="140"/>
+                                <DataGridTextColumn Header="Close Date" Binding="{Binding CloseDate, StringFormat={}{0:yyyy-MM-dd HH:mm:ss}}" SortMemberPath="CloseDate" Width="140"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+                </TabItem>
+
                 <TabItem Header="Config">
                     <TabControl x:Name="ConfigTabControl">
                         <TabItem Header="Known Avatars">

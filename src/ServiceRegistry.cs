@@ -98,7 +98,9 @@ namespace Tailgrab
 
                 logger.Info("All services started.");
 
-                await playerManager.GetModerationReports();
+                await playerManager.GetModerationReports(false);
+                await playerManager.GetModerationReports(true);
+
 
             }
             catch (Exception ex)

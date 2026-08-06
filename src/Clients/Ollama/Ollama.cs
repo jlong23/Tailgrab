@@ -35,6 +35,18 @@ namespace Tailgrab.Clients.Ollama
             priorityQueue.Enqueue(item);
         }
 
+        public void ClearQueue()
+        {
+            while (true)
+            {
+                if (priorityQueue.Count == 0)
+                {
+                    break;  
+                }
+                priorityQueue.Dequeue();
+            }
+        }
+
         public static async Task ProcessQueueTask(ConcurrentPriorityQueue<IHavePriority<int>, int> priorityQueue, ServiceRegistry serviceRegistry)
         {
             using OllamaApiClient? ollamaApi = GetClient();
@@ -289,6 +301,7 @@ namespace Tailgrab.Clients.Ollama
             OllamaApiClient? ollamaApi, ImageReference imageReference)
         {
             logger.Debug($"Classifying image from Asset: {imageReference.InventoryId} URI: {imageReference.ItemContentUrl}");
+            ImageEvaluation? imageEvaluation = new ImageEvaluation();
 
             try
             {
@@ -301,7 +314,7 @@ namespace Tailgrab.Clients.Ollama
 
                 string ollamaEndpoint = ConfigStore.GetStoredKeyString(CommonConst.Registry_Ollama_API_Endpoint) ?? CommonConst.Default_Ollama_API_Endpoint;
 
-                ImageEvaluation? imageEvaluation = CheckImageReferenceReview(imageReference, serviceRegistry);
+                imageEvaluation = CheckImageReferenceReview(imageReference, serviceRegistry);
                 if (imageEvaluation == null)
                 {
                     string? ollamaModel = ConfigStore.GetStoredKeyString(CommonConst.Registry_Ollama_API_Model) ?? CommonConst.Default_Ollama_API_Model;
@@ -326,20 +339,13 @@ namespace Tailgrab.Clients.Ollama
                     logger.Debug($"Image already classified for AssetId : {imageReference.InventoryId}");
                 }
 
-                if( imageReference.ItemType == "Print" && imageReference.PrintInfo != null)
-                {
-                    serviceRegistry.GetPrintManager().UpdatePlayerPrint(imageReference.PrintInfo, imageEvaluation);
-                }
-                else
-                {
-                    serviceRegistry.GetInventoryManager().UpdatePlayerInventory(imageReference, imageEvaluation);
-                }
-                    
+                UpdatePlayerView(serviceRegistry, imageReference, imageEvaluation);
+
                 return;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                logger.Warn($"Ollama image classification failed for AssetId: {imageReference.InventoryId} / {imageReference.ItemContentUrl}. Retrying ({imageReference.retries}/{MaxRetries})...");
+                logger.Warn($"Ollama image classification failed for AssetId: {imageReference.InventoryId} / {imageReference.ItemContentUrl}. Retrying ({imageReference.retries}/{MaxRetries}) due to {ex.Message}");
                 imageReference.retries++;
                 if (imageReference.retries < MaxRetries)
                 {
@@ -351,10 +357,23 @@ namespace Tailgrab.Clients.Ollama
                 else
                 {
                     logger.Warn($"Max retries reached for AssetId: {imageReference.InventoryId}. Skipping classification.");
+                    UpdatePlayerView(serviceRegistry, imageReference, imageEvaluation);
                 }
             }
 
             return;
+        }
+
+        private static void UpdatePlayerView(ServiceRegistry serviceRegistry, ImageReference imageReference, ImageEvaluation? imageEvaluation)
+        {
+            if (imageReference.ItemType == "Print" && imageReference.PrintInfo != null)
+            {
+                serviceRegistry.GetPrintManager().UpdatePlayerPrint(imageReference.PrintInfo, imageEvaluation);
+            }
+            else
+            {
+                serviceRegistry.GetInventoryManager().UpdatePlayerInventory(imageReference, imageEvaluation);
+            }
         }
 
         internal async Task<ImageEvaluation?> ClassifyImageList(string userId, string assetId, List<string> imageUrlList)

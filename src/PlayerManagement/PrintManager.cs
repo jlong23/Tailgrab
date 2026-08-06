@@ -93,7 +93,7 @@ namespace Tailgrab.PlayerManagement
 
                         ImageReference processItem = new ImageReference
                         {
-                            Priority = 10,
+                            Priority = 25,
                             InventoryId = printId,
                             UserId = printInfo.OwnerId,
                             Base64Data = base64Images,

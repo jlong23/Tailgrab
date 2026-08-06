@@ -40,6 +40,7 @@ namespace Tailgrab.Clients.VRCDB
                 string requestUri = $"{URI_VRC_BASE_API}{URI_VRC_AVATAR_SEARCH}?authorId={authorId}";
                 try
                 {
+                    await Task.Delay(1000); // Delay to avoid hitting API rate limits
                     var response = await httpClient.GetAsync(requestUri);
                     response.EnsureSuccessStatusCode();
                     var jsonResponse = await response.Content.ReadAsStringAsync();

@@ -1,9 +1,6 @@
-using BuildSoft.OscCore;
-using Microsoft.Win32;
 using NLog;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Drawing;
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -40,11 +37,13 @@ namespace Tailgrab.PlayerManagement
         public AvatarVirtualizingCollection AvatarDbItems { get; private set; }
         public GroupVirtualizingCollection GroupDbItems { get; private set; }
         public UserVirtualizingCollection UserDbItems { get; private set; }
+        public ModerationVirtualizingCollection ModerationDbItems { get; private set; }
 
         public ICollectionView AvatarDbView { get; }
         public ICollectionView ActiveView { get; }
         public ICollectionView GroupDbView { get; }
         public ICollectionView UserDbView { get; }
+        public ICollectionView ModerationDbView { get; }
         public ICollectionView PastView { get; }
         public ICollectionView PrintView { get; }
         public ICollectionView EmojiView { get; }
@@ -605,6 +604,9 @@ namespace Tailgrab.PlayerManagement
 
             // User collection ordered by DisplayName at source
             UserDbView.SortDescriptions.Add(new SortDescription("DisplayName", ListSortDirection.Ascending));
+
+            ModerationDbItems = new ModerationVirtualizingCollection(_serviceRegistry);
+            ModerationDbView = CollectionViewSource.GetDefaultView(ModerationDbItems);
 
             #region Secret Config Load            
             // Load saved secrets into UI fields if desired (not displayed in this view directly)
@@ -2051,7 +2053,7 @@ namespace Tailgrab.PlayerManagement
             if (response != null)
             {
                 logger.Info($"Profile Report submitted - UserId: {userId}, Category: {category}, ReportReason: {reportReason}, Description: {reportDescription}");
-                await _serviceRegistry.GetPlayerManager().SaveModerationReport(rpt, response, userId);    
+                await _serviceRegistry.GetPlayerManager().SaveModerationReport(rpt, response, userId, false);    
             }
             else
             {
@@ -2305,7 +2307,8 @@ namespace Tailgrab.PlayerManagement
                 if (ageMinutesFilter.HasValue)
                 {
                     DateTime cutoff = DateTime.Now.AddMinutes(-ageMinutesFilter.Value);
-                    return pvm.Prints.Any(print => print.Timestamp <= cutoff);
+                    logger.Info(string.Format(cutoff.ToString("yyyy-MM-dd HH:mm:ss") + " cutoff for print filter"));
+                    return pvm.Prints.Any(print => print.Timestamp >= cutoff);
                 }
 
                 return true;
@@ -2536,7 +2539,7 @@ namespace Tailgrab.PlayerManagement
             if (report != null)
             {
                 logger.Info($"Print Report submitted - UserId: {userId}, Category: {category}, ReportReason: {reportReason}, Description: {reportDescription}");
-                await _serviceRegistry.GetPlayerManager().SaveModerationReport(rpt, report, userId);
+                await _serviceRegistry.GetPlayerManager().SaveModerationReport(rpt, report, userId, false);
             }
             else
             {
@@ -2772,7 +2775,8 @@ namespace Tailgrab.PlayerManagement
                 if (ageMinutesFilter.HasValue)
                 {
                     DateTime cutoff = DateTime.Now.AddMinutes(-ageMinutesFilter.Value);
-                    return pvm.Emojis.Any(emoji => emoji.SpawnedAt <= cutoff);
+                    logger.Info(string.Format(cutoff.ToString("yyyy-MM-dd HH:mm:ss") + " cutoff for emoji filter"));
+                    return pvm.Emojis.Any(emoji => emoji.SpawnedAt >= cutoff);
                 }
 
                 return true;
@@ -2985,7 +2989,7 @@ namespace Tailgrab.PlayerManagement
             if (report != null)
             {
                 logger.Info($"Inventory Report submitted - UserId: {userId}, Category: {category}, ReportReason: {reportReason}, Description: {reportDescription}");
-                await _serviceRegistry.GetPlayerManager().SaveModerationReport(rpt, report, userId);
+                await _serviceRegistry.GetPlayerManager().SaveModerationReport(rpt, report, userId, false);
             }
             else
             {
@@ -3990,6 +3994,145 @@ namespace Tailgrab.PlayerManagement
                 }
             }
         }
+
+        //
+        // Moderation DB UI handlers
+        #region Moderation DB handlers
+        private void ModerationDbRefresh_Click(object sender, RoutedEventArgs e)
+        {
+            RefreshModerationDb();
+        }
+
+        private void ModerationDbApplyFilter_Click(object sender, RoutedEventArgs e)
+        {
+            ApplyModerationDbFilter(ModerationUserIdFilterBox.Text, ModerationContentIdFilterBox.Text);
+        }
+
+        private void ModerationDbClearFilter_Click(object sender, RoutedEventArgs e)
+        {
+            ModerationUserIdFilterBox.Text = string.Empty;
+            ModerationContentIdFilterBox.Text = string.Empty;
+            ApplyModerationDbFilter(string.Empty, string.Empty);
+        }
+
+        private void ApplyModerationDbFilter(string userIdFilter, string contentIdFilter)
+        {
+            if (string.IsNullOrWhiteSpace(userIdFilter) && string.IsNullOrWhiteSpace(contentIdFilter))
+            {
+                ModerationDbItems.SetFilter(null, null);
+            }
+            else
+            {
+                ModerationDbItems.SetFilter(
+                    string.IsNullOrWhiteSpace(userIdFilter) ? null : userIdFilter.Trim(),
+                    string.IsNullOrWhiteSpace(contentIdFilter) ? null : contentIdFilter.Trim()
+                );
+            }
+        }
+
+        private void RefreshModerationDb()
+        {
+            try
+            {
+                ModerationDbItems.Refresh();
+            }
+            catch { }
+        }
+
+        private void ModerationDbGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (ModerationDbGrid.SelectedItem is ModerationInfoViewModel selectedReport)
+            {
+                PopulateModerationInformation(selectedReport);
+            }
+        }
+
+        private void PopulateModerationInformation(ModerationInfoViewModel report)
+        {
+            try
+            {
+                ModerationReportId.Text = report.Id;
+                ModerationReportContentType.Text = report.ContentType;
+                ModerationReportUserId.Text = report.UserId;
+                ModerationReportContentId.Text = report.ContentId;
+                ModerationReportContentName.Text = report.ContentName;
+                ModerationReportEventDateTime.Text = report.EventDateTime.ToString("yyyy-MM-dd HH:mm:ss");
+                ModerationReportCloseDate.Text = report.CloseDate?.ToString("yyyy-MM-dd HH:mm:ss") ?? "Not Closed";
+                ModerationReportText.Text = report.Report;
+                ModerationReportStatus.Text = report.IsDeleted ? "Deleted" : report.IsClosed ? "Closed" : "Open";
+
+                if (!string.IsNullOrWhiteSpace(report.Thumbnail))
+                {
+                    try
+                    {
+                        var bitmap = new System.Windows.Media.Imaging.BitmapImage();
+                        bitmap.BeginInit();
+                        bitmap.UriSource = new Uri(report.Thumbnail);
+                        bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                        bitmap.EndInit();
+                        ModerationReportThumbnail.Source = bitmap;
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.Error(ex, $"Failed to load moderation thumbnail for report {report.Id}");
+                        ModerationReportThumbnail.Source = null;
+                    }
+                }
+                else
+                {
+                    ModerationReportThumbnail.Source = null;
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to populate moderation report information");
+                ClearModerationInformation();
+            }
+        }
+
+        private void ClearModerationInformation()
+        {
+            ModerationReportId.Text = string.Empty;
+            ModerationReportContentType.Text = string.Empty;
+            ModerationReportUserId.Text = string.Empty;
+            ModerationReportContentId.Text = string.Empty;
+            ModerationReportContentName.Text = string.Empty;
+            ModerationReportEventDateTime.Text = string.Empty;
+            ModerationReportCloseDate.Text = string.Empty;
+            ModerationReportText.Text = string.Empty;
+            ModerationReportStatus.Text = string.Empty;
+            ModerationReportThumbnail.Source = null;
+        }
+
+        private async void DeleteModerationReport_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is System.Windows.Controls.Button button && button.Tag is ModerationInfoViewModel report)
+            {
+                try
+                {
+                    // TODO: Implement VRCClient call to delete moderation report
+                    VRChatClient vrcClient = _serviceRegistry.GetVRChatAPIClient();
+                    await vrcClient.DeleteModerationReportAsync(report.Id);
+
+                    // Update local database to mark as deleted
+                    var db = _serviceRegistry.GetDBContext();
+                    var entity = db.ModerationInfos.Find(report.Id);
+                    if (entity != null)
+                    {
+                        entity.IsDeleted = true;
+                        entity.DeletedDate = DateTime.UtcNow;
+                        db.SaveChanges();
+                        RefreshModerationDb();
+                    }                    
+                }
+                catch (Exception ex)
+                {
+                    logger.Error(ex, $"Failed to delete moderation report {report.Id}");
+                }
+            }
+        }
+
+        #endregion
 
         private void UserSelectionTextBox_Pasting(object sender, DataObjectPastingEventArgs e)
         {

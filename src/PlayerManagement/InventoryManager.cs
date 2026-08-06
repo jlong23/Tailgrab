@@ -66,7 +66,7 @@ namespace Tailgrab.PlayerManagement
 
                         ImageReference processItem = new ImageReference
                         {
-                            Priority = 10,
+                            Priority = 20,
                             InventoryId = inventoryId,
                             UserId = userId,
                             Base64Data = base64Images,

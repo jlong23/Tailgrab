@@ -3,6 +3,7 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using VRChat.API.Model;
 
 namespace Tailgrab.Models;
@@ -25,6 +26,16 @@ public partial class ModerationInfo
 
     public DateTime EventDateTime { get; set; }
 
+    [Column("Closed", TypeName = "int")]
+    public bool IsClosed { get; set; }
+
+    public DateTime? ClosedDate { get; set; }
+
+    [Column("Deleted", TypeName = "int")]
+    public bool IsDeleted { get; set; }
+
+    public DateTime? DeletedDate { get; set; }
+
 
     public ModerationInfo()
     {
@@ -33,7 +44,7 @@ public partial class ModerationInfo
 
     public override string ToString()
     {
-        return $"ModerationInfo: Id={Id}, ContentId={ContentId}, ContentName={ContentName}, ContentType={ContentType}, UserId={UserId}, EventDateTime={EventDateTime}"; 
+        return $"ModerationInfo: Id={Id}, ContentType={ContentType}, ContentId={ContentId}, ContentName={ContentName}, UserId={UserId}, Thumbnail={Thumbnail}, ReportLength={Report?.Length ?? 0}, EventDateTime={EventDateTime}, IsClosed={IsClosed}, ClosedDate={ClosedDate}, IsDeleted={IsDeleted}, DeletedDate={DeletedDate}";
     }
 }
 

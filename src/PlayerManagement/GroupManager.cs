@@ -71,6 +71,19 @@ namespace Tailgrab.PlayerManagement
             return groupPriorityQueue.Any(item => ((QueuedProcess)item).UserId == userId);
         }
 
+        public void ClearQueue()
+        {
+            while (true)
+            {
+                if (groupPriorityQueue.Count == 0)
+                {
+                    break;
+                }
+                groupPriorityQueue.Dequeue();
+            }
+        }
+
+
         private void UpdateQueuedProcessWithPlayer(QueuedProcess item)
         {
             if (serviceRegistry == null)

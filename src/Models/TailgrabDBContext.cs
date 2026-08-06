@@ -170,7 +170,7 @@ public partial class TailgrabDBContext : DbContext
             new SqlMigration("CREATE TABLE IF NOT EXISTS GroupManagement ( GroupId TEXT NOT NULL CONSTRAINT PK_GroupManagement PRIMARY KEY, GroupName TEXT NULL, createDate TEXT NOT NULL, updateDate TEXT NULL )", true),
             new SqlMigration("CREATE INDEX IF NOT EXISTS ix_grpm_gname ON GroupManagement(groupName)", true),
 
-            new SqlMigration("CREATE TABLE IF NOT EXISTS ModerationInfo ( Id TEXT NOT NULL CONSTRAINT PK_ModerationInfo PRIMARY KEY, ContentType TEXT NOT NULL, ContentId TEXT NOT NULL, ContentName TEXT NOT NULL, UserId TEXT NOT NULL, Thumbnail TEXT NOT NULL, Report BLOB NOT NULL, EventDateTime TEXT NOT NULL)", true),
+            new SqlMigration("CREATE TABLE IF NOT EXISTS ModerationInfo ( Id TEXT NOT NULL CONSTRAINT PK_ModerationInfo PRIMARY KEY, ContentType TEXT NOT NULL, ContentId TEXT NOT NULL, ContentName TEXT NOT NULL, UserId TEXT NOT NULL, Thumbnail TEXT NOT NULL, Report BLOB NOT NULL, EventDateTime TEXT NOT NULL, Closed INTEGER NOT NULL DEFAULT 0, ClosedDate TEXT, Deleted INTEGER NOT NULL DEFAULT 0, DeletedDate TEXT )", true),
             new SqlMigration("CREATE INDEX IF NOT EXISTS ix_mod_userid ON ModerationInfo(UserId)", true)
         );
     }
