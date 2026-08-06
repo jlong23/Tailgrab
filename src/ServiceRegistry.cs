@@ -101,7 +101,6 @@ namespace Tailgrab
                 await playerManager.GetModerationReports(false);
                 await playerManager.GetModerationReports(true);
 
-
             }
             catch (Exception ex)
             {

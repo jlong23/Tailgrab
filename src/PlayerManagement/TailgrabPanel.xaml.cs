@@ -656,6 +656,7 @@ namespace Tailgrab.PlayerManagement
             RefreshAvatarDb();
             RefreshGroupDb();
             RefreshUserDb();
+            RefreshModerationDb();
 
             // Load Ollama models if credentials are configured
             Task.Run(async () => 
@@ -4030,7 +4031,7 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
-        private void RefreshModerationDb()
+        public void RefreshModerationDb()
         {
             try
             {
