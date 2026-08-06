@@ -607,6 +607,7 @@ namespace Tailgrab.PlayerManagement
 
             ModerationDbItems = new ModerationVirtualizingCollection(_serviceRegistry);
             ModerationDbView = CollectionViewSource.GetDefaultView(ModerationDbItems);
+            ModerationDbView.SortDescriptions.Add(new SortDescription("EventDateTime", ListSortDirection.Descending));
 
             #region Secret Config Load            
             // Load saved secrets into UI fields if desired (not displayed in this view directly)

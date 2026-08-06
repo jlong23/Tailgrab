@@ -1291,7 +1291,13 @@ Title="Tailgrab Player Panel"
                                 <TextBlock Grid.Row="0" Grid.Column="4" Name="ModerationReportContentType" VerticalAlignment="Center"/>
 
                                 <Label Grid.Row="1" Grid.Column="1" Content="User ID:" FontWeight="Bold" Margin="0,0,8,0" VerticalAlignment="Center" HorizontalAlignment="Right"/>
-                                <TextBlock Grid.Row="1" Grid.Column="2" Name="ModerationReportUserId" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Row="1" Grid.Column="2" VerticalAlignment="Center">
+                                    <Hyperlink NavigateUri="{Binding ElementName=ModerationReportUserId, Path=Text}"
+                                        RequestNavigate="GroupUserHyperlink_RequestNavigate">
+                                        <TextBlock Name="ModerationReportUserId"/>
+                                    </Hyperlink>
+                                </TextBlock>
+
 
                                 <Label Grid.Row="1" Grid.Column="3" Content="Content ID:" FontWeight="Bold" Margin="0,0,8,0" VerticalAlignment="Center" HorizontalAlignment="Right"/>
                                 <TextBlock Grid.Row="1" Grid.Column="4" Name="ModerationReportContentId" VerticalAlignment="Center"/>
@@ -1307,7 +1313,7 @@ Title="Tailgrab Player Panel"
 
                                 <Label Grid.Row="3" Grid.Column="1" Content="Status:" FontWeight="Bold" Margin="0,0,8,0" VerticalAlignment="Center" HorizontalAlignment="Right"/>
                                 <StackPanel Grid.Row="3" Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                    <TextBlock Name="ModerationReportStatus" Margin="0,0,12,0"/>
+                                    <TextBlock Name="ModerationReportStatus" Margin="0,0,12,0" TextWrapping="Wrap"/>
                                 </StackPanel>
 
                                 <Label Grid.Row="4" Grid.Column="1" Content="Report :" FontWeight="Bold" Margin="0,0,8,0" VerticalAlignment="Top" HorizontalAlignment="Right"/>
@@ -1325,7 +1331,7 @@ Title="Tailgrab Player Panel"
                                 <DataGridTextColumn Header="User ID" Binding="{Binding UserId}" SortMemberPath="UserId" Width="250"/>
                                 <DataGridTextColumn Header="Content ID" Binding="{Binding ContentId}" SortMemberPath="ContentId" Width="250"/>
                                 <DataGridTextColumn Header="Content Name" Binding="{Binding ContentName}" SortMemberPath="ContentName" Width="150*"/>
-                                <DataGridTextColumn Header="Event Date" Binding="{Binding EventDateTime, StringFormat={}{0:yyyy-MM-dd HH:mm:ss}}" SortMemberPath="EventDateTime" Width="140"/>
+                                <DataGridTextColumn Header="Event Date" Binding="{Binding EventDateTime, StringFormat={}{0:yyyy-MM-dd HH:mm:ss}}" SortMemberPath="EventDateTime" SortDirection="Descending" Width="140"/>
                                 <DataGridTextColumn Header="Close Date" Binding="{Binding CloseDate, StringFormat={}{0:yyyy-MM-dd HH:mm:ss}}" SortMemberPath="CloseDate" Width="140"/>
                             </DataGrid.Columns>
                         </DataGrid>
