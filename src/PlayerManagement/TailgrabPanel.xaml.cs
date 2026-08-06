@@ -20,6 +20,10 @@ namespace Tailgrab.PlayerManagement
 {
     public partial class TailgrabPanel : Window, IDisposable, INotifyPropertyChanged
     {
+        public const int CONST_CONFIG_TAB_INDEX = 6;
+        public const int CONST_BAN_MGMT_TAB_INDEX = 10;
+
+
         public static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         protected ServiceRegistry _serviceRegistry;
@@ -1841,10 +1845,10 @@ namespace Tailgrab.PlayerManagement
                 BanMgmtUserIdTextBox.Text = userId;
 
                 // Activate the Config tab (index 4) in main TabControl
-                MainTabControl.SelectedIndex = 4;
+                MainTabControl.SelectedIndex = CONST_CONFIG_TAB_INDEX;
 
                 // Activate the Ban Management tab (index 10) in Config TabControl
-                ConfigTabControl.SelectedIndex = 10;
+                ConfigTabControl.SelectedIndex = CONST_BAN_MGMT_TAB_INDEX;
 
                 // Call the load user function
                 BanMgmtLoadUser_Click(sender, e);
@@ -1862,10 +1866,10 @@ namespace Tailgrab.PlayerManagement
                 BanMgmtUserIdTextBox.Text = ownerId;
 
                 // Activate the Config tab (index 4) in main TabControl
-                MainTabControl.SelectedIndex = 4;
+                MainTabControl.SelectedIndex = CONST_CONFIG_TAB_INDEX;
 
                 // Activate the Ban Management tab (index 10) in Config TabControl
-                ConfigTabControl.SelectedIndex = 10;
+                ConfigTabControl.SelectedIndex = CONST_BAN_MGMT_TAB_INDEX;
 
                 // Call the load user function
                 BanMgmtLoadUser_Click(sender, e);
@@ -1883,10 +1887,10 @@ namespace Tailgrab.PlayerManagement
                 BanMgmtUserIdTextBox.Text = ownerId;
 
                 // Activate the Config tab (index 4) in main TabControl
-                MainTabControl.SelectedIndex = 4;
+                MainTabControl.SelectedIndex = CONST_CONFIG_TAB_INDEX;
 
                 // Activate the Ban Management tab (index 10) in Config TabControl
-                ConfigTabControl.SelectedIndex = 10;
+                ConfigTabControl.SelectedIndex = CONST_BAN_MGMT_TAB_INDEX;
 
                 // Call the load user function
                 BanMgmtLoadUser_Click(sender, e);
@@ -2123,10 +2127,10 @@ namespace Tailgrab.PlayerManagement
                 BanMgmtUserIdTextBox.Text = userId;
 
                 // Activate the Config tab (index 4) in main TabControl
-                MainTabControl.SelectedIndex = 4;
+                MainTabControl.SelectedIndex = CONST_CONFIG_TAB_INDEX;
 
                 // Activate the Ban Management tab (index 10) in Config TabControl
-                ConfigTabControl.SelectedIndex = 10;
+                ConfigTabControl.SelectedIndex = CONST_BAN_MGMT_TAB_INDEX;
 
                 // Call the load user function
                 BanMgmtLoadUser_Click(sender, e);
