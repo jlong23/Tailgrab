@@ -1310,8 +1310,8 @@ Title="Tailgrab Player Panel"
                                     <TextBlock Name="ModerationReportStatus" Margin="0,0,12,0"/>
                                 </StackPanel>
 
-                                <Label Grid.Row="4" Grid.Column="1" Content="Report :" FontWeight="Bold" Margin="0,0,8,0" VerticalAlignment="Center" HorizontalAlignment="Right"/>
-                                <TextBlock Grid.Row="4" Grid.Column="2" Grid.ColumnSpan="3" Name="ModerationReportText" VerticalAlignment="Center"/>
+                                <Label Grid.Row="4" Grid.Column="1" Content="Report :" FontWeight="Bold" Margin="0,0,8,0" VerticalAlignment="Top" HorizontalAlignment="Right"/>
+                                <TextBlock Grid.Row="4" Grid.Column="2" Grid.ColumnSpan="3" Margin="0,4,0,0" Name="ModerationReportText" VerticalAlignment="Top"/>
 
                             </Grid>
                         </GroupBox>
