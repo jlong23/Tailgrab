@@ -32,7 +32,7 @@ public class StickerHandler : AbstractLineHandler
             {
                 logger.Info($"{COLOR_PREFIX}{userName} ({userId}) - {fileURL}{COLOR_RESET.GetAnsiEscape()}");
             }
-            PlayerManager.AddStickerEvent(userName, fileURL);
+            InventoryManager.AddStickerEvent(userName, fileURL);
 
             ExecuteActions();
             return true;

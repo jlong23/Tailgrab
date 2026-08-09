@@ -222,6 +222,17 @@ namespace Tailgrab.Configuration
                     actions.Add(new DelayAction(delayActionConfig.Milliseconds));
                 }
 
+                if (actionConfig.GetType() == typeof(PlaySoundActionConfig))
+                {
+                    var playSoundActionConfig = (PlaySoundActionConfig)actionConfig;
+                    if (playSoundActionConfig.SoundFile == null)
+                    {
+                        logger.Warn("PlaySound Action configuration is missing required field; 'soundFile', skipping this action.");
+                        continue;
+                    }
+                    actions.Add(new PlaySoundAction(playSoundActionConfig.SoundFile));
+                }
+
                 if (actionConfig.GetType() == typeof(KeyStrokeConfig))
                 {
                     var keyStrokeConfig = (KeyStrokeConfig)actionConfig;
@@ -315,7 +326,8 @@ namespace Tailgrab.Configuration
         OSCAction,
         DelayAction,
         KeyPressAction,
-        TTSAction
+        TTSAction,
+        PlaySoundAction
     }
 
     [JsonPolymorphic(TypeDiscriminatorPropertyName = "actionTypeValue")]
@@ -323,6 +335,7 @@ namespace Tailgrab.Configuration
     [JsonDerivedType(typeof(DelayActionConfig), "DelayAction")]
     [JsonDerivedType(typeof(KeyStrokeConfig), "KeyPressAction")]
     [JsonDerivedType(typeof(TTSActionConfig), "TTSAction")]
+    [JsonDerivedType(typeof(PlaySoundActionConfig), "PlaySoundAction")]
     public abstract class ActionBase
     {
         public ActionType ActionTypeValue { get; set; }
@@ -349,6 +362,16 @@ namespace Tailgrab.Configuration
         public DelayActionConfig()
         {
             ActionTypeValue = ActionType.DelayAction;
+        }
+    }
+
+    public class PlaySoundActionConfig : ActionBase
+    {
+        public string? SoundFile { get; set; }
+
+        public PlaySoundActionConfig()
+        {
+            ActionTypeValue = ActionType.PlaySoundAction;
         }
     }
 

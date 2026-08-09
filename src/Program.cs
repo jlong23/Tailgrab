@@ -68,7 +68,6 @@ public class FileTailer
         // -backup          : create a backup of the database and exit
         string? explicitPath = null;
         bool clearRegistry = false;
-        bool upgrade = false;
         bool backup = false;
         for (int i = 0; i < args.Length; i++)
         {
@@ -333,7 +332,7 @@ public class FileTailer
                                 }
                             }
 
-                            PlayerManager.CacheAvatars(avatarIds);
+                            AvatarManager.CacheAvatars(avatarIds);
                         }
                     }
                 }
@@ -342,7 +341,7 @@ public class FileTailer
             // Do something with the extracted avatar IDs; for now log the count and a sample
             if (avatarIds.Count > 0)
             {
-                ServiceRegistryInstance.GetPlayerManager().CompactDatabase();
+                ServiceRegistryInstance.GetAvatarManager().CompactDatabase();
             }
 
         }

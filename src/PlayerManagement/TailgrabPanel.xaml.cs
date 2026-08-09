@@ -1,4 +1,3 @@
-using Microsoft.Win32;
 using NLog;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -21,12 +20,18 @@ namespace Tailgrab.PlayerManagement
 {
     public partial class TailgrabPanel : Window, IDisposable, INotifyPropertyChanged
     {
+        public const int CONST_CONFIG_TAB_INDEX = 5;
+        public const int CONST_BAN_MGMT_TAB_INDEX = 10;
+
+
         public static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         protected ServiceRegistry _serviceRegistry;
 
         private readonly DispatcherTimer fallbackTimer;
         private readonly DispatcherTimer statusBarTimer;
+
+        private string SelectedAvatarId = string.Empty;
 
         public ObservableCollection<PlayerViewModel> ActivePlayers { get; } = [];
         public ObservableCollection<PlayerViewModel> PastPlayers { get; } = [];
@@ -36,11 +41,13 @@ namespace Tailgrab.PlayerManagement
         public AvatarVirtualizingCollection AvatarDbItems { get; private set; }
         public GroupVirtualizingCollection GroupDbItems { get; private set; }
         public UserVirtualizingCollection UserDbItems { get; private set; }
+        public ModerationVirtualizingCollection ModerationDbItems { get; private set; }
 
         public ICollectionView AvatarDbView { get; }
         public ICollectionView ActiveView { get; }
         public ICollectionView GroupDbView { get; }
         public ICollectionView UserDbView { get; }
+        public ICollectionView ModerationDbView { get; }
         public ICollectionView PastView { get; }
         public ICollectionView PrintView { get; }
         public ICollectionView EmojiView { get; }
@@ -76,6 +83,19 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
+        private string _groupGistStatus = string.Empty;
+        public string GroupGistStatus
+        {
+            get => _groupGistStatus;
+            set
+            {
+                if (_groupGistStatus != value)
+                {
+                    _groupGistStatus = value;
+                    OnPropertyChanged(nameof(GroupGistStatus));
+                }
+            }
+        }
 
         private int _avatarQueueLength;
         public int AvatarQueueLength
@@ -541,6 +561,8 @@ namespace Tailgrab.PlayerManagement
             System.Windows.DataObject.AddPastingHandler(BanMgmtUserIdTextBox, UserSelectionTextBox_Pasting);
             // Hook paste event for OverlayUserIdTextBox to clear on paste
             System.Windows.DataObject.AddPastingHandler(OverlayUserIdTextBox, UserSelectionTextBox_Pasting);
+            // User Account Test Box for Ollama testing
+            System.Windows.DataObject.AddPastingHandler(UserAccountTestBox, UserSelectionTextBox_Pasting);
 
             // Hook paste event for EmojiFilterBox to clear on paste
             System.Windows.DataObject.AddPastingHandler(EmojiFilterBox, InventorySelectionTextBox_Pasting);
@@ -586,6 +608,10 @@ namespace Tailgrab.PlayerManagement
 
             // User collection ordered by DisplayName at source
             UserDbView.SortDescriptions.Add(new SortDescription("DisplayName", ListSortDirection.Ascending));
+
+            ModerationDbItems = new ModerationVirtualizingCollection(_serviceRegistry);
+            ModerationDbView = CollectionViewSource.GetDefaultView(ModerationDbItems);
+            ModerationDbView.SortDescriptions.Add(new SortDescription("EventDateTime", ListSortDirection.Descending));
 
             #region Secret Config Load            
             // Load saved secrets into UI fields if desired (not displayed in this view directly)
@@ -635,6 +661,7 @@ namespace Tailgrab.PlayerManagement
             RefreshAvatarDb();
             RefreshGroupDb();
             RefreshUserDb();
+            RefreshModerationDb();
 
             // Load Ollama models if credentials are configured
             Task.Run(async () => 
@@ -736,6 +763,29 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
+        private void Reset2FA_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var result = System.Windows.MessageBox.Show(
+                    "This will erase your Two Factor Authentication Seed Key. Are you sure you want to continue?",
+                    "Confirm 2FA Key Deletion",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning);
+
+                if (result != MessageBoxResult.Yes)
+                    return;
+
+                ConfigStore.DeleteSecret(CommonConst.Registry_VRChat_Web_2FactorKey);
+                Vr2FaBox.Password = string.Empty;
+                Vr2FaBox.ToolTip = null;
+                System.Windows.MessageBox.Show("2FA key reset. Please re-enter your 2FA key or leave blank for Prompting of the One Time Codes.", "Reset 2FA", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"Failed to reset 2FA key: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
 
         private async void SaveAIConfig_Click(object sender, RoutedEventArgs e)
         {
@@ -758,6 +808,36 @@ namespace Tailgrab.PlayerManagement
                 System.Windows.MessageBox.Show($"Failed to save AI configuration: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+
+        private void ResetOllama_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var result = System.Windows.MessageBox.Show(
+                    "This will erase your Ollama Configuration. Are you sure you want to continue?",
+                    "Confirm Ollama Configuration Deletion",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning);
+
+                if (result != MessageBoxResult.Yes)
+                    return;
+
+
+                ConfigStore.DeleteSecret(CommonConst.Registry_Ollama_API_Key);
+                ConfigStore.DeleteSecret(CommonConst.Registry_Ollama_API_Endpoint);
+                ConfigStore.DeleteSecret(CommonConst.Registry_Ollama_API_Model);
+                VrOllamaBox.ToolTip = null;
+                VrOllamaBox.Password = string.Empty;
+                VrOllamaEndpointBox.Text = string.Empty;
+                VrOllamaModelBox.SelectedValue = null;
+                System.Windows.MessageBox.Show("Ollama Configuration reset. Please re-enter your API key or leave blank for no Profile & Image AI Evalutation.", "Reset Ollama Configuration", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"Failed to reset Ollama Configuration: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
 
 
         private async Task LoadOllamaModelsAsync()
@@ -799,7 +879,6 @@ namespace Tailgrab.PlayerManagement
         {
             CanTestProfilePrompt =
                 !string.IsNullOrEmpty(ConfigStore.GetStoredKeyString(CommonConst.Registry_Ollama_API_Endpoint)) &&
-                !string.IsNullOrEmpty(ConfigStore.LoadSecret(CommonConst.Registry_Ollama_API_Key)) &&
                 !string.IsNullOrEmpty((string)VrOllamaModelBox.SelectedValue) &&
                 (VrOllamaPromptBox.Text?.Length ?? 0) > 60 &&
                 (UserAccountTestBox.Text?.StartsWith("usr_") ?? false);
@@ -826,7 +905,7 @@ namespace Tailgrab.PlayerManagement
                 }
 
                 // Call Ollama test method
-                ProfileEvaluation result = await Clients.Ollama.OllamaClient.TestProfilePrompt(_serviceRegistry, userId, prompt, model);
+                ProfileEvaluation? result = await Clients.Ollama.OllamaClient.TestProfilePrompt(_serviceRegistry, userId, prompt, model);
                 if (result != null) {
                     logger.Info("Profile prompt test successful for user {UserId} with model {Model} as {Evaluation}", userId, model, result.Evaluation);
 
@@ -885,12 +964,13 @@ namespace Tailgrab.PlayerManagement
                         if (imagePath != null)
                         {
 
-                            string evaluation = await ollamaClient.TestImagePrompt(model, prompt, imagePath);
+                            string evaluation = await OllamaClient.TestImagePrompt(model, prompt, imagePath);
 
                             Models.TestImageAIEvalItem item = new()
                             {
                                 ImagePath = imagePath,
-                                AIEvaluation = evaluation
+                                AIEvaluation = evaluation,
+                                AlertInfo = AIEvalutionEnumMapper.MapEnumToAlertDisplayItem(AIEvalutionEnumMapper.MapEvaluationToEnum(evaluation))
                             };
 
                             TestImageAIEvalItems.Add(item);
@@ -1035,12 +1115,13 @@ namespace Tailgrab.PlayerManagement
         {
             try
             {
-                groupGistCheckButton.IsEnabled = false;
-                groupGistCheckButton.Content = "Checking...";
-
-                await Task.Run(() => _serviceRegistry.ProcessGroupGist());
-
-                System.Windows.MessageBox.Show("Group GIST list processing in the background.", "Check Group GIST", MessageBoxButton.OK, MessageBoxImage.Information);
+                if (groupGistUrl.Text != null)
+                {
+                    groupGistCheckButton.IsEnabled = false;
+                    groupGistCheckButton.Content = "Checking...";
+                    //System.Windows.MessageBox.Show("Group GIST list processing in the background.", "Check Group GIST", MessageBoxButton.OK, MessageBoxImage.Information);
+                    await _serviceRegistry.ProcessGroupGist(groupGistUrl.Text, true);
+                }
             }
             catch (Exception ex)
             {
@@ -1347,8 +1428,9 @@ namespace Tailgrab.PlayerManagement
             {
                 var ollamaClient = _serviceRegistry.GetOllamaAPIClient();
 
-                AvatarQueueLength = PlayerManager.GetQueueCount();
+                AvatarQueueLength = AvatarManager.GetQueueCount();
                 OllamaQueueLength = ollamaClient?.GetQueueSize() ?? 0;
+                GroupGistStatus = _serviceRegistry.GetGroupManager().GetQueueSize();
 
                 // Update Open Logs collection
                 RefreshOpenLogs();
@@ -1472,6 +1554,11 @@ namespace Tailgrab.PlayerManagement
                 {
                     EmojiPlayers.Add(new PlayerViewModel(p));
                 }
+
+                if (EmojiView.Filter != null)
+                {
+                    EmojiView.Refresh();
+                }
             }
         }
 
@@ -1488,6 +1575,11 @@ namespace Tailgrab.PlayerManagement
                 else
                 {
                     PrintPlayers.Add(new PlayerViewModel(p));
+                }
+
+                if (PrintView.Filter != null)
+                {
+                    PrintView.Refresh();
                 }
             }
         }
@@ -1748,20 +1840,28 @@ namespace Tailgrab.PlayerManagement
             if (btn.DataContext is PlayerViewModel pvm)
             {
                 string userId = pvm.UserId;
+                SwitchToBanManagementTab(sender, e, userId);
+            }
+        }
 
+        private void SwitchToBanManagementTab(object sender, RoutedEventArgs e, string userId)
+        {
+            if (!string.IsNullOrWhiteSpace(userId))
+            {
                 // Set the user ID in Ban Management tab
                 BanMgmtUserIdTextBox.Text = userId;
 
                 // Activate the Config tab (index 4) in main TabControl
-                MainTabControl.SelectedIndex = 4;
+                MainTabControl.SelectedIndex = CONST_CONFIG_TAB_INDEX;
 
                 // Activate the Ban Management tab (index 10) in Config TabControl
-                ConfigTabControl.SelectedIndex = 10;
+                ConfigTabControl.SelectedIndex = CONST_BAN_MGMT_TAB_INDEX;
 
                 // Call the load user function
                 BanMgmtLoadUser_Click(sender, e);
             }
         }
+
 
         private void BanAvatarOwner_Click(object sender, RoutedEventArgs e)
         {
@@ -1770,17 +1870,7 @@ namespace Tailgrab.PlayerManagement
 
             if (!string.IsNullOrWhiteSpace(ownerId))
             {
-                // Set the user ID in Ban Management tab
-                BanMgmtUserIdTextBox.Text = ownerId;
-
-                // Activate the Config tab (index 4) in main TabControl
-                MainTabControl.SelectedIndex = 4;
-
-                // Activate the Ban Management tab (index 10) in Config TabControl
-                ConfigTabControl.SelectedIndex = 10;
-
-                // Call the load user function
-                BanMgmtLoadUser_Click(sender, e);
+                SwitchToBanManagementTab(sender, e, ownerId);
             }
         }
 
@@ -1791,17 +1881,7 @@ namespace Tailgrab.PlayerManagement
 
             if (!string.IsNullOrWhiteSpace(ownerId))
             {
-                // Set the user ID in Ban Management tab
-                BanMgmtUserIdTextBox.Text = ownerId;
-
-                // Activate the Config tab (index 4) in main TabControl
-                MainTabControl.SelectedIndex = 4;
-
-                // Activate the Ban Management tab (index 10) in Config TabControl
-                ConfigTabControl.SelectedIndex = 10;
-
-                // Call the load user function
-                BanMgmtLoadUser_Click(sender, e);
+                SwitchToBanManagementTab(sender, e, ownerId);
             }
         }
 
@@ -1946,6 +2026,7 @@ namespace Tailgrab.PlayerManagement
         // Reusable method to submit profile report - can be called from other places in the future if needed
         private async Task<bool> SubmitProfileReport(string userId, string category, string reportReason, string reportDescription)
         {
+            bool success = true;
             ModerationReportPayload rpt = new()
             {
                 Type = "user",
@@ -1962,14 +2043,16 @@ namespace Tailgrab.PlayerManagement
             };
             rpt.Details = [rptDtls];
 
-            bool success = await _serviceRegistry.GetVRChatAPIClient().SubmitModerationReportAsync(rpt);
-            if (success)
+            ModerationReportResponse? response = await _serviceRegistry.GetVRChatAPIClient().SubmitModerationReportAsync(rpt);
+            if (response != null)
             {
                 logger.Info($"Profile Report submitted - UserId: {userId}, Category: {category}, ReportReason: {reportReason}, Description: {reportDescription}");
+                await _serviceRegistry.GetPlayerManager().SaveModerationReport(rpt, response, userId, false);    
             }
             else
             {
                 logger.Warn($"Failed to submit profile report - UserId: {userId}, Category: {category}, ReportReason: {reportReason}, Description: {reportDescription}");
+                success = false;
             }
             return success;
         }
@@ -2032,10 +2115,10 @@ namespace Tailgrab.PlayerManagement
                 BanMgmtUserIdTextBox.Text = userId;
 
                 // Activate the Config tab (index 4) in main TabControl
-                MainTabControl.SelectedIndex = 4;
+                MainTabControl.SelectedIndex = CONST_CONFIG_TAB_INDEX;
 
                 // Activate the Ban Management tab (index 10) in Config TabControl
-                ConfigTabControl.SelectedIndex = 10;
+                ConfigTabControl.SelectedIndex = CONST_BAN_MGMT_TAB_INDEX;
 
                 // Call the load user function
                 BanMgmtLoadUser_Click(sender, e);
@@ -2134,8 +2217,7 @@ namespace Tailgrab.PlayerManagement
             catch (Exception ex)
             {
                 logger.Error(ex, "Failed to submit profile report");
-                System.Windows.MessageBox.Show($"Failed to submit report: {ex.Message}",
-                    "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                System.Windows.MessageBox.Show($"Failed to submit report: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
@@ -2152,13 +2234,14 @@ namespace Tailgrab.PlayerManagement
 
         private void PrintApplyFilter_Click(object sender, RoutedEventArgs e)
         {
-            ApplyFilter(PrintView, PrintFilterBox.Text);
+            ApplyPrintFilter();
         }
 
         private void PrintClearFilter_Click(object sender, RoutedEventArgs e)
         {
             PrintFilterBox.Text = string.Empty;
-            ApplyFilter(PrintView, string.Empty);
+            PrintAgeMinutesFilterBox.Text = string.Empty;
+            ApplyPrintFilter();
         }
 
         private void PrintFilterBySelected_Click(object sender, RoutedEventArgs e)
@@ -2166,8 +2249,66 @@ namespace Tailgrab.PlayerManagement
             if (SelectedPast != null)
             {
                 PrintFilterBox.Text = SelectedPast.DisplayName;
-                ApplyFilter(PrintView, PastFilterBox.Text);
+                ApplyPrintFilter();
             }
+        }
+
+        private void PrintAgeMinutesFilterBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            ApplyPrintFilter();
+        }
+
+        private void ApplyPrintFilter()
+        {
+            string textFilter = PrintFilterBox.Text?.Trim() ?? string.Empty;
+            bool hasTextFilter = !string.IsNullOrWhiteSpace(textFilter);
+
+            int? ageMinutesFilter = null;
+            if (int.TryParse(PrintAgeMinutesFilterBox.Text?.Trim(), out int parsedMinutes) && parsedMinutes is >= 1 and <= 60)
+            {
+                ageMinutesFilter = parsedMinutes;
+            }
+
+            if (!hasTextFilter && !ageMinutesFilter.HasValue)
+            {
+                PrintView.Filter = null;
+                PrintView.Refresh();
+                return;
+            }
+
+            PrintView.Filter = obj =>
+            {
+                if (obj is not PlayerViewModel pvm)
+                {
+                    return false;
+                }
+
+                if (hasTextFilter)
+                {
+                    if (textFilter.StartsWith("usr_", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (pvm.UserId?.IndexOf(textFilter, StringComparison.OrdinalIgnoreCase) < 0)
+                        {
+                            return false;
+                        }
+                    }
+                    else if (pvm.DisplayName?.IndexOf(textFilter, StringComparison.CurrentCultureIgnoreCase) < 0)
+                    {
+                        return false;
+                    }
+                }
+
+                if (ageMinutesFilter.HasValue)
+                {
+                    DateTime cutoff = DateTime.Now.AddMinutes(-ageMinutesFilter.Value);
+                    logger.Info(string.Format(cutoff.ToString("yyyy-MM-dd HH:mm:ss") + " cutoff for print filter"));
+                    return pvm.Prints.Any(print => print.Timestamp >= cutoff);
+                }
+
+                return true;
+            };
+
+            PrintView.Refresh();
         }
 
         private void PrintHyperlink_RequestNavigate(object? sender, System.Windows.Navigation.RequestNavigateEventArgs e)
@@ -2360,8 +2501,7 @@ namespace Tailgrab.PlayerManagement
             catch (Exception ex)
             {
                 logger.Error(ex, "Failed to submit print report");
-                System.Windows.MessageBox.Show($"Failed to submit report: {ex.Message}",
-                    "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                System.Windows.MessageBox.Show($"Failed to submit report: {ex.Message}", "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
             }
             finally
             {
@@ -2371,6 +2511,7 @@ namespace Tailgrab.PlayerManagement
 
         private async Task<bool> SubmitPrintReport(string userId, string printId, string category, string reportReason, string reportDescription)
         {
+            bool success = true;
             ModerationReportPayload rpt = new()
             {
                 Type = category,
@@ -2388,15 +2529,18 @@ namespace Tailgrab.PlayerManagement
             };
             rpt.Details = [rptDtls];
 
-            bool success = await _serviceRegistry.GetVRChatAPIClient().SubmitModerationReportAsync(rpt);
-            if (success)
+            ModerationReportResponse? report = await _serviceRegistry.GetVRChatAPIClient().SubmitModerationReportAsync(rpt);
+            if (report != null)
             {
                 logger.Info($"Print Report submitted - UserId: {userId}, Category: {category}, ReportReason: {reportReason}, Description: {reportDescription}");
+                await _serviceRegistry.GetPlayerManager().SaveModerationReport(rpt, report, userId, false);
             }
             else
             {
                 logger.Warn($"Failed to submit Print Report - UserId: {userId}, Category: {category}, ReportReason: {reportReason}, Description: {reportDescription}");
+                success = false;
             }
+
             return success;
         }
 
@@ -2558,13 +2702,14 @@ namespace Tailgrab.PlayerManagement
 
         private void EmojiApplyFilter_Click(object sender, RoutedEventArgs e)
         {
-            ApplyFilter(EmojiView, EmojiFilterBox.Text);
+            ApplyEmojiFilter();
         }
 
         private void EmojiClearFilter_Click(object sender, RoutedEventArgs e)
         {
             EmojiFilterBox.Text = string.Empty;
-            ApplyFilter(EmojiView, string.Empty);
+            EmojiAgeMinutesFilterBox.Text = string.Empty;
+            ApplyEmojiFilter();
         }
 
         private void EmojiFilterBySelected_Click(object sender, RoutedEventArgs e)
@@ -2572,8 +2717,66 @@ namespace Tailgrab.PlayerManagement
             if (SelectedPast != null)
             {
                 EmojiFilterBox.Text = SelectedPast.DisplayName;
-                ApplyFilter(EmojiView, PastFilterBox.Text);
+                ApplyEmojiFilter();
             }
+        }
+
+        private void EmojiAgeMinutesFilterBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            ApplyEmojiFilter();
+        }
+
+        private void ApplyEmojiFilter()
+        {
+            string textFilter = EmojiFilterBox.Text?.Trim() ?? string.Empty;
+            bool hasTextFilter = !string.IsNullOrWhiteSpace(textFilter);
+
+            int? ageMinutesFilter = null;
+            if (int.TryParse(EmojiAgeMinutesFilterBox.Text?.Trim(), out int parsedMinutes) && parsedMinutes is >= 1 and <= 60)
+            {
+                ageMinutesFilter = parsedMinutes;
+            }
+
+            if (!hasTextFilter && !ageMinutesFilter.HasValue)
+            {
+                EmojiView.Filter = null;
+                EmojiView.Refresh();
+                return;
+            }
+
+            EmojiView.Filter = obj =>
+            {
+                if (obj is not PlayerViewModel pvm)
+                {
+                    return false;
+                }
+
+                if (hasTextFilter)
+                {
+                    if (textFilter.StartsWith("usr_", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (pvm.UserId?.IndexOf(textFilter, StringComparison.OrdinalIgnoreCase) < 0)
+                        {
+                            return false;
+                        }
+                    }
+                    else if (pvm.DisplayName?.IndexOf(textFilter, StringComparison.CurrentCultureIgnoreCase) < 0)
+                    {
+                        return false;
+                    }
+                }
+
+                if (ageMinutesFilter.HasValue)
+                {
+                    DateTime cutoff = DateTime.Now.AddMinutes(-ageMinutesFilter.Value);
+                    logger.Info(string.Format(cutoff.ToString("yyyy-MM-dd HH:mm:ss") + " cutoff for emoji filter"));
+                    return pvm.Emojis.Any(emoji => emoji.SpawnedAt >= cutoff);
+                }
+
+                return true;
+            };
+
+            EmojiView.Refresh();
         }
 
         private void ReportInventory_Click(object sender, RoutedEventArgs e)
@@ -2748,8 +2951,7 @@ namespace Tailgrab.PlayerManagement
             catch (Exception ex)
             {
                 logger.Error(ex, "Failed to submit inventory report");
-                System.Windows.MessageBox.Show($"Failed to submit report: {ex.Message}",
-                    "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                System.Windows.MessageBox.Show($"Failed to submit report: {ex.Message}", "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
             }
             finally
             {
@@ -2776,15 +2978,18 @@ namespace Tailgrab.PlayerManagement
             };
             rpt.Details = [rptDtls];
 
-            bool success = await _serviceRegistry.GetVRChatAPIClient().SubmitModerationReportAsync(rpt);
-            if (success)
+            ModerationReportResponse? report = await _serviceRegistry.GetVRChatAPIClient().SubmitModerationReportAsync(rpt);
+            bool success = report != null;
+            if (report != null)
             {
                 logger.Info($"Inventory Report submitted - UserId: {userId}, Category: {category}, ReportReason: {reportReason}, Description: {reportDescription}");
+                await _serviceRegistry.GetPlayerManager().SaveModerationReport(rpt, report, userId, false);
             }
             else
             {
                 logger.Warn($"Failed to submit Inventory Report - UserId: {userId}, Category: {category}, ReportReason: {reportReason}, Description: {reportDescription}");
             }
+
             return success;
         }
 
@@ -2926,7 +3131,7 @@ namespace Tailgrab.PlayerManagement
             }
             catch (Exception ex)
             {
-                logger?.Error(ex, "Failed to open group URL");
+                logger.Error(ex, "Failed to open group URL");
             }
             e.Handled = true;
         }
@@ -2972,13 +3177,13 @@ namespace Tailgrab.PlayerManagement
 
         private void AvatarDbApplyFilter_Click(object sender, RoutedEventArgs e)
         {
-            ApplyAvatarDbFilter(AvatarDbView, AvatarDbFilterBox.Text);
+            ApplyAvatarDbFilter(AvatarDbFilterBox.Text);
         }
 
         private void AvatarDbClearFilter_Click(object sender, RoutedEventArgs e)
         {
             AvatarDbFilterBox.Text = string.Empty;
-            ApplyAvatarDbFilter(AvatarDbView, string.Empty);
+            ApplyAvatarDbFilter(string.Empty);
         }
 
         private void AvatarSelectionTextBox_Pasting(object sender, DataObjectPastingEventArgs e)
@@ -3010,7 +3215,7 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
-        private void ApplyAvatarDbFilter(ICollectionView view, string filterText)
+        private void ApplyAvatarDbFilter(string filterText)
         {
             // Push filter to database for better performance
             if (string.IsNullOrWhiteSpace(filterText))
@@ -3070,21 +3275,21 @@ namespace Tailgrab.PlayerManagement
             try
             {
                 VRChatClient vrcClient = _serviceRegistry.GetVRChatAPIClient();
-                Avatar? avatar = vrcClient.GetAvatarById(id);
-                if (avatar != null)
+                Result<Avatar?> result = vrcClient.GetAvatarById(id);
+                if (result.Value != null)
                 {
                     TailgrabDBContext dbContext = _serviceRegistry.GetDBContext();
-                    AvatarInfo? existing = dbContext.AvatarInfos.Find(avatar.Id);
+                    AvatarInfo? existing = dbContext.AvatarInfos.Find(result.Value.Id);
                     if (existing == null)
                     {
                         var newEntity = new Tailgrab.Models.AvatarInfo
                         {
-                            AvatarId = avatar.Id,
-                            UserId = avatar.AuthorId ?? string.Empty,
-                            UserName = avatar.AuthorName ?? string.Empty,
-                            AvatarName = avatar.Name ?? string.Empty,
-                            ImageUrl = avatar.ImageUrl ?? string.Empty,
-                            CreatedAt = avatar.CreatedAt,
+                            AvatarId = result.Value.Id,
+                            UserId = result.Value.AuthorId ?? string.Empty,
+                            UserName = result.Value.AuthorName ?? string.Empty,
+                            AvatarName = result.Value.Name ?? string.Empty,
+                            ImageUrl = result.Value.ImageUrl ?? string.Empty,
+                            CreatedAt = result.Value.CreatedAt,
                             UpdatedAt = DateTime.UtcNow,
                             AlertType = AlertTypeEnum.None
                         };
@@ -3093,17 +3298,17 @@ namespace Tailgrab.PlayerManagement
                     }
                     else
                     {
-                        existing.UserId = avatar.AuthorId ?? string.Empty;
-                        existing.AvatarName = avatar.Name ?? string.Empty;
-                        existing.ImageUrl = avatar.ImageUrl ?? string.Empty;
-                        existing.CreatedAt = avatar.CreatedAt;
+                        existing.UserId = result.Value.AuthorId ?? string.Empty;
+                        existing.AvatarName = result.Value.Name ?? string.Empty;
+                        existing.ImageUrl = result.Value.ImageUrl ?? string.Empty;
+                        existing.CreatedAt = result.Value.CreatedAt;
                         existing.UpdatedAt = DateTime.UtcNow;
                         dbContext.AvatarInfos.Update(existing);
                         dbContext.SaveChanges();
                     }
 
                     // Filter the view to the fetched group
-                    ApplyAvatarDbFilter(AvatarDbView, avatar.Name ?? string.Empty);
+                    ApplyAvatarDbFilter(result.Value.Name ?? string.Empty);
                     AvatarDbFilterBox.Text = string.Empty;
                 }
                 else
@@ -3206,13 +3411,13 @@ namespace Tailgrab.PlayerManagement
 
         private void GroupDbApplyFilter_Click(object sender, RoutedEventArgs e)
         {
-            ApplyGroupDbFilter(GroupDbView, GroupDbFilterBox.Text);
+            ApplyGroupDbFilter(GroupDbFilterBox.Text);
         }
 
         private void GroupDbClearFilter_Click(object sender, RoutedEventArgs e)
         {
             GroupDbFilterBox.Text = string.Empty;
-            ApplyGroupDbFilter(GroupDbView, string.Empty);
+            ApplyGroupDbFilter(string.Empty);
         }
 
         private void GroupSelectionTextBox_Pasting(object sender, DataObjectPastingEventArgs e)
@@ -3244,7 +3449,7 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
-        private void ApplyGroupDbFilter(ICollectionView view, string filterText)
+        private void ApplyGroupDbFilter(string filterText)
         {
             // Push filter to database for better performance
             if (string.IsNullOrWhiteSpace(filterText))
@@ -3287,12 +3492,12 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
-        private void GroupFetch_Click(object sender, RoutedEventArgs e)
+        private async void GroupFetch_Click(object sender, RoutedEventArgs e)
         {
             string? id = GroupDbFilterBox.Text?.Trim();
             if (string.IsNullOrEmpty(id)) return;
 
-            GroupInfo? existing = _serviceRegistry.GetPlayerManager().AddUpdateGroupFromVRC(id);
+            GroupInfo? existing = await _serviceRegistry.GetGroupManager().AddUpdateGroupFromVRC(id);
 
             if (existing == null)
             {
@@ -3301,7 +3506,7 @@ namespace Tailgrab.PlayerManagement
             else
             {
                 // Filter the view to the fetched Group
-                ApplyGroupDbFilter(GroupDbView, existing.GroupName ?? string.Empty);
+                ApplyGroupDbFilter(existing.GroupName ?? string.Empty);
 
                 // Populate the group information box
                 PopulateGroupInformation(existing.GroupId);
@@ -3375,41 +3580,44 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
-
         private async void PopulateAvatarInformation(string avatarId)
         {
             try
             {
+
                 // Get the full avatar information from VRChat API
                 VRChatClient vrcClient = _serviceRegistry.GetVRChatAPIClient();
-                VRChat.API.Model.Avatar? avatar = await Task.Run(() => vrcClient.GetAvatarById(avatarId));
+                Result<Avatar?> result = await Task.Run(() => vrcClient.GetAvatarById(avatarId));
 
-                if (avatar != null)
+                if (result.Value != null)
                 {
+                    UseAvatarButton.IsEnabled = true;
+                    SelectedAvatarId = result.Value.Id;
+
                     // Populate the UI fields
-                    BanMgmtAvatarName.Text = avatar.Name ?? string.Empty;
-                    BanMgmtPublishDate.Text = avatar.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss");
-                    BanMgmtUpdateDate.Text = avatar.UpdatedAt.ToString("yyyy-MM-dd HH:mm:ss");
-                    BanMgmtAvatarState.Text = avatar.ReleaseStatus.ToString();
+                    BanMgmtAvatarName.Text = result.Value.Name ?? "Unknown";
+                    BanMgmtPublishDate.Text = result.Value.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss");
+                    BanMgmtUpdateDate.Text = result.Value.UpdatedAt.ToString("yyyy-MM-dd HH:mm:ss");
+                    BanMgmtAvatarState.Text = result.Value.ReleaseStatus.ToString();
 
 
-                    VRChat.API.Model.User? user = await Task.Run(() => vrcClient.GetProfile(avatar.AuthorId));
+                    VRChat.API.Model.User? user = await Task.Run(() => vrcClient.GetProfile(result.Value.AuthorId));
 
-                    BanMgmtAvatarOwner.Text = user.DisplayName ?? string.Empty;
-                    BanMgmtAvatarOwnerId.Text = avatar.AuthorId ?? string.Empty;
-                    BanMgmtAvatarDesc.Text = avatar.Description ?? string.Empty;
+                    BanMgmtAvatarOwner.Text = user.DisplayName ?? "Unknown";
+                    BanMgmtAvatarOwnerId.Text = result.Value.AuthorId ?? string.Empty;
+                    BanMgmtAvatarDesc.Text = result.Value.Description ?? string.Empty;
 
                     // Enable the Ban Owner button if we have an owner ID
-                    BanAvatarOwnerButton.IsEnabled = !string.IsNullOrWhiteSpace(avatar.AuthorId);
+                    BanAvatarOwnerButton.IsEnabled = !string.IsNullOrWhiteSpace(result.Value.AuthorId);
 
                     // Load avatar image
-                    if (!string.IsNullOrEmpty(avatar.ImageUrl))
+                    if (!string.IsNullOrEmpty(result.Value.ImageUrl))
                     {
                         try
                         {
                             var bitmap = new System.Windows.Media.Imaging.BitmapImage();
                             bitmap.BeginInit();
-                            bitmap.UriSource = new Uri(avatar.ImageUrl);
+                            bitmap.UriSource = new Uri(result.Value.ImageUrl);
                             bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
                             bitmap.EndInit();
                             BanMgmtAvatarImage.Source = bitmap;
@@ -3448,7 +3656,19 @@ namespace Tailgrab.PlayerManagement
             BanMgmtAvatarDesc.Text = string.Empty;
             BanMgmtAvatarImage.Source = null;
             BanAvatarOwnerButton.IsEnabled = false;
+            UseAvatarButton.IsEnabled = false;
+            SelectedAvatarId = string.Empty;
         }
+
+        private async void UseAvatarButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!string.IsNullOrWhiteSpace(SelectedAvatarId))
+            {
+                // Call the load user function
+                await _serviceRegistry.GetAvatarManager().SwitchAvatar(SelectedAvatarId);
+            }
+        }
+
 
         private void GroupDbGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -3464,7 +3684,8 @@ namespace Tailgrab.PlayerManagement
             {
                 // Get the full group information from VRChat API
                 VRChatClient vrcClient = _serviceRegistry.GetVRChatAPIClient();
-                VRChat.API.Model.Group? group = await Task.Run(() => vrcClient.GetGroupById(groupId));
+                Result<VRChat.API.Model.Group?> groupResult = await Task.Run(() => vrcClient.GetGroupById(groupId));
+                VRChat.API.Model.Group? group = groupResult.Value;
 
                 if (group != null)
                 {
@@ -3622,16 +3843,16 @@ namespace Tailgrab.PlayerManagement
 
         private void UserDbApplyFilter_Click(object sender, RoutedEventArgs e)
         {
-            ApplyUserDbFilter(UserDbView, UserDbFilterBox.Text);
+            ApplyUserDbFilter(UserDbFilterBox.Text);
         }
 
         private void UserDbClearFilter_Click(object sender, RoutedEventArgs e)
         {
             UserDbFilterBox.Text = string.Empty;
-            ApplyUserDbFilter(UserDbView, string.Empty);
+            ApplyUserDbFilter(string.Empty);
         }
 
-        private void ApplyUserDbFilter(ICollectionView view, string filterText)
+        private void ApplyUserDbFilter(string filterText)
         {
             // Push filter to database for better performance
             if (string.IsNullOrWhiteSpace(filterText))
@@ -3767,6 +3988,145 @@ namespace Tailgrab.PlayerManagement
                 }
             }
         }
+
+        //
+        // Moderation DB UI handlers
+        #region Moderation DB handlers
+        private void ModerationDbRefresh_Click(object sender, RoutedEventArgs e)
+        {
+            RefreshModerationDb();
+        }
+
+        private void ModerationDbApplyFilter_Click(object sender, RoutedEventArgs e)
+        {
+            ApplyModerationDbFilter(ModerationUserIdFilterBox.Text, ModerationContentIdFilterBox.Text);
+        }
+
+        private void ModerationDbClearFilter_Click(object sender, RoutedEventArgs e)
+        {
+            ModerationUserIdFilterBox.Text = string.Empty;
+            ModerationContentIdFilterBox.Text = string.Empty;
+            ApplyModerationDbFilter(string.Empty, string.Empty);
+        }
+
+        private void ApplyModerationDbFilter(string userIdFilter, string contentIdFilter)
+        {
+            if (string.IsNullOrWhiteSpace(userIdFilter) && string.IsNullOrWhiteSpace(contentIdFilter))
+            {
+                ModerationDbItems.SetFilter(null, null);
+            }
+            else
+            {
+                ModerationDbItems.SetFilter(
+                    string.IsNullOrWhiteSpace(userIdFilter) ? null : userIdFilter.Trim(),
+                    string.IsNullOrWhiteSpace(contentIdFilter) ? null : contentIdFilter.Trim()
+                );
+            }
+        }
+
+        public void RefreshModerationDb()
+        {
+            try
+            {
+                ModerationDbItems.Refresh();
+            }
+            catch { }
+        }
+
+        private void ModerationDbGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (ModerationDbGrid.SelectedItem is ModerationInfoViewModel selectedReport)
+            {
+                PopulateModerationInformation(selectedReport);
+            }
+        }
+
+        private void PopulateModerationInformation(ModerationInfoViewModel report)
+        {
+            try
+            {
+                ModerationReportId.Text = report.Id;
+                ModerationReportContentType.Text = report.ContentType;
+                ModerationReportUserId.Text = report.UserId;
+                ModerationReportContentId.Text = report.ContentId;
+                ModerationReportContentName.Text = report.ContentName;
+                ModerationReportEventDateTime.Text = report.EventDateTime.ToString("yyyy-MM-dd HH:mm:ss");
+                ModerationReportCloseDate.Text = report.CloseDate?.ToString("yyyy-MM-dd HH:mm:ss") ?? "Not Closed";
+                ModerationReportText.Text = report.Report;
+                ModerationReportStatus.Text = report.IsDeleted ? "Deleted" : report.IsClosed ? "Closed" : "Open";
+
+                if (!string.IsNullOrWhiteSpace(report.Thumbnail))
+                {
+                    try
+                    {
+                        var bitmap = new System.Windows.Media.Imaging.BitmapImage();
+                        bitmap.BeginInit();
+                        bitmap.UriSource = new Uri(report.Thumbnail);
+                        bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                        bitmap.EndInit();
+                        ModerationReportThumbnail.Source = bitmap;
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.Error(ex, $"Failed to load moderation thumbnail for report {report.Id}");
+                        ModerationReportThumbnail.Source = null;
+                    }
+                }
+                else
+                {
+                    ModerationReportThumbnail.Source = null;
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to populate moderation report information");
+                ClearModerationInformation();
+            }
+        }
+
+        private void ClearModerationInformation()
+        {
+            ModerationReportId.Text = string.Empty;
+            ModerationReportContentType.Text = string.Empty;
+            ModerationReportUserId.Text = string.Empty;
+            ModerationReportContentId.Text = string.Empty;
+            ModerationReportContentName.Text = string.Empty;
+            ModerationReportEventDateTime.Text = string.Empty;
+            ModerationReportCloseDate.Text = string.Empty;
+            ModerationReportText.Text = string.Empty;
+            ModerationReportStatus.Text = string.Empty;
+            ModerationReportThumbnail.Source = null;
+        }
+
+        private async void DeleteModerationReport_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is System.Windows.Controls.Button button && button.Tag is ModerationInfoViewModel report)
+            {
+                try
+                {
+                    // TODO: Implement VRCClient call to delete moderation report
+                    VRChatClient vrcClient = _serviceRegistry.GetVRChatAPIClient();
+                    await vrcClient.DeleteModerationReportAsync(report.Id);
+
+                    // Update local database to mark as deleted
+                    var db = _serviceRegistry.GetDBContext();
+                    var entity = db.ModerationInfos.Find(report.Id);
+                    if (entity != null)
+                    {
+                        entity.IsDeleted = true;
+                        entity.DeletedDate = DateTime.UtcNow;
+                        db.SaveChanges();
+                        RefreshModerationDb();
+                    }                    
+                }
+                catch (Exception ex)
+                {
+                    logger.Error(ex, $"Failed to delete moderation report {report.Id}");
+                }
+            }
+        }
+
+        #endregion
 
         private void UserSelectionTextBox_Pasting(object sender, DataObjectPastingEventArgs e)
         {
@@ -4042,13 +4402,23 @@ namespace Tailgrab.PlayerManagement
         {
             foreach (var column in dataGrid.Columns)
             {
-                string columnName = column.Header?.ToString() ?? "";
-                if (!string.IsNullOrEmpty(columnName) && defaults.TryGetValue(columnName, out double value))
+                var dpd = DependencyPropertyDescriptor.FromProperty(
+                    DataGridColumn.ActualWidthProperty,
+                    typeof(DataGridColumn));
+
+                dpd?.AddValueChanged(column, (s, e) =>
                 {
-                    double width = WindowLayoutManager.LoadColumnWidth(
-                        $"{dataGrid.Name}_{columnName}", value);
-                    column.Width = new DataGridLength(width);
-                }
+                    if (s is DataGridColumn col)
+                    {
+                        string columnName = col.Header?.ToString() ?? "";
+                        if (!string.IsNullOrEmpty(columnName))
+                        {
+                            WindowLayoutManager.SaveColumnWidth(
+                                $"{dataGrid.Name}_{columnName}",
+                                col.ActualWidth);
+                        }
+                    }
+                });
             }
         }
 
@@ -4366,8 +4736,9 @@ namespace Tailgrab.PlayerManagement
                         bitmap.EndInit();
                         BanMgmtUserImage.Source = bitmap;
                     }
-                    catch
+                    catch (Exception ex)
                     {
+                        logger.Error(ex, $"Failed to load Avatar image for User {userId}");
                         BanMgmtUserImage.Source = null;
                     }
                 }
@@ -4393,6 +4764,35 @@ namespace Tailgrab.PlayerManagement
                 BanMgmtUserStatusText.Foreground = System.Windows.Media.Brushes.Red;
             }
         }
+
+        private void BanMgmtReportUser_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                string userId = BanMgmtUserIdTextBox.Text.Trim();
+
+                if (string.IsNullOrWhiteSpace(userId))
+                {
+                    System.Windows.MessageBox.Show("Please enter a User ID first.", "Validation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                if (!userId.StartsWith("usr_"))
+                {
+                    System.Windows.MessageBox.Show("Invalid User ID format (must start with usr_).", "Validation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                    ShowProfileReportOverlay(userId);
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to open Report Profile overlay");
+                System.Windows.MessageBox.Show($"Failed to open Report Profile overlay: {ex.Message}",
+                    "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+            }
+        }
+
 
         private void BanMgmtCheckGroups_Click(object sender, RoutedEventArgs e)
         {
@@ -4490,14 +4890,14 @@ namespace Tailgrab.PlayerManagement
 
                 if (string.IsNullOrWhiteSpace(groupId))
                 {
-                    System.Windows.MessageBox.Show("Please enter a Group ID", 
+                    System.Windows.MessageBox.Show("Please enter a Group ID",
                         "Invalid Input", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
 
                 if (!groupId.StartsWith("grp_"))
                 {
-                    System.Windows.MessageBox.Show("Invalid Group ID format (must start with grp_)", 
+                    System.Windows.MessageBox.Show("Invalid Group ID format (must start with grp_)",
                         "Invalid Input", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
@@ -4507,16 +4907,17 @@ namespace Tailgrab.PlayerManagement
 
                 if (existingGroup != null)
                 {
-                    System.Windows.MessageBox.Show("This group already exists in the database", 
+                    System.Windows.MessageBox.Show("This group already exists in the database",
                         "Duplicate Group", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
 
                 // Verify group exists in VRChat
-                var group = _serviceRegistry.GetVRChatAPIClient().GetGroupById(groupId);
-                if (group == null || string.IsNullOrEmpty(group.Id))
+                Result<VRChat.API.Model.Group?> groupResult = _serviceRegistry.GetVRChatAPIClient().GetGroupById(groupId);
+                VRChat.API.Model.Group? group = groupResult.Value;
+                if (!groupResult.HasException && string.IsNullOrEmpty(groupResult.Value?.Id))
                 {
-                    System.Windows.MessageBox.Show("Group not found in VRChat. Please verify the Group ID.", 
+                    System.Windows.MessageBox.Show("Group not found in VRChat. Please verify the Group ID.",
                         "Group Not Found", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
@@ -4525,7 +4926,7 @@ namespace Tailgrab.PlayerManagement
                 var newGroup = new tailgrab.src.Models.GroupManagement
                 {
                     GroupId = groupId,
-                    GroupName = group.Name ?? "Unknown",
+                    GroupName = group?.Name ?? "Unknown",
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
                 };
@@ -4537,7 +4938,7 @@ namespace Tailgrab.PlayerManagement
                 var item = new GroupBanItem
                 {
                     GroupId = groupId,
-                    GroupName = group.Name ?? "Unknown",
+                    GroupName = group?.Name ?? "Unknown",
                     Status = "Checking...",
                     CanBan = false,
                     CanUnban = false
@@ -4562,14 +4963,14 @@ namespace Tailgrab.PlayerManagement
                 // Clear the text box
                 BanMgmtAddGroupIdTextBox.Text = string.Empty;
 
-                logger.Info($"Added group {groupId} ({group.Name}) to ban management");
-                System.Windows.MessageBox.Show($"Group '{group.Name}' added successfully", 
+                logger.Info($"Added group {groupId} ({group?.Name}) to ban management");
+                System.Windows.MessageBox.Show($"Group '{group?.Name}' added successfully",
                     "Success", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
                 logger.Error(ex, "Error adding group to ban management");
-                System.Windows.MessageBox.Show($"Error: {ex.Message}", 
+                System.Windows.MessageBox.Show($"Error: {ex.Message}",
                     "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
@@ -4610,7 +5011,7 @@ namespace Tailgrab.PlayerManagement
             catch (Exception ex)
             {
                 logger.Error(ex, "Error removing group from ban management");
-                System.Windows.MessageBox.Show($"Error: {ex.Message}", 
+                System.Windows.MessageBox.Show($"Error: {ex.Message}",
                     "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
@@ -4871,7 +5272,7 @@ namespace Tailgrab.PlayerManagement
                 UserGroupsOverlay.Visibility = Visibility.Visible;
 
                 // Fetch groups asynchronously (already async, no need for Task.Run)
-                var groups = await LoadUserGroupsAsync(userId);
+                List<UserGroupViewModel> groups = await _serviceRegistry.GetGroupManager().LoadUserGroupsAsync(userId);
 
                 // Update UI (already on UI thread)
                 UserGroupsDataGrid.ItemsSource = groups;
@@ -4885,97 +5286,6 @@ namespace Tailgrab.PlayerManagement
                 System.Windows.MessageBox.Show($"Failed to load user groups: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 UserGroupsOverlay.Visibility = Visibility.Collapsed;
             }
-        }
-
-        private async Task<List<UserGroupViewModel>> LoadUserGroupsAsync(string userId)
-        {
-            var groupViewModels = new List<UserGroupViewModel>();
-
-            try
-            {
-                VRChatClient vrcClient = _serviceRegistry.GetVRChatAPIClient();
-
-                // Fetch groups from API on background thread
-                List<LimitedUserGroups> userGroups = await Task.Run(() => vrcClient.GetProfileGroups(userId));
-                logger.Info($"Fetched {userGroups?.Count ?? 0} groups for user {userId}");
-
-                if (userGroups == null || userGroups.Count == 0)
-                {
-                    logger.Info($"No groups found for user {userId}");
-                    return groupViewModels;
-                }
-
-                // Fetch DB data on background thread
-                var dbContext = _serviceRegistry.GetDBContext();
-                var dbGroupData = await Task.Run(() =>
-                {
-                    var data = new List<(string groupId, bool exists, AlertTypeEnum alertType)>();
-                    foreach (var group in userGroups)
-                    {
-                        var existingGroup = dbContext.GroupInfos.Find(group.GroupId);
-                        if (existingGroup != null)
-                        {
-                            data.Add((group.GroupId ?? string.Empty, true, existingGroup.AlertType));
-                        }
-                        else
-                        {
-                            data.Add((group.GroupId ?? string.Empty, false, AlertTypeEnum.None));
-                        }
-                    }
-                    return data;
-                });
-
-                // Create view models on UI thread (required for WPF Brush creation in UpdateAlertColors)
-                foreach (var group in userGroups)
-                {
-                    try
-                    {
-
-                        VRChat.API.Model.Group? fullGroup = await Task.Run(() => vrcClient.GetGroupById(group.GroupId));
-
-                        var vm = new UserGroupViewModel
-                        {
-                            GroupId = group.GroupId ?? string.Empty,
-                            Name = group.Name ?? string.Empty,
-                            BannerUrl = group.BannerUrl ?? "https://assets.vrchat.com/www/groups/default_banner.png",
-                            IconUrl = group.IconUrl ?? "https://assets.vrchat.com/www/groups/default_banner.png",
-                            ShortCode = $"{group.ShortCode}.{group.Discriminator}",
-                            Description = fullGroup?.Description ?? string.Empty,
-                            Rules = fullGroup?.Rules ?? string.Empty,
-                            JoinState = fullGroup?.JoinState.ToString() ?? "N/A",
-                            MemberCount = fullGroup?.MemberCount ?? 0,
-                            OwnerId = fullGroup?.OwnerId ?? string.Empty,
-                            IsOwnedByUser = (fullGroup?.OwnerId ?? string.Empty) == userId
-                        };
-
-                        // Apply DB data
-                        var dbInfo = dbGroupData.FirstOrDefault(d => d.groupId == vm.GroupId);
-                        vm.ExistsInDatabase = dbInfo.exists;
-                        vm.AlertType = dbInfo.alertType;
-                        vm.DatabaseAlertType = dbInfo.alertType;
-
-                        // UpdateAlertColors creates WPF Brushes - must be on UI thread
-                        vm.UpdateAlertColors();
-
-                        groupViewModels.Add(vm);
-                    }
-                    catch (Exception ex)
-                    {
-                        logger.Error(ex, $"Error processing group {group.Id} for user {userId}");
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex, $"Error loading user groups for {userId}");
-                throw;
-            }
-
-            return groupViewModels
-                .OrderByDescending(g => g.IsOwnedByUser)
-                .ThenByDescending(g => g.AlertType)
-                .ThenBy(g => g.Name)
-                .ToList();
         }
 
         private void UserGroupsOverlayClose_Click(object sender, RoutedEventArgs e)
@@ -5101,13 +5411,46 @@ namespace Tailgrab.PlayerManagement
         public string ProfileElapsedTime { get; private set; } = "N/A";
         public bool IsWatched { get; set; } = false;
         public string History { get; set; } = string.Empty;
-        public string AlertMessages { get; set; } = string.Empty;
+        public List<AlertDisplayItem> AlertMessages { get; set; } = [];
         public ObservableCollection<PrintInfoViewModel> Prints { get; private set; } = [];
         public ObservableCollection<EmojiInfoViewModel> Emojis { get; private set; } = [];
         private bool IsFriend {  get; set; }
         public string ProfileUrl { get; set; }
-        public string UserTrust { get; set; }
+        public TrustClassEnum UserTrustClass { get; set; }
 
+        public AgeVerificationEnum AgeVerified { get; set; }
+
+        public System.Windows.Media.Geometry UserTrustIconGeometry
+        {
+            get
+            {
+                return TrustClassEnumMapper.MapEnumToIcon(UserTrustClass);
+            }
+        }
+
+        public System.Windows.Media.Brush UserTrustIconBrush
+        {
+            get
+            {
+                return TrustClassEnumMapper.MapEnumToBrush(UserTrustClass);
+            }
+        }
+
+        public System.Windows.Media.Geometry AgeVerifiedIconGeometry
+        {
+            get
+            {
+                return AgeVerificationEnumMapper.MapEnumToIcon(AgeVerified);
+            }
+        }
+
+        public System.Windows.Media.Brush AgeVerifiedIconBrush
+        {
+            get
+            {
+                return AgeVerificationEnumMapper.MapEnumToBrush(AgeVerified);
+            }
+        }
 
         private string _AlertColor = "Normal";
         public string HighlightClass
@@ -5138,11 +5481,12 @@ namespace Tailgrab.PlayerManagement
             AIEval = p.AIEval ?? "Not Evaluated";
             ProfileElapsedTime = p.ProfileElapsedTime;
             IsWatched = p.IsWatched;
-            AlertMessages = p.AlertMessage;
+            AlertMessages = p.AlertMessages;
             _AlertColor = p.AlertColor;
             IsFriend = p.IsFriend;
             ProfileUrl = p.ProfileImage;
-            UserTrust = p.UserTrust;
+            UserTrustClass = p.UserTrustClass;
+            AgeVerified = p.AgeVerified;
 
 
             PopulateCollectionsFromPlayer(p); ;
@@ -5167,11 +5511,12 @@ namespace Tailgrab.PlayerManagement
             if (AIEval != (p.AIEval ?? "Not Evaluated")) { AIEval = p.AIEval ?? "Not Evaluated"; changed = true; }
             if (ProfileElapsedTime != p.ProfileElapsedTime) { ProfileElapsedTime = p.ProfileElapsedTime; changed = true; }
             if (IsWatched != p.IsWatched) { IsWatched = p.IsWatched; changed = true; }
-            if (AlertMessages != p.AlertMessage) { AlertMessages = p.AlertMessage ?? string.Empty; changed = true; }
+            if (AlertMessages != p.AlertMessages) { AlertMessages = p.AlertMessages; changed = true; }
             if (_AlertColor != p.AlertColor) { _AlertColor = p.AlertColor; changed = true; }
             if (IsFriend != p.IsFriend) { IsFriend = p.IsFriend; changed = true; }
             if (ProfileUrl != p.ProfileImage) { ProfileUrl = p.ProfileImage; changed = true; }
-            if (UserTrust != p.UserTrust) { UserTrust = p.UserTrust; changed = true; }
+            if (UserTrustClass != p.UserTrustClass) { UserTrustClass = p.UserTrustClass; changed = true; }
+            if (AgeVerified != p.AgeVerified) { AgeVerified = p.AgeVerified; changed = true; }
 
             if (changed) OnPropertyChanged(string.Empty);
 
@@ -5195,12 +5540,14 @@ namespace Tailgrab.PlayerManagement
             sb.AppendLine($"Emojis (Count): {Emojis.Count}");
             sb.AppendLine($"History: {History}");
             sb.AppendLine($"AlertColor: {_AlertColor}");
-            sb.AppendLine($"AlertMessages: {AlertMessages}");
+            sb.AppendLine($"AlertMessages (Count): {AlertMessages.Count}");
             sb.AppendLine($"IsFriend: {IsFriend}");
             sb.AppendLine($"ProfileUrl: {ProfileUrl}");
-            sb.AppendLine($"UserTrust: {UserTrust}");
+            sb.AppendLine($"UserTrustClass: {UserTrustClass}");
+            sb.AppendLine($"AgeVerified: {AgeVerified}");
             return sb.ToString();
         }
+
         private void PopulateCollectionsFromPlayer(Player p)
         {
             // Print Collection
@@ -5242,6 +5589,7 @@ namespace Tailgrab.PlayerManagement
         public string PrintUrl { get; set; } = p.PrintUrl;
         public string AIEvaluation { get; set; } = p.AIEvaluation;
         public string AIClass { get; set; } = p.AIClass;
+        public AlertDisplayItem AlertInfo { get; set; } = p.AlertInfo;
         public string AuthorName { get; set; } = p.AuthorName;
 
         public event PropertyChangedEventHandler? PropertyChanged;
@@ -5260,22 +5608,22 @@ namespace Tailgrab.PlayerManagement
         public string ImageUrl { get; set; } = i.ItemUrl;
         public string InventoryType { get; set; } = i.InventoryType;
         public string AIEvalutation { get; set; } = i.AIEvaluation;
+        public string EvaluatedText { get; set; } = i.EvaluatedText;
+        public AlertDisplayItem AlertInfo { get; set; } = i.AlertInfo;
     }
 
-    public class TailTaskViewModel : INotifyPropertyChanged
+    public class TailTaskViewModel(FileTailStatus? status) : INotifyPropertyChanged
     {
-        private readonly FileTailStatus _status;
+        private readonly FileTailStatus? _status = status;
 
-        public string FilePath => _status.FilePath;
-        public string FileName => Path.GetFileName(_status.FilePath);
-        public DateTime StartTime => _status.StartTime;
-        public int LinesProcessed => _status.LinesProcessed;
-        public DateTime? LastLineProcessedTime => _status.LastLineProcessedTime;
+        public string FilePath => _status?.FilePath ?? string.Empty;
+        public string FileName => _status != null ? Path.GetFileName(_status.FilePath) : string.Empty;
+        public DateTime StartTime => _status?.StartTime ?? DateTime.MinValue;
+        public int LinesProcessed => _status?.LinesProcessed ?? 0;
+        public DateTime? LastLineProcessedTime => _status?.LastLineProcessedTime;
 
         public string LastLineProcessedTimeFormatted => 
             LastLineProcessedTime.HasValue ? LastLineProcessedTime.Value.ToString("u") : "N/A";
-
-        public TailTaskViewModel(FileTailStatus status) => _status = status;
 
         public void UpdateFromStatus()
         {
@@ -5286,7 +5634,7 @@ namespace Tailgrab.PlayerManagement
 
         public void RequestCancellation()
         {
-            _status.RequestCancellation();
+            _status?.RequestCancellation();
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;

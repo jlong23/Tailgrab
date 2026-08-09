@@ -2,6 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using NLog;
 using System.IO;
+using Tailgrab.Clients.VRCDB;
 using Tailgrab.Clients.Ollama;
 using Tailgrab.Clients.VRChat;
 using Tailgrab.Clients.XSOverlay;
@@ -20,10 +21,19 @@ namespace Tailgrab
         VRChatClient vrcAPIClient = new VRChatClient();
         PlayerManager? playerManager = null;
         OllamaClient? ollamaAPIClient = null;
-        AvatarBosGistListManager? avatarGistMgr = null;
-        GroupBosGistListManager? groupGistMgr = null;
         OverlayManager xsOverlay = new OverlayManager();
+        InventoryManager? inventoryManager = null;
+        PrintManager? printManager = null;   
+        AIEvaluationManager? aiEvaluationManager = null;
+        AvatarManager? avatarManager = null;
+        GroupManager? groupManager = null;
         ServiceCollection services = new ServiceCollection();
+        private VRCDBClient _VRCDBClient = new VRCDBClient();
+
+        public VRCDBClient GetVRCDBClient()
+        {
+            return _VRCDBClient;
+        }
 
         public ServiceRegistry()
         {
@@ -62,28 +72,42 @@ namespace Tailgrab
                 logger.Info("Starting Player Manager...");
                 playerManager = new PlayerManager(this);
 
+                logger.Info("Starting Inventory Manager...");
+                inventoryManager = new InventoryManager(this);
+
+                logger.Info("Starting AI Evaluation Manager...");
+                aiEvaluationManager = new AIEvaluationManager(this);
+
+                logger.Info("Starting Print Manager...");
+                printManager = new PrintManager(this);
+
+                logger.Info("Starting Avatar Manager...");
+                avatarManager = new AvatarManager(this);
+                _ = Task.Run(() => avatarManager.ProcessAvatarGistList());
+
                 bool saveAvatars = ConfigStore.GetStoredKeyBool(CommonConst.Registry_Moderated_Avatar_Caching, true);
                 if (saveAvatars)
                 {
                     logger.Info("Syncing avatar moderations...");
-                    playerManager.SyncAvatarModerations();
+                    avatarManager.SyncAvatarModerations();
                 }
 
-                logger.Info("Starting Avatar GIST Manager...");
-                avatarGistMgr = new AvatarBosGistListManager();
-                _ = Task.Run(() => avatarGistMgr.ProcessAvatarGistList());
-
-                logger.Info("Starting Group GIST Manager...");
-                groupGistMgr = new GroupBosGistListManager(dbContext, playerManager);
-                _ = Task.Run(() => groupGistMgr.ProcessGroupGistList());
+                logger.Info("Starting Group Manager...");
+                groupManager = new GroupManager(this);
+                _ = Task.Run(() => groupManager.ProcessGroupGistList( null, false ));
 
                 logger.Info("All services started.");
+
+                await playerManager.GetModerationReports(false);
+                await playerManager.GetModerationReports(true);
+
             }
             catch (Exception ex)
             {
                 logger.Error(ex);
             }
         }
+
 
         public VRChatClient GetVRChatAPIClient()
         {
@@ -124,33 +148,78 @@ namespace Tailgrab
             return xsOverlay;
         }
 
-        public async void ProcessAvatarGist()
+        public InventoryManager GetInventoryManager()
         {
-            if (avatarGistMgr == null)
+            if (inventoryManager == null)
+            {
+                throw new InvalidOperationException("Inventory Manager has not been initialized. Call StartAllServices() first.");
+            }
+            return inventoryManager;
+        }
+
+        public AIEvaluationManager GetAIEvaluationManager()
+        {
+            if (aiEvaluationManager == null)
+            {
+                throw new InvalidOperationException("AI Evaluation Manager has not been initialized. Call StartAllServices() first.");
+            }
+            return aiEvaluationManager;
+        }
+
+        public PrintManager GetPrintManager()
+        {
+            if (printManager == null)
+            {
+                throw new InvalidOperationException("Print Manager has not been initialized. Call StartAllServices() first.");
+            }
+            return printManager;
+        }
+
+        public AvatarManager GetAvatarManager()
+        {
+            if (avatarManager == null)
+            {
+                throw new InvalidOperationException("Avatar Manager has not been initialized. Call StartAllServices() first.");
+            }
+            return avatarManager;
+        }
+
+        public GroupManager GetGroupManager()
+        {
+            if (groupManager == null)
+            {
+                throw new InvalidOperationException("Group Manager has not been initialized. Call StartAllServices() first.");
+            }
+            return groupManager;
+        }
+
+        public async Task ProcessAvatarGist()
+        {
+            if (avatarManager == null)
             {
                 logger.Info("Avatar GIST Manager not initialized, creating new instance...");
-                avatarGistMgr = new AvatarBosGistListManager();
+                avatarManager = new AvatarManager(this);
             }
 
             logger.Info("Processing Avatar GIST list on demand...");
-            await avatarGistMgr.ProcessAvatarGistList();
+            await avatarManager.ProcessAvatarGistList();
             logger.Info("Avatar GIST list processing completed.");
         }
 
-        public async void ProcessGroupGist()
+        public async Task ProcessGroupGist( string gistUrl, bool ignoreChecksum )
         {
-            if (groupGistMgr == null)
+            if (groupManager == null)
             {
                 if (dbContext == null || playerManager == null)
                 {
                     throw new InvalidOperationException("Database context and Player Manager must be initialized before processing Group GIST.");
                 }
-                logger.Info("Group GIST Manager not initialized, creating new instance...");
-                groupGistMgr = new GroupBosGistListManager(dbContext, playerManager);
+                logger.Info("Group Manager not initialized, creating new instance...");
+                groupManager = new GroupManager(this);
             }
 
             logger.Info("Processing Group GIST list on demand...");
-            await groupGistMgr.ProcessGroupGistList();
+            await groupManager.ProcessGroupGistList( gistUrl, ignoreChecksum );
             logger.Info("Group GIST list processing completed.");
         }
     }

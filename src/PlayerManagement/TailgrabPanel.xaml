@@ -134,7 +134,7 @@ Title="Tailgrab Player Panel"
                             <ColumnDefinition Width="357*"/>
                         </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="20*"/>
+                            <RowDefinition Height="Auto"/>
                             <RowDefinition Height="267*"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition x:Name="ActivePlayerGridRow" Height="*" MinHeight="100"/>
@@ -189,7 +189,22 @@ Title="Tailgrab Player Panel"
                                         </GridViewColumn.Header>
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate>
-                                                <TextBlock Text="{Binding UserTrust, Mode=OneWay}" TextAlignment="Left"/>
+                                                <Border ClipToBounds="True" ToolTip="{Binding UserTrust}">
+                                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                        <Viewbox Width="16" Height="16">
+                                                            <Path Data="{Binding UserTrustIconGeometry}" 
+                                                                  Fill="{Binding UserTrustIconBrush}"
+                                                                  Stroke="White"
+                                                                  StrokeThickness="0.5"/>
+                                                        </Viewbox>
+                                                        <Viewbox Width="16" Height="16">
+                                                            <Path Data="{Binding AgeVerifiedIconGeometry}" 
+                                                                  Fill="{Binding AgeVerifiedIconBrush}"
+                                                                  Stroke="White"
+                                                                  StrokeThickness="0.5"/>
+                                                        </Viewbox>
+                                                    </StackPanel>
+                                                </Border>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
@@ -222,7 +237,37 @@ Title="Tailgrab Player Panel"
                                         </GridViewColumn.Header>
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate>
-                                                <TextBlock Text="{Binding AlertMessages}" />
+                                                <Border ClipToBounds="True" TextElement.Foreground="Black"
+                                                        ToolTip="{Binding AlertMessages.Count}">
+                                                    <ItemsControl ItemsSource="{Binding AlertMessages}">
+                                                        <ItemsControl.ItemsPanel>
+                                                            <ItemsPanelTemplate>
+                                                                <StackPanel Orientation="Horizontal"/>
+                                                            </ItemsPanelTemplate>
+                                                        </ItemsControl.ItemsPanel>
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <StackPanel Orientation="Horizontal" Margin="0,0,5,0"
+                                                                            ToolTip="{Binding IconClass}">
+                                                                    <Viewbox Width="16" Height="16" 
+                                                                             VerticalAlignment="Center"
+                                                                             Margin="0,0,4,0">
+                                                                        <Canvas Width="24" Height="24">
+                                                                            <Path Data="{Binding IconGeometry}" 
+                                                                                  Fill="{Binding IconBrush}"/>
+                                                                        </Canvas>
+                                                                    </Viewbox>
+                                                                    <TextBlock Text="{Binding Description}" 
+                                                                               VerticalAlignment="Center"
+                                                                               TextWrapping="NoWrap"
+                                                                               FontWeight="Bold"
+                                                                               FontSize="12"
+                                                                               Foreground="{Binding RelativeSource={RelativeSource AncestorType=ListViewItem}, Path=Foreground}"/>
+                                                                </StackPanel>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                </Border>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
@@ -340,113 +385,29 @@ Title="Tailgrab Player Panel"
                                 <TextBox Name="UserAlertsBox" TextWrapping="Wrap" Text="{Binding SelectedActive.History, Mode=OneWay, FallbackValue='', TargetNullValue=''}" />
                             </ScrollViewer>
                         </Grid>
-
-                        <!-- Overlay Panel for Report Profile -->
-                        <Border Name="OverlayProfileReport" 
-                            Grid.Row="0" 
-                            Grid.RowSpan="4"
-                            Grid.ColumnSpan="2"
-                            Background="#CC000000" 
-                            Visibility="Collapsed"
-                            Panel.ZIndex="1000" Margin="0,0,0,100">
-                            <Border Background="#FF2D2D30" 
-                                MaxWidth="650" 
-                                MaxHeight="500" 
-                                CornerRadius="8"
-                                Padding="16"
-                                VerticalAlignment="Center"
-                                HorizontalAlignment="Center">
-                                <Grid>
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="*"/>
-                                        <RowDefinition Height="Auto"/>
-                                    </Grid.RowDefinitions>
-
-                                    <!-- Title -->
-                                    <TextBlock Grid.Row="0" 
-                                           Text="Report User Profile" 
-                                           FontSize="20" 
-                                           FontWeight="Bold" 
-                                           Foreground="#FFE6E6E6"
-                                           Margin="0,0,0,16"/>
-
-                                    <!-- User ID -->
-                                    <StackPanel Grid.Row="1" Margin="0,0,0,12">
-                                        <Label Content="User ID: *" FontWeight="Bold" Foreground="#FFE6E6E6"/>
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
-                                            <TextBox Name="OverlayProfileReportUserIdTextBox" Grid.Column="0" IsReadOnly="True"/>
-                                            <Label Name="OverlayProfileReportUserIdError" 
-                                               Grid.Column="1" 
-                                               Content="Required" 
-                                               Foreground="Red" 
-                                               FontWeight="Bold"
-                                               Margin="8,0,0,0"
-                                               VerticalAlignment="Center"
-                                               Visibility="Collapsed"/>
-                                        </Grid>
-                                    </StackPanel>
-
-                                    <!-- Category -->
-                                    <StackPanel Grid.Row="2" Margin="0,0,0,12">
-                                        <Label Content="Category:" FontWeight="Bold" Foreground="#FFE6E6E6"/>
-                                        <TextBox Name="OverlayProfileReportCategoryTextBox" IsReadOnly="True" Text="Profile"/>
-                                    </StackPanel>
-
-                                    <!-- Report Reason -->
-                                    <StackPanel Grid.Row="3" Margin="0,0,0,12">
-                                        <Label Content="Report Reason:" FontWeight="Bold" Foreground="#FFE6E6E6"/>
-                                        <ComboBox Name="OverlayProfileReportReasonComboBox" 
-                                              DisplayMemberPath="DisplayName"
-                                              SelectedValuePath="Value"/>
-                                    </StackPanel>
-
-                                    <!-- Report Description -->
-                                    <StackPanel Grid.Row="4" Margin="0,0,0,12">
-                                        <Label Content="Report Description (AI Evaluation):" FontWeight="Bold" Foreground="#FFE6E6E6"/>
-                                        <TextBox Name="OverlayProfileReportDescriptionTextBox" 
-                                             TextWrapping="Wrap" 
-                                             AcceptsReturn="True" 
-                                             VerticalScrollBarVisibility="Auto"
-                                             IsReadOnly="False"
-                                             MinHeight="200"/>
-                                    </StackPanel>
-
-                                    <!-- Action Buttons -->
-                                    <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right">
-                                        <Button Name="OverlayProfileReportCancelButton" Content="Cancel" Width="100" Margin="0,0,12,0" Click="OverlayProfileReportCancel_Click"/>
-                                        <Button Name="OverlayProfileReportSubmitButton" Content="Submit" Width="100" Click="OverlayProfileReportSubmit_Click"/>
-                                    </StackPanel>
-                                </Grid>
-                            </Border>
-                        </Border>
-
                     </Grid>
                 </TabItem>
 
                 <TabItem Header="Past Players">
                     <Grid Name="PastPlayerLayoutGrid">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="172*"/>
+                            <ColumnDefinition Width="357*"/>
+                        </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="20*"/>
+                            <RowDefinition Height="Auto"/>
                             <RowDefinition Height="267*"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition x:Name="PastPlayerGridRow" Height="*" MinHeight="100"/>
                         </Grid.RowDefinitions>
 
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6" Grid.Row="0">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6" Grid.Row="0" Grid.ColumnSpan="2">
                             <TextBox Name="PastFilterBox" Width="300" Margin="0,0,8,0" />
                             <Button Content="Apply Filter" Click="PastApplyFilter_Click" Margin="0,0,6,0"/>
                             <Button Content="Clear Filter" Click="PastClearFilter_Click"/>
                         </StackPanel>
 
-                        <ListView Name="PastListView" Grid.Row="1" ItemsSource="{Binding PastView}" SelectedItem="{Binding SelectedPast, Mode=TwoWay}">
+                        <ListView Name="PastListView" ItemsSource="{Binding PastView}" SelectedItem="{Binding SelectedPast, Mode=TwoWay}" Grid.ColumnSpan="2" Margin="0,26,0,0" Grid.RowSpan="2">
                             <ListView.ItemContainerStyle>
                                 <StaticResource ResourceKey="PlayerListViewItemStyle"/>
                             </ListView.ItemContainerStyle>
@@ -490,7 +451,22 @@ Title="Tailgrab Player Panel"
                                         </GridViewColumn.Header>
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate>
-                                                <TextBlock Text="{Binding UserTrust, Mode=OneWay}" TextAlignment="Left"/>
+                                                <Border ClipToBounds="True" ToolTip="{Binding UserTrust}">
+                                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                        <Viewbox Width="24" Height="24">
+                                                            <Path Data="{Binding UserTrustIconGeometry}" 
+                                                                  Fill="{Binding UserTrustIconBrush}"
+                                                                  Stroke="White"
+                                                                  StrokeThickness="0.5"/>
+                                                        </Viewbox>
+                                                        <Viewbox Width="24" Height="24">
+                                                            <Path Data="{Binding AgeVerifiedIconGeometry}" 
+                                                                  Fill="{Binding AgeVerifiedIconBrush}"
+                                                                  Stroke="White"
+                                                                  StrokeThickness="0.5"/>
+                                                        </Viewbox>
+                                                    </StackPanel>
+                                                </Border>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
@@ -523,7 +499,35 @@ Title="Tailgrab Player Panel"
                                         </GridViewColumn.Header>
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate>
-                                                <TextBlock Text="{Binding AlertMessages}" />
+                                                <Border ClipToBounds="True" TextElement.Foreground="Black">
+                                                    <ItemsControl ItemsSource="{Binding AlertMessages}">
+                                                        <ItemsControl.ItemsPanel>
+                                                            <ItemsPanelTemplate>
+                                                                <StackPanel Orientation="Horizontal"/>
+                                                            </ItemsPanelTemplate>
+                                                        </ItemsControl.ItemsPanel>
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <StackPanel Orientation="Horizontal" Margin="0,0,5,0">
+                                                                    <Viewbox Width="16" Height="16" 
+                                                                             VerticalAlignment="Center"
+                                                                             Margin="0,0,4,0">
+                                                                        <Canvas Width="24" Height="24">
+                                                                            <Path Data="{Binding IconGeometry}" 
+                                                                                  Fill="{Binding IconBrush}"/>
+                                                                        </Canvas>
+                                                                    </Viewbox>
+                                                                    <TextBlock Text="{Binding Description}" 
+                                                                               VerticalAlignment="Center"
+                                                                               TextWrapping="NoWrap"
+                                                                               FontWeight="Bold"
+                                                                               FontSize="12"
+                                                                               Foreground="{Binding RelativeSource={RelativeSource AncestorType=ListViewItem}, Path=Foreground}"/>
+                                                                </StackPanel>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                </Border>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
@@ -597,27 +601,50 @@ Title="Tailgrab Player Panel"
                             </ListView.View>
                         </ListView>
 
-                        <GridSplitter Name="PastPlayers_Horz" Grid.Row="2" Height="5" HorizontalAlignment="Stretch" VerticalAlignment="Center" Background="#FF3F3F46" ShowsPreview="False" ResizeDirection="Rows" DragCompleted="GridSplitter_DragCompleted"/>
+                        <GridSplitter Name="PastPlayers_Horz" Grid.Row="2" Height="5" HorizontalAlignment="Stretch" VerticalAlignment="Center" Background="#FF3F3F46" ShowsPreview="False" ResizeDirection="Rows" Grid.ColumnSpan="2" DragCompleted="GridSplitter_DragCompleted"/>
 
-                        <Grid Margin="0,0,0,6" Grid.Row="3">
+                        <Grid Margin="0,0,0,6" Grid.Row="3" Grid.ColumnSpan="2">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" Name="PastPlayerGridColumn"/>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
 
-                            <TextBox Name="UserPofileBoxPast" Grid.Column="0" Height="auto" Margin="0,0,4,0" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto">
-                                <TextBox.Text>
-                                    <MultiBinding StringFormat="{}User Profile:&#x0a;{0}&#x0a;&#x0a;AI Evaluation:&#x0a;{1}" Mode="OneWay">
-                                        <Binding Path="SelectedPast.Profile" Mode="OneWay" FallbackValue="" TargetNullValue=""/>
-                                        <Binding Path="SelectedPast.AIEval" Mode="OneWay" FallbackValue="" TargetNullValue=""/>
-                                    </MultiBinding>
-                                </TextBox.Text>
-                            </TextBox>
+                            <ScrollViewer Grid.Column="0" Margin="0,0,4,0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                <StackPanel>
+                                    <Image Source="{Binding SelectedPast.ProfileUrl, Mode=OneWay}" 
+                                           Width="100" 
+                                           Height="100"
+                                           HorizontalAlignment="Left"
+                                           Margin="0,0,0,4">
+                                        <Image.Style>
+                                            <Style TargetType="Image">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding SelectedPast.ProfileUrl, Converter={x:Static local:StringNotNullOrEmptyConverter.Instance}}" Value="True">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Image.Style>
+                                    </Image>
+
+                                    <TextBlock Name="UserPofileBoxPast" TextWrapping="Wrap" Foreground="#FFE6E6E6">
+                                        <TextBlock.Text>
+                                            <MultiBinding StringFormat="{}User Profile:&#x0a;{0}&#x0a;&#x0a;AI Evaluation:&#x0a;{1}" Mode="OneWay">
+                                                <Binding Path="SelectedPast.Profile" Mode="OneWay" FallbackValue="" TargetNullValue=""/>
+                                                <Binding Path="SelectedPast.AIEval" Mode="OneWay" FallbackValue="" TargetNullValue=""/>
+                                            </MultiBinding>
+                                        </TextBlock.Text>
+                                    </TextBlock>
+                                </StackPanel>
+                            </ScrollViewer>
 
                             <GridSplitter Name="PastPlayers_Vert" Grid.Column="1" Width="5" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="#FF3F3F46" ShowsPreview="False" ResizeDirection="Columns" DragCompleted="GridSplitter_DragCompleted"/>
 
-                            <TextBox Name="UserAlertsBoxPast" Grid.Column="2" Height="auto" Margin="4,0,8,0" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" Text="{Binding SelectedPast.History, Mode=OneWay, FallbackValue='', TargetNullValue=''}" />
+                            <ScrollViewer Grid.Column="2" Margin="0,0,4,0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                <TextBox Name="UserAlertsBoxPast" Grid.Column="2" Height="auto" Margin="4,0,8,0" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" Text="{Binding SelectedPast.History, Mode=OneWay, FallbackValue='', TargetNullValue=''}" />
+                            </ScrollViewer>
                         </Grid>
 
                         <!-- Overlay Panel for Report Profile -->
@@ -714,11 +741,13 @@ Title="Tailgrab Player Panel"
                             <TextBox Name="PrintFilterBox" Width="300" Margin="0,0,8,0" />
                             <Button Content="Apply Filter" Click="PrintApplyFilter_Click" Margin="0,0,6,0"/>
                             <Button Content="Clear Filter" Click="PrintClearFilter_Click"/>
+                            <TextBlock Text="Hide Older Than (min):" VerticalAlignment="Center" Margin="12,0,6,0"/>
+                            <TextBox Name="PrintAgeMinutesFilterBox" Width="60" Margin="0,0,8,0" TextChanged="PrintAgeMinutesFilterBox_TextChanged" ToolTip="Enter 1-60"/>
                             <Button Content="Report Inventory" Click="ReportPrintInventory_Click" HorizontalAlignment="Right" Margin="8,0,0,0"/>
                         </StackPanel>
 
                         <!-- Show each player and their prints -->
-                        <ListView Name="PrintListView" Grid.Row="1" ItemsSource="{Binding PrintView}" Grid.ColumnSpan="5" ScrollViewer.CanContentScroll="True">
+                        <ListView Name="PrintListView" Grid.Row="1" ItemsSource="{Binding PrintView}" Grid.ColumnSpan="5" ScrollViewer.CanContentScroll="False">
                             <ListView.ItemTemplate>
                                 <DataTemplate>
                                     <Border BorderBrush="Gray" BorderThickness="0,0,0,1" Padding="6">
@@ -743,24 +772,52 @@ Title="Tailgrab Player Panel"
                                                                 <ColumnDefinition Width="300" />
                                                                 <ColumnDefinition Width="200" />
                                                                 <ColumnDefinition Width="200" />
-                                                                <ColumnDefinition Width="100" />
+                                                                <ColumnDefinition Width="300" />
                                                                 <ColumnDefinition Width="100" />
                                                             </Grid.ColumnDefinitions>
 
                                                             <!-- First Row -->
                                                             <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding PrintId}" VerticalAlignment="Center"/>
                                                             <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding AuthorName}" VerticalAlignment="Center"/>
-                                                            <TextBlock Grid.Row="0" Grid.Column="2" Text="{Binding Timestammp, StringFormat={}{0:u}}" VerticalAlignment="Center"/>
-                                                            <TextBlock Grid.Row="0" Grid.Column="3" Text="{Binding AIClass}" VerticalAlignment="Center"/>
+                                                            <TextBlock Grid.Row="0" Grid.Column="2" Text="{Binding Timestamp, StringFormat={}{0:u}}" VerticalAlignment="Center"/>
+
+                                                            <Border Grid.Row="0" Grid.Column="3" ClipToBounds="True" TextElement.Foreground="Black"
+                                                                    ToolTip="{Binding AlertInfo.IconClass}">
+                                                                <StackPanel Orientation="Horizontal" Margin="0,0,5,0">
+                                                                    <Viewbox Width="32" Height="32" 
+                                                                             VerticalAlignment="Center"
+                                                                             Margin="0,0,4,0">
+                                                                        <Canvas Width="32" Height="32">
+                                                                            <Path Data="{Binding AlertInfo.IconGeometry}" 
+                                                                                  Fill="{Binding AlertInfo.IconBrush}"
+                                                                                  Stretch="UniformToFill"
+                                                                                  Width="24" Height="24"/>
+                                                                        </Canvas>
+                                                                    </Viewbox>
+                                                                    <TextBlock Text="{Binding AlertInfo.Description}" 
+                                                                               VerticalAlignment="Center"
+                                                                               TextWrapping="NoWrap"
+                                                                               FontWeight="Bold"
+                                                                               FontSize="12"
+                                                                               Foreground="{Binding RelativeSource={RelativeSource AncestorType=ListViewItem}, Path=Foreground}"/>
+                                                                </StackPanel>
+                                                            </Border>
 
                                                             <!-- Second Row - Button -->
-                                                            <Button Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="4" 
+                                                            <Button Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="1" 
                                                                         Content="Report Print Item" 
                                                                         Click="ReportPrintInventoryItem_Click"
                                                                         Tag="{Binding}"
                                                                         Margin="0,4,0,0"
                                                                         Padding="4,2"
                                                                         HorizontalAlignment="Left"/>
+
+                                                            <!-- Second Row - AI Evaluation -->
+                                                            <TextBlock Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3"
+                                                                       Text="{Binding AIEvaluation}" 
+                                                                       VerticalAlignment="Top"
+                                                                       Margin="4,0,0,0"
+                                                                       TextWrapping="Wrap"/>
 
                                                             <!-- Image spanning both rows -->
                                                             <Border Grid.Row="0" Grid.Column="4" Grid.RowSpan="2" 
@@ -935,11 +992,13 @@ Title="Tailgrab Player Panel"
                             <TextBox Name="EmojiFilterBox" Width="300" Margin="0,0,8,0" />
                             <Button Content="Apply Filter" Click="EmojiApplyFilter_Click" Margin="0,0,6,0"/>
                             <Button Content="Clear Filter" Click="EmojiClearFilter_Click"/>
+                            <TextBlock Text="Hide Older Than (min):" VerticalAlignment="Center" Margin="12,0,6,0"/>
+                            <TextBox Name="EmojiAgeMinutesFilterBox" Width="60" Margin="0,0,8,0" TextChanged="EmojiAgeMinutesFilterBox_TextChanged" ToolTip="Enter 1-60"/>
                             <Button Content="Report Inventory" Click="ReportInventory_Click" HorizontalAlignment="Right" Margin="8,0,0,0"/>
                         </StackPanel>
 
                         <!-- Show each player and their emojis -->
-                        <ListView Name="EmojiListView" Grid.Row="1" ItemsSource="{Binding EmojiView}" Grid.ColumnSpan="3" ScrollViewer.CanContentScroll="True">
+                        <ListView Name="EmojiListView" Grid.Row="1" ItemsSource="{Binding EmojiView}" Grid.ColumnSpan="3" ScrollViewer.CanContentScroll="False">
                             <ListView.ItemTemplate>
                                 <DataTemplate>
                                     <Border BorderBrush="Gray" BorderThickness="0,0,0,1" Padding="6">
@@ -962,9 +1021,9 @@ Title="Tailgrab Player Panel"
                                                             </Grid.RowDefinitions>
                                                             <Grid.ColumnDefinitions>
                                                                 <ColumnDefinition Width="300" />
-                                                                <ColumnDefinition Width="200" />
-                                                                <ColumnDefinition Width="200" />
                                                                 <ColumnDefinition Width="100" />
+                                                                <ColumnDefinition Width="200" />
+                                                                <ColumnDefinition Width="300" />
                                                                 <ColumnDefinition Width="100" />
                                                             </Grid.ColumnDefinitions>
 
@@ -972,16 +1031,28 @@ Title="Tailgrab Player Panel"
                                                             <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding InventoryId}" VerticalAlignment="Center"/>
                                                             <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding InventoryType}" VerticalAlignment="Center"/>
                                                             <TextBlock Grid.Row="0" Grid.Column="2" Text="{Binding SpawnedAt, StringFormat={}{0:u}}" VerticalAlignment="Center"/>
-                                                            <TextBlock Grid.Row="0" Grid.Column="3" Text="{Binding AIEvalutation}" VerticalAlignment="Center"/>
 
-                                                            <!-- Second Row - Button -->
-                                                            <Button Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="4" 
-                                                                    Content="Report Inventory Item" 
-                                                                    Click="ReportInventoryItem_Click"
-                                                                    Tag="{Binding}"
-                                                                    Margin="0,4,0,0"
-                                                                    Padding="4,2"
-                                                                    HorizontalAlignment="Left"/>
+                                                            <Border Grid.Row="0" Grid.Column="3" ClipToBounds="True" TextElement.Foreground="Black"
+                                                                    ToolTip="{Binding AlertInfo.IconClass}">
+                                                                <StackPanel Orientation="Horizontal" Margin="0,0,5,0">
+                                                                    <Viewbox Width="32" Height="32" 
+                                                                             VerticalAlignment="Center"
+                                                                             Margin="0,0,4,0">
+                                                                        <Canvas Width="32" Height="32">
+                                                                            <Path Data="{Binding AlertInfo.IconGeometry}" 
+                                                                                  Fill="{Binding AlertInfo.IconBrush}"
+                                                                                  Stretch="UniformToFill"
+                                                                                  Width="24" Height="24"/>
+                                                                        </Canvas>
+                                                                    </Viewbox>
+                                                                    <TextBlock Text="{Binding AlertInfo.Description}" 
+                                                                               VerticalAlignment="Center"
+                                                                               TextWrapping="NoWrap"
+                                                                               FontWeight="Bold"
+                                                                               FontSize="12"
+                                                                               Foreground="{Binding RelativeSource={RelativeSource AncestorType=ListViewItem}, Path=Foreground}"/>
+                                                                </StackPanel>
+                                                            </Border>
 
                                                             <!-- Image spanning both rows -->
                                                             <Border Grid.Row="0" Grid.Column="4" Grid.RowSpan="2" 
@@ -996,6 +1067,24 @@ Title="Tailgrab Player Panel"
                                                                     </Hyperlink>
                                                                 </TextBlock>
                                                             </Border>
+
+                                                            <!-- Second Row - Button -->
+                                                            <Button Grid.Row="1" Grid.Column="0" 
+                                                                    Content="Report Inventory Item" 
+                                                                    Click="ReportInventoryItem_Click"
+                                                                    Tag="{Binding}"
+                                                                    Margin="0,4,0,0"
+                                                                    Padding="4,2"
+                                                                    HorizontalAlignment="Left"/>
+
+                                                            <TextBlock Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3"
+                                                                       Text="{Binding EvaluatedText}"
+                                                                       VerticalAlignment="Center"
+                                                                       TextWrapping="Wrap"
+                                                                       FontWeight="Bold"
+                                                                       FontSize="12"
+                                                                       Foreground="{Binding RelativeSource={RelativeSource AncestorType=ListViewItem}, Path=Foreground}"/>
+
                                                         </Grid>
                                                     </DataTemplate>
                                                 </ItemsControl.ItemTemplate>
@@ -1140,6 +1229,115 @@ Title="Tailgrab Player Panel"
                     </Grid>
                 </TabItem>
 
+                <TabItem Header="Moderation Reports">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="26*"/>
+                            <ColumnDefinition Width="123*"/>
+                            <ColumnDefinition Width="904*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="3">
+                            <TextBlock Text="User ID:" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                            <TextBox Name="ModerationUserIdFilterBox" Width="200" Margin="0,0,8,0" />
+                            <TextBlock Text="Content ID:" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                            <TextBox Name="ModerationContentIdFilterBox" Width="200" Margin="0,0,8,0" />
+                            <Button Content="Apply Filter" Click="ModerationDbApplyFilter_Click" Margin="0,0,6,0"/>
+                            <Button Content="Clear Filter" Click="ModerationDbClearFilter_Click" Margin="0,0,6,0"/>
+                            <Button Content="Refresh" Click="ModerationDbRefresh_Click" Margin="0,0,6,0"/>
+                        </StackPanel>
+
+                        <GroupBox Header="Moderation Report Information" Grid.Row="1" Grid.ColumnSpan="3" Margin="0,0,0,12">
+                            <Grid Margin="8">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="220"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <Border Grid.Row="0" Grid.Column="0" Grid.RowSpan="5"
+                                        BorderBrush="Gray"
+                                        BorderThickness="1"
+                                        Padding="4"
+                                        Margin="0,0,12,0"
+                                        VerticalAlignment="Top"
+                                        HorizontalAlignment="Left">
+                                    <Image Name="ModerationReportThumbnail"
+                                           MaxWidth="200"
+                                           MaxHeight="200"
+                                           Width="200"
+                                           Height="200"
+                                           Stretch="Uniform"/>
+                                </Border>
+
+                                <Label Grid.Row="0" Grid.Column="1" Content="Report ID:" FontWeight="Bold" Margin="0,0,8,0"  VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                                <TextBlock Grid.Row="0" Grid.Column="2" Name="ModerationReportId" VerticalAlignment="Center"/>
+
+                                <Label Grid.Row="0" Grid.Column="3" Content="Content Type:" FontWeight="Bold" Margin="0,0,8,0" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                                <TextBlock Grid.Row="0" Grid.Column="4" Name="ModerationReportContentType" VerticalAlignment="Center"/>
+
+                                <Label Grid.Row="1" Grid.Column="1" Content="User ID:" FontWeight="Bold" Margin="0,0,8,0" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                                <TextBlock Grid.Row="1" Grid.Column="2" VerticalAlignment="Center">
+                                    <Hyperlink NavigateUri="{Binding ElementName=ModerationReportUserId, Path=Text}"
+                                        RequestNavigate="GroupUserHyperlink_RequestNavigate">
+                                        <TextBlock Name="ModerationReportUserId"/>
+                                    </Hyperlink>
+                                </TextBlock>
+
+
+                                <Label Grid.Row="1" Grid.Column="3" Content="Content ID:" FontWeight="Bold" Margin="0,0,8,0" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                                <TextBlock Grid.Row="1" Grid.Column="4" Name="ModerationReportContentId" VerticalAlignment="Center"/>
+
+                                <Label Grid.Row="2" Grid.Column="1" Content="Content Name:" FontWeight="Bold" Margin="0,0,8,0" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                                <TextBlock Grid.Row="2" Grid.Column="2" Grid.ColumnSpan="3" Name="ModerationReportContentName" VerticalAlignment="Center"/>
+
+                                <Label Grid.Row="2" Grid.Column="3" Content="Event Date:" FontWeight="Bold" Margin="0,0,8,0" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                                <TextBlock Grid.Row="2" Grid.Column="4" Name="ModerationReportEventDateTime" VerticalAlignment="Center"/>
+
+                                <Label Grid.Row="3" Grid.Column="3" Content="Close Date:" FontWeight="Bold" Margin="0,0,8,0" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                                <TextBlock Grid.Row="3" Grid.Column="4" Name="ModerationReportCloseDate" VerticalAlignment="Center"/>
+
+                                <Label Grid.Row="3" Grid.Column="1" Content="Status:" FontWeight="Bold" Margin="0,0,8,0" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                                <StackPanel Grid.Row="3" Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Name="ModerationReportStatus" Margin="0,0,12,0" TextWrapping="Wrap"/>
+                                </StackPanel>
+
+                                <Label Grid.Row="4" Grid.Column="1" Content="Report :" FontWeight="Bold" Margin="0,0,8,0" VerticalAlignment="Top" HorizontalAlignment="Right"/>
+                                <TextBlock Grid.Row="4" Grid.Column="2" Grid.ColumnSpan="3" Margin="0,4,0,0" Name="ModerationReportText" VerticalAlignment="Top"/>
+
+                            </Grid>
+                        </GroupBox>
+
+                        <DataGrid Name="ModerationDbGrid" Grid.Row="2" Grid.ColumnSpan="3" AutoGenerateColumns="False" 
+                                  CanUserSortColumns="True" IsReadOnly="True" ItemsSource="{Binding ModerationDbView}" 
+                                  SelectionChanged="ModerationDbGrid_SelectionChanged">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="ID" Binding="{Binding Id}" SortMemberPath="Id" Width="250"/>
+                                <DataGridTextColumn Header="Content Type" Binding="{Binding ContentType}" SortMemberPath="ContentType" Width="100"/>
+                                <DataGridTextColumn Header="User ID" Binding="{Binding UserId}" SortMemberPath="UserId" Width="250"/>
+                                <DataGridTextColumn Header="Content ID" Binding="{Binding ContentId}" SortMemberPath="ContentId" Width="250"/>
+                                <DataGridTextColumn Header="Content Name" Binding="{Binding ContentName}" SortMemberPath="ContentName" Width="150*"/>
+                                <DataGridTextColumn Header="Event Date" Binding="{Binding EventDateTime, StringFormat={}{0:yyyy-MM-dd HH:mm:ss}}" SortMemberPath="EventDateTime" SortDirection="Descending" Width="140"/>
+                                <DataGridTextColumn Header="Close Date" Binding="{Binding CloseDate, StringFormat={}{0:yyyy-MM-dd HH:mm:ss}}" SortMemberPath="CloseDate" Width="140"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+                </TabItem>
+
                 <TabItem Header="Config">
                     <TabControl x:Name="ConfigTabControl">
                         <TabItem Header="Known Avatars">
@@ -1191,19 +1389,28 @@ Title="Tailgrab Player Panel"
                                                VerticalAlignment="Top"/>
 
                                         <!-- User Details -->
-                                        <Label Grid.Row="0" Grid.Column="2" Content="Avatar Name:" FontWeight="Bold" Margin="0,0,8,0"/>
+                                        <Label Grid.Row="0" Grid.Column="2" Content="Avatar Name:" FontWeight="Bold" Margin="0,0,8,0" HorizontalAlignment="Right"/>
                                         <TextBlock Grid.Row="0" Grid.Column="3" Name="BanMgmtAvatarName" VerticalAlignment="Center"/>
 
-                                        <Label Grid.Row="1" Grid.Column="2" Content="Avatar State:" FontWeight="Bold" Margin="0,0,8,0"/>
+                                        <Label Grid.Row="1" Grid.Column="2" Content="Avatar State:" FontWeight="Bold" Margin="0,0,8,0" HorizontalAlignment="Right"/>
                                         <TextBlock Grid.Row="1" Grid.Column="3" Name="BanMgmtAvatarState" VerticalAlignment="Center"/>
 
-                                        <Label Grid.Row="0" Grid.Column="4" Content="Publish Date:" FontWeight="Bold" Margin="0,0,8,0"/>
-                                        <TextBlock Grid.Row="2" Grid.Column="3" Name="BanMgmtPublishDate" VerticalAlignment="Center"/>
+                                        <Label Grid.Row="2" Grid.Column="2" Content="Use Avatar:" FontWeight="Bold" Margin="0,0,8,0" HorizontalAlignment="Right"/>
+                                        <StackPanel Grid.Row="2" Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
+                                            <Button Content="Switch into Avatar" 
+                                                   Name="UseAvatarButton"
+                                                   Click="UseAvatarButton_Click" 
+                                                   Margin="2,0,0,0"
+                                                   IsEnabled="False"/>
+                                        </StackPanel>
 
-                                        <Label Grid.Row="1" Grid.Column="4" Content="Update Date:" FontWeight="Bold" Margin="0,0,8,0"/>
+                                        <Label Grid.Row="0" Grid.Column="4" Content="Publish Date:" FontWeight="Bold" Margin="0,0,8,0" HorizontalAlignment="Right"/>
+                                        <TextBlock Grid.Row="0" Grid.Column="5" Name="BanMgmtPublishDate" VerticalAlignment="Center"/>
+
+                                        <Label Grid.Row="1" Grid.Column="4" Content="Update Date:" FontWeight="Bold" Margin="0,0,8,0" HorizontalAlignment="Right"/>
                                         <TextBlock Grid.Row="1" Grid.Column="5" Name="BanMgmtUpdateDate" VerticalAlignment="Center"/>
 
-                                        <Label Grid.Row="2" Grid.Column="4" Content="Owner:" FontWeight="Bold" Margin="0,0,8,0"/>
+                                        <Label Grid.Row="2" Grid.Column="4" Content="Owner:" FontWeight="Bold" Margin="0,0,8,0" HorizontalAlignment="Right"/>
                                         <StackPanel Grid.Row="2" Grid.Column="5" Orientation="Horizontal" VerticalAlignment="Center">
                                             <TextBlock VerticalAlignment="Center">
                                                 <Hyperlink NavigateUri="{Binding ElementName=BanMgmtAvatarOwnerId, Path=Text}"
@@ -1322,22 +1529,22 @@ Title="Tailgrab Player Panel"
                                                VerticalAlignment="Top"/>
 
                                         <!-- User Details -->
-                                        <Label Grid.Row="0" Grid.Column="2" Content="Group Name:" FontWeight="Bold" Margin="0,0,8,0"/>
+                                        <Label Grid.Row="0" Grid.Column="2" Content="Group Name:" FontWeight="Bold" Margin="0,0,8,0" HorizontalAlignment="Right"/>
                                         <TextBlock Grid.Row="0" Grid.Column="3" Name="BanMgmtGroupName" VerticalAlignment="Center"/>
 
-                                        <Label Grid.Row="1" Grid.Column="2" Content="Join State:" FontWeight="Bold" Margin="0,0,8,0"/>
+                                        <Label Grid.Row="1" Grid.Column="2" Content="Join State:" FontWeight="Bold" Margin="0,0,8,0" HorizontalAlignment="Right"/>
                                         <TextBlock Grid.Row="1" Grid.Column="3" Name="BanMgmtGroupJoinState" VerticalAlignment="Center"/>
 
-                                        <Label Grid.Row="2" Grid.Column="2" Content="Member Count:" FontWeight="Bold" Margin="0,0,8,0"/>
+                                        <Label Grid.Row="2" Grid.Column="2" Content="Member Count:" FontWeight="Bold" Margin="0,0,8,0" HorizontalAlignment="Right"/>
                                         <TextBlock Grid.Row="2" Grid.Column="3" Name="BanMgmtGroupmemberCount" VerticalAlignment="Center"/>
 
-                                        <Label Grid.Row="0" Grid.Column="4" Content="Create Date:" FontWeight="Bold" Margin="0,0,8,0"/>
+                                        <Label Grid.Row="0" Grid.Column="4" Content="Create Date:" FontWeight="Bold" Margin="0,0,8,0" HorizontalAlignment="Right"/>
                                         <TextBlock Grid.Row="0" Grid.Column="5" Name="BanMgmtGroupCreateDate" VerticalAlignment="Center"/>
 
-                                        <Label Grid.Row="1" Grid.Column="4" Content="Short Code:" FontWeight="Bold" Margin="0,0,8,0"/>
+                                        <Label Grid.Row="1" Grid.Column="4" Content="Short Code:" FontWeight="Bold" Margin="0,0,8,0" HorizontalAlignment="Right"/>
                                         <TextBlock Grid.Row="1" Grid.Column="5" Name="BanMgmtGroupShortCode" VerticalAlignment="Center"/>
 
-                                        <Label Grid.Row="2" Grid.Column="4" Content="Owner:" FontWeight="Bold" Margin="0,0,8,0"/>
+                                        <Label Grid.Row="2" Grid.Column="4" Content="Owner:" FontWeight="Bold" Margin="0,0,8,0" HorizontalAlignment="Right"/>
                                         <StackPanel Grid.Row="2" Grid.Column="5" Orientation="Horizontal" VerticalAlignment="Center">
                                             <TextBlock VerticalAlignment="Center">
                                                 <Hyperlink NavigateUri="{Binding ElementName=BanMgmtGroupOwnerId, Path=Text}"
@@ -1475,8 +1682,8 @@ Title="Tailgrab Player Panel"
                                 <GroupBox Header="VR Chat Credentials" Margin="0,0,0,6" Grid.Row="0">
                                     <Grid Margin="6">
                                         <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto" />
-                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="90*" />
+                                            <ColumnDefinition Width="956*" />
                                         </Grid.ColumnDefinitions>
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="Auto" />
@@ -1485,13 +1692,17 @@ Title="Tailgrab Player Panel"
                                         </Grid.RowDefinitions>
 
                                         <Label Grid.Row="0" Grid.Column="0" Content="User:" VerticalAlignment="Center"/>
-                                        <TextBox Grid.Row="0" Grid.Column="1" Name="VrUserBox" Width="300" Margin="6,2" />
+                                        <TextBox Grid.Row="0" Grid.Column="1" Name="VrUserBox" Width="300" Margin="6,2" HorizontalAlignment="Left"/>
 
                                         <Label Grid.Row="1" Grid.Column="0" Content="Password:" VerticalAlignment="Center"/>
-                                        <PasswordBox Grid.Row="1" Grid.Column="1" Name="VrPassBox" Width="300" Margin="6,2" />
+                                        <PasswordBox Grid.Row="1" Grid.Column="1" Name="VrPassBox" Width="300" Margin="6,2" HorizontalAlignment="Left"/>
 
-                                        <Label Grid.Row="2" Grid.Column="0" Content="2FA Key:" VerticalAlignment="Center"/>
-                                        <PasswordBox Grid.Row="2" Grid.Column="1" Name="Vr2FaBox" Width="300" Margin="6,2" />
+                                        <Label Grid.Row="2" Grid.Column="0" Content="2FA Seed Key:" VerticalAlignment="Center"/>
+                                        <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,6" >
+                                            <PasswordBox Name="Vr2FaBox" Width="300" Margin="6,2" />
+                                            <Button Content="Reset 2FA" Width="120" Margin="6,2" Click="Reset2FA_Click" Background="#FFCC0000" Foreground="White"/>
+                                        </StackPanel>
+
                                     </Grid>
                                 </GroupBox>
 
@@ -1582,11 +1793,13 @@ Title="Tailgrab Player Panel"
                                         </Grid.RowDefinitions>
 
                                         <Label Grid.Row="0" Grid.Column="0" Content="Ollama Endpoint:" VerticalAlignment="Center"/>
-                                        <TextBox Grid.Row="0" Grid.Column="1" Name="VrOllamaEndpointBox" Width="400" Margin="6,2" />
+                                        <TextBox Grid.Row="0" Grid.Column="1" Name="VrOllamaEndpointBox" Width="400" Margin="6,2" HorizontalAlignment="Left" />
 
                                         <Label Grid.Row="1" Grid.Column="0" Content="Ollama API Key:" VerticalAlignment="Center"/>
-                                        <PasswordBox Grid.Row="1" Grid.Column="1" Name="VrOllamaBox" Width="400" Margin="6,2" />
-
+                                        <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,6">
+                                            <PasswordBox Name="VrOllamaBox" Width="400" Margin="6,2" HorizontalAlignment="Left" />
+                                            <Button Content="Reset Ollama" Width="120" Margin="6,2" Click="ResetOllama_Click" Background="#FFCC0000" Foreground="White"/>
+                                        </StackPanel>
                                     </Grid>
                                 </GroupBox>
 
@@ -1610,9 +1823,10 @@ Title="Tailgrab Player Panel"
                                                   ItemsSource="{Binding DataContext.OllamaModelOptions, RelativeSource={RelativeSource AncestorType=Window}}"
                                                   SelectedValuePath="Value" 
                                                   DisplayMemberPath="Key" 
-                                                  Margin="2,2,2,2" 
+                                                  Margin="6,2" 
                                                   Grid.Row="0" 
                                                   Grid.Column="1" 
+                                                  HorizontalAlignment="Left"
                                                   Width="400"
                                                   SelectionChanged="TestProfilePromptInput_Changed"/>
 
@@ -1621,6 +1835,7 @@ Title="Tailgrab Player Panel"
                                         <TextBox Grid.Row="1" Grid.Column="1" Name="VrOllamaPromptBox" Width="800" Height="120" Margin="6,2" 
                                                  TextWrapping="Wrap" 
                                                  AcceptsReturn="True" 
+                                                 HorizontalAlignment="Left"
                                                  VerticalScrollBarVisibility="Auto" 
                                                  HorizontalScrollBarVisibility="Disabled"
                                                  TextChanged="TestProfilePromptInput_Changed"/>
@@ -1635,6 +1850,7 @@ Title="Tailgrab Player Panel"
                                         <TextBox Grid.Row="3" Grid.Column="1" Name="VrOllamaImagePromptBox" Width="800" Height="120" Margin="6,2" 
                                                  TextWrapping="Wrap" 
                                                  AcceptsReturn="True" 
+                                                 HorizontalAlignment="Left"
                                                  VerticalScrollBarVisibility="Auto" 
                                                  HorizontalScrollBarVisibility="Disabled"
                                                  TextChanged="TestProfilePromptInput_Changed"/>
@@ -1734,7 +1950,8 @@ Title="Tailgrab Player Panel"
                                     Visibility="Collapsed"
                                     Panel.ZIndex="1000">
                                     <Border Background="#FF2D2D30" 
-                                        MaxWidth="850" 
+                                        Width="800"
+                                        MaxWidth="1200" 
                                         MaxHeight="700" 
                                         CornerRadius="8"
                                         Padding="16"
@@ -1762,7 +1979,9 @@ Title="Tailgrab Player Panel"
                                                       Margin="0,0,0,12"
                                                       Background="#FF2D2D30"
                                                       BorderBrush="#FF3F3F46"
-                                                      BorderThickness="1">
+                                                      BorderThickness="1"
+                                                      ScrollViewer.CanContentScroll="True"
+                                                      ScrollViewer.VerticalScrollBarVisibility="Auto">
                                                 <ListView.ItemTemplate>
                                                     <DataTemplate>
                                                         <Border BorderBrush="#FF3F3F46" 
@@ -1773,6 +1992,7 @@ Title="Tailgrab Player Panel"
                                                                 <Grid.ColumnDefinitions>
                                                                     <ColumnDefinition Width="200"/>
                                                                     <ColumnDefinition Width="*"/>
+                                                                    <ColumnDefinition Width="Auto"/>
                                                                 </Grid.ColumnDefinitions>
 
                                                                 <!-- Image Display -->
@@ -1794,14 +2014,31 @@ Title="Tailgrab Player Panel"
                                                                         BorderThickness="1"
                                                                         Padding="8"
                                                                         Background="#FF1E1E1E">
+
                                                                     <ScrollViewer VerticalScrollBarVisibility="Auto"
                                                                                   HorizontalScrollBarVisibility="Disabled">
                                                                         <TextBlock Text="{Binding AIEvaluation}" 
                                                                                    TextWrapping="Wrap"
                                                                                    Foreground="#FFE6E6E6"
                                                                                    FontFamily="Consolas"
-                                                                                   FontSize="12" Width="500" Height="200"/>
+                                                                                   FontSize="12" Width="450" Height="200"/>
                                                                     </ScrollViewer>
+
+                                                                </Border>
+
+                                                                <Border Grid.Column="2">
+                                                                    <StackPanel Orientation="Horizontal" Margin="0,0,5,0">
+                                                                        <Viewbox Width="32" Height="32" 
+                                                                             VerticalAlignment="Center"
+                                                                             Margin="0,0,4,0">
+                                                                            <Canvas Width="32" Height="32">
+                                                                                <Path Data="{Binding AlertInfo.IconGeometry}" 
+                                                                                      Fill="{Binding AlertInfo.IconBrush}"
+                                                                                      Stretch="UniformToFill"
+                                                                                      Width="32" Height="32"/>
+                                                                            </Canvas>
+                                                                        </Viewbox>
+                                                                    </StackPanel>
                                                                 </Border>
                                                             </Grid>
                                                         </Border>
@@ -2333,6 +2570,7 @@ Title="Tailgrab Player Panel"
                                             <ColumnDefinition Width="300"/>
                                             <ColumnDefinition Width="Auto"/>
                                             <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
                                             <ColumnDefinition Width="*"/>
                                         </Grid.ColumnDefinitions>
 
@@ -2351,11 +2589,17 @@ Title="Tailgrab Player Panel"
                                                 Padding="4,2"
                                                 Margin="0,0,8,0"/>
                                         <Button Grid.Row="0" Grid.Column="3" 
+                                                Content="Report User" 
+                                                Click="BanMgmtReportUser_Click" 
+                                                Width="100"
+                                                Padding="4,2"
+                                                Margin="0,0,8,0"/>
+                                        <Button Grid.Row="0" Grid.Column="4" 
                                                 Content="Check Groups" 
                                                 Click="BanMgmtCheckGroups_Click" 
                                                 Width="100"
                                                 Padding="4,2"/>
-                                        <TextBlock Grid.Row="0" Grid.Column="4"
+                                        <TextBlock Grid.Row="0" Grid.Column="5"
                                                    Name="BanMgmtUserStatusText"
                                                    VerticalAlignment="Center"
                                                    Margin="12,0,0,0"
@@ -2388,22 +2632,22 @@ Title="Tailgrab Player Panel"
                                                VerticalAlignment="Top"/>
 
                                         <!-- User Details -->
-                                        <Label Grid.Row="0" Grid.Column="1" Content="User Name:" FontWeight="Bold" Margin="0,0,8,0"/>
+                                        <Label Grid.Row="0" Grid.Column="1" Content="User Name:" FontWeight="Bold" Margin="0,0,8,0" HorizontalAlignment="Right"/>
                                         <TextBlock Grid.Row="0" Grid.Column="2" Name="BanMgmtUserName" VerticalAlignment="Center"/>
 
-                                        <Label Grid.Row="1" Grid.Column="1" Content="Status:" FontWeight="Bold" Margin="0,0,8,0"/>
+                                        <Label Grid.Row="1" Grid.Column="1" Content="Status:" FontWeight="Bold" Margin="0,0,8,0" HorizontalAlignment="Right"/>
                                         <TextBlock Grid.Row="1" Grid.Column="2" Name="BanMgmtUserStatusDesc" VerticalAlignment="Center"/>
 
-                                        <Label Grid.Row="2" Grid.Column="1" Content="Pronouns:" FontWeight="Bold" Margin="0,0,8,0"/>
+                                        <Label Grid.Row="2" Grid.Column="1" Content="Pronouns:" FontWeight="Bold" Margin="0,0,8,0" HorizontalAlignment="Right"/>
                                         <TextBlock Grid.Row="2" Grid.Column="2" Name="BanMgmtUserPronouns" VerticalAlignment="Center"/>
 
-                                        <Label Grid.Row="0" Grid.Column="3" Content="Join Date:" FontWeight="Bold" Margin="0,0,8,0"/>
+                                        <Label Grid.Row="0" Grid.Column="3" Content="Join Date:" FontWeight="Bold" Margin="0,0,8,0" HorizontalAlignment="Right"/>
                                         <TextBlock Grid.Row="0" Grid.Column="4" Name="BanMgmtUserJoinDate" VerticalAlignment="Center"/>
 
-                                        <Label Grid.Row="1" Grid.Column="3" Content="Age Verified:" FontWeight="Bold" Margin="0,0,8,0"/>
+                                        <Label Grid.Row="1" Grid.Column="3" Content="Age Verified:" FontWeight="Bold" Margin="0,0,8,0" HorizontalAlignment="Right"/>
                                         <TextBlock Grid.Row="1" Grid.Column="4" Name="BanMgmtUserAgeVerified" VerticalAlignment="Center"/>
 
-                                        <Label Grid.Row="2" Grid.Column="3" Content="State:" FontWeight="Bold" Margin="0,0,8,0"/>
+                                        <Label Grid.Row="2" Grid.Column="3" Content="State:" FontWeight="Bold" Margin="0,0,8,0" HorizontalAlignment="Right"/>
                                         <TextBlock Grid.Row="2" Grid.Column="4" Name="BanMgmtUserState" VerticalAlignment="Center"/>
                                     </Grid>
                                 </GroupBox>
@@ -2586,6 +2830,94 @@ Title="Tailgrab Player Panel"
             </TabControl>
         </Grid>
 
+
+        <!-- Overlay Panel for Report Profile -->
+        <Border Name="OverlayProfileReport" 
+                            Grid.Row="0" 
+                            Grid.RowSpan="4"
+                            Grid.ColumnSpan="2"
+                            Background="#CC000000" 
+                            Visibility="Collapsed"
+                            Panel.ZIndex="1000" Margin="0,0,0,100">
+            <Border Background="#FF2D2D30" 
+                                MaxWidth="650" 
+                                MaxHeight="500" 
+                                CornerRadius="8"
+                                Padding="16"
+                                VerticalAlignment="Center"
+                                HorizontalAlignment="Center">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Title -->
+                    <TextBlock Grid.Row="0" 
+                                           Text="Report User Profile" 
+                                           FontSize="20" 
+                                           FontWeight="Bold" 
+                                           Foreground="#FFE6E6E6"
+                                           Margin="0,0,0,16"/>
+
+                    <!-- User ID -->
+                    <StackPanel Grid.Row="1" Margin="0,0,0,12">
+                        <Label Content="User ID: *" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox Name="OverlayProfileReportUserIdTextBox" Grid.Column="0" IsReadOnly="True"/>
+                            <Label Name="OverlayProfileReportUserIdError" 
+                                               Grid.Column="1" 
+                                               Content="Required" 
+                                               Foreground="Red" 
+                                               FontWeight="Bold"
+                                               Margin="8,0,0,0"
+                                               VerticalAlignment="Center"
+                                               Visibility="Collapsed"/>
+                        </Grid>
+                    </StackPanel>
+
+                    <!-- Category -->
+                    <StackPanel Grid.Row="2" Margin="0,0,0,12">
+                        <Label Content="Category:" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                        <TextBox Name="OverlayProfileReportCategoryTextBox" IsReadOnly="True" Text="Profile"/>
+                    </StackPanel>
+
+                    <!-- Report Reason -->
+                    <StackPanel Grid.Row="3" Margin="0,0,0,12">
+                        <Label Content="Report Reason:" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                        <ComboBox Name="OverlayProfileReportReasonComboBox" 
+                                              DisplayMemberPath="DisplayName"
+                                              SelectedValuePath="Value"/>
+                    </StackPanel>
+
+                    <!-- Report Description -->
+                    <StackPanel Grid.Row="4" Margin="0,0,0,12">
+                        <Label Content="Report Description (AI Evaluation):" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                        <TextBox Name="OverlayProfileReportDescriptionTextBox" 
+                                             TextWrapping="Wrap" 
+                                             AcceptsReturn="True" 
+                                             VerticalScrollBarVisibility="Auto"
+                                             IsReadOnly="False"
+                                             MinHeight="200"/>
+                    </StackPanel>
+
+                    <!-- Action Buttons -->
+                    <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Name="OverlayProfileReportCancelButton" Content="Cancel" Width="100" Margin="0,0,12,0" Click="OverlayProfileReportCancel_Click"/>
+                        <Button Name="OverlayProfileReportSubmitButton" Content="Submit" Width="100" Click="OverlayProfileReportSubmit_Click"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Border>
+
         <!-- Overlay Panel for User Groups Management -->
         <Border Name="UserGroupsOverlay" 
                 Grid.Row="0" 
@@ -2736,7 +3068,7 @@ Title="Tailgrab Player Panel"
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
-                                                                
+
                             </DataGrid.Columns>
 
                             <!-- Row Details Template for Description and Rules -->
@@ -2824,6 +3156,12 @@ Title="Tailgrab Player Panel"
                 <TextBlock>
                     <Run Text="AI Queue: "/>
                     <Run Text="{Binding OllamaQueueLength, Mode=OneWay}" FontWeight="Bold"/>
+                </TextBlock>
+            </StatusBarItem>
+            <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" />
+            <StatusBarItem HorizontalAlignment="Right">
+                <TextBlock>
+                    <Run Text="{Binding GroupGistStatus, Mode=OneWay}" FontWeight="Bold"/>
                 </TextBlock>
             </StatusBarItem>
             <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" />

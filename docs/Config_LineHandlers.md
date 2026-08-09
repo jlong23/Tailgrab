@@ -59,8 +59,6 @@ The TTS Action will allow you to say a phrase when triggered.
 
 ### KeyPressAction Definition in Actions
 
-** Still Broken with Beta 3 release; Will be fixed in future release **
-
 The KeyPress action will let you send keystrokes to a targed application by it's HWND Window Title, if the application runs windowless/without a title bar, this may not work for you.
 
 |Attribute | Definition |
@@ -68,6 +66,15 @@ The KeyPress action will let you send keystrokes to a targed application by it's
 | actionTypeValue | ```KeyPressAction``` See ```actionTypeValue``` |
 | windowTitle | Windows application title; EG. ```VRChat``` |
 | keys | An encoded defintion of keys to send to the application; see below |
+
+### PlaySoundAction Definition in Actions
+
+The PlaySound action will let you play a local application sound file when triggered. You hear it only unless you have routed your system audio to a VRChat microphone input, then it will be heard by others in the instance.  Use keypress action to trigger some audio globally with a soundboard reacting to the keypress.
+
+|Attribute | Definition |
+|--------|--------|
+| actionTypeValue | ```PlaySoundAction``` See ```actionTypeValue``` |
+| soundFile | The path to the sound file to play; EG. ```alert``` |
 
 
 From https://learn.microsoft.com/en-us/dotnet/api/system.windows.forms.sendkeys?view=windowsdesktop-10.0
