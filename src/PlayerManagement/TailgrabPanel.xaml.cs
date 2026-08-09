@@ -20,7 +20,7 @@ namespace Tailgrab.PlayerManagement
 {
     public partial class TailgrabPanel : Window, IDisposable, INotifyPropertyChanged
     {
-        public const int CONST_CONFIG_TAB_INDEX = 6;
+        public const int CONST_CONFIG_TAB_INDEX = 5;
         public const int CONST_BAN_MGMT_TAB_INDEX = 10;
 
 
@@ -1840,7 +1840,14 @@ namespace Tailgrab.PlayerManagement
             if (btn.DataContext is PlayerViewModel pvm)
             {
                 string userId = pvm.UserId;
+                SwitchToBanManagementTab(sender, e, userId);
+            }
+        }
 
+        private void SwitchToBanManagementTab(object sender, RoutedEventArgs e, string userId)
+        {
+            if (!string.IsNullOrWhiteSpace(userId))
+            {
                 // Set the user ID in Ban Management tab
                 BanMgmtUserIdTextBox.Text = userId;
 
@@ -1855,6 +1862,7 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
+
         private void BanAvatarOwner_Click(object sender, RoutedEventArgs e)
         {
             // Get the owner ID from the BanMgmtAvatarOwnerId TextBlock
@@ -1862,17 +1870,7 @@ namespace Tailgrab.PlayerManagement
 
             if (!string.IsNullOrWhiteSpace(ownerId))
             {
-                // Set the user ID in Ban Management tab
-                BanMgmtUserIdTextBox.Text = ownerId;
-
-                // Activate the Config tab (index 4) in main TabControl
-                MainTabControl.SelectedIndex = CONST_CONFIG_TAB_INDEX;
-
-                // Activate the Ban Management tab (index 10) in Config TabControl
-                ConfigTabControl.SelectedIndex = CONST_BAN_MGMT_TAB_INDEX;
-
-                // Call the load user function
-                BanMgmtLoadUser_Click(sender, e);
+                SwitchToBanManagementTab(sender, e, ownerId);
             }
         }
 
@@ -1883,17 +1881,7 @@ namespace Tailgrab.PlayerManagement
 
             if (!string.IsNullOrWhiteSpace(ownerId))
             {
-                // Set the user ID in Ban Management tab
-                BanMgmtUserIdTextBox.Text = ownerId;
-
-                // Activate the Config tab (index 4) in main TabControl
-                MainTabControl.SelectedIndex = CONST_CONFIG_TAB_INDEX;
-
-                // Activate the Ban Management tab (index 10) in Config TabControl
-                ConfigTabControl.SelectedIndex = CONST_BAN_MGMT_TAB_INDEX;
-
-                // Call the load user function
-                BanMgmtLoadUser_Click(sender, e);
+                SwitchToBanManagementTab(sender, e, ownerId);
             }
         }
 
