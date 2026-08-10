@@ -18,16 +18,18 @@ namespace Tailgrab.Common
     {
         public static string MapEnumToDescription(AlertClassEnum alertClassEnum)
         {
-            return alertClassEnum switch
+            var resources = System.Windows.Application.Current.Resources;
+            string key = alertClassEnum switch
             {
-                AlertClassEnum.Avatar => "Avatar",
-                AlertClassEnum.Group => "Group",
-                AlertClassEnum.Profile => "Profile",
-                AlertClassEnum.Print => "Print",
-                AlertClassEnum.EmojiSticker => "Emoji Sticker",
-                AlertClassEnum.Moderation => "Moderation",
-                _ => "Unknown alert class",
+                AlertClassEnum.Avatar => "Text.AlertClassEnum.Avatar",
+                AlertClassEnum.Group => "Text.AlertClassEnum.Group",
+                AlertClassEnum.Profile => "Text.AlertClassEnum.Profile",
+                AlertClassEnum.Print => "Text.AlertClassEnum.Print",
+                AlertClassEnum.EmojiSticker => "Text.AlertClassEnum.EmojiSticker",
+                AlertClassEnum.Moderation => "Text.AlertClassEnum.Moderation",
+                _ => "Text.AlertClassEnum.Default",
             };
+            return (string)resources[key];  
         }
 
 

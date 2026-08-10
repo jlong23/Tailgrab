@@ -17,14 +17,16 @@ namespace Tailgrab.Common
     {
         public static string MapEnumToString(AgeVerificationEnum ageVerificationStatus)
         {
-            return ageVerificationStatus switch
+            var resources = System.Windows.Application.Current.Resources;
+            string key = ageVerificationStatus switch
             {
-                AgeVerificationEnum.UNVERIFIED => "Unverified",
-                AgeVerificationEnum.VERIFIED => "Verified",
-                AgeVerificationEnum.HIDDEN => "Hidden",
-                AgeVerificationEnum.PLUS18 => "18+",
-                _ => "Unknown",
+                AgeVerificationEnum.UNVERIFIED => "Text.AgeVerificationEnum.UNVERIFIED",
+                AgeVerificationEnum.VERIFIED => "Text.AgeVerificationEnum.VERIFIED",
+                AgeVerificationEnum.HIDDEN => "Text.AgeVerificationEnum.HIDDEN",
+                AgeVerificationEnum.PLUS18 => "Text.AgeVerificationEnum.PLUS18",
+                _ => "Text.AgeVerificationEnum.Default",
             };
+            return (string)resources[key];
         }
 
         public static AgeVerificationEnum MapStringToEnum(string ageVerificationStatus)

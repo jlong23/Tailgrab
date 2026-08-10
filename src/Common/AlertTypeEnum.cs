@@ -17,14 +17,16 @@ namespace Tailgrab.Common
     {
         public static string MapEnumToDescription(AlertTypeEnum alertTypeEnum)
         {
-            return alertTypeEnum switch
+            var resources = System.Windows.Application.Current.Resources;   
+            string key = alertTypeEnum switch
             {
-                AlertTypeEnum.None => "None",
-                AlertTypeEnum.Watch => "Watch",
-                AlertTypeEnum.Nuisance => "Nuisance",
-                AlertTypeEnum.Crasher => "Crasher",
-                _ => "None",
+                AlertTypeEnum.None => "Text.AlertTypeEnum.None",
+                AlertTypeEnum.Watch => "Text.AlertTypeEnum.Watch",
+                AlertTypeEnum.Nuisance => "Text.AlertTypeEnum.Nuisance",
+                AlertTypeEnum.Crasher => "Text.AlertTypeEnum.Crasher",
+                _ => "Text.AlertTypeEnum.Default",
             };
+            return (string)resources[key];
         }
 
         public static AlertTypeEnum MapStringToEnum(string alertType)
