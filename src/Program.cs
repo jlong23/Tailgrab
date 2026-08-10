@@ -695,6 +695,11 @@ public class FileTailer
         // Start WPF application and show the TailgrabPanel on this STA thread
         var app = new System.Windows.Application();
 
+        // Load app-wide resource dictionaries
+        app.Resources.MergedDictionaries.Add(
+            (System.Windows.ResourceDictionary)System.Windows.Application.LoadComponent(
+                new Uri("/tailgrab;component/src/Resources/AlertClassIcons.xaml", UriKind.Relative)));
+
         // Dark theme resources
         var darkWindow = new SolidColorBrush(System.Windows.Media.Color.FromRgb(30, 30, 30));
         var darkControl = new SolidColorBrush(System.Windows.Media.Color.FromRgb(45, 45, 48));
