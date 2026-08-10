@@ -21,7 +21,7 @@ namespace Tailgrab.PlayerManagement
     public partial class TailgrabPanel : Window, IDisposable, INotifyPropertyChanged
     {
         public const int CONST_CONFIG_TAB_INDEX = 5;
-        public const int CONST_BAN_MGMT_TAB_INDEX = 10;
+        public const int CONST_BAN_MGMT_TAB_INDEX = 9;
 
 
         public static readonly Logger logger = LogManager.GetCurrentClassLogger();
@@ -4211,63 +4211,6 @@ namespace Tailgrab.PlayerManagement
             {
                 logger?.Error(ex, "Failed to cancel tail task");
             }
-        }
-        #endregion
-
-        //
-        // Migration UI handlers
-        #region Migration handlers
-        private void MigrationBrowse_Click(object sender, RoutedEventArgs e)
-        {
-            var openFileDialog = new Microsoft.Win32.OpenFileDialog
-            {
-                Title = "Select avatars.sqlite file",
-                Filter = "SQLite Database (*.sqlite)|*.sqlite|All Files (*.*)|*.*",
-                FilterIndex = 1,
-                CheckFileExists = true,
-                CheckPathExists = true
-            };
-
-            if (openFileDialog.ShowDialog() == true)
-            {
-                MigrationFilePathTextBox.Text = openFileDialog.FileName;
-                logger.Info($"Selected migration file: {openFileDialog.FileName}");
-            }
-        }
-
-        private void MigrationCancel_Click(object sender, RoutedEventArgs e)
-        {
-            MigrationFilePathTextBox.Text = string.Empty;
-            logger.Info("Migration file selection cleared");
-        }
-
-        private void MigrationSubmit_Click(object sender, RoutedEventArgs e)
-        {
-            var filePath = MigrationFilePathTextBox.Text;
-
-            if (string.IsNullOrWhiteSpace(filePath))
-            {
-                System.Windows.MessageBox.Show("Please select a file first.", "Validation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            if (!System.IO.File.Exists(filePath))
-            {
-                System.Windows.MessageBox.Show($"The selected file does not exist:\n{filePath}", "Validation Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            logger.Info($"Migration file selected successfully: {filePath}");
-
-            MigrationStatus status = _serviceRegistry.GetDBContext().MigrateOldVersion(filePath);
-
-            StringBuilder sb = new();
-            foreach (var msg in status.Messages)
-            {
-                sb.AppendLine(msg);
-            }
-
-            System.Windows.MessageBox.Show(sb.ToString(), "Migration Status", MessageBoxButton.OK, MessageBoxImage.Information);
         }
         #endregion
 

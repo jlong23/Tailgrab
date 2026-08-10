@@ -408,8 +408,10 @@ namespace Tailgrab.PlayerManagement
         {
             if (gistRecordCount > 0)
             {
+                string gistProcessing = Utility.I18NString("UI.StatusBar.GroupGISTProcessing");
+                string gistProcessingOf = Utility.I18NString("UI.StatusBar.GroupGISTProcessingOf");
                 int percentComplete = (int)((double)gistProcessedCount / gistRecordCount * 100);
-                return $"Group GIST Processing: {gistProcessedCount} of {gistRecordCount} ({percentComplete}%)";
+                return $"{gistProcessing} {gistProcessedCount} {gistProcessingOf} {gistRecordCount} ({percentComplete}%)";
             }
 
             return string.Empty;
@@ -692,6 +694,7 @@ namespace Tailgrab.PlayerManagement
                     if (item.LineNumber % 50 == 0)
                     {
                         logger.Info($"GIST Group Processed {item.LineNumber} of {importList.Count()} records.");
+                        await Task.Delay(10000); // Throttle processing to avoid overwhelming the API
                     }
                 }
                 catch (Exception ex)

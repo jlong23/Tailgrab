@@ -1,0 +1,96 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+    <!-- Active Players Panel -->
+    <sys:String x:Key="UI.Tab.ActivePlayers.Tab">Aktive Spieler</sys:String>
+    <sys:String x:Key="UI.Tab.ActivePlayers.Filter.Apply">Filter anwenden</sys:String>
+    <sys:String x:Key="UI.Tab.ActivePlayers.Filter.Clear">Filter löschen</sys:String>
+    <sys:String x:Key="UI.Tab.ActivePlayers.Context.Filter">Filter</sys:String>
+    <sys:String x:Key="UI.Tab.ActivePlayers.Context.FilterBySelectedDisplayName">Nach ausgewähltem Anzeigenamen filtern</sys:String>
+    <sys:String x:Key="UI.Tab.ActivePlayers.Context.ViewGroups">Gruppen anzeigen</sys:String>
+    <sys:String x:Key="UI.Tab.ActivePlayers.Column.DisplayName">Anzeigename</sys:String>
+    <sys:String x:Key="UI.Tab.ActivePlayers.Column.Age">Alter</sys:String>
+    <sys:String x:Key="UI.Tab.ActivePlayers.Column.Trust">Rang</sys:String>
+    <sys:String x:Key="UI.Tab.ActivePlayers.Column.AvatarName">Avatarname</sys:String>
+    <sys:String x:Key="UI.Tab.ActivePlayers.Column.InstanceStart">Instanzstart ▼</sys:String>
+    <sys:String x:Key="UI.Tab.ActivePlayers.Column.AlertMessages">Warnmeldungen</sys:String>
+    <sys:String x:Key="UI.Tab.ActivePlayers.Column.Browser">Browser</sys:String>
+    <sys:String x:Key="UI.Tab.ActivePlayers.Column.Copy">Kopieren</sys:String>
+    <sys:String x:Key="UI.Tab.ActivePlayers.Column.Rpt">Melden</sys:String>
+    <sys:String x:Key="UI.Tab.ActivePlayers.Column.Ban">Bannen</sys:String>
+    <sys:String x:Key="UI.Tab.ActivePlayers.Column.Groups">Gruppen</sys:String>
+    <sys:String x:Key="UI.Tab.ActivePlayers.Action.Open">Öffnen</sys:String>
+    <sys:String x:Key="UI.Tab.ActivePlayers.Action.Copy">Kopieren</sys:String>
+    <sys:String x:Key="UI.Tab.ActivePlayers.Action.Report">Melden</sys:String>
+    <sys:String x:Key="UI.Tab.ActivePlayers.Action.Ban">Sperren</sys:String>
+    <sys:String x:Key="UI.Tab.ActivePlayers.Action.Groups">Gruppen</sys:String>
+    <sys:String x:Key="UI.Tab.ActivePlayers.Profile.TextFormat">{}Benutzerprofil:&#x0a;{0}&#x0a;&#x0a;KI-Bewertung:&#x0a;{1}</sys:String>
+
+
+    <!-- Past Players Panel -->
+    <sys:String x:Key="UI.Tab.PastPlayers.Tab">Vergangene Spieler</sys:String>
+    <sys:String x:Key="UI.Tab.PastPlayers.Filter.Apply">Filter anwenden</sys:String>
+    <sys:String x:Key="UI.Tab.PastPlayers.Filter.Clear">Filter löschen</sys:String>
+    <sys:String x:Key="UI.Tab.PastPlayers.Context.Filter">Filter</sys:String>
+    <sys:String x:Key="UI.Tab.PastPlayers.Context.FilterBySelectedDisplayName">Nach ausgewähltem Anzeigenamen filtern</sys:String>
+    <sys:String x:Key="UI.Tab.PastPlayers.Context.ViewGroups">Gruppen anzeigen</sys:String>
+    <sys:String x:Key="UI.Tab.PastPlayers.Column.DisplayName">Anzeigename</sys:String>
+    <sys:String x:Key="UI.Tab.PastPlayers.Column.Age">Alter</sys:String>
+    <sys:String x:Key="UI.Tab.PastPlayers.Column.Trust">Rang</sys:String>
+    <sys:String x:Key="UI.Tab.PastPlayers.Column.AvatarName">Avatarname</sys:String>
+    <sys:String x:Key="UI.Tab.PastPlayers.Column.InstanceStart">Instanzstart ▼</sys:String>
+    <sys:String x:Key="UI.Tab.PastPlayers.Column.InstanceEnd">Instanzende ▼</sys:String>
+    <sys:String x:Key="UI.Tab.PastPlayers.Column.AlertMessages">Warnmeldungen</sys:String>
+    <sys:String x:Key="UI.Tab.PastPlayers.Column.Browser">Browser</sys:String>
+    <sys:String x:Key="UI.Tab.PastPlayers.Column.Copy">Kopieren</sys:String>
+    <sys:String x:Key="UI.Tab.PastPlayers.Column.Rpt">Melden</sys:String>
+    <sys:String x:Key="UI.Tab.PastPlayers.Column.Ban">Sperren</sys:String>
+    <sys:String x:Key="UI.Tab.PastPlayers.Column.Groups">Gruppen</sys:String>
+    <sys:String x:Key="UI.Tab.PastPlayers.Action.Open">Öffnen</sys:String>
+    <sys:String x:Key="UI.Tab.PastPlayers.Action.Copy">Kopieren</sys:String>
+    <sys:String x:Key="UI.Tab.PastPlayers.Action.Report">Melden</sys:String>
+    <sys:String x:Key="UI.Tab.PastPlayers.Action.Ban">Sperren</sys:String>
+    <sys:String x:Key="UI.Tab.PastPlayers.Action.Groups">Gruppen</sys:String>
+    <sys:String x:Key="UI.Tab.PastPlayers.Profile.TextFormat">{}Benutzerprofil:&#x0a;{0}&#x0a;&#x0a;KI-Bewertung:&#x0a;{1}</sys:String>
+
+
+    <!-- Age Verification Icons -->
+    <sys:String x:Key="Text.AgeVerificationEnum.UNVERIFIED">Unverifiziert</sys:String>
+    <sys:String x:Key="Text.AgeVerificationEnum.VERIFIED">Verifiziert</sys:String>
+    <sys:String x:Key="Text.AgeVerificationEnum.HIDDEN">Versteckt</sys:String>
+    <sys:String x:Key="Text.AgeVerificationEnum.PLUS18">18+</sys:String>
+    <sys:String x:Key="Text.AgeVerificationEnum.Default">Unbekannt</sys:String>
+
+
+    <!-- AI Evalution Icons -->
+
+
+    <!-- Alert Class Icons -->
+    <sys:String x:Key="Text.AlertClassEnum.Avatar">Avatar</sys:String>
+    <sys:String x:Key="Text.AlertClassEnum.Group">Gruppe</sys:String>
+    <sys:String x:Key="Text.AlertClassEnum.Profile">Profil</sys:String>
+    <sys:String x:Key="Text.AlertClassEnum.Print">Prints</sys:String>
+    <sys:String x:Key="Text.AlertClassEnum.EmojiSticker">Emoji Sticker</sys:String>
+    <sys:String x:Key="Text.AlertClassEnum.Moderation">Moderation</sys:String>
+    <sys:String x:Key="Text.AlertClassEnum.Default">Unbekannte Warnklasse</sys:String>
+
+
+    <!-- Alert Types Icons -->
+    <sys:String x:Key="Text.AlertTypeEnum.None">Keine</sys:String>
+    <sys:String x:Key="Text.AlertTypeEnum.Watch">Watch</sys:String>
+    <sys:String x:Key="Text.AlertTypeEnum.Nuisance">Nuisance</sys:String>
+    <sys:String x:Key="Text.AlertTypeEnum.Crasher">Abstürzer</sys:String>
+    <sys:String x:Key="Text.AlertTypeEnum.Default">Keine</sys:String>
+
+
+    <!-- Trust Class Icons -->
+    <sys:String x:Key="Text.TrustClassEnum.VISITOR">Besucher</sys:String>
+    <sys:String x:Key="Text.TrustClassEnum.NEW_USER">Neuer Benutzer</sys:String>
+    <sys:String x:Key="Text.TrustClassEnum.USER">Benutzer</sys:String>
+    <sys:String x:Key="Text.TrustClassEnum.KNOWN_USER">Bekannter Benutzer</sys:String>
+    <sys:String x:Key="Text.TrustClassEnum.TRUSTED_USER">Vertrauenswürdiger Benutzer</sys:String>
+    <sys:String x:Key="Text.TrustClassEnum.PROBABLE_TROLL">Wahrscheinlicher Troll</sys:String>
+    <sys:String x:Key="Text.TrustClassEnum.NUISANCE">Nuisance</sys:String>
+    <sys:String x:Key="Text.TrustClassEnum.Default">Unbekannt</sys:String>
+
+</ResourceDictionary>

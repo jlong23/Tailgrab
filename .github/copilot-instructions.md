@@ -8,6 +8,7 @@ Provide code immediately. Do not explain code unless explicitly asked.
 - Binding: Use `CommunityToolkit.Mvvm` source generators (`[ObservableProperty]`, `[RelayCommand]`).
 - UI Thread: Always perform heavy/IO async work off the UI thread; use `Dispatcher.InvokeAsync` only for UI updates.
 - Resources: Use StaticResource/DynamicResource for themes and styles. Do not hardcode colors or fonts inline.
+- Localization: Default UI text to localization resources from `localization.en-US.xaml` instead of hardcoded strings.
 
 # C# Guidelines
 - Use modern C# features (file-scoped namespaces, pattern matching, primary constructors where applicable).

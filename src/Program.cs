@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Win32;
 using NLog;
+using System.Globalization;
 using System.IO;
 using System.Net.Http;
 using System.Reflection;
@@ -692,6 +693,19 @@ public class FileTailer
 
     private static void BuildAppWindow(ServiceRegistry serviceRegistryInstance)
     {
+        var defaultCulture = CultureInfo.GetCultureInfo("en-US");
+        var userCulture = CultureInfo.CurrentCulture;
+
+        logger.Info($"User's current culture: {userCulture.Name}, Defaulting to: {defaultCulture.Name}");
+
+        if (userCulture == null || string.IsNullOrEmpty(userCulture.Name) || userCulture.Name == "Invariant Culture" || userCulture.Name == "und")
+        {
+            userCulture = defaultCulture;
+        }
+
+        CultureInfo.DefaultThreadCurrentCulture = userCulture;
+        CultureInfo.DefaultThreadCurrentUICulture = userCulture;
+
         // Start WPF application and show the TailgrabPanel on this STA thread
         var app = new System.Windows.Application();
 
@@ -699,6 +713,9 @@ public class FileTailer
         app.Resources.MergedDictionaries.Add(
             (System.Windows.ResourceDictionary)System.Windows.Application.LoadComponent(
                 new Uri("/tailgrab;component/src/Resources/AlertClassIcons.xaml", UriKind.Relative)));
+        app.Resources.MergedDictionaries.Add(
+            (System.Windows.ResourceDictionary)System.Windows.Application.LoadComponent(
+                new Uri($"/tailgrab;component/src/Resources/localization.{userCulture.Name}.xaml", UriKind.Relative)));
 
         // Dark theme resources
         var darkWindow = new SolidColorBrush(System.Windows.Media.Color.FromRgb(30, 30, 30));
