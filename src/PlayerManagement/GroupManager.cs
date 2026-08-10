@@ -693,8 +693,6 @@ namespace Tailgrab.PlayerManagement
                     {
                         logger.Info($"GIST Group Processed {item.LineNumber} of {importList.Count()} records.");
                     }
-
-                    await Task.Delay(1000);
                 }
                 catch (Exception ex)
                 {
@@ -756,7 +754,8 @@ namespace Tailgrab.PlayerManagement
                                 logger.Warn($"Group '{groupId}' not found in VRChat API.");
                                 if (existing != null)
                                 {
-                                    dbContext.GroupInfos.Remove(existing);
+                                    existing.AlertType = AlertTypeEnum.None;
+                                    dbContext.GroupInfos.Update(existing);
                                     dbContext.SaveChanges();
                                     logger.Info($"Removed Group '{groupId}' from local database as it no longer exists in VRChat API.");
                                 }
