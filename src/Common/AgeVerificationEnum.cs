@@ -52,6 +52,13 @@ namespace Tailgrab.Common
             };
         }
 
+        public static AlertDisplayItem MapEnumToAlertDisplayItem(string status)
+        {
+            AgeVerificationEnum item = MapStringToEnum(status);
+            return MapEnumToAlertDisplayItem(item);
+        }
+
+
         public static AlertDisplayItem MapEnumToAlertDisplayItem(AgeVerificationEnum status)
         {
             return new AlertDisplayItem

@@ -37,7 +37,7 @@ namespace Tailgrab.Clients.VRCDB
             {
                 httpClient.DefaultRequestHeaders.Add("User-Agent", UserAgent);
                 httpClient.DefaultRequestHeaders.Add("Contact", APP_CONTACT);
-                string requestUri = $"{URI_VRC_BASE_API}{URI_VRC_AVATAR_SEARCH}?authorId={authorId}";
+                string requestUri = $"{URI_VRC_BASE_API}{URI_VRC_AVATAR_SEARCH}?authorId={authorId}&n=5000";
                 try
                 {
                     await Task.Delay(1000); // Delay to avoid hitting API rate limits

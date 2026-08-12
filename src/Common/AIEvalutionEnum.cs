@@ -49,7 +49,13 @@ namespace Tailgrab.Common
                 AIEvalutionEnum.SELF_HARM => CommonConst.AI_EVALUATION_SELFHARM,
                 _ => "Unknown evaluation",
             };
-        }   
+        }
+
+        public static AlertDisplayItem MapEnumToAlertDisplayItem(string status)
+        {
+            AIEvalutionEnum item = MapEvaluationToEnum(status);
+            return MapEnumToAlertDisplayItem(item);
+        }
 
         public static AlertDisplayItem MapEnumToAlertDisplayItem(AIEvalutionEnum aIEvalutionEnum)
         {

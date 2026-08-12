@@ -64,7 +64,5 @@ namespace Tailgrab.Common
             };
             return (WpfBrush)resources[key];    
         }
-
-
     }
 }

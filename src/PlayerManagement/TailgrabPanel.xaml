@@ -378,7 +378,7 @@ Title="Tailgrab Player Panel"
 
                                     <TextBlock Name="UserPofileBox" TextWrapping="Wrap" Foreground="#FFE6E6E6">
                                         <TextBlock.Text>
-                                            <MultiBinding StringFormat="{StaticResource UI.Tab.ActivePlayers.Profile.TextFormat}" Mode="OneWay">
+                                            <MultiBinding StringFormat="{}User Profile:&#x0a;{0}&#x0a;&#x0a;AI Evaluation:&#x0a;{1}" Mode="OneWay">
                                                 <Binding Path="SelectedActive.Profile" Mode="OneWay" FallbackValue="" TargetNullValue=""/>
                                                 <Binding Path="SelectedActive.AIEval" Mode="OneWay" FallbackValue="" TargetNullValue=""/>
                                             </MultiBinding>
@@ -639,7 +639,7 @@ Title="Tailgrab Player Panel"
 
                                     <TextBlock Name="UserPofileBoxPast" TextWrapping="Wrap" Foreground="#FFE6E6E6">
                                         <TextBlock.Text>
-                                            <MultiBinding StringFormat="{StaticResource UI.Tab.PastPlayers.Profile.TextFormat}" Mode="OneWay">
+                                            <MultiBinding StringFormat="{}User Profile:&#x0a;{0}&#x0a;&#x0a;AI Evaluation:&#x0a;{1}" Mode="OneWay">
                                                 <Binding Path="SelectedPast.Profile" Mode="OneWay" FallbackValue="" TargetNullValue=""/>
                                                 <Binding Path="SelectedPast.AIEval" Mode="OneWay" FallbackValue="" TargetNullValue=""/>
                                             </MultiBinding>
@@ -1088,15 +1088,24 @@ Title="Tailgrab Player Panel"
                                                     <TextBlock Name="BanMgmtAvatarOwner"/> / <TextBlock Name="BanMgmtAvatarOwnerId"/>
                                                 </Hyperlink>
                                             </TextBlock>
+                                        </StackPanel>
+                                        <StackPanel Grid.Row="3" Grid.Column="5" Orientation="Horizontal" VerticalAlignment="Center">
                                             <Button Content="{DynamicResource UI.Tab.KnownAvatars.Group.Action.BanOwner}" 
                                                     Name="BanAvatarOwnerButton"
                                                     Click="BanAvatarOwner_Click" 
                                                     Margin="8,0,0,0"
                                                     Padding="6,2"
                                                     IsEnabled="False"/>
+                                            <Button Content="{DynamicResource UI.Tab.KnownAvatars.Group.Action.ShowOwnerAvatars}" 
+                                                    Name="ShowOwnerAvatarsButton"
+                                                    Click="AvatarCheckAvatars_Click" 
+                                                    Margin="8,0,0,0"
+                                                    Padding="6,2"
+                                                    IsEnabled="False"/>
                                         </StackPanel>
 
-                                        <Label Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="6" Content="{DynamicResource UI.Tab.KnownAvatars.Group.Description}" FontWeight="Bold" Margin="0,0,8,0"/>
+
+                                        <Label Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="4" Content="{DynamicResource UI.Tab.KnownAvatars.Group.Description}" FontWeight="Bold" Margin="0,0,8,0"/>
                                         <ScrollViewer Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="6" MaxHeight="120" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                                             <TextBlock Name="BanMgmtAvatarDesc" VerticalAlignment="Top" TextWrapping="Wrap"/>
                                         </ScrollViewer>
@@ -1104,7 +1113,9 @@ Title="Tailgrab Player Panel"
                                     </Grid>
                                 </GroupBox>
 
-                                <DataGrid Name="AvatarDbGrid" Grid.Row="2" AutoGenerateColumns="False" CanUserSortColumns="True" IsReadOnly="False" ItemsSource="{Binding AvatarDbView}" CellEditEnding="AvatarDbGrid_CellEditEnding"  SelectionChanged="AvatarDbGrid_SelectionChanged" Grid.ColumnSpan="3">
+                                <DataGrid Name="AvatarDbGrid" Grid.Row="2" AutoGenerateColumns="False" CanUserSortColumns="True" IsReadOnly="False" 
+                                          ItemsSource="{Binding AvatarDbView}" CellEditEnding="AvatarDbGrid_CellEditEnding"  SelectionChanged="AvatarDbGrid_SelectionChanged" 
+                                          Grid.ColumnSpan="3">
                                     <DataGrid.Columns>
                                         <!-- AlertType as template column: display enum name, edit with ComboBox -->
                                         <DataGridTemplateColumn Header="{DynamicResource UI.Tab.KnownAvatars.Column.Alert}" SortMemberPath="AlertType" Width="80">
@@ -1222,9 +1233,17 @@ Title="Tailgrab Player Panel"
                                                     <TextBlock Name="BanMgmtGroupOwner"/> / <TextBlock Name="BanMgmtGroupOwnerId"/>
                                                 </Hyperlink>
                                             </TextBlock>
+                                        </StackPanel>
+                                        <StackPanel Grid.Row="3" Grid.Column="5" Orientation="Horizontal" VerticalAlignment="Center">
                                             <Button Content="Ban Owner" 
                                                     Name="BanGroupOwnerButton"
                                                     Click="BanGroupOwner_Click" 
+                                                    Margin="8,0,0,0"
+                                                    Padding="6,2"
+                                                    IsEnabled="False"/>
+                                            <Button Content="{DynamicResource UI.Tab.KnownGroups.Group.Action.ShowOwnerAvatars}" 
+                                                    Name="ShowGroupOwnerAvatarsButton"
+                                                    Click="GroupCheckAvatars_Click" 
                                                     Margin="8,0,0,0"
                                                     Padding="6,2"
                                                     IsEnabled="False"/>
@@ -1235,7 +1254,7 @@ Title="Tailgrab Player Panel"
                                             <TextBlock Name="BanMgmtGroupDesc" VerticalAlignment="Top" TextWrapping="Wrap"/>
                                         </ScrollViewer>
 
-                                        <Label Grid.Row="3" Grid.Column="3" Grid.ColumnSpan="4" Content="{DynamicResource UI.Tab.KnownGroups.Group.Rules}" FontWeight="Bold" Margin="0,0,8,0"/>
+                                        <Label Grid.Row="3" Grid.Column="3" Content="{DynamicResource UI.Tab.KnownGroups.Group.Rules}" FontWeight="Bold" Margin="0,0,8,0"/>
                                         <ScrollViewer Grid.Row="4" Grid.Column="3" Grid.ColumnSpan="4" MaxHeight="120" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                                             <TextBlock Name="BanMgmtGroupRules" VerticalAlignment="Top" TextWrapping="Wrap"/>
                                         </ScrollViewer>
@@ -1243,7 +1262,8 @@ Title="Tailgrab Player Panel"
                                     </Grid>
                                 </GroupBox>
 
-                                <DataGrid Name="GroupDbGrid" Grid.Row="2" AutoGenerateColumns="False" CanUserSortColumns="True" IsReadOnly="False" ItemsSource="{Binding GroupDbView}" CellEditEnding="GroupDbGrid_CellEditEnding" SelectionChanged="GroupDbGrid_SelectionChanged" Grid.ColumnSpan="3">
+                                <DataGrid Name="GroupDbGrid" Grid.Row="2" AutoGenerateColumns="False" CanUserSortColumns="True" IsReadOnly="False" 
+                                          ItemsSource="{Binding GroupDbView}" CellEditEnding="GroupDbGrid_CellEditEnding" SelectionChanged="GroupDbGrid_SelectionChanged" Grid.ColumnSpan="3">
                                     <DataGrid.Columns>
                                         <DataGridTemplateColumn Header="{DynamicResource UI.Tab.KnownGroups.Column.Alert}" SortMemberPath="AlertType" Width="120">
                                             <DataGridTemplateColumn.CellTemplate>
@@ -2246,19 +2266,18 @@ Title="Tailgrab Player Panel"
 
         <!-- Overlay Panel for Report Active Profile -->
         <Border Name="OverlayProfileReport" 
-                            Grid.Row="0" 
-                            Grid.RowSpan="4"
-                            Grid.ColumnSpan="2"
-                            Background="#CC000000" 
-                            Visibility="Collapsed"
-                            Panel.ZIndex="1000" Margin="0,0,0,100">
+                Background="#CC000000"                 
+                Panel.ZIndex="1000" 
+                Margin="0,0,0,100"
+                Visibility="Collapsed">
             <Border Background="#FF2D2D30" 
-                                MaxWidth="650" 
-                                MaxHeight="500" 
-                                CornerRadius="8"
-                                Padding="16"
-                                VerticalAlignment="Center"
-                                HorizontalAlignment="Center">
+                    Width="400"
+                    MaxWidth="650" 
+                    MaxHeight="500" 
+                    CornerRadius="8"
+                    Padding="16"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Center">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -2270,16 +2289,16 @@ Title="Tailgrab Player Panel"
                     </Grid.RowDefinitions>
 
                     <!-- Title -->
-                    <TextBlock Grid.Row="0" 
-                                           Text="Report User Profile" 
-                                           FontSize="20" 
-                                           FontWeight="Bold" 
-                                           Foreground="#FFE6E6E6"
-                                           Margin="0,0,0,16"/>
+                    <TextBlock Grid.Row="0"
+                               Text="{DynamicResource UI.Overlay.ProfileReport.Title}" 
+                               FontSize="20" 
+                               FontWeight="Bold" 
+                               Foreground="#FFE6E6E6"
+                               Margin="0,0,0,16"/>
 
                     <!-- User ID -->
                     <StackPanel Grid.Row="1" Margin="0,0,0,12">
-                        <Label Content="User ID: *" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                        <Label Content="{DynamicResource UI.Overlay.ProfileReport.UserID}" FontWeight="Bold" Foreground="#FFE6E6E6"/>
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
@@ -2287,69 +2306,63 @@ Title="Tailgrab Player Panel"
                             </Grid.ColumnDefinitions>
                             <TextBox Name="OverlayProfileReportUserIdTextBox" Grid.Column="0" IsReadOnly="True"/>
                             <Label Name="OverlayProfileReportUserIdError" 
-                                               Grid.Column="1" 
-                                               Content="Required" 
-                                               Foreground="Red" 
-                                               FontWeight="Bold"
-                                               Margin="8,0,0,0"
-                                               VerticalAlignment="Center"
-                                               Visibility="Collapsed"/>
+                                   Grid.Column="1" 
+                                   Content="{DynamicResource UI.Overlay.ProfileReport.Required}" 
+                                   Foreground="Red" 
+                                   FontWeight="Bold"
+                                   Margin="8,0,0,0"
+                                   VerticalAlignment="Center"
+                                   Visibility="Collapsed"/>
                         </Grid>
                     </StackPanel>
 
                     <!-- Category -->
                     <StackPanel Grid.Row="2" Margin="0,0,0,12">
-                        <Label Content="Category:" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                        <Label Content="{DynamicResource UI.Overlay.ProfileReport.Category}" FontWeight="Bold" Foreground="#FFE6E6E6"/>
                         <TextBox Name="OverlayProfileReportCategoryTextBox" IsReadOnly="True" Text="Profile"/>
                     </StackPanel>
 
                     <!-- Report Reason -->
                     <StackPanel Grid.Row="3" Margin="0,0,0,12">
-                        <Label Content="Report Reason:" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                        <Label Content="{DynamicResource UI.Overlay.ProfileReport.ReportReason}" FontWeight="Bold" Foreground="#FFE6E6E6"/>
                         <ComboBox Name="OverlayProfileReportReasonComboBox" 
-                                              DisplayMemberPath="DisplayName"
-                                              SelectedValuePath="Value"/>
+                                  DisplayMemberPath="DisplayName"
+                                  SelectedValuePath="Value"/>
                     </StackPanel>
 
                     <!-- Report Description -->
                     <StackPanel Grid.Row="4" Margin="0,0,0,12">
-                        <Label Content="Report Description (AI Evaluation):" FontWeight="Bold" Foreground="#FFE6E6E6"/>
-                        <TextBox Name="OverlayProfileReportDescriptionTextBox" 
-                                             TextWrapping="Wrap" 
-                                             AcceptsReturn="True" 
-                                             VerticalScrollBarVisibility="Auto"
-                                             IsReadOnly="False"
-                                             MinHeight="200"/>
+                        <Label Content="{DynamicResource UI.Overlay.ProfileReport.ReportDescription}" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                        <TextBox Name="OverlayProfileReportDescriptionTextBox"
+                                 TextWrapping="Wrap" 
+                                 AcceptsReturn="True" 
+                                 VerticalScrollBarVisibility="Auto"
+                                 IsReadOnly="False"
+                                 MinHeight="200"/>
                     </StackPanel>
 
                     <!-- Action Buttons -->
                     <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button Name="OverlayProfileReportCancelButton" Content="Cancel" Width="100" Margin="0,0,12,0" Click="OverlayProfileReportCancel_Click"/>
-                        <Button Name="OverlayProfileReportSubmitButton" Content="Submit" Width="100" Click="OverlayProfileReportSubmit_Click"/>
+                        <Button Name="OverlayProfileReportCancelButton" Content="{DynamicResource UI.Overlay.ProfileReport.Action.Cancel}" Width="100" Margin="0,0,12,0" Click="OverlayProfileReportCancel_Click"/>
+                        <Button Name="OverlayProfileReportSubmitButton" Content="{DynamicResource UI.Overlay.ProfileReport.Action.Submit}" Width="100" Click="OverlayProfileReportSubmit_Click"/>
                     </StackPanel>
                 </Grid>
             </Border>
         </Border>
 
-        <!-- Overlay Panel for Report Past Profile -->
-        <Border Name="ProfilePastReportOverlay" 
-                            Grid.Row="0" 
-                            Grid.RowSpan="2"
-                            Grid.ColumnSpan="2"
-                            Background="#CC000000" 
-                            Visibility="Collapsed"
-                            Panel.ZIndex="1000">
-            <Border Background="#FF2D2D30" 
-                                MaxWidth="650" 
-                                MaxHeight="500" 
-                                CornerRadius="8"
-                                Padding="16"
-                                VerticalAlignment="Center"
-                                HorizontalAlignment="Center">
+
+        <!-- Overlay Panel for User Avatar Management -->
+        <Border Name="UserAvatarOverlay" 
+                Background="#CC000000" 
+                Panel.ZIndex="1000"
+                Visibility="Collapsed">
+            <Border Background="#FF2D2D30"
+                    Height="600" Width="1080"
+                    MaxWidth="1080"  MaxHeight="700" 
+                    CornerRadius="8" Padding="16"
+                    VerticalAlignment="Center" HorizontalAlignment="Center">
                 <Grid>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
@@ -2358,47 +2371,221 @@ Title="Tailgrab Player Panel"
 
                     <!-- Title -->
                     <TextBlock Grid.Row="0" 
-                                           Text="Report User Profile" 
-                                           FontSize="20" 
-                                           FontWeight="Bold" 
-                                           Foreground="#FFE6E6E6"
-                                           Margin="0,0,0,16"/>
+                               Text="User Avatar Management" 
+                               FontSize="20" 
+                               FontWeight="Bold" 
+                               Foreground="#FFE6E6E6"
+                               Margin="0,0,0,16"/>
 
-                    <!-- User ID -->
-                    <StackPanel Grid.Row="1" Margin="0,0,0,12">
-                        <Label Content="User ID: *" FontWeight="Bold" Foreground="#FFE6E6E6"/>
-                        <TextBox Name="ProfilePastReportUserId" IsReadOnly="True"/>
-                    </StackPanel>
+                    <!-- User Info Section -->
+                    <GroupBox Grid.Row="1" Header="{DynamicResource UI.Overlay.UserAvatar.Group.Title}" Margin="0,0,0,12">
+                        <Grid Margin="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
 
-                    <!-- Category -->
-                    <StackPanel Grid.Row="2" Margin="0,0,0,12">
-                        <Label Content="Category:" FontWeight="Bold" Foreground="#FFE6E6E6"/>
-                        <TextBox Name="ProfilePastReportCategory" IsReadOnly="True" Text="Profile"/>
-                    </StackPanel>
+                            <Label Grid.Row="0" Grid.Column="0" Content="{DynamicResource UI.Overlay.UserAvatar.Group.UserId}" FontWeight="Bold" Margin="0,0,8,0"/>
+                            <TextBlock Grid.Row="0" Grid.Column="1" Name="UserAvatarOverlayUserId" VerticalAlignment="Center"/>
 
-                    <!-- Report Reason -->
-                    <StackPanel Grid.Row="3" Margin="0,0,0,12">
-                        <Label Content="Report Reason:" FontWeight="Bold" Foreground="#FFE6E6E6"/>
-                        <ComboBox Name="ProfilePastReportReason" 
-                                              DisplayMemberPath="DisplayName"
-                                              SelectedValuePath="Value"/>
-                    </StackPanel>
+                            <Label Grid.Row="1" Grid.Column="0" Content="{DynamicResource UI.Overlay.UserAvatar.Group.DisplayName}" FontWeight="Bold" Margin="0,0,8,0"/>
+                            <TextBlock Grid.Row="1" Grid.Column="1" Name="UserAvatarOverlayDisplayName" VerticalAlignment="Center"/>
+                        </Grid>
+                    </GroupBox>
 
-                    <!-- Report Description -->
-                    <StackPanel Grid.Row="4" Margin="0,0,0,12">
-                        <Label Content="Report Description (AI Evaluation):" FontWeight="Bold" Foreground="#FFE6E6E6"/>
-                        <TextBox Name="ProfilePastReportDescription" 
-                                             TextWrapping="Wrap" 
-                                             AcceptsReturn="True" 
-                                             VerticalScrollBarVisibility="Auto"
-                                             IsReadOnly="False"
-                                             MinHeight="200"/>
-                    </StackPanel>
+                    <!-- Avatar List -->
+                    <ScrollViewer Name="UserAvatarScrollViewer" Grid.Row="2" VerticalScrollBarVisibility="Auto" Margin="0,0,0,12">
+                        <DataGrid Name="UserAvatarDataGrid"
+                                  AutoGenerateColumns="False" 
+                                  CanUserSortColumns="True" 
+                                  IsReadOnly="False"
+                                  Background="#FF1E1E1E"
+                                  RowBackground="#FF1E1E1E"
+                                  AlternatingRowBackground="#FF2D2D30"
+                                  RowDetailsVisibilityMode="Visible"
+                                  PreviewMouseWheel="UserAvatarDataGrid_PreviewMouseWheel">
+                            <DataGrid.Columns>
+                                <!-- Thumbnail Image -->
+                                <DataGridTemplateColumn Header="{DynamicResource UI.Overlay.UserAvatar.Column.Thumbnail}" Width="110">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Border Width="100" Height="100" BorderBrush="Gray" BorderThickness="1">
+                                                <Image Source="{Binding ThumbnailUrl}" Width="100" Height="100" Stretch="Uniform" />
+                                            </Border>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <!-- Name -->
+                                <DataGridTextColumn Header="{DynamicResource UI.Overlay.UserAvatar.Column.Name}" Binding="{Binding Name}" Width="150" IsReadOnly="True"/>
+
+                                <!-- Avatar ID -->
+                                <DataGridTemplateColumn Header="{DynamicResource UI.Overlay.UserAvatar.Column.AvatarId}" Width="200">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock>
+                                                    <Hyperlink NavigateUri="{Binding AvatarId, StringFormat=https://vrchat.com/home/avatar/{0}}"
+                                                               RequestNavigate="AvatarHyperlink_RequestNavigate">
+                                                        <Run Text="{Binding AvatarId}" />
+                                                    </Hyperlink>
+                                            </TextBlock>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <!-- Platform States -->
+                                <DataGridTemplateColumn Header="{DynamicResource UI.Overlay.UserAvatar.Column.IsPC}" Width="30">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Viewbox Width="32" Height="32" VerticalAlignment="Top" Margin="0,0,4,0">
+                                                <Canvas Width="32" Height="32">
+                                                    <Path Data="{Binding PCPerformance.IconGeometry}" Fill="{Binding PCPerformance.IconBrush}" Stretch="UniformToFill" Width="24" Height="24"/>
+                                                </Canvas>
+                                            </Viewbox>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="{DynamicResource UI.Overlay.UserAvatar.Column.IsQuest}" Width="30">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Viewbox Width="32" Height="32" VerticalAlignment="Top" Margin="0,0,4,0">
+                                                <Canvas Width="32" Height="32">
+                                                    <Path Data="{Binding QuestPerformance.IconGeometry}" Fill="{Binding QuestPerformance.IconBrush}" Stretch="UniformToFill" Width="24" Height="24"/>
+                                                </Canvas>
+                                            </Viewbox>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="{DynamicResource UI.Overlay.UserAvatar.Column.IsIOS}" Width="30">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Viewbox Width="32" Height="32" VerticalAlignment="Top" Margin="0,0,4,0">
+                                                <Canvas Width="32" Height="32">
+                                                    <Path Data="{Binding IOSPerformance.IconGeometry}" Fill="{Binding IOSPerformance.IconBrush}" Stretch="UniformToFill" Width="24" Height="24"/>
+                                                </Canvas>
+                                            </Viewbox>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <!-- Date Info -->
+                                <DataGridTextColumn Header="{DynamicResource UI.Overlay.UserAvatar.Column.CreateDate}" Binding="{Binding CreatedAt}" Width="100" IsReadOnly="True"/>
+                                <DataGridTextColumn Header="{DynamicResource UI.Overlay.UserAvatar.Column.UpdateDate}" Binding="{Binding UpdatedAt}" Width="100" IsReadOnly="True"/>
+
+                                <!-- Alert Type -->
+                                <DataGridTemplateColumn Header="{DynamicResource UI.Overlay.UserAvatar.Column.AlertType}" Width="120">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding AlertType}" 
+                                                       Background="{Binding AlertBackground}"
+                                                       Foreground="{Binding AlertForeground}"
+                                                       Padding="4,2"
+                                                       TextAlignment="Center"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                    <DataGridTemplateColumn.CellEditingTemplate>
+                                        <DataTemplate>
+                                            <ComboBox ItemsSource="{Binding DataContext.AlertTypeOptions, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                      SelectedValuePath="Value" 
+                                                      DisplayMemberPath="Key"
+                                                      SelectedValue="{Binding AlertType, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellEditingTemplate>
+                                </DataGridTemplateColumn>
+
+                                <!-- Add Button -->
+                                <DataGridTemplateColumn Header="{DynamicResource UI.Overlay.UserAvatar.Column.Action}" Width="80">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Button Content="{DynamicResource UI.Overlay.UserAvatar.Action.Add}" 
+                                                    Click="UserAvatarAdd_Click" 
+                                                    Tag="{Binding}"
+                                                    Padding="4,2"
+                                                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                    IsEnabled="{Binding CanAdd}"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                            </DataGrid.Columns>
+
+                            <!-- Row Details Template for Description and Rules -->
+                            <DataGrid.RowDetailsTemplate>
+                                <DataTemplate>
+                                    <Border BorderBrush="#FF3F3F46" BorderThickness="1" Background="#FF252526" Padding="8" Margin="0,0,0,0">
+                                        <Grid>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/> 
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <!-- Description Section -->
+                                            <Button Content="{DynamicResource UI.Overlay.UserAvatar.Action.SwitchIntoAvatar}" 
+                                                Grid.Row="0" Grid.Column="0"
+                                                Name="OverlayUseAvatarButton"
+                                                DataContext="{Binding}"
+                                                Tag="{Binding}"
+                                                Click="OverlayUseAvatarButton_Click" 
+                                                Margin="0,0,6,0"
+                                                IsEnabled="True"/>
+                                            <Button Content="{DynamicResource UI.Overlay.UserAvatar.Action.ReportAvatar}" 
+                                                Grid.Row="0" Grid.Column="1"
+                                                Name="OverlayReportAvatarButton"
+                                                DataContext="{Binding}"
+                                                Tag="{Binding}"
+                                                Click="OverlayReportAvatarButton_Click"                                                 
+                                                Margin="0,0,6,0" Background="#FFCC0000" Foreground="White"
+                                                IsEnabled="True"/>
+
+                                            <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,0,0,8">
+                                                <TextBlock Text="{DynamicResource UI.Overlay.UserAvatar.Column.Description}" 
+                                                           FontWeight="Bold" 
+                                                           Foreground="#FFE6E6E6" 
+                                                           Margin="0,0,0,4"/>
+                                                <TextBlock Text="{Binding Description}" 
+                                                           TextWrapping="Wrap" 
+                                                           Foreground="#FFE6E6E6"
+                                                           MaxHeight="100"
+                                                           Margin="8,0,0,0"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </DataGrid.RowDetailsTemplate>
+
+                            <!-- Cell Style for highlighting owned groups -->
+                            <DataGrid.CellStyle>
+                                <Style TargetType="DataGridCell">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsOwnedByUser}" Value="True">
+                                            <Setter Property="Background" Value="{Binding DataContext.FriendBackground, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                                            <Setter Property="Foreground" Value="{Binding DataContext.FriendForeground, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </DataGrid.CellStyle>
+                        </DataGrid>
+                    </ScrollViewer>
 
                     <!-- Action Buttons -->
-                    <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button Name="OverlayProfileReportPastCancelButton" Content="Cancel" Width="100" Margin="0,0,12,0" Click="OverlayProfileReportPastCancel_Click"/>
-                        <Button Name="OverlayProfileReportPastSubmitButton" Content="Submit" Width="100" Click="OverlayProfileReportPastSubmit_Click"/>
+                    <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Content="{DynamicResource UI.Overlay.UserAvatar.Action.SaveAll}" 
+                                Click="UserAvatarOverlaySaveChanges_Click" 
+                                Tag="UserAvatarDataGrid"
+                                Padding="4,2" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        <Button Name="UserAvatarOverlayCloseButton" 
+                                Content="{DynamicResource UI.Overlay.UserAvatar.Action.Close}" 
+                                Width="100" 
+                                Click="UserAvatarOverlayClose_Click"
+                                Padding="4,2" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,6,0"/>
                     </StackPanel>
                 </Grid>
             </Border>
@@ -2406,12 +2593,13 @@ Title="Tailgrab Player Panel"
 
         <!-- Overlay Panel for User Groups Management -->
         <Border Name="UserGroupsOverlay" 
-                Grid.Row="0" 
                 Background="#CC000000" 
-                Visibility="Collapsed"
-                Panel.ZIndex="2000">
-            <Border Background="#FF2D2D30" 
-                    MaxWidth="1200" 
+                Panel.ZIndex="1000"
+                Visibility="Collapsed">
+            <Border Background="#FF2D2D30"
+                    Height="600"
+                    Width="1080"
+                    MaxWidth="1080" 
                     MaxHeight="700" 
                     CornerRadius="8"
                     Padding="16"
@@ -2434,7 +2622,7 @@ Title="Tailgrab Player Panel"
                                Margin="0,0,0,16"/>
 
                     <!-- User Info Section -->
-                    <GroupBox Grid.Row="1" Header="User Information" Margin="0,0,0,12">
+                    <GroupBox Grid.Row="1" Header="{DynamicResource UI.Overlay.UserGroups.Group.Title}" Margin="0,0,0,12">
                         <Grid Margin="8">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
@@ -2445,14 +2633,14 @@ Title="Tailgrab Player Panel"
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
 
-                            <Label Grid.Row="0" Grid.Column="0" Content="User ID:" FontWeight="Bold" Margin="0,0,8,0"/>
+                            <Label Grid.Row="0" Grid.Column="0" Content="{DynamicResource UI.Overlay.UserGroups.Group.UserId}" FontWeight="Bold" Margin="0,0,8,0"/>
                             <TextBlock Grid.Row="0" Grid.Column="1" Name="UserGroupsOverlayUserId" VerticalAlignment="Center"/>
 
-                            <Label Grid.Row="1" Grid.Column="0" Content="Display Name:" FontWeight="Bold" Margin="0,0,8,0"/>
+                            <Label Grid.Row="1" Grid.Column="0" Content="{DynamicResource UI.Overlay.UserGroups.Group.DisplayName}" FontWeight="Bold" Margin="0,0,8,0"/>
                             <TextBlock Grid.Row="1" Grid.Column="1" Name="UserGroupsOverlayDisplayName" VerticalAlignment="Center"/>
                         </Grid>
                     </GroupBox>
-
+                                      
                     <!-- Groups List -->
                     <ScrollViewer Name="UserGroupsScrollViewer" Grid.Row="2" VerticalScrollBarVisibility="Auto" Margin="0,0,0,12">
                         <DataGrid Name="UserGroupsDataGrid"
@@ -2464,9 +2652,18 @@ Title="Tailgrab Player Panel"
                                   AlternatingRowBackground="#FF2D2D30"
                                   RowDetailsVisibilityMode="Visible"
                                   PreviewMouseWheel="UserGroupsDataGrid_PreviewMouseWheel">
+                            <DataGrid.RowStyle>
+                                <Style TargetType="DataGridRow">
+                                    <Style.Triggers>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter Property="Background" Value="#FF404040"/>
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </DataGrid.RowStyle>
                             <DataGrid.Columns>
                                 <!-- Banner Image -->
-                                <DataGridTemplateColumn Header="Banner" Width="110">
+                                <DataGridTemplateColumn Header="{DynamicResource UI.Overlay.UserGroups.Column.Banner}" Width="110">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <Border Width="100" Height="100" BorderBrush="Gray" BorderThickness="1">
@@ -2477,7 +2674,7 @@ Title="Tailgrab Player Panel"
                                 </DataGridTemplateColumn>
 
                                 <!-- Icon Image -->
-                                <DataGridTemplateColumn Header="Icon" Width="110">
+                                <DataGridTemplateColumn Header="{DynamicResource UI.Overlay.UserGroups.Column.Icon}" Width="110">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <Border Width="100" Height="100" BorderBrush="Gray" BorderThickness="1">
@@ -2488,13 +2685,13 @@ Title="Tailgrab Player Panel"
                                 </DataGridTemplateColumn>
 
                                 <!-- Name -->
-                                <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="150" IsReadOnly="True"/>
+                                <DataGridTextColumn Header="{DynamicResource UI.Overlay.UserGroups.Column.Name}" Binding="{Binding Name}" Width="150" IsReadOnly="True"/>
 
                                 <!-- Short Code -->
-                                <DataGridTextColumn Header="Short Code" Binding="{Binding ShortCode}" Width="100" IsReadOnly="True"/>
+                                <DataGridTextColumn Header="{DynamicResource UI.Overlay.UserGroups.Column.ShortCode}" Binding="{Binding ShortCode}" Width="100" IsReadOnly="True"/>
 
                                 <!-- Group ID -->
-                                <DataGridTemplateColumn Header="Group ID" Width="200">
+                                <DataGridTemplateColumn Header="{DynamicResource UI.Overlay.UserGroups.Column.GroupId}" Width="200">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <TextBlock>
@@ -2508,10 +2705,10 @@ Title="Tailgrab Player Panel"
                                 </DataGridTemplateColumn>
 
                                 <!-- Join State -->
-                                <DataGridTextColumn Header="Join State" Binding="{Binding JoinState}" Width="100" IsReadOnly="True"/>
+                                <DataGridTextColumn Header="{DynamicResource UI.Overlay.UserGroups.Column.JoinState}" Binding="{Binding JoinState}" Width="100" IsReadOnly="True"/>
 
                                 <!-- Member Count -->
-                                <DataGridTextColumn Header="Members" Binding="{Binding MemberCount}" Width="80" IsReadOnly="True">
+                                <DataGridTextColumn Header="{DynamicResource UI.Overlay.UserGroups.Column.Members}" Binding="{Binding MemberCount}" Width="80" IsReadOnly="True">
                                     <DataGridTextColumn.ElementStyle>
                                         <Style TargetType="TextBlock">
                                             <Setter Property="HorizontalAlignment" Value="Right"/>
@@ -2521,7 +2718,7 @@ Title="Tailgrab Player Panel"
                                 </DataGridTextColumn>
 
                                 <!-- Alert Type -->
-                                <DataGridTemplateColumn Header="Alert Type" Width="120">
+                                <DataGridTemplateColumn Header="{DynamicResource UI.Overlay.UserGroups.Column.AlertType}" Width="120">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <TextBlock Text="{Binding AlertType}" 
@@ -2536,16 +2733,16 @@ Title="Tailgrab Player Panel"
                                             <ComboBox ItemsSource="{Binding DataContext.AlertTypeOptions, RelativeSource={RelativeSource AncestorType=Window}}"
                                                       SelectedValuePath="Value" 
                                                       DisplayMemberPath="Key"
-                                                      SelectedValue="{Binding AlertType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                                      SelectedValue="{Binding AlertType, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellEditingTemplate>
                                 </DataGridTemplateColumn>
 
                                 <!-- Add Button -->
-                                <DataGridTemplateColumn Header="Action" Width="80">
+                                <DataGridTemplateColumn Header="{DynamicResource UI.Overlay.UserGroups.Column.Action}" Width="80">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
-                                            <Button Content="ADD" 
+                                            <Button Content="{DynamicResource UI.Overlay.UserGroups.Action.Add}" 
                                                     Click="UserGroupsAdd_Click" 
                                                     Tag="{Binding}"
                                                     Padding="4,2"
@@ -2569,7 +2766,7 @@ Title="Tailgrab Player Panel"
 
                                             <!-- Description Section -->
                                             <StackPanel Grid.Row="0" Margin="0,0,0,8">
-                                                <TextBlock Text="Description:" 
+                                                <TextBlock Text="{DynamicResource UI.Overlay.UserGroups.Column.Description}" 
                                                            FontWeight="Bold" 
                                                            Foreground="#FFE6E6E6" 
                                                            Margin="0,0,0,4"/>
@@ -2582,7 +2779,7 @@ Title="Tailgrab Player Panel"
 
                                             <!-- Rules Section -->
                                             <StackPanel Grid.Row="1">
-                                                <TextBlock Text="Rules:" 
+                                                <TextBlock Text="{DynamicResource UI.Overlay.UserGroups.Column.Rules}" 
                                                            FontWeight="Bold" 
                                                            Foreground="#FFE6E6E6" 
                                                            Margin="0,0,0,4"/>
@@ -2613,8 +2810,12 @@ Title="Tailgrab Player Panel"
 
                     <!-- Action Buttons -->
                     <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Content="{DynamicResource UI.Overlay.UserGroups.Action.SaveAll}" 
+                                Click="UserGroupOverlaySaveChanges_Click" 
+                                Tag="UserGroupsDataGrid"
+                                Padding="4,2" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,6,0"/>
                         <Button Name="UserGroupsOverlayCloseButton" 
-                                Content="Close" 
+                                Content="{DynamicResource UI.Overlay.UserGroups.Action.Close}" 
                                 Width="100" 
                                 Click="UserGroupsOverlayClose_Click"/>
                     </StackPanel>
@@ -2625,21 +2826,20 @@ Title="Tailgrab Player Panel"
         
         <!-- Overlay Panel for Report Print Inventory -->
         <Border Name="ReportPrintInventoryOverlay"
-                            Grid.Row="0" 
-                            Grid.RowSpan="2" 
-                            Background="#CC000000" 
-                            Visibility="Collapsed"
-                            Panel.ZIndex="1000" Grid.ColumnSpan="5">
+                Background="#CC000000" 
+                Panel.ZIndex="1000"
+                Visibility="Collapsed">
             <Border Background="#FF2D2D30" 
-                                MaxWidth="950" 
-                                MaxHeight="550" 
-                                CornerRadius="8"
-                                Padding="16"
-                                VerticalAlignment="Center"
-                                HorizontalAlignment="Center">
+                    Width="550"
+                    MaxWidth="950" 
+                    MaxHeight="550" 
+                    CornerRadius="8"
+                    Padding="16"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Center">
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition/>
+                        <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="250"/>
                     </Grid.ColumnDefinitions>
 
@@ -2656,16 +2856,16 @@ Title="Tailgrab Player Panel"
                         </Grid.RowDefinitions>
 
                         <!-- Title -->
-                        <TextBlock Grid.Row="0" 
-                                               Text="Report Print Content" 
-                                               FontSize="20" 
-                                               FontWeight="Bold" 
-                                               Foreground="#FFE6E6E6"
-                                               Margin="0,0,0,16"/>
+                        <TextBlock Grid.Row="0"
+                                   Text="{DynamicResource UI.Overlay.ReportPrintsInventory.Title}" 
+                                   FontSize="20" 
+                                   FontWeight="Bold" 
+                                   Foreground="#FFE6E6E6"
+                                   Margin="0,0,0,16"/>
 
                         <!-- Print ID -->
                         <StackPanel Grid.Row="1" Margin="0,0,0,12">
-                            <Label Content="Print ID: *" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                            <Label Content="{DynamicResource UI.Overlay.ReportPrintsInventory.PrintID}" FontWeight="Bold" Foreground="#FFE6E6E6"/>
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
@@ -2673,19 +2873,19 @@ Title="Tailgrab Player Panel"
                                 </Grid.ColumnDefinitions>
                                 <TextBox Name="PrintOverlayInventoryIdTextBox" Grid.Column="0" TextChanged="OverlayPrintOnInputFieldChanged"/>
                                 <Label Name="PrintOverlayInventoryIdError" 
-                                                       Grid.Column="1" 
-                                                       Content="Required" 
-                                                       Foreground="Yellow" 
-                                                       FontWeight="Bold"
-                                                       Margin="8,0,0,0"
-                                                       VerticalAlignment="Center"
-                                                       Visibility="Collapsed"/>
+                                       Grid.Column="1" 
+                                       Content="Required" 
+                                       Foreground="Yellow" 
+                                       FontWeight="Bold"
+                                       Margin="8,0,0,0"
+                                       VerticalAlignment="Center"
+                                       Visibility="Collapsed"/>
                             </Grid>
                         </StackPanel>
 
                         <!-- User ID -->
                         <StackPanel Grid.Row="2" Margin="0,0,0,12">
-                            <Label Content="User ID: *" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                            <Label Content="{DynamicResource UI.Overlay.ReportPrintsInventory.UserID}" FontWeight="Bold" Foreground="#FFE6E6E6"/>
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
@@ -2693,62 +2893,58 @@ Title="Tailgrab Player Panel"
                                 </Grid.ColumnDefinitions>
                                 <TextBox Name="PrintOverlayUserIdTextBox" Grid.Column="0" IsReadOnly="True"/>
                                 <Label Name="PrintOverlayUserIdError" 
-                                                       Grid.Column="1" 
-                                                       Content="Required" 
-                                                       Foreground="Yellow" 
-                                                       FontWeight="Bold"
-                                                       Margin="8,0,0,0"
-                                                       VerticalAlignment="Center"
-                                                       Visibility="Collapsed"/>
+                                       Grid.Column="1" 
+                                       Content="Required" 
+                                       Foreground="Yellow" 
+                                       FontWeight="Bold"
+                                       Margin="8,0,0,0"
+                                       VerticalAlignment="Center"
+                                       Visibility="Collapsed"/>
                             </Grid>
                         </StackPanel>
 
                         <!-- Category -->
                         <StackPanel Grid.Row="3" Margin="0,0,0,12">
-                            <Label Content="Category:" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                            <Label Content="{DynamicResource UI.Overlay.ReportPrintsInventory.Category}" FontWeight="Bold" Foreground="#FFE6E6E6"/>
                             <TextBox Name="PrintOverlayCategoryTextBox" IsReadOnly="True"/>
                         </StackPanel>
 
                         <!-- Report Type -->
                         <StackPanel Grid.Row="4" Margin="0,0,0,12">
-                            <Label Content="Report Reason:" FontWeight="Bold" Foreground="#FFE6E6E6"/>
-                            <ComboBox Name="PrintOverlayReportReasonComboBox" 
-                                                  DisplayMemberPath="DisplayName"
-                                                  SelectedValuePath="Value"/>
+                            <Label Content="{DynamicResource UI.Overlay.ReportPrintsInventory.ReportReason}" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                            <ComboBox Name="PrintOverlayReportReasonComboBox"
+                                      DisplayMemberPath="DisplayName"
+                                      SelectedValuePath="Value"/>
                         </StackPanel>
 
                         <!-- Report Description -->
                         <StackPanel Grid.Row="5" Margin="0,0,0,12">
-                            <Label Content="Report Description (AI Evaluation):" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                            <Label Content="{DynamicResource UI.Overlay.ReportPrintsInventory.ReportDescription}" FontWeight="Bold" Foreground="#FFE6E6E6"/>
                             <TextBox Name="PrintOverlayReportDescriptionTextBox" 
-                                                 TextWrapping="Wrap" 
-                                                 AcceptsReturn="True" 
-                                                 VerticalScrollBarVisibility="Auto"
-                                                 IsReadOnly="False"
-                                                 MinHeight="150"/>
+                                     TextWrapping="Wrap" 
+                                     AcceptsReturn="True" 
+                                     VerticalScrollBarVisibility="Auto"
+                                     IsReadOnly="False"
+                                     MinHeight="150"/>
                         </StackPanel>
 
                         <!-- Action Buttons -->
                         <StackPanel Grid.Row="6" Orientation="Horizontal" HorizontalAlignment="Right">
-                            <Button Name="PrintOverlayCancelButton" Content="Cancel" Width="100" Margin="0,0,12,0" Click="PrintOverlayCancel_Click"/>
-                            <Button Name="PrintOverlaySubmitButton" Content="Submit" Width="100" Click="PrintOverlaySubmit_Click"/>
+                            <Button Name="PrintOverlayCancelButton" Content="{DynamicResource UI.Overlay.ReportPrintsInventory.Action.Cancel}" Width="100" Margin="0,0,12,0" Click="PrintOverlayCancel_Click"/>
+                            <Button Name="PrintOverlaySubmitButton" Content="{DynamicResource UI.Overlay.ReportPrintsInventory.Action.Submit}" Width="100" Click="PrintOverlaySubmit_Click"/>
                         </StackPanel>
                     </Grid>
 
                     <!-- Right side - Image display -->
                     <Border Grid.Column="1" 
-                                        BorderBrush="Gray" 
-                                        BorderThickness="2" 
-                                        VerticalAlignment="Top"
-                                        Padding="8" 
-                                        Height="250" 
-                                        Width="230">
+                            BorderBrush="Gray" 
+                            BorderThickness="2" Padding="8" 
+                            VerticalAlignment="Top"
+                            Height="250" Width="230">
                         <StackPanel>
-                            <Label Content="Image Preview:" FontWeight="Bold" HorizontalAlignment="Center" Foreground="#FFE6E6E6"/>
+                            <Label Content="{DynamicResource UI.Overlay.ReportPrintsInventory.ImagePreview}" FontWeight="Bold" HorizontalAlignment="Center" Foreground="#FFE6E6E6"/>
                             <Image Name="PrintOverlayInventoryImagePreview" 
-                                               Width="200"
-                                               Height="200"
-                                               Stretch="Uniform"/>
+                                   Width="200" Height="200" Stretch="Uniform"/>
                         </StackPanel>
                     </Border>
                 </Grid>
@@ -2757,21 +2953,16 @@ Title="Tailgrab Player Panel"
 
         <!-- Overlay Panel for Report Emoji & Sticker -->
         <Border Name="ReportInventoryOverlay" 
-                            Grid.Row="0" 
-                            Grid.RowSpan="2" 
-                            Background="#CC000000" 
-                            Visibility="Collapsed"
-                            Panel.ZIndex="1000" Grid.ColumnSpan="3">
+                Background="#CC000000"                 
+                Panel.ZIndex="1000"
+                Visibility="Collapsed">
             <Border Background="#FF2D2D30" 
-                                MaxWidth="950" 
-                                MaxHeight="550" 
-                                CornerRadius="8"
-                                Padding="16"
-                                VerticalAlignment="Center"
-                                HorizontalAlignment="Center">
+                    MaxWidth="950" MaxHeight="550" 
+                    CornerRadius="8" Padding="16"
+                    VerticalAlignment="Center" HorizontalAlignment="Center">
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition/>
+                        <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="250"/>
                     </Grid.ColumnDefinitions>
 
@@ -2789,15 +2980,14 @@ Title="Tailgrab Player Panel"
 
                         <!-- Title -->
                         <TextBlock Grid.Row="0" 
-                                               Text="Report Emoji or Sticker" 
-                                               FontSize="20" 
-                                               FontWeight="Bold" 
-                                               Foreground="#FFE6E6E6"
-                                               Margin="0,0,0,16"/>
+                                   Text="{DynamicResource UI.Overlay.ReportEmojiSticker.Title}" 
+                                   FontSize="20" FontWeight="Bold" 
+                                   Foreground="#FFE6E6E6"
+                                   Margin="0,0,0,16"/>
 
                         <!-- User ID -->
                         <StackPanel Grid.Row="1" Margin="0,0,0,12">
-                            <Label Content="User ID: *" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                            <Label Content="{DynamicResource UI.Overlay.ReportEmojiSticker.UserID}" FontWeight="Bold" Foreground="#FFE6E6E6"/>
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
@@ -2805,82 +2995,78 @@ Title="Tailgrab Player Panel"
                                 </Grid.ColumnDefinitions>
                                 <TextBox Name="OverlayUserIdTextBox" Grid.Column="0" TextChanged="OverlayOnInputFieldChanged"/>
                                 <Label Name="OverlayUserIdError" 
-                                                       Grid.Column="1" 
-                                                       Content="Required" 
-                                                       Foreground="Yellow" 
-                                                       FontWeight="Bold"
-                                                       Margin="8,0,0,0"
-                                                       VerticalAlignment="Center"
-                                                       Visibility="Collapsed"/>
+                                       Grid.Column="1" 
+                                       Content="Required" 
+                                       Foreground="Yellow" 
+                                       FontWeight="Bold"
+                                       Margin="8,0,0,0"
+                                       VerticalAlignment="Center"
+                                       Visibility="Collapsed"/>
                             </Grid>
                         </StackPanel>
 
                         <!-- Inventory ID -->
                         <StackPanel Grid.Row="2" Margin="0,0,0,12">
-                            <Label Content="Inventory ID: *" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                            <Label Content="{DynamicResource UI.Overlay.ReportEmojiSticker.InventoryID}" FontWeight="Bold" Foreground="#FFE6E6E6"/>
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBox Name="OverlayInventoryIdTextBox" Grid.Column="0" TextChanged="OverlayOnInputFieldChanged"/>
-                                <Label Name="OverlayInventoryIdError" 
-                                                       Grid.Column="1" 
-                                                       Content="Required" 
-                                                       Foreground="Yellow" 
-                                                       FontWeight="Bold"
-                                                       Margin="8,0,0,0"
-                                                       VerticalAlignment="Center"
-                                                       Visibility="Collapsed"/>
+                                <Label Name="OverlayInventoryIdError"
+                                       Grid.Column="1" 
+                                       Content="Required" 
+                                       Foreground="Yellow" 
+                                       FontWeight="Bold"
+                                       Margin="8,0,0,0"
+                                       VerticalAlignment="Center"
+                                       Visibility="Collapsed"/>
                             </Grid>
                         </StackPanel>
 
                         <!-- Category -->
                         <StackPanel Grid.Row="3" Margin="0,0,0,12">
-                            <Label Content="Category:" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                            <Label Content="{DynamicResource UI.Overlay.ReportEmojiSticker.Category}" FontWeight="Bold" Foreground="#FFE6E6E6"/>
                             <TextBox Name="OverlayCategoryTextBox" IsReadOnly="True"/>
                         </StackPanel>
 
                         <!-- Report Type -->
                         <StackPanel Grid.Row="4" Margin="0,0,0,12">
-                            <Label Content="Report Reason:" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                            <Label Content="{DynamicResource UI.Overlay.ReportEmojiSticker.ReportReason}" FontWeight="Bold" Foreground="#FFE6E6E6"/>
                             <ComboBox Name="OverlayReportReasonComboBox" 
-                                                  DisplayMemberPath="DisplayName"
-                                                  SelectedValuePath="Value"/>
+                                      DisplayMemberPath="DisplayName"
+                                      SelectedValuePath="Value"/>
                         </StackPanel>
 
                         <!-- Report Description -->
                         <StackPanel Grid.Row="5" Margin="0,0,0,12">
-                            <Label Content="Report Description (AI Evaluation):" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                            <Label Content="{DynamicResource UI.Overlay.ReportEmojiSticker.ReportDescription}" FontWeight="Bold" Foreground="#FFE6E6E6"/>
                             <TextBox Name="OverlayReportDescriptionTextBox" 
-                                                 TextWrapping="Wrap" 
-                                                 AcceptsReturn="True" 
-                                                 VerticalScrollBarVisibility="Auto"
-                                                 IsReadOnly="False"
-                                                 MinHeight="150"/>
+                                     TextWrapping="Wrap" 
+                                     AcceptsReturn="True" 
+                                     VerticalScrollBarVisibility="Auto"
+                                     IsReadOnly="False"
+                                     MinHeight="150"/>
                         </StackPanel>
 
                         <!-- Action Buttons -->
                         <StackPanel Grid.Row="6" Orientation="Horizontal" HorizontalAlignment="Right">
-                            <Button Name="OverlayCancelButton" Content="Cancel" Width="100" Margin="0,0,12,0" Click="OverlayCancel_Click"/>
-                            <Button Name="OverlaySubmitButton" Content="Submit" Width="100" Click="OverlaySubmit_Click"/>
+                            <Button Name="OverlayCancelButton" Content="{DynamicResource UI.Overlay.ReportEmojiSticker.Action.Cancel}" Width="100" Margin="0,0,12,0" Click="OverlayCancel_Click"/>
+                            <Button Name="OverlaySubmitButton" Content="{DynamicResource UI.Overlay.ReportEmojiSticker.Action.Submit}" Width="100" Click="OverlaySubmit_Click"/>
                         </StackPanel>
                     </Grid>
 
                     <!-- Right side - Image display -->
                     <Border Grid.Column="1" 
-                                        BorderBrush="Gray" 
-                                        BorderThickness="2" 
-                                        VerticalAlignment="Top"
-                                        Padding="8" 
-                                        Height="250" 
-                                        Width="230">
+                            BorderBrush="Gray" 
+                            BorderThickness="2" Padding="8" 
+                            VerticalAlignment="Top"                            
+                            Height="250" Width="230">
                         <StackPanel>
-                            <Label Content="Image Preview:" FontWeight="Bold" HorizontalAlignment="Center" Foreground="#FFE6E6E6"/>
+                            <Label Content="{DynamicResource UI.Overlay.ReportEmojiSticker.ImagePreview}" FontWeight="Bold" HorizontalAlignment="Center" Foreground="#FFE6E6E6"/>
                             <Image Name="OverlayInventoryImagePreview" 
-                                               Width="200"
-                                               Height="200"
-                                               Stretch="Uniform"/>
+                                   Width="200" Height="200" Stretch="Uniform"/>
                         </StackPanel>
                     </Border>
                 </Grid>
@@ -2888,20 +3074,17 @@ Title="Tailgrab Player Panel"
         </Border>
 
         <!-- Overlay Panel for Test AI Evaluation -->
-        <Border Name="OverlayTestProfileEval" 
-                                    Grid.Row="0" 
-                                    Grid.RowSpan="3"
-                                    Grid.ColumnSpan="2"
-                                    Background="#CC000000" 
-                                    Visibility="Collapsed"
-                                    Panel.ZIndex="1000">
+        <Border Name="OverlayTestProfileEval"
+                Grid.Row="0" 
+                Grid.RowSpan="3" Grid.ColumnSpan="2"
+                Background="#CC000000" 
+                Panel.ZIndex="1000"
+                Visibility="Collapsed">
             <Border Background="#FF2D2D30" 
-                                        MaxWidth="650" 
-                                        MaxHeight="600" 
-                                        CornerRadius="8"
-                                        Padding="16"
-                                        VerticalAlignment="Center"
-                                        HorizontalAlignment="Center">
+                    Width="550" Height="500"
+                    MaxWidth="650" MaxHeight="600" 
+                    CornerRadius="8" Padding="16"
+                    VerticalAlignment="Center" HorizontalAlignment="Center">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -2914,15 +3097,14 @@ Title="Tailgrab Player Panel"
 
                     <!-- Title -->
                     <TextBlock Grid.Row="0" 
-                                           Text="Test AI Prompt" 
-                                           FontSize="20" 
-                                           FontWeight="Bold" 
-                                           Foreground="#FFE6E6E6"
-                                           Margin="0,0,0,16"/>
+                               Text="{DynamicResource UI.Overlay.TestProfileAIPrompt.Title}" 
+                               FontSize="20" FontWeight="Bold" 
+                               Foreground="#FFE6E6E6"
+                               Margin="0,0,0,16"/>
 
                     <!-- User ID -->
                     <StackPanel Grid.Row="1" Margin="0,0,0,12">
-                        <Label Content="User ID:" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                        <Label Content="{DynamicResource UI.Overlay.TestProfileAIPrompt.UserID}" FontWeight="Bold" Foreground="#FFE6E6E6"/>
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
@@ -2934,29 +3116,29 @@ Title="Tailgrab Player Panel"
 
                     <!-- Category -->
                     <StackPanel Grid.Row="2" Margin="0,0,0,12">
-                        <Label Content="Profile:" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                        <Label Content="{DynamicResource UI.Overlay.TestProfileAIPrompt.Profile}" FontWeight="Bold" Foreground="#FFE6E6E6"/>
                         <TextBox Name="OverlayTestProfileEvalProfileTextBox" 
-                                                        TextWrapping="Wrap" 
-                                                        AcceptsReturn="True" 
-                                                        VerticalScrollBarVisibility="Auto"
-                                                        IsReadOnly="True"
-                                                        MaxHeight="150"/>
+                                 TextWrapping="Wrap" 
+                                 AcceptsReturn="True" 
+                                 VerticalScrollBarVisibility="Auto"
+                                 IsReadOnly="True"
+                                 MaxHeight="150" Height="130"/>
                     </StackPanel>
 
                     <!-- Report Reason -->
                     <StackPanel Grid.Row="3" Margin="0,0,0,12">
-                        <Label Content="AI Eval:" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                        <Label Content="{DynamicResource UI.Overlay.TestProfileAIPrompt.AI_Evaluation}" FontWeight="Bold" Foreground="#FFE6E6E6"/>
                         <TextBox Name="OverlayTestProfileEvalEvaluationTextBox" 
-                                                        TextWrapping="Wrap" 
-                                                        AcceptsReturn="True" 
-                                                        VerticalScrollBarVisibility="Auto"
-                                                        IsReadOnly="True"
-                                                        MaxHeight="200"/>
+                                 TextWrapping="Wrap" 
+                                 AcceptsReturn="True" 
+                                 VerticalScrollBarVisibility="Auto"
+                                 IsReadOnly="True"
+                                 MaxHeight="200" Height="130"/>
                     </StackPanel>
 
                     <!-- Action Buttons -->
                     <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button Name="OverlayTestProfileEvalOkButton" Content="Close" Width="100" Click="TestProfilePrompt_Ok_Click"/>
+                        <Button Name="OverlayTestProfileEvalOkButton" Content="{DynamicResource UI.Overlay.TestProfileAIPrompt.Action.Close}" Width="100" Click="TestProfilePrompt_Ok_Click"/>
                     </StackPanel>
                 </Grid>
             </Border>
@@ -2964,20 +3146,14 @@ Title="Tailgrab Player Panel"
         
         <!-- Overlay Panel for Test AI Evaluation -->
         <Border Name="OverlayTestImageEval" 
-                                    Grid.Row="0" 
-                                    Grid.RowSpan="3"
-                                    Grid.ColumnSpan="2"
-                                    Background="#CC000000" 
-                                    Visibility="Collapsed"
-                                    Panel.ZIndex="1000">
+                Background="#CC000000" 
+                Panel.ZIndex="1000"
+                Visibility="Collapsed">
             <Border Background="#FF2D2D30" 
-                                        Width="800"
-                                        MaxWidth="1200" 
-                                        MaxHeight="700" 
-                                        CornerRadius="8"
-                                        Padding="16"
-                                        VerticalAlignment="Center"
-                                        HorizontalAlignment="Center">
+                    Width="800" Height="600"
+                    MaxWidth="1200" MaxHeight="700" 
+                    CornerRadius="8" Padding="16"
+                    VerticalAlignment="Center" HorizontalAlignment="Center">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -2987,28 +3163,23 @@ Title="Tailgrab Player Panel"
 
                     <!-- Title -->
                     <TextBlock Grid.Row="0" 
-                                                       Text="Test AI Image Prompt Results" 
-                                                       FontSize="20" 
-                                                       FontWeight="Bold" 
-                                                       Foreground="#FFE6E6E6"
-                                                       Margin="0,0,0,16"/>
+                               Text="{DynamicResource UI.Overlay.TestImageAIPrompt.Title}" 
+                               FontSize="20" FontWeight="Bold" 
+                               Foreground="#FFE6E6E6"
+                               Margin="0,0,0,16"/>
 
                     <!-- ListView for Test Images -->
                     <ListView Grid.Row="1" 
-                                                      Name="TestImageAIEvalListView"
-                                                      ItemsSource="{Binding TestImageAIEvalItems}"
-                                                      Margin="0,0,0,12"
-                                                      Background="#FF2D2D30"
-                                                      BorderBrush="#FF3F3F46"
-                                                      BorderThickness="1"
-                                                      ScrollViewer.CanContentScroll="True"
-                                                      ScrollViewer.VerticalScrollBarVisibility="Auto">
+                              Name="TestImageAIEvalListView"
+                              ItemsSource="{Binding TestImageAIEvalItems}"
+                              Margin="0,0,0,12"
+                              Background="#FF2D2D30"
+                              BorderBrush="#FF3F3F46" BorderThickness="1"
+                              ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto">
                         <ListView.ItemTemplate>
                             <DataTemplate>
                                 <Border BorderBrush="#FF3F3F46" 
-                                                                BorderThickness="0,0,0,1" 
-                                                                Padding="8"
-                                                                Margin="0,4">
+                                        BorderThickness="0,0,0,1" Padding="8" Margin="0,4">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="200"/>
@@ -3018,31 +3189,26 @@ Title="Tailgrab Player Panel"
 
                                         <!-- Image Display -->
                                         <Border Grid.Column="0" 
-                                                                        Width="200" 
-                                                                        Height="200"
-                                                                        BorderBrush="#FF3F3F46"
-                                                                        BorderThickness="1"
-                                                                        Margin="0,0,12,0">
+                                                Width="200" Height="200"
+                                                BorderBrush="#FF3F3F46" BorderThickness="1"
+                                                Margin="0,0,12,0">
                                             <Image Source="{Binding ImagePath}" 
-                                                                           Stretch="Uniform"
-                                                                           Width="200"
-                                                                           Height="200"/>
+                                                   Stretch="Uniform"
+                                                   Width="200" Height="200"/>
                                         </Border>
 
                                         <!-- AI Evaluation Text -->
                                         <Border Grid.Column="1"
-                                                                        BorderBrush="#FF3F3F46"
-                                                                        BorderThickness="1"
-                                                                        Padding="8"
-                                                                        Background="#FF1E1E1E">
+                                                BorderBrush="#FF3F3F46" BorderThickness="1"
+                                                Padding="8"
+                                                Background="#FF1E1E1E">
 
-                                            <ScrollViewer VerticalScrollBarVisibility="Auto"
-                                                                                  HorizontalScrollBarVisibility="Disabled">
+                                            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                                                 <TextBlock Text="{Binding AIEvaluation}" 
-                                                                                   TextWrapping="Wrap"
-                                                                                   Foreground="#FFE6E6E6"
-                                                                                   FontFamily="Consolas"
-                                                                                   FontSize="12" Width="450" Height="200"/>
+                                                           TextWrapping="Wrap"
+                                                           Foreground="#FFE6E6E6"
+                                                           FontFamily="Consolas" FontSize="12" 
+                                                           Width="450" Height="200"/>
                                             </ScrollViewer>
 
                                         </Border>
@@ -3050,13 +3216,12 @@ Title="Tailgrab Player Panel"
                                         <Border Grid.Column="2">
                                             <StackPanel Orientation="Horizontal" Margin="0,0,5,0">
                                                 <Viewbox Width="32" Height="32" 
-                                                                             VerticalAlignment="Center"
-                                                                             Margin="0,0,4,0">
+                                                         VerticalAlignment="Center" Margin="0,0,4,0">
                                                     <Canvas Width="32" Height="32">
                                                         <Path Data="{Binding AlertInfo.IconGeometry}" 
-                                                                                      Fill="{Binding AlertInfo.IconBrush}"
-                                                                                      Stretch="UniformToFill"
-                                                                                      Width="32" Height="32"/>
+                                                              Fill="{Binding AlertInfo.IconBrush}"
+                                                              Stretch="UniformToFill"
+                                                              Width="32" Height="32"/>
                                                     </Canvas>
                                                 </Viewbox>
                                             </StackPanel>
@@ -3069,11 +3234,50 @@ Title="Tailgrab Player Panel"
 
                     <!-- Close Button -->
                     <Button Grid.Row="2" 
-                                                    Content="Close" 
-                                                    Width="100" 
-                                                    HorizontalAlignment="Right"
-                                                    Click="CloseTestImageEval_Click"
-                                                    Padding="8,4"/>
+                            Content="{DynamicResource UI.Overlay.TestImageAIPrompt.Action.Close}" 
+                            Width="100" HorizontalAlignment="Right" Padding="8,4"
+                            Click="CloseTestImageEval_Click"/>
+                </Grid>
+            </Border>
+        </Border>
+
+
+        <!-- Overlay Panel for Test AI Evaluation -->
+        <Border Name="OverlayMessage" 
+                Background="#CC000000" 
+                Panel.ZIndex="1050"
+                Visibility="Collapsed">
+            <Border Background="#FF2D2D30" 
+                    MaxWidth="1080" MaxHeight="700" 
+                    CornerRadius="8" Padding="16"
+                    VerticalAlignment="Center" HorizontalAlignment="Center">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Title -->
+                    <TextBlock Grid.Row="0" 
+                               Text="{Binding OverlayMessageTitle}" 
+                               FontSize="20" FontWeight="Bold" 
+                               Foreground="#FFE6E6E6"
+                               Margin="0,0,0,16"/>
+
+                    <!-- Message -->
+                    <TextBox Name="OverlayMessageBodyTextBox" 
+                             Grid.Row="1"
+                             TextWrapping="Wrap" AcceptsReturn="True" 
+                             VerticalScrollBarVisibility="Auto"
+                             IsReadOnly="True"
+                             MaxHeight="500" Height="130"/>
+
+                    <!-- Close Button -->
+                    <Button Grid.Row="2" 
+                            Content="{DynamicResource UI.Overlay.TestImageAIPrompt.Action.Close}" 
+                            Width="100" HorizontalAlignment="Right" Padding="8,4"
+                            Click="HideOverlayMessage"/>
                 </Grid>
             </Border>
         </Border>

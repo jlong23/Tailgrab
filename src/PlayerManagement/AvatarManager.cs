@@ -7,13 +7,13 @@ using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
-using Tailgrab.Clients.VRCDB;
 using Tailgrab.Clients.Ollama;
+using Tailgrab.Clients.VRCDB;
 using Tailgrab.Clients.XSOverlay;
 using Tailgrab.Common;
 using Tailgrab.Models;
-using VRChat.API.Model;
 using VRChat.API.Client;
+using VRChat.API.Model;
 using static Tailgrab.Clients.VRChat.VRChatClient;
 
 namespace Tailgrab.PlayerManagement
@@ -571,24 +571,27 @@ namespace Tailgrab.PlayerManagement
             {
                 // Fetch the AvatarInfo record
                 AvatarInfo? avatarInfo = await dbContext.AvatarInfos.FindAsync(watch.AvatarId);
-                FetchUpdateAvatarData(_serviceRegistry, dbContext, watch.AvatarId, avatarInfo);
-                avatarInfo = await dbContext.AvatarInfos.FindAsync(watch.AvatarId);
+                Result<Avatar?> result = FetchUpdateAvatarData(_serviceRegistry, dbContext, watch.AvatarId, avatarInfo);
+                if (result.Value != null)
+                {
+                    avatarInfo = await dbContext.AvatarInfos.FindAsync(watch.AvatarId);
 
-                if (avatarInfo == null)
-                {
-                    logger.Debug($"Line {watch.LineNumber}: Avatar ID '{watch.AvatarId}' not found in database/vrc, skipping.");
-                    await serviceRegistry.GetVRChatAPIClient().DeleteAvatarGlobal(watch.AvatarId);
-                }
-                else if (avatarInfo.AlertType == AlertTypeEnum.None)
-                {
-                    avatarInfo.AlertType = AlertTypeEnum.Nuisance;
-                    avatarInfo.UpdatedAt = DateTime.UtcNow;
-                    dbContext.AvatarInfos.Update(avatarInfo);
-                    dbContext.SaveChanges();
-                }
-                else
-                {
-                    logger.Debug($"Line {watch.LineNumber}: Avatar ID '{watch.AvatarId}' already has Has an Alert, skipping.");
+                    if (avatarInfo == null)
+                    {
+                        logger.Debug($"Line {watch.LineNumber}: Avatar ID '{watch.AvatarId}' not found in database/vrc, skipping.");
+                        await serviceRegistry.GetVRChatAPIClient().DeleteAvatarGlobal(watch.AvatarId);
+                    }
+                    else if (avatarInfo.AlertType == AlertTypeEnum.None)
+                    {
+                        avatarInfo.AlertType = AlertTypeEnum.Nuisance;
+                        avatarInfo.UpdatedAt = DateTime.UtcNow;
+                        dbContext.AvatarInfos.Update(avatarInfo);
+                        dbContext.SaveChanges();
+                    }
+                    else
+                    {
+                        logger.Debug($"Line {watch.LineNumber}: Avatar ID '{watch.AvatarId}' already has Has an Alert, skipping.");
+                    }
                 }
             }
             catch (Exception ex)
@@ -607,42 +610,45 @@ namespace Tailgrab.PlayerManagement
             {
                 // Fetch the AvatarInfo record
                 AvatarInfo? avatarInfo = await dbContext.AvatarInfos.FindAsync(watch.AvatarId);
-                if (avatarInfo != null && avatarInfo.UpdatedAt > DateTime.UtcNow.AddHours(-12))
+                //if (avatarInfo != null && avatarInfo.UpdatedAt > DateTime.UtcNow.AddHours(-12))
+                //{
+                //    // Skip processing if the avatar was updated within the last 12 hours
+                //    return;
+                //}
+
+                Result<Avatar?> result = FetchUpdateAvatarData(_serviceRegistry, dbContext, watch.AvatarId, avatarInfo);
+                if (result.Value != null)
                 {
-                    // Skip processing if the avatar was updated within the last 12 hours
-                    return;
-                }
+                    avatarInfo = await dbContext.AvatarInfos.FindAsync(watch.AvatarId);
 
-                FetchUpdateAvatarData(_serviceRegistry, dbContext, watch.AvatarId, avatarInfo);
-                avatarInfo = await dbContext.AvatarInfos.FindAsync(watch.AvatarId);
-
-                if (avatarInfo == null)
-                {
-                    logger.Debug($"Line {watch.LineNumber}: Avatar ID '{watch.AvatarId}' not found in database/vrc, skipping.");
-                }
-                else if (avatarInfo.AlertType == AlertTypeEnum.None)
-                {
-
-                    avatarInfo.AlertType = watch.AlertType;
-                    avatarInfo.UpdatedAt = DateTime.UtcNow;
-                    dbContext.AvatarInfos.Update(avatarInfo);
-                    dbContext.SaveChanges();
-
-                    if (avatarInfo.AlertType >= AlertTypeEnum.Nuisance)
+                    if (avatarInfo == null)
                     {
-                        await _serviceRegistry.GetVRChatAPIClient().BlockAvatarGlobal(avatarInfo.AvatarId);
+                        logger.Debug($"Line {watch.LineNumber}: Avatar ID '{watch.AvatarId}' not found in database/vrc, skipping.");
+                    }
+                    else if (avatarInfo.AlertType == AlertTypeEnum.None)
+                    {
+
+                        avatarInfo.AlertType = watch.AlertType;
+                        avatarInfo.UpdatedAt = DateTime.UtcNow;
+                        dbContext.AvatarInfos.Update(avatarInfo);
+                        dbContext.SaveChanges();
+
+                        if (avatarInfo.AlertType >= AlertTypeEnum.Nuisance)
+                        {
+                            await _serviceRegistry.GetVRChatAPIClient().BlockAvatarGlobal(avatarInfo.AvatarId);
+                        }
+                        else
+                        {
+                            await _serviceRegistry.GetVRChatAPIClient().DeleteAvatarGlobal(avatarInfo.AvatarId);
+                        }
+
+                        logger.Debug($"Line {watch.LineNumber}: Set Watch State for Avatar ID '{watch.AvatarId}'");
+
                     }
                     else
                     {
-                        await _serviceRegistry.GetVRChatAPIClient().DeleteAvatarGlobal(avatarInfo.AvatarId);
+                        logger.Debug($"Line {watch.LineNumber}: Avatar ID '{watch.AvatarId}' already has Has an Alert, skipping.");
                     }
-
-                    logger.Debug($"Line {watch.LineNumber}: Set Watch State for Avatar ID '{watch.AvatarId}'");
-
-                }
-                else
-                {
-                    logger.Debug($"Line {watch.LineNumber}: Avatar ID '{watch.AvatarId}' already has Has an Alert, skipping.");
                 }
             }
             catch (Exception ex)
@@ -752,7 +758,8 @@ namespace Tailgrab.PlayerManagement
                         {
                             logger.Warn($"Avatar with ID {AvatarId} not found in VRChat API (404 Not Found).");
                             ResetAvatarRecordToNone(dBContext, AvatarId);
-                            serviceRegistry.GetVRChatAPIClient().DeleteAvatarGlobal(AvatarId);
+                            result.Value = null;
+                            result.Exception = apiEx;
                             return result;
                         }
                     }
@@ -790,6 +797,10 @@ namespace Tailgrab.PlayerManagement
                     dBContext.Update(info);
                     dBContext.SaveChanges();
                     logger.Info($"Updated AvatarInfo for {AvatarId} to AlertType None due to 404 Not Found.");
+
+                    if( serviceRegistry != null)
+                        serviceRegistry.GetVRChatAPIClient().DeleteAvatarGlobal(AvatarId);
+
                 }
                 catch (Exception ex)
                 {
@@ -827,7 +838,6 @@ namespace Tailgrab.PlayerManagement
                 return false;
             }
         }
-
         #endregion
 
         #region Avatar GIST processing
@@ -1062,6 +1072,161 @@ namespace Tailgrab.PlayerManagement
             return new AvatarImportItem(lineNumber, avatarId, avatarName, alertType);
         }
         #endregion 
+
+        #region User Avatar Overlay
+        public async Task<List<UserAvatarViewModel>> LoadUserAvatarAsync(string userId)
+        {
+            if (serviceRegistry == null)
+            {
+                logger.Warn("ServiceRegistry is not initialized.");
+                return new List<UserAvatarViewModel>();
+            }
+
+            var avatarViewModels = new List<UserAvatarViewModel>();
+
+            try
+            {
+                // Fetch DB data on background thread
+                TailgrabDBContext dbContext = serviceRegistry.GetDBContext();
+                VRCDBClient vrcdbClient = serviceRegistry.GetVRCDBClient();
+
+                // Fetch groups from API on background thread
+                List<AvatarItem> avatarItems = await Task.Run(() => vrcdbClient.GetAvatarsByAuthorAsync(userId));
+                logger.Info($"Fetched {avatarItems?.Count ?? 0} avatars for user {userId}");
+
+                if (avatarItems == null || avatarItems.Count == 0)
+                {
+                    logger.Info($"No avatars found for user {userId}");
+                    return avatarViewModels;
+                }
+
+
+                foreach (var avatarItem in avatarItems)
+                {
+                    if (avatarItem.Id != null)
+                    {
+
+                        UserAvatarViewModel model = new UserAvatarViewModel()
+                        {
+                            AvatarId = avatarItem.Id ?? string.Empty,
+                            Name = avatarItem.Name ?? string.Empty,
+                            ThumbnailUrl = avatarItem.ImageUrl ?? string.Empty,
+                            OwnerName = avatarItem.AuthorName ?? string.Empty,
+                            OwnerId = avatarItem.AuthorId ?? string.Empty,
+                            IsOwnedByUser = avatarItem.AuthorId == userId,
+                            IsPC = avatarItem.Performance?.PcRating ?? string.Empty,
+                            IsQuest = avatarItem.Performance?.AndroidRating ?? string.Empty,
+                            IsIOS = avatarItem.Performance?.IosRating ?? string.Empty,
+                            DatabaseAlertType = AlertTypeEnum.None,
+                            AlertType = AlertTypeEnum.None,
+                            PCPerformance = AvatarPerformanceEnumMapper.MapEnumToAlertDisplayItem(avatarItem.Performance?.PcRating ?? string.Empty),
+                            QuestPerformance = AvatarPerformanceEnumMapper.MapEnumToAlertDisplayItem(avatarItem.Performance?.AndroidRating ?? string.Empty),
+                            IOSPerformance = AvatarPerformanceEnumMapper.MapEnumToAlertDisplayItem(avatarItem.Performance?.IosRating ?? string.Empty),    
+                        };
+
+                        AvatarInfo? existingAvatar = dbContext.AvatarInfos.Find(avatarItem.Id);
+                        if (existingAvatar != null)
+                        {
+                            model.AlertType = existingAvatar.AlertType;
+                            model.DatabaseAlertType = existingAvatar.AlertType;
+                            model.ExistsInDatabase = true;
+                        }
+
+
+                        Result<Avatar?> avatarResult = serviceRegistry.GetVRChatAPIClient().GetAvatarById(model.AvatarId);
+                        if (avatarResult != null && avatarResult.Value != null)
+                        {
+                            Avatar avatar = avatarResult.Value;
+                            model.ThumbnailUrl = avatar.ThumbnailImageUrl ?? string.Empty;
+                            model.Description = avatar.Description ?? string.Empty;
+                            model.UpdatedAt = avatar.UpdatedAt;
+                            model.CreatedAt = avatar.CreatedAt;
+                        }
+                        else
+                        {
+                            logger.Warn($"Failed to fetch avatar details for Avatar ID {avatarItem.Id}. Exception: {avatarResult?.Exception?.Message}");
+                            model.Description = $"Failed to fetch avatar details. {avatarResult?.Exception?.Message}";
+                        }
+
+                        avatarViewModels.Add(model);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, $"Error loading user avatars for {userId}");
+                throw;
+            }
+
+            return avatarViewModels
+                .OrderByDescending(g => g.IsOwnedByUser)
+                .ThenByDescending(g => g.AlertType)
+                .ThenBy(g => g.Name)
+                .ToList();
+        }
+
+        public UpdateAvatarInfoResult InsertUpdateAvatarInfo(UserAvatarViewModel vm)
+        {
+            UpdateAvatarInfoResult result = new UpdateAvatarInfoResult(false, string.Empty);
+
+            if (serviceRegistry == null)
+            {
+                result.Success = false;
+                result.Message = "ServiceRegistry is not initialized.";
+                logger.Warn(result.Message);
+
+                return result;
+            }
+            try
+            {
+                var dbContext = serviceRegistry.GetDBContext();
+
+                // Check if already exists
+                var existingAvatarInfo = dbContext.AvatarInfos.Find(vm.AvatarId);
+
+                if (existingAvatarInfo != null)
+                {
+                    // Update existing record
+                    existingAvatarInfo.AlertType = vm.AlertType;
+                    existingAvatarInfo.UpdatedAt = DateTime.UtcNow;
+
+                    dbContext.AvatarInfos.Update(existingAvatarInfo);
+                    dbContext.SaveChanges();
+
+                    result.Message = $"Updated avatar {vm.AvatarId} ({vm.Name}) with alert type {vm.AlertType}";
+                }
+                else
+                {
+                    // Create new avatar info record
+                    var newAvatarInfo = new AvatarInfo()
+                    {
+                        AvatarId = vm.AvatarId,
+                        AvatarName = vm.Name,
+                        AlertType = vm.AlertType,
+                        UserId = vm.OwnerId,
+                        UserName = vm.OwnerName,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    };
+
+                    dbContext.AvatarInfos.Add(newAvatarInfo);
+                    dbContext.SaveChanges();
+                    result.Message = $"Added Avatar {vm.AvatarId} ({vm.Name}) with alert type {vm.AlertType}";
+                }
+            }
+            catch (Exception ex)
+            {
+                result.Message = $"Error updating alert type for Avatar ID {vm.AvatarId}";
+                logger.Error(ex, result.Message);
+                return result;
+            }
+
+            result.Success = true;
+            logger.Info(result.Message);
+            return result;
+        }
+        #endregion
+
     }
 
 
@@ -1114,6 +1279,17 @@ namespace Tailgrab.PlayerManagement
         public string AvatarId { get; set; } = avatarId;
         public AlertTypeEnum AlertType { get; set; } = alertType;
         public int LineNumber { get; set; } = lineNumber;
+    }
+
+    public class UpdateAvatarInfoResult
+    {
+        public bool Success{ get; set; }
+        public string Message { get; set; }
+        public UpdateAvatarInfoResult(bool success, string message)
+        {
+            Success = success;
+            Message = message;
+        }
     }
     #endregion
 }

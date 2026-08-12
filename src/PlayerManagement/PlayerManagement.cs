@@ -606,7 +606,7 @@ namespace Tailgrab.PlayerManagement
         public string AIEvaluation { get; set; } = aIEvaluation;
         public string EvaluatedText { get; set; } = evaluatedText;
 
-        public AlertDisplayItem AlertInfo { get; set; } = AIEvalutionEnumMapper.MapEnumToAlertDisplayItem(AIEvalutionEnumMapper.MapEvaluationToEnum(evaluatedText));
+        public AlertDisplayItem AlertInfo { get; set; } = AIEvalutionEnumMapper.MapEnumToAlertDisplayItem(evaluatedText);
         public DateTime SpawnedAt { get; set; } = DateTime.Now;
     }
 
@@ -619,7 +619,7 @@ namespace Tailgrab.PlayerManagement
         public string PrintUrl { get; set; } = printUrl;
         public string AIEvaluation { get; set; } = aiEvaluation;
         public string AIClass { get; set; } = aiClassification;
-        public AlertDisplayItem AlertInfo { get; set; } = AIEvalutionEnumMapper.MapEnumToAlertDisplayItem(AIEvalutionEnumMapper.MapEvaluationToEnum(aiEvaluation));
+        public AlertDisplayItem AlertInfo { get; set; } = AIEvalutionEnumMapper.MapEnumToAlertDisplayItem(aiEvaluation);
         public string AuthorName { get; set; } = authorName;
     }
 

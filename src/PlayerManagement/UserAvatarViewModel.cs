@@ -1,4 +1,4 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Windows.Media;
 using Tailgrab.Common;
 using WpfBrush = System.Windows.Media.Brush;
@@ -7,27 +7,33 @@ using WpfColor = System.Windows.Media.Color;
 
 namespace Tailgrab.PlayerManagement
 {
-    public class UserGroupViewModel : INotifyPropertyChanged
+    public class UserAvatarViewModel : INotifyPropertyChanged
     {
         public event PropertyChangedEventHandler? PropertyChanged;
-
         protected virtual void OnPropertyChanged(string propertyName)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
-        public string GroupId { get; set; } = string.Empty;
+        public string AvatarId { get; set; } = string.Empty;
         public string Name { get; set; } = string.Empty;
-        public string BannerUrl { get; set; } = string.Empty;
-        public string IconUrl { get; set; } = string.Empty;
-        public string ShortCode { get; set; } = string.Empty;
+        public string ThumbnailUrl { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
-        public string Rules { get; set; } = string.Empty;
-        public string JoinState { get; set; } = string.Empty;
-        public int MemberCount { get; set; }
+        public string? IsPC { get; set; } = string.Empty;
+        public string? IsQuest { get; set; } = string.Empty;
+        public string? IsIOS { get; set; } = string.Empty;
         public string OwnerId { get; set; } = string.Empty;
+        public string OwnerName { get; set; } = string.Empty;
+        public DateTime CreatedAt { get; set; }
+        public DateTime? UpdatedAt { get; set; }
+
         public bool IsOwnedByUser { get; set; }
         public bool ExistsInDatabase { get; set; }
+
+        public AlertDisplayItem? PCPerformance { get; set; }
+        public AlertDisplayItem? QuestPerformance { get; set; }
+        public AlertDisplayItem? IOSPerformance { get; set; }
+
 
         private AlertTypeEnum _databaseAlertType = AlertTypeEnum.None;
         public AlertTypeEnum DatabaseAlertType
@@ -135,10 +141,10 @@ namespace Tailgrab.PlayerManagement
                 AlertForeground = new SolidColorBrush(WpfColor.FromRgb(0xE6, 0xE6, 0xE6));
             }
         }
-    
+
         public override string ToString()
         {
-            return $"UserGroupViewModel: GroupId={GroupId}, Name={Name}, BannerUrl={BannerUrl}, IconUrl={IconUrl}, ShortCode={ShortCode}, Description={Description}, Rules={Rules}, JoinState={JoinState}, MemberCount={MemberCount}, OwnerId={OwnerId}, IsOwnedByUser={IsOwnedByUser}, ExistsInDatabase={ExistsInDatabase}, AlertType={AlertType}";
+            return $"UserAvatarViewModel: AvatarId={AvatarId}, Name={Name}, ThumbnailUrl={ThumbnailUrl}, Description={Description}, IsPC={IsPC}, IsQuest={IsQuest}, IsIOS={IsIOS}, OwnerId={OwnerId}, IsOwnedByUser={IsOwnedByUser}, ExistsInDatabase={ExistsInDatabase}, AlertType={AlertType}";
         }
     }
 }

@@ -2,6 +2,7 @@ using NLog;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
+using System.Speech.Synthesis;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows;
@@ -14,6 +15,7 @@ using Tailgrab.Clients.VRChat;
 using Tailgrab.Common;
 using Tailgrab.Models;
 using VRChat.API.Model;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.Tab;
 using static Tailgrab.Clients.VRChat.VRChatClient;
 
 namespace Tailgrab.PlayerManagement
@@ -163,6 +165,32 @@ namespace Tailgrab.PlayerManagement
                 {
                     _elapsedTime = value;
                     OnPropertyChanged(nameof(ElapsedTime));
+                }
+            }
+        }
+
+        private string _OverlayMessageTitle = string.Empty;
+        public string OverlayMessageTitle {
+            get => _OverlayMessageTitle;
+            set
+            {
+                if (_OverlayMessageTitle != value)
+                {
+                    _OverlayMessageTitle = value;
+                    OnPropertyChanged(nameof(OverlayMessageTitle));
+                }
+            }
+        }
+
+        private string _OverlayMessageBody = string.Empty;
+        public string OverlayMessageBody {
+            get => _OverlayMessageBody;
+            set
+            {
+                if (_OverlayMessageBody != value)
+                {
+                    _OverlayMessageBody = value;
+                    OnPropertyChanged(nameof(OverlayMessageBody));
                 }
             }
         }
@@ -763,6 +791,22 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
+        public void ShowOverlayMessage(string title, string body)
+        {
+            OverlayMessageTitle = title;
+            OverlayMessageBody = body;
+            OverlayMessageBodyTextBox.Text = body;
+            OverlayMessage.Visibility = Visibility.Visible;
+        }
+
+        public void HideOverlayMessage(object sender, RoutedEventArgs e)
+        {
+            OverlayMessage.Visibility = Visibility.Collapsed;
+            OverlayMessageTitle = string.Empty;
+            OverlayMessageBody = string.Empty;
+            OverlayMessageBodyTextBox.Text = string.Empty;
+        }
+
         private void Reset2FA_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -950,12 +994,6 @@ namespace Tailgrab.PlayerManagement
                     // Get test images from the test-images folder
                     List<string> testImages = tailgrab.Common.TestImageManager.GetAvailableImages();
 
-                    // TODO: Implement actual AI image prompt testing logic
-                    // This would typically:
-                    // 1. Load each test image from the test-images folder
-                    // 2. Send to Ollama for evaluation with the configured prompt
-                    // 3. Populate TestImageAIEvalItems with results
-
                     // Stub implementation - create placeholder items
                     foreach (string imageName in testImages)
                     {
@@ -970,7 +1008,7 @@ namespace Tailgrab.PlayerManagement
                             {
                                 ImagePath = imagePath,
                                 AIEvaluation = evaluation,
-                                AlertInfo = AIEvalutionEnumMapper.MapEnumToAlertDisplayItem(AIEvalutionEnumMapper.MapEvaluationToEnum(evaluation))
+                                AlertInfo = AIEvalutionEnumMapper.MapEnumToAlertDisplayItem(evaluation)
                             };
 
                             TestImageAIEvalItems.Add(item);
@@ -1885,6 +1923,37 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
+        private void GroupCheckAvatars_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                string userId = BanMgmtGroupOwnerId.Text.Trim();
+
+                if (string.IsNullOrWhiteSpace(userId))
+                {
+                    System.Windows.MessageBox.Show("Please enter a User ID first.", "Validation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                if (!userId.StartsWith("usr_"))
+                {
+                    System.Windows.MessageBox.Show("Invalid User ID format (must start with usr_).", "Validation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                // Get display name if user is already loaded, otherwise use userId
+                string displayName = BanMgmtGroupOwner.Text ?? userId;
+
+                // Call ShowUserAvatarsOverlay with the userId and display name
+                ShowUserAvatarsOverlay(userId, displayName);
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error checking groups for user");
+                System.Windows.MessageBox.Show($"Failed to check groups: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
         private void ShowProfileReportOverlay(string userId)
         {
             // Populate the overlay fields
@@ -2089,9 +2158,10 @@ namespace Tailgrab.PlayerManagement
             // Find the DataContext for the row (should be PlayerViewModel)
             if (btn.DataContext is PlayerViewModel pvm)
             {
+                string userId = pvm.UserId;
                 try
                 {
-                    ShowProfileReportOverlayPast(pvm);
+                    ShowProfileReportOverlay(userId);
                 }
                 catch (Exception ex)
                 {
@@ -2124,108 +2194,6 @@ namespace Tailgrab.PlayerManagement
                 BanMgmtLoadUser_Click(sender, e);
             }
         }
-
-
-        private void ShowProfileReportOverlayPast(PlayerViewModel pvm)
-        {
-            // Populate the overlay fields
-            ProfilePastReportUserId.Text = pvm.UserId;
-            // Setup report reasons for profile (includes Child Exploitation)
-
-            ProfilePastReportReason.ItemsSource = ProfileReportReasonsOptions;
-            ProfilePastReportReason.SelectedIndex = 0;
-
-            if (string.IsNullOrEmpty(pvm.UserId))
-            {
-                ProfilePastReportDescription.Text = string.Empty;
-            }
-            else
-            {
-                try
-                {
-                    if (!string.IsNullOrEmpty(pvm.AIEval))
-                    {
-                        ProfilePastReportDescription.Text = pvm.AIEval;
-                        ProfilePastReportReason.SelectedIndex = 0;
-                        logger.Debug($"Loaded AI evaluation for user: {pvm.UserId}");
-                    }
-                    else
-                    {
-                        ProfilePastReportDescription.Text = "No AI evaluation available for this user.";
-                        logger.Debug($"No AI evaluation found for user: {pvm.UserId}");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    logger.Error(ex, $"Error loading AI evaluation for user: {pvm.UserId}");
-                    ProfilePastReportDescription.Text = $"Error loading AI evaluation: {ex.Message}";
-                }
-            }
-
-            // Show the overlay
-            ProfilePastReportOverlay.Visibility = Visibility.Visible;
-        }
-
-        private void OverlayProfileReportPastCancel_Click(object sender, RoutedEventArgs e)
-        {
-            // Hide the overlay
-            ProfilePastReportOverlay.Visibility = Visibility.Collapsed;
-
-            // Clear the fields
-            ProfilePastReportUserId.Text = string.Empty;
-            ProfilePastReportDescription.Text = string.Empty;
-
-            // Clear validation errors
-            ClearProfileReportValidationErrors();
-        }
-
-        private async void OverlayProfileReportPastSubmit_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                string userId = ProfilePastReportUserId.Text.Trim();
-                string category = ProfilePastReportCategory.Text;
-                string reportReason = ProfilePastReportReason.SelectedValue?.ToString() ?? string.Empty;
-                string reportDescription = ProfilePastReportDescription.Text;
-
-                // Disable the submit button to prevent double-submission
-                OverlayProfileReportPastSubmitButton.IsEnabled = false;
-
-                // Call the method that will handle the future web service call
-                bool success = await SubmitProfileReport(userId, category, reportReason, reportDescription);
-
-                // Show success message
-                if (!success)
-                {
-                    System.Windows.MessageBox.Show("Failed to submit report. Please try again later.", "Error",
-                        System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
-                    OverlayProfileReportPastSubmitButton.IsEnabled = true;
-                    return;
-                }
-
-                // Hide the overlay
-                ProfilePastReportOverlay.Visibility = Visibility.Collapsed;
-
-                // Clear the fields
-                ProfilePastReportUserId.Text = string.Empty;
-                ProfilePastReportDescription.Text = string.Empty;
-
-                // Clear validation errors
-                ClearProfileReportValidationErrors();
-
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex, "Failed to submit profile report");
-                System.Windows.MessageBox.Show($"Failed to submit report: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-            finally
-            {
-                OverlayProfileReportPastSubmitButton.IsEnabled = true;
-            }
-        }
-
-
         #endregion
 
         //
@@ -3584,7 +3552,6 @@ namespace Tailgrab.PlayerManagement
         {
             try
             {
-
                 // Get the full avatar information from VRChat API
                 VRChatClient vrcClient = _serviceRegistry.GetVRChatAPIClient();
                 Result<Avatar?> result = await Task.Run(() => vrcClient.GetAvatarById(avatarId));
@@ -3609,6 +3576,7 @@ namespace Tailgrab.PlayerManagement
 
                     // Enable the Ban Owner button if we have an owner ID
                     BanAvatarOwnerButton.IsEnabled = !string.IsNullOrWhiteSpace(result.Value.AuthorId);
+                    ShowOwnerAvatarsButton.IsEnabled = !string.IsNullOrWhiteSpace(result.Value.AuthorId);
 
                     // Load avatar image
                     if (!string.IsNullOrEmpty(result.Value.ImageUrl))
@@ -3656,6 +3624,7 @@ namespace Tailgrab.PlayerManagement
             BanMgmtAvatarDesc.Text = string.Empty;
             BanMgmtAvatarImage.Source = null;
             BanAvatarOwnerButton.IsEnabled = false;
+            ShowOwnerAvatarsButton.IsEnabled = false;
             UseAvatarButton.IsEnabled = false;
             SelectedAvatarId = string.Empty;
         }
@@ -3709,6 +3678,7 @@ namespace Tailgrab.PlayerManagement
 
                     // Enable the Ban Owner button if we have an owner ID
                     BanGroupOwnerButton.IsEnabled = !string.IsNullOrWhiteSpace(group.OwnerId);
+                    ShowGroupOwnerAvatarsButton.IsEnabled = !string.IsNullOrWhiteSpace(group.OwnerId);
 
                     // Load group banner image
                     if (!string.IsNullOrEmpty(group.BannerUrl))
@@ -3783,6 +3753,7 @@ namespace Tailgrab.PlayerManagement
             BanMgmtGroupImage.Source = null;
             BanMgmtGroupIcon.Source = null;
             BanGroupOwnerButton.IsEnabled = false;
+            ShowGroupOwnerAvatarsButton.IsEnabled = false;
         }
 
         private void GroupHyperlink_RequestNavigate(object? sender, System.Windows.Navigation.RequestNavigateEventArgs e)
@@ -5199,7 +5170,6 @@ namespace Tailgrab.PlayerManagement
         }
 
         #region User Groups Overlay Management
-
         public async void ShowUserGroupsOverlay(string userId, string displayName)
         {
             try
@@ -5248,59 +5218,70 @@ namespace Tailgrab.PlayerManagement
                         return;
                     }
 
-                    var dbContext = _serviceRegistry.GetDBContext();
-
-                    // Check if already exists
-                    var existingGroup = dbContext.GroupInfos.Find(vm.GroupId);
-
-                    if (existingGroup != null)
+                    string activityMessage = string.Empty;
+                    UpdateGroupInfoResult result = _serviceRegistry.GetGroupManager().InsertUpdateGroupInfo(vm);
+                    if (result.Success)
                     {
-                        // Update existing record
-                        existingGroup.AlertType = vm.AlertType;
-                        existingGroup.UpdatedAt = DateTime.UtcNow;
-
-                        dbContext.GroupInfos.Update(existingGroup);
-                        await dbContext.SaveChangesAsync();
-
-                        // Synchronize ViewModel with database
-                        vm.DatabaseAlertType = vm.AlertType;
-                        vm.UpdateAlertColors();
-
-                        logger.Info($"Updated group {vm.GroupId} ({vm.Name}) with alert type {vm.AlertType}");
-                        System.Windows.MessageBox.Show($"Group '{vm.Name}' updated successfully with alert type '{vm.AlertType}'.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
-                    }
-                    else
-                    {
-                        // Create new group info record
-                        var newGroup = new GroupInfo
-                        {
-                            GroupId = vm.GroupId,
-                            GroupName = vm.Name,
-                            AlertType = vm.AlertType,
-                            CreatedAt = DateTime.UtcNow,
-                            UpdatedAt = DateTime.UtcNow
-                        };
-
-                        dbContext.GroupInfos.Add(newGroup);
-                        await dbContext.SaveChangesAsync();
-
                         // Update view model to reflect database state
                         vm.ExistsInDatabase = true;
                         vm.DatabaseAlertType = vm.AlertType;
                         vm.UpdateAlertColors();
-
-                        logger.Info($"Added group {vm.GroupId} ({vm.Name}) with alert type {vm.AlertType}");
-                        System.Windows.MessageBox.Show($"Group '{vm.Name}' added successfully with alert type '{vm.AlertType}'.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                        activityMessage += $"{result.Message}\n";
                     }
 
                     // Refresh the groups database view if it's visible
                     RefreshGroupDb();
+                    if (!string.IsNullOrEmpty(activityMessage))
+                    {
+                        ShowOverlayMessage("Success", activityMessage);
+                    }
                 }
             }
             catch (Exception ex)
             {
                 logger.Error(ex, "Error adding/updating group in database");
-                System.Windows.MessageBox.Show($"Failed to save group: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                ShowOverlayMessage("Error", $"Failed to save group: {ex.Message}");
+            }
+        }
+
+        public void UserGroupOverlaySaveChanges_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (sender is System.Windows.Controls.Button button && button.Tag is string source)
+                {
+                    if (source == "UserGroupsDataGrid")
+                    {
+                        string activityMessage = string.Empty;
+                        List<UserGroupViewModel> groups = UserGroupsDataGrid.ItemsSource as List<UserGroupViewModel> ?? new List<UserGroupViewModel>();
+                        foreach (var vm in groups)
+                        {
+                            if (vm.CanAdd)
+                            {
+                                UpdateGroupInfoResult result = _serviceRegistry.GetGroupManager().InsertUpdateGroupInfo(vm);
+                                if (result.Success)
+                                {
+                                    // Update view model to reflect database state
+                                    vm.ExistsInDatabase = true;
+                                    vm.DatabaseAlertType = vm.AlertType;
+                                    vm.UpdateAlertColors();
+                                    activityMessage += $"{result.Message}\n";
+                                }
+                            }
+                        }
+                        // Refresh the groups database view if it's visible
+                        RefreshGroupDb();
+                        if (!string.IsNullOrEmpty(activityMessage))
+                        {
+                            ShowOverlayMessage("Success", activityMessage);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error adding/updating group in database");
+                ShowOverlayMessage("Error", $"Failed to save group: {ex.Message}");
             }
         }
 
@@ -5334,7 +5315,216 @@ namespace Tailgrab.PlayerManagement
                 UserGroupsScrollViewer.RaiseEvent(scrollEvent);
             }
         }
+        #endregion
 
+        #region User Avatars Overlay
+        private void AvatarCheckAvatars_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                string userId = BanMgmtAvatarOwnerId.Text.Trim();
+
+                if (string.IsNullOrWhiteSpace(userId))
+                {
+                    System.Windows.MessageBox.Show("Please enter a User ID first.", "Validation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                if (!userId.StartsWith("usr_"))
+                {
+                    System.Windows.MessageBox.Show("Invalid User ID format (must start with usr_).", "Validation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                // Get display name if user is already loaded, otherwise use userId
+                string displayName = BanMgmtAvatarOwner.Text ?? userId;
+
+                // Call ShowUserAvatarsOverlay with the userId and display name
+                ShowUserAvatarsOverlay(userId, displayName);
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error checking groups for user");
+                System.Windows.MessageBox.Show($"Failed to check groups: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        public async void ShowUserAvatarsOverlay(string userId, string displayName)
+        {
+            try
+            {
+                // Set user information
+                UserAvatarOverlayUserId.Text = userId;
+                UserAvatarOverlayDisplayName.Text = displayName;
+
+                // Clear existing data
+                UserAvatarDataGrid.ItemsSource = null;
+
+                // Show the overlay
+                UserAvatarOverlay.Visibility = Visibility.Visible;
+
+                // Fetch avatars asynchronously (already async, no need for Task.Run)
+                List<UserAvatarViewModel> avatars = await _serviceRegistry.GetAvatarManager().LoadUserAvatarAsync(userId);
+
+                // Update UI (already on UI thread)
+                UserAvatarDataGrid.ItemsSource = avatars;
+
+                // Reset ScrollViewer to top
+                UserAvatarScrollViewer.ScrollToTop();
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, $"Error showing user avatars overlay for user {userId}");
+                System.Windows.MessageBox.Show($"Failed to load user avatars: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                UserAvatarOverlay.Visibility = Visibility.Collapsed;
+            }
+        }
+
+
+        private async void UserAvatarAdd_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (sender is System.Windows.Controls.Button button && button.Tag is UserAvatarViewModel vm)
+                {
+                    if (vm.AlertType == AlertTypeEnum.None)
+                    {
+                        System.Windows.MessageBox.Show("Please select an Alert Type before adding.", "Alert Type Required", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        return;
+                    }
+
+
+                    string activityMessage = string.Empty;
+                    UpdateAvatarInfoResult result = _serviceRegistry.GetAvatarManager().InsertUpdateAvatarInfo(vm);
+                    if (result.Success)
+                    {
+                        // Update view model to reflect database state
+                        vm.ExistsInDatabase = true;
+                        vm.DatabaseAlertType = vm.AlertType;
+                        vm.UpdateAlertColors();
+                        activityMessage += $"{result.Message}\n";
+                    }
+
+                    // Refresh the avatars database view if it's visible
+                    RefreshAvatarDb();
+                    if (!string.IsNullOrEmpty(activityMessage))
+                    {
+                        ShowOverlayMessage("Success", activityMessage);
+                        //System.Windows.MessageBox.Show(activityMessage, "Activity", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error adding/updating avatar in database");
+                ShowOverlayMessage("Error", $"Failed to save avatar: {ex.Message}");
+                //System.Windows.MessageBox.Show($"Failed to save avatar: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+
+        private async void OverlayUseAvatarButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is System.Windows.Controls.Button button && button.DataContext is UserAvatarViewModel vm)
+            {
+                if (!string.IsNullOrWhiteSpace(vm.AvatarId))
+                {
+                    // Call the load user function
+                    await _serviceRegistry.GetAvatarManager().SwitchAvatar(vm.AvatarId);
+                }
+            }
+        }
+
+        private async void OverlayReportAvatarButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is System.Windows.Controls.Button button && button.DataContext is UserAvatarViewModel vm)
+            {
+                if (!string.IsNullOrWhiteSpace(vm.AvatarId))
+                {
+                    // Call the load user function
+                }
+            }
+        }
+
+        private void UserAvatarOverlaySaveChanges_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (sender is System.Windows.Controls.Button button && button.Tag is string source)
+                {
+                    if (source == "UserAvatarDataGrid")
+                    {
+                        string activityMessage = string.Empty;
+                        List<UserAvatarViewModel> avatars = UserAvatarDataGrid.ItemsSource as List<UserAvatarViewModel> ?? new List<UserAvatarViewModel>();
+                        foreach (var vm in avatars)
+                        {
+                            if (vm.CanAdd)
+                            {
+                                UpdateAvatarInfoResult result = _serviceRegistry.GetAvatarManager().InsertUpdateAvatarInfo(vm);
+                                if (result.Success)
+                                {
+                                    // Update view model to reflect database state
+                                    vm.ExistsInDatabase = true;
+                                    vm.DatabaseAlertType = vm.AlertType;
+                                    vm.UpdateAlertColors();
+                                    activityMessage += $"{result.Message}\n";
+                                }
+                            }
+                        }
+                        // Refresh the avatars database view if it's visible
+                        RefreshAvatarDb();
+                        if (!string.IsNullOrEmpty(activityMessage))
+                        {
+                            ShowOverlayMessage("Success", activityMessage);
+                            //System.Windows.MessageBox.Show(activityMessage, "Activity", MessageBoxButton.OK, MessageBoxImage.Information);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error adding/updating avatar in database");
+                ShowOverlayMessage("Error", $"Failed to save avatar: {ex.Message}");
+                //System.Windows.MessageBox.Show($"Failed to save avatar: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+
+        private void UserAvatarOverlayClose_Click(object sender, RoutedEventArgs e)
+        {
+            UserAvatarOverlay.Visibility = Visibility.Collapsed;
+        }
+
+        private void UserAvatarDataGrid_PreviewMouseWheel(object sender, System.Windows.Input.MouseWheelEventArgs e)
+        {
+            // Check if we're over a ComboBox that's open - if so, let it handle the scroll
+            if (e.OriginalSource is FrameworkElement element)
+            {
+                // Walk up the visual tree to see if we're inside a ComboBox
+                DependencyObject parent = element;
+                while (parent != null)
+                {
+                    if (parent is System.Windows.Controls.ComboBox comboBox && comboBox.IsDropDownOpen)
+                    {
+                        // Let the ComboBox handle its own scrolling
+                        return;
+                    }
+                    parent = VisualTreeHelper.GetParent(parent);
+                }
+            }
+
+            // Forward the mouse wheel event to the ScrollViewer
+            if (UserAvatarScrollViewer != null)
+            {
+                e.Handled = true;
+                var scrollEvent = new System.Windows.Input.MouseWheelEventArgs(e.MouseDevice, e.Timestamp, e.Delta)
+                {
+                    RoutedEvent = UIElement.MouseWheelEvent,
+                    Source = sender
+                };
+                UserAvatarScrollViewer.RaiseEvent(scrollEvent);
+            }
+        }
         #endregion
     }
 
@@ -5592,6 +5782,16 @@ namespace Tailgrab.PlayerManagement
     {
         public string DisplayName { get; set; } = displayName;
         public string Value { get; set; } = value;
+    }
+    #endregion
+
+
+    #region Support DTO Classes
+    public class AvatarInfoDTO(string avatarId, AlertTypeEnum alertType, bool exists)
+    {
+        public string AvatarId { get; set; } = avatarId;
+        public AlertTypeEnum AlertType { get; set; } = alertType;
+        public bool Exists { get; set; } = exists;
     }
     #endregion
 }

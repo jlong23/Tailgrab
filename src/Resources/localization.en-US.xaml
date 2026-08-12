@@ -24,7 +24,7 @@
     <sys:String x:Key="UI.Tab.ActivePlayers.Action.Report">Report</sys:String>
     <sys:String x:Key="UI.Tab.ActivePlayers.Action.Ban">Ban</sys:String>
     <sys:String x:Key="UI.Tab.ActivePlayers.Action.Groups">Groups</sys:String>
-    <sys:String x:Key="UI.Tab.ActivePlayers.Profile.TextFormat">{}User Profile:&#x0a;{0}&#x0a;&#x0a;AI Evaluation:&#x0a;{1}</sys:String>
+    <sys:String x:Key="UI.Tab.ActivePlayers.Profile.TextFormat">User Profile:&#x0a;{0}&#x0a;&#x0a;AI Evaluation:&#x0a;{1}</sys:String>
 
 
     <!-- Past Players Panel -->
@@ -51,7 +51,7 @@
     <sys:String x:Key="UI.Tab.PastPlayers.Action.Report">Report</sys:String>
     <sys:String x:Key="UI.Tab.PastPlayers.Action.Ban">Ban</sys:String>
     <sys:String x:Key="UI.Tab.PastPlayers.Action.Groups">Groups</sys:String>
-    <sys:String x:Key="UI.Tab.PastPlayers.Profile.TextFormat">{}User Profile:&#x0a;{0}&#x0a;&#x0a;AI Evaluation:&#x0a;{1}</sys:String>
+    <sys:String x:Key="UI.Tab.PastPlayers.Profile.TextFormat">User Profile:&#x0a;{0}&#x0a;&#x0a;AI Evaluation:&#x0a;{1}</sys:String>
     
     <!-- Prints Panel -->
     <sys:String x:Key="UI.Tab.Prints.Tab">Prints</sys:String>
@@ -118,6 +118,7 @@
     <sys:String x:Key="UI.Tab.KnownAvatars.Group.Description">Description:</sys:String>
     <sys:String x:Key="UI.Tab.KnownAvatars.Group.Action.SwitchIntoAvatar">Switch into Avatar</sys:String>
     <sys:String x:Key="UI.Tab.KnownAvatars.Group.Action.BanOwner">Ban Owner</sys:String>
+    <sys:String x:Key="UI.Tab.KnownAvatars.Group.Action.ShowOwnerAvatars">Show Avatars</sys:String>
     <sys:String x:Key="UI.Tab.KnownAvatars.Column.Alert">Alert</sys:String>
     <sys:String x:Key="UI.Tab.KnownAvatars.Column.AvatarName">Avatar Name</sys:String>
     <sys:String x:Key="UI.Tab.KnownAvatars.Column.AvatarId">Avatar ID</sys:String>
@@ -142,6 +143,7 @@
     <sys:String x:Key="UI.Tab.KnownGroups.Group.Description">Description:</sys:String>
     <sys:String x:Key="UI.Tab.KnownGroups.Group.Rules">Rules:</sys:String>
     <sys:String x:Key="UI.Tab.KnownGroups.Group.Action.BanOwner">Ban Owner</sys:String>
+    <sys:String x:Key="UI.Tab.KnownGroups.Group.Action.ShowOwnerAvatars">Show Avatars</sys:String>
     <sys:String x:Key="UI.Tab.KnownGroups.Column.Alert">Alert</sys:String>
     <sys:String x:Key="UI.Tab.KnownGroups.Column.GroupName">Group Name</sys:String>
     <sys:String x:Key="UI.Tab.KnownGroups.Column.GroupId">Group ID</sys:String>
@@ -283,6 +285,98 @@
 
 
 
+    <!-- Overlay Panels -->
+    <!-- Overlay Profile Report-->
+    <sys:String x:Key="UI.Overlay.ProfileReport.Title">Report User Profile</sys:String>
+    <sys:String x:Key="UI.Overlay.ProfileReport.UserID">User ID: *</sys:String>
+    <sys:String x:Key="UI.Overlay.ProfileReport.Category">Category:</sys:String>
+    <sys:String x:Key="UI.Overlay.ProfileReport.ReportReason">Report Reason:</sys:String>
+    <sys:String x:Key="UI.Overlay.ProfileReport.ReportDescription">Report Description (AI Evaluation):</sys:String>
+    <sys:String x:Key="UI.Overlay.ProfileReport.Action.Cancel">Cancel</sys:String>
+    <sys:String x:Key="UI.Overlay.ProfileReport.Action.Submit">Submit</sys:String>
+    <sys:String x:Key="UI.Overlay.ProfileReport.Required">Required</sys:String>
+
+    <!-- User Avatar Overlay -->
+    <sys:String x:Key="UI.Overlay.UserAvatar.Title">User Avatar Management</sys:String>
+    <sys:String x:Key="UI.Overlay.UserAvatar.Group.Title">User Information</sys:String>
+    <sys:String x:Key="UI.Overlay.UserAvatar.Group.UserId">User ID:</sys:String>
+    <sys:String x:Key="UI.Overlay.UserAvatar.Group.DisplayName">Display Name:</sys:String>
+    <sys:String x:Key="UI.Overlay.UserAvatar.Column.Thumbnail">Thumbnail</sys:String>
+    <sys:String x:Key="UI.Overlay.UserAvatar.Column.Name">Name</sys:String>
+    <sys:String x:Key="UI.Overlay.UserAvatar.Column.AvatarId">Avatar ID</sys:String>
+    <sys:String x:Key="UI.Overlay.UserAvatar.Column.IsPC">PC</sys:String>
+    <sys:String x:Key="UI.Overlay.UserAvatar.Column.IsIOS">IOS</sys:String>
+    <sys:String x:Key="UI.Overlay.UserAvatar.Column.IsQuest">Qst</sys:String>
+    <sys:String x:Key="UI.Overlay.UserAvatar.Column.CreateDate">CreateDate</sys:String>
+    <sys:String x:Key="UI.Overlay.UserAvatar.Column.UpdateDate">Update Date</sys:String>
+    <sys:String x:Key="UI.Overlay.UserAvatar.Column.AlertType">Alert Type</sys:String>
+    <sys:String x:Key="UI.Overlay.UserAvatar.Column.Action">Action</sys:String>
+    <sys:String x:Key="UI.Overlay.UserAvatar.Column.Description">Description:</sys:String>
+    <sys:String x:Key="UI.Overlay.UserAvatar.Action.Add">ADD</sys:String>
+    <sys:String x:Key="UI.Overlay.UserAvatar.Action.SaveAll">Save All</sys:String>
+    <sys:String x:Key="UI.Overlay.UserAvatar.Action.Close">Close</sys:String>
+    <sys:String x:Key="UI.Overlay.UserAvatar.Action.SwitchIntoAvatar">Switch Into Avatar (DblClk)</sys:String>
+    <sys:String x:Key="UI.Overlay.UserAvatar.Action.ReportAvatar">Report Avatar (DblClk)</sys:String>
+
+    <!-- User Groups Overlay -->
+    <sys:String x:Key="UI.Overlay.UserGroups.Title">User Groups Management</sys:String>
+    <sys:String x:Key="UI.Overlay.UserGroups.Group.Title">User Information</sys:String>
+    <sys:String x:Key="UI.Overlay.UserGroups.Group.UserId">User ID:</sys:String>
+    <sys:String x:Key="UI.Overlay.UserGroups.Group.DisplayName">Display Name:</sys:String>
+    <sys:String x:Key="UI.Overlay.UserGroups.Column.Banner">Banner</sys:String>
+    <sys:String x:Key="UI.Overlay.UserGroups.Column.Icon">Icon</sys:String>
+    <sys:String x:Key="UI.Overlay.UserGroups.Column.Name">Name</sys:String>
+    <sys:String x:Key="UI.Overlay.UserGroups.Column.GroupId">Group ID</sys:String>
+    <sys:String x:Key="UI.Overlay.UserGroups.Column.ShortCode">Short Code</sys:String>
+    <sys:String x:Key="UI.Overlay.UserGroups.Column.JoinState">Join State</sys:String>
+    <sys:String x:Key="UI.Overlay.UserGroups.Column.Members">Members</sys:String>
+    <sys:String x:Key="UI.Overlay.UserGroups.Column.AlertType">Alert Type</sys:String>
+    <sys:String x:Key="UI.Overlay.UserGroups.Column.Action">Action</sys:String>
+    <sys:String x:Key="UI.Overlay.UserGroups.Column.Description">Description:</sys:String>
+    <sys:String x:Key="UI.Overlay.UserGroups.Column.Rules">Rules:</sys:String>
+    <sys:String x:Key="UI.Overlay.UserGroups.Action.Add">ADD</sys:String>
+    <sys:String x:Key="UI.Overlay.UserGroups.Action.SaveAll">Save All</sys:String>
+    <sys:String x:Key="UI.Overlay.UserGroups.Action.Close">Close</sys:String>
+
+
+    <!-- Report Prints Inventory Overlay -->
+    <sys:String x:Key="UI.Overlay.ReportPrintsInventory.Title">Report Print Content</sys:String>
+    <sys:String x:Key="UI.Overlay.ReportPrintsInventory.PrintID">Print ID: *</sys:String>
+    <sys:String x:Key="UI.Overlay.ReportPrintsInventory.UserID">User ID: *</sys:String>
+    <sys:String x:Key="UI.Overlay.ReportPrintsInventory.Category">Category:</sys:String>
+    <sys:String x:Key="UI.Overlay.ReportPrintsInventory.ReportReason">Report Reason:</sys:String>
+    <sys:String x:Key="UI.Overlay.ReportPrintsInventory.ReportDescription">Report Description (AI Evaluation):</sys:String>
+    <sys:String x:Key="UI.Overlay.ReportPrintsInventory.ImagePreview">Image Preview:</sys:String>
+    <sys:String x:Key="UI.Overlay.ReportPrintsInventory.Action.Cancel">Cancel</sys:String>
+    <sys:String x:Key="UI.Overlay.ReportPrintsInventory.Action.Submit">Submit</sys:String>
+
+
+    <!-- Report Emoji & Sticker Overlay -->
+    <sys:String x:Key="UI.Overlay.ReportEmojiSticker.Title">Report Emoji &amp; Sticker Content</sys:String>
+    <sys:String x:Key="UI.Overlay.ReportEmojiSticker.InventoryID">Inventory ID: *</sys:String>
+    <sys:String x:Key="UI.Overlay.ReportEmojiSticker.UserID">User ID: *</sys:String>
+    <sys:String x:Key="UI.Overlay.ReportEmojiSticker.Category">Category:</sys:String>
+    <sys:String x:Key="UI.Overlay.ReportEmojiSticker.ReportReason">Report Reason:</sys:String>
+    <sys:String x:Key="UI.Overlay.ReportEmojiSticker.ReportDescription">Report Description (AI Evaluation):</sys:String>
+    <sys:String x:Key="UI.Overlay.ReportEmojiSticker.ImagePreview">Image Preview:</sys:String>
+    <sys:String x:Key="UI.Overlay.ReportEmojiSticker.Action.Cancel">Cancel</sys:String>
+    <sys:String x:Key="UI.Overlay.ReportEmojiSticker.Action.Submit">Submit</sys:String>
+
+
+    <!-- Test Profile AI Prompt Overlay -->
+    <sys:String x:Key="UI.Overlay.TestProfileAIPrompt.Title">Test Profile AI Prompt</sys:String>
+    <sys:String x:Key="UI.Overlay.TestProfileAIPrompt.UserID">User ID:</sys:String>
+    <sys:String x:Key="UI.Overlay.TestProfileAIPrompt.Profile">Profile:</sys:String>
+    <sys:String x:Key="UI.Overlay.TestProfileAIPrompt.AI_Evaluation">AI Evaluation:</sys:String>
+    <sys:String x:Key="UI.Overlay.TestProfileAIPrompt.Action.Close">Close</sys:String>
+
+
+    <!-- Test Image AI Prompt Overlay -->
+    <sys:String x:Key="UI.Overlay.TestImageAIPrompt.Title">Test Image AI Prompt</sys:String>
+    <sys:String x:Key="UI.Overlay.TestImageAIPrompt.Action.Close">Close</sys:String>
+
+
+    <!-- Enums and Classes -->
     <!-- Age Verification Icons -->
     <sys:String x:Key="Text.AgeVerificationEnum.UNVERIFIED">Unverified</sys:String>
     <sys:String x:Key="Text.AgeVerificationEnum.VERIFIED">Verified</sys:String>
@@ -311,6 +405,15 @@
     <sys:String x:Key="Text.AlertTypeEnum.Crasher">Crasher</sys:String>
     <sys:String x:Key="Text.AlertTypeEnum.Default">None</sys:String>
 
+    
+    <!-- Avatar Performance Icons -->
+    <sys:String x:Key="Text.AvatarPerformanceEnum.UNRATED">Unrated</sys:String>
+    <sys:String x:Key="Text.AvatarPerformanceEnum.EXCELLENT">Excellent</sys:String>
+    <sys:String x:Key="Text.AvatarPerformanceEnum.GOOD">Good</sys:String>
+    <sys:String x:Key="Text.AvatarPerformanceEnum.MEDIUM">Medium</sys:String>
+    <sys:String x:Key="Text.AvatarPerformanceEnum.POOR">Poor</sys:String>
+    <sys:String x:Key="Text.AvatarPerformanceEnum.VERY_POOR">Very Poor</sys:String>
+    <sys:String x:Key="Text.AvatarPerformanceEnum.Default">Unknown</sys:String>
 
     <!-- Trust Class Icons -->
     <sys:String x:Key="Text.TrustClassEnum.VISITOR">Visitor</sys:String>

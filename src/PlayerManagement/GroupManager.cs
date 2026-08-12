@@ -401,6 +401,66 @@ namespace Tailgrab.PlayerManagement
 
             return item;
         }
+
+        public UpdateGroupInfoResult InsertUpdateGroupInfo(UserGroupViewModel vm)
+        {
+            UpdateGroupInfoResult result = new(false, string.Empty);
+
+            if (serviceRegistry == null)
+            {
+                result.Success = false;
+                result.Message = "ServiceRegistry is not initialized.";
+                logger.Warn(result.Message);
+
+                return result;
+            }
+            try
+            {
+                var dbContext = serviceRegistry.GetDBContext();
+
+                // Check if already exists
+                var existingGroupInfo = dbContext.GroupInfos.Find(vm.GroupId);
+
+                if (existingGroupInfo != null)
+                {
+                    // Update existing record
+                    existingGroupInfo.AlertType = vm.AlertType;
+                    existingGroupInfo.UpdatedAt = DateTime.UtcNow;
+
+                    dbContext.GroupInfos.Update(existingGroupInfo);
+                    dbContext.SaveChanges();
+
+                    result.Message = $"Updated group {vm.GroupId} ({vm.Name}) with alert type {vm.AlertType}";
+                }
+                else
+                {
+                    // Create new group info record
+                    var newGroupInfo = new GroupInfo()
+                    {
+                        GroupId = vm.GroupId,
+                        GroupName = vm.Name,
+                        AlertType = vm.AlertType,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    };
+
+                    dbContext.GroupInfos.Add(newGroupInfo);
+                    dbContext.SaveChanges();
+                    result.Message = $"Added group {vm.GroupId} ({vm.Name}) with alert type {vm.AlertType}";
+                }
+            }
+            catch (Exception ex)
+            {
+                result.Message = $"Error updating alert type for Group ID {vm.GroupId}";
+                logger.Error(ex, result.Message);
+                return result;
+            }
+
+            result.Success = true;
+            logger.Info(result.Message);
+
+            return result;
+        }
         #endregion
 
         #region Group GIST Moderation 
@@ -849,5 +909,17 @@ namespace Tailgrab.PlayerManagement
         public AlertTypeEnum AlertType { get; set; } = alertType;
         public bool Exists { get; set; } = exists;
     }
+
+    public class UpdateGroupInfoResult
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; }
+        public UpdateGroupInfoResult(bool success, string message)
+        {
+            Success = success;
+            Message = message;
+        }
+    }
+
     #endregion
 }
