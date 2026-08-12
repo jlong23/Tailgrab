@@ -1,4 +1,5 @@
 ﻿using System.Windows.Media;
+using Tailgrab.PlayerManagement;
 using WpfBrush = System.Windows.Media.Brush;
 using WpfBrushes = System.Windows.Media.Brushes;
 
@@ -39,6 +40,19 @@ namespace Tailgrab.Common
                 _ => AlertTypeEnum.None
             };
         }
+
+        public static AlertDisplayItem MapEnumToAlertDisplayItem(AlertTypeEnum alertType)
+        {
+            return new AlertDisplayItem
+            {
+                IconGeometry = MapEnumToIcon(alertType),
+                IconBrush = MapEnumToIconBrush(alertType),
+                IconClass = "User Trust",
+                Description = MapEnumToDescription(alertType),
+                AlertColor = MapEnumToIconBrush(alertType).ToString()
+            };
+        }
+
 
         public static Geometry MapEnumToIcon(AlertTypeEnum alertType)
         {

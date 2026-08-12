@@ -98,6 +98,19 @@ namespace Tailgrab.Common
             };
         }
 
+        public static AlertDisplayItem MapEnumToAlertDisplayItem(List<string> tags)
+        {
+            TrustClassEnum userTrust = MapTagsToEnum(tags);
+            return new AlertDisplayItem
+            {
+                IconGeometry = MapEnumToIcon(userTrust),
+                IconBrush = MapEnumToBrush(userTrust),
+                IconClass = "User Trust",
+                Description = MapEnumToDescription(userTrust),
+                AlertColor = MapEnumToBrush(userTrust).ToString()
+            };
+        }
+
         public static AlertDisplayItem MapEnumToAlertDisplayItem(TrustClassEnum userTrust)
         {
             return new AlertDisplayItem {

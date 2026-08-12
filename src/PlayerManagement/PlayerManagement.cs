@@ -734,26 +734,14 @@ namespace Tailgrab.PlayerManagement
                 foreach (var group in groupedAlerts)
                 {
                     // Add AlertClass icon
-                    displayItems.Add(new AlertDisplayItem
-                    {
-                        IconGeometry = AlertTypeEnumMapper.MapEnumToIcon(group.Key),
-                        IconBrush = AlertTypeEnumMapper.MapEnumToIconBrush(group.Key),
-                        IconClass = group.Key.ToString(),
-                        Description = String.Empty,
-                        AlertColor = group.First().Color
-                    });
+                    displayItems.Add( AlertTypeEnumMapper.MapEnumToAlertDisplayItem(group.Key));
 
                     foreach (AlertMessage alert in group)
                     {
                         // Add AlertType icon with message
-                        displayItems.Add(new AlertDisplayItem
-                        {
-                            IconGeometry = AlertClassEnumMapper.GetAlertClassIcon(alert.AlertClass),
-                            IconBrush = AlertClassEnumMapper.GetAlertClassIconBrush(alert.AlertClass),
-                            IconClass = alert.AlertClass.ToString(),
-                            Description = $"{alert.Message}",
-                            AlertColor = alert.Color
-                        });
+                        AlertDisplayItem item = AlertClassEnumMapper.MapEnumToAlertDisplayItem(alert.AlertClass);
+                        item.Description = $"{alert.Message}";
+                        displayItems.Add(item);
                     }
                 }
 
