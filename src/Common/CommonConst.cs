@@ -109,6 +109,11 @@ namespace Tailgrab.Common
         public const string SYSTEM_USER_TRUST_TRUSTED = "system_trust_trusted";
         public const string SYSTEM_USER_TRUST_VETERAN = "system_trust_veteran";
 
+        public const int ZINDEX_LEVEL_NORMAL = 0;
+        public const int ZINDEX_LEVEL_OVERLAY = 1000;
+        public const int ZINDEX_LEVEL_REPORT_OVERLAY = 1010;
+        public const int ZINDEX_LEVEL_MESSAGE_OVERLAY = 1050;
+
         public static AlertTypeEnum AlertTypeEnumFromString(string alertType)
         {
             return alertType switch

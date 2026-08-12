@@ -10,6 +10,8 @@ Title="Tailgrab Player Panel"
         WindowStartupLocation="CenterOwner"
         UseLayoutRounding="True"
         TextOptions.TextFormattingMode="Display">
+
+    <!-- #region Window Resources -->
     <Window.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
@@ -127,6 +129,8 @@ Title="Tailgrab Player Panel"
         </Style>
         </ResourceDictionary>
     </Window.Resources>
+    <!-- #endregion Window Resources -->
+
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
@@ -135,6 +139,7 @@ Title="Tailgrab Player Panel"
 
         <Grid Margin="8" Grid.Row="0">
             <TabControl x:Name="MainTabControl">
+                <!-- #region Active Players Tab -->
                 <TabItem Header="{DynamicResource UI.Tab.ActivePlayers.Tab}" Name="ActivePlayersTab">
                     <Grid Name="ActivePlayerLayoutGrid">
                         <Grid.ColumnDefinitions>
@@ -395,7 +400,9 @@ Title="Tailgrab Player Panel"
                         </Grid>
                     </Grid>
                 </TabItem>
-
+                <!-- #endregion Active Players Tab -->
+                
+                <!-- #region Past Players Tab -->
                 <TabItem Header="{DynamicResource UI.Tab.PastPlayers.Tab}" Name="PastPlayersTab">
                     <Grid Name="PastPlayerLayoutGrid">
                         <Grid.ColumnDefinitions>
@@ -656,7 +663,9 @@ Title="Tailgrab Player Panel"
                         </Grid>
                     </Grid>
                 </TabItem>
+                <!-- #endregion Past Players Tab -->
 
+                <!-- #region Prints Tab -->
                 <TabItem Header="{DynamicResource UI.Tab.Prints.Tab}" Name="PrintsTab">
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -777,7 +786,9 @@ Title="Tailgrab Player Panel"
                         </ListView>
                     </Grid>
                 </TabItem>
+                <!-- #endregion Prints Tab -->
 
+                <!-- #region Emoji Stickers Tab -->
                 <TabItem Header="{DynamicResource UI.Tab.EmojiStickers.Tab}" Name="EmojiStickersTab">
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -898,7 +909,9 @@ Title="Tailgrab Player Panel"
                         </ListView>
                     </Grid>
                 </TabItem>
+                <!-- #endregion Emoji Stickers Tab -->
 
+                <!-- #region Moderation Reports Tab -->
                 <TabItem Header="{DynamicResource UI.Tab.ModerationReports.Tab}" Name="ModerationReportsTab">
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -1007,9 +1020,11 @@ Title="Tailgrab Player Panel"
                         </DataGrid>
                     </Grid>
                 </TabItem>
+                <!-- #endregion Moderation Reports Tab -->
 
                 <TabItem Header="{DynamicResource UI.Tab.Config.Tab}" Name="ConfigTab">
                     <TabControl x:Name="ConfigTabControl">
+                        <!-- #region Config / KnownAvatars Tab -->
                         <TabItem Header="{DynamicResource UI.Tab.KnownAvatars.Tab}" Name="KnownAvatarsTab">
                             <Grid>
                                 <Grid.ColumnDefinitions>
@@ -1152,7 +1167,9 @@ Title="Tailgrab Player Panel"
                                 </DataGrid>
                             </Grid>
                         </TabItem>
-                        
+                        <!-- #endregion Config / KnownAvatars Tab -->
+
+                        <!-- #region Config / KnownGroups Tab -->
                         <TabItem Header="{DynamicResource UI.Tab.KnownGroups.Tab}" Name="KnownGroupsTab">
                             <Grid>
                                 <Grid.ColumnDefinitions>
@@ -1297,7 +1314,9 @@ Title="Tailgrab Player Panel"
                                 </DataGrid>
                             </Grid>
                         </TabItem>
-                        
+                        <!-- #endregion Config / KnownGroups Tab -->
+
+                        <!-- #region Config / KnownUsers Tab -->
                         <TabItem Header="{DynamicResource UI.Tab.KnownUsers.Tab}" Name="KnownUsersTab">
                             <Grid>
                                 <Grid.ColumnDefinitions>
@@ -1352,13 +1371,17 @@ Title="Tailgrab Player Panel"
                                 </DataGrid>
                             </Grid>
                         </TabItem>
-                        
+                        <!-- #endregion Config / KnownUsers Tab -->
+
+                        <!-- #region Config / LineMatchers Tab -->
                         <TabItem Header="{DynamicResource UI.Tab.LineMatchers.Tab}" IsEnabled="False" Name="LineMatchersTab">
                             <Grid>
                                 <TextBlock Margin="12" Text="Config view not implemented yet." />
                             </Grid>
                         </TabItem>
-                        
+                        <!-- #endregion Config / LineMatchers Tab -->
+
+                        <!-- #region Config / Secrets Tab -->
                         <TabItem Header="{DynamicResource UI.Tab.Secrets.Tab}" Name="SecretsTab">
                             <Grid Margin="6">
                                 <Grid.ColumnDefinitions>
@@ -1458,7 +1481,9 @@ Title="Tailgrab Player Panel"
                                 </StackPanel>
                             </Grid>
                         </TabItem>
+                        <!-- #endregion Config / Secrets Tab -->
 
+                        <!-- #region Config / AIConfig Tab -->
                         <TabItem Header="{DynamicResource UI.Tab.AIConfig.Tab}" Name="AIConfigTab">
                             <Grid Margin="6">
                                 <Grid.ColumnDefinitions>
@@ -1560,7 +1585,9 @@ Title="Tailgrab Player Panel"
                                 </StackPanel>
                             </Grid>
                         </TabItem>
+                        <!--#endregion Config / AIConfig Tab -->
 
+                        <!-- #region Config / Alerts Tab -->
                         <TabItem Header="{DynamicResource UI.Tab.Alerts.Tab}" Name="AlertsTab">
                             <Grid Margin="6">
                                 <Grid.RowDefinitions>
@@ -1780,7 +1807,9 @@ Title="Tailgrab Player Panel"
                                 </StackPanel>
                             </Grid>
                         </TabItem>
-                        
+                        <!-- #endregion Config / Alerts Tab -->
+
+                        <!-- #region Config / Colors Tab -->
                         <TabItem Header="{DynamicResource UI.Tab.Colors.Tab}" Name="ColorsTab">
                             <ScrollViewer VerticalScrollBarVisibility="Auto">
                                 <Grid Margin="12">
@@ -1902,7 +1931,9 @@ Title="Tailgrab Player Panel"
                                 </Grid>
                             </ScrollViewer>
                         </TabItem>
-                        
+                        <!-- #endregion Config / Colors Tab -->
+
+                        <!-- #region Config / Open Logs Tab -->
                         <TabItem Header="{DynamicResource UI.Tab.OpenLogs.Tab}" Name="OpenLogsTab">
                             <Grid>
                                 <Grid.RowDefinitions>
@@ -1973,7 +2004,9 @@ Title="Tailgrab Player Panel"
                                 </ListView>
                             </Grid>
                         </TabItem>
-                        
+                        <!-- #endregion Config / Open Logs Tab -->
+
+                        <!-- #region Config / Ban Management Tab -->
                         <TabItem Header="Ban Management" Name="BanManagementTab">
                             <Grid Margin="12">
                                 <Grid.RowDefinitions>
@@ -2258,187 +2291,17 @@ Title="Tailgrab Player Panel"
                                 </GroupBox>
                             </Grid>
                         </TabItem>
+                        <!-- #endregion Config / Ban Management Tab -->
                     </TabControl>
                 </TabItem>
+
             </TabControl>
         </Grid>
 
-        <!-- Report Profile Overlay -->
-        <Border Name="OverlayProfileReport" 
-                Background="#CC000000"                 
-                Panel.ZIndex="1010" 
-                Margin="0,0,0,100"
-                Visibility="Collapsed">
-            <Border Background="#FF2D2D30" 
-                    Width="400"
-                    MaxWidth="650" 
-                    MaxHeight="500" 
-                    CornerRadius="8"
-                    Padding="16"
-                    VerticalAlignment="Center"
-                    HorizontalAlignment="Center">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-
-                    <!-- Title -->
-                    <TextBlock Grid.Row="0"
-                               Text="{DynamicResource UI.Overlay.ProfileReport.Title}" 
-                               FontSize="20" 
-                               FontWeight="Bold" 
-                               Foreground="#FFE6E6E6"
-                               Margin="0,0,0,16"/>
-
-                    <!-- User ID -->
-                    <StackPanel Grid.Row="1" Margin="0,0,0,12">
-                        <Label Content="{DynamicResource UI.Overlay.ProfileReport.UserID}" FontWeight="Bold" Foreground="#FFE6E6E6"/>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBox Name="OverlayProfileReportUserIdTextBox" Grid.Column="0" IsReadOnly="True"/>
-                            <Label Name="OverlayProfileReportUserIdError" 
-                                   Grid.Column="1" 
-                                   Content="{DynamicResource UI.Overlay.ProfileReport.Required}" 
-                                   Foreground="Red" 
-                                   FontWeight="Bold"
-                                   Margin="8,0,0,0"
-                                   VerticalAlignment="Center"
-                                   Visibility="Collapsed"/>
-                        </Grid>
-                    </StackPanel>
-
-                    <!-- Category -->
-                    <StackPanel Grid.Row="2" Margin="0,0,0,12">
-                        <Label Content="{DynamicResource UI.Overlay.ProfileReport.Category}" FontWeight="Bold" Foreground="#FFE6E6E6"/>
-                        <TextBox Name="OverlayProfileReportCategoryTextBox" IsReadOnly="True" Text="Profile"/>
-                    </StackPanel>
-
-                    <!-- Report Reason -->
-                    <StackPanel Grid.Row="3" Margin="0,0,0,12">
-                        <Label Content="{DynamicResource UI.Overlay.ProfileReport.ReportReason}" FontWeight="Bold" Foreground="#FFE6E6E6"/>
-                        <ComboBox Name="OverlayProfileReportReasonComboBox" 
-                                  DisplayMemberPath="DisplayName"
-                                  SelectedValuePath="Value"/>
-                    </StackPanel>
-
-                    <!-- Report Description -->
-                    <StackPanel Grid.Row="4" Margin="0,0,0,12">
-                        <Label Content="{DynamicResource UI.Overlay.ProfileReport.ReportDescription}" FontWeight="Bold" Foreground="#FFE6E6E6"/>
-                        <TextBox Name="OverlayProfileReportDescriptionTextBox"
-                                 TextWrapping="Wrap" 
-                                 AcceptsReturn="True" 
-                                 VerticalScrollBarVisibility="Auto"
-                                 IsReadOnly="False"
-                                 MinHeight="200"/>
-                    </StackPanel>
-
-                    <!-- Action Buttons -->
-                    <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button Name="OverlayProfileReportCancelButton" Content="{DynamicResource UI.Overlay.ProfileReport.Action.Cancel}" Width="100" Margin="0,0,12,0" Click="OverlayProfileReportCancel_Click"/>
-                        <Button Name="OverlayProfileReportSubmitButton" Content="{DynamicResource UI.Overlay.ProfileReport.Action.Submit}" Width="100" Click="OverlayProfileReportSubmit_Click"/>
-                    </StackPanel>
-                </Grid>
-            </Border>
-        </Border>
-
-        <!-- Report Avatar Overlay -->
-        <Border Name="OverlayAvatarReport" 
-                Background="#CC000000"                 
-                Panel.ZIndex="1010" 
-                Margin="0,0,0,100"
-                Visibility="Collapsed">
-            <Border Background="#FF2D2D30" 
-                    Width="400"
-                    MaxWidth="650" 
-                    MaxHeight="500" 
-                    CornerRadius="8"
-                    Padding="16"
-                    VerticalAlignment="Center"
-                    HorizontalAlignment="Center">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-
-                    <!-- Title -->
-                    <TextBlock Grid.Row="0"
-                               Text="{DynamicResource UI.Overlay.AvatarReport.Title}" 
-                               FontSize="20" 
-                               FontWeight="Bold" 
-                               Foreground="#FFE6E6E6"
-                               Margin="0,0,0,16"/>
-
-                    <!-- Avatar ID -->
-                    <StackPanel Grid.Row="1" Margin="0,0,0,12">
-                        <Label Content="{DynamicResource UI.Overlay.AvatarReport.AvatarId}" FontWeight="Bold" Foreground="#FFE6E6E6"/>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBox Name="OverlayAvatarReportAvatarIdTextBox" Grid.Column="0" IsReadOnly="True"/>
-                            <Label Name="OverlayAvatarReportAvatarIdError" 
-                                   Grid.Column="1" 
-                                   Content="{DynamicResource UI.Overlay.AvatarReport.Required}" 
-                                   Foreground="Red" 
-                                   FontWeight="Bold"
-                                   Margin="8,0,0,0"
-                                   VerticalAlignment="Center"
-                                   Visibility="Collapsed"/>
-                        </Grid>
-                    </StackPanel>
-
-                    <!-- Category -->
-                    <StackPanel Grid.Row="2" Margin="0,0,0,12">
-                        <Label Content="{DynamicResource UI.Overlay.AvatarReport.Category}" FontWeight="Bold" Foreground="#FFE6E6E6"/>
-                        <TextBox Name="OverlayAvatarReportCategoryTextBox" IsReadOnly="True" Text="Avatar"/>
-                    </StackPanel>
-
-                    <!-- Report Reason -->
-                    <StackPanel Grid.Row="3" Margin="0,0,0,12">
-                        <Label Content="{DynamicResource UI.Overlay.AvatarReport.ReportReason}" FontWeight="Bold" Foreground="#FFE6E6E6"/>
-                        <ComboBox Name="OverlayAvatarReportReasonComboBox" 
-                                  DisplayMemberPath="DisplayName"
-                                  SelectedValuePath="Value"/>
-                    </StackPanel>
-
-                    <!-- Report Description -->
-                    <StackPanel Grid.Row="4" Margin="0,0,0,12">
-                        <Label Content="{DynamicResource UI.Overlay.AvatarReport.ReportDescription}" FontWeight="Bold" Foreground="#FFE6E6E6"/>
-                        <TextBox Name="OverlayAvatarReportDescriptionTextBox"
-                                 TextWrapping="Wrap" 
-                                 AcceptsReturn="True" 
-                                 VerticalScrollBarVisibility="Auto"
-                                 IsReadOnly="False"
-                                 MinHeight="200"/>
-                    </StackPanel>
-
-                    <!-- Action Buttons -->
-                    <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button Name="OverlayAvatarReportCancelButton" Content="{DynamicResource UI.Overlay.AvatarReport.Action.Cancel}" Width="100" Margin="0,0,12,0" Click="OverlayAvatarReportCancel_Click"/>
-                        <Button Name="OverlayAvatarReportSubmitButton" Content="{DynamicResource UI.Overlay.AvatarReport.Action.Submit}" Width="100" Click="OverlayAvatarReportSubmit_Click"/>
-                    </StackPanel>
-                </Grid>
-            </Border>
-        </Border>
-
-        <!-- Overlay Panel for User Avatar Management -->
+        <!-- #region User Avatar Management Overlay -->
         <Border Name="UserAvatarOverlay" 
                 Background="#CC000000" 
-                Panel.ZIndex="1000"
+                Panel.ZIndex="{x:Static local:TailgrabPanelConst.ZINDEX_LEVEL_OVERLAY}"
                 Visibility="Collapsed">
             <Border Background="#FF2D2D30"
                     Height="600" Width="1080"
@@ -2676,11 +2539,12 @@ Title="Tailgrab Player Panel"
                 </Grid>
             </Border>
         </Border>
+        <!-- #endregion User Avatar Management Overlay -->
 
-        <!-- Overlay Panel for User Groups Management -->
+        <!-- #region User Groups Management Overlay-->
         <Border Name="UserGroupsOverlay" 
                 Background="#CC000000" 
-                Panel.ZIndex="1000"
+                Panel.ZIndex="{x:Static local:TailgrabPanelConst.ZINDEX_LEVEL_OVERLAY}"
                 Visibility="Collapsed">
             <Border Background="#FF2D2D30"
                     Height="600"
@@ -2908,12 +2772,222 @@ Title="Tailgrab Player Panel"
                 </Grid>
             </Border>
         </Border>
+        <!-- #endregion User Groups Management Overlay -->
 
-        
-        <!-- Overlay Panel for Report Print Inventory -->
+        <!-- #region Report Avatar Overlay -->
+        <Border Name="OverlayAvatarReport" 
+                Background="#CC000000"                 
+                Panel.ZIndex="{x:Static local:TailgrabPanelConst.ZINDEX_LEVEL_REPORT_OVERLAY}" 
+                Margin="0,0,0,100"
+                Visibility="Collapsed">
+            <Border Background="#FF2D2D30" 
+                    Width="400"
+                    MaxWidth="650" 
+                    MaxHeight="500" 
+                    CornerRadius="8"
+                    Padding="16"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Center">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Title -->
+                    <TextBlock Grid.Row="0"
+                               Text="{DynamicResource UI.Overlay.AvatarReport.Title}" 
+                               FontSize="20" 
+                               FontWeight="Bold" 
+                               Foreground="#FFE6E6E6"
+                               Margin="0,0,0,16"/>
+
+                    <!-- Avatar ID -->
+                    <StackPanel Grid.Row="1" Margin="0,0,0,12">
+                        <Label Content="{DynamicResource UI.Overlay.AvatarReport.AvatarId}" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox Name="OverlayAvatarReportAvatarIdTextBox" Grid.Column="0" IsReadOnly="True"/>
+                            <Label Name="OverlayAvatarReportAvatarIdError" 
+                                   Grid.Column="1" 
+                                   Content="{DynamicResource UI.Overlay.AvatarReport.Required}" 
+                                   Foreground="Red" 
+                                   FontWeight="Bold"
+                                   Margin="8,0,0,0"
+                                   VerticalAlignment="Center"
+                                   Visibility="Collapsed"/>
+                        </Grid>
+                    </StackPanel>
+
+                    <!-- Category -->
+                    <StackPanel Grid.Row="2" Margin="0,0,0,12">
+                        <Label Content="{DynamicResource UI.Overlay.AvatarReport.Category}" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                        <TextBox Name="OverlayAvatarReportCategoryTextBox" IsReadOnly="True" Text="Avatar"/>
+                    </StackPanel>
+
+                    <!-- Report Reason -->
+                    <StackPanel Grid.Row="3" Margin="0,0,0,12">
+                        <Label Content="{DynamicResource UI.Overlay.AvatarReport.ReportReason}" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                        <ComboBox Name="OverlayAvatarReportReasonComboBox" 
+                                  DisplayMemberPath="DisplayName"
+                                  SelectedValuePath="Value"/>
+                    </StackPanel>
+
+                    <!-- Report Description -->
+                    <StackPanel Grid.Row="4" Margin="0,0,0,12">
+                        <Label Content="{DynamicResource UI.Overlay.AvatarReport.ReportDescription}" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                        <TextBox Name="OverlayAvatarReportDescriptionTextBox"
+                                 TextWrapping="Wrap" 
+                                 AcceptsReturn="True" 
+                                 VerticalScrollBarVisibility="Auto"
+                                 IsReadOnly="False"
+                                 MinHeight="200"/>
+                    </StackPanel>
+
+                    <!-- Action Buttons -->
+                    <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Name="OverlayAvatarReportCancelButton" Content="{DynamicResource UI.Overlay.AvatarReport.Action.Cancel}" Width="100" Margin="0,0,12,0" Click="OverlayAvatarReportCancel_Click"/>
+                        <Button Name="OverlayAvatarReportSubmitButton" Content="{DynamicResource UI.Overlay.AvatarReport.Action.Submit}" Width="100" Click="OverlayAvatarReportSubmit_Click"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Border>
+        <!-- #endregion Report Avatar Overlay -->
+
+        <!-- #region Report Emoji & Sticker Overlay -->
+        <Border Name="ReportInventoryOverlay" 
+                Background="#CC000000"                 
+                Panel.ZIndex="{x:Static local:TailgrabPanelConst.ZINDEX_LEVEL_REPORT_OVERLAY}"
+                Visibility="Collapsed">
+            <Border Background="#FF2D2D30" 
+                    MaxWidth="950" MaxHeight="550" 
+                    CornerRadius="8" Padding="16"
+                    VerticalAlignment="Center" HorizontalAlignment="Center">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="250"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Left side - Form fields -->
+                    <Grid Grid.Column="0" Margin="0,0,16,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Title -->
+                        <TextBlock Grid.Row="0" 
+                                   Text="{DynamicResource UI.Overlay.ReportEmojiSticker.Title}" 
+                                   FontSize="20" FontWeight="Bold" 
+                                   Foreground="#FFE6E6E6"
+                                   Margin="0,0,0,16"/>
+
+                        <!-- User ID -->
+                        <StackPanel Grid.Row="1" Margin="0,0,0,12">
+                            <Label Content="{DynamicResource UI.Overlay.ReportEmojiSticker.UserID}" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox Name="OverlayUserIdTextBox" Grid.Column="0" TextChanged="OverlayOnInputFieldChanged"/>
+                                <Label Name="OverlayUserIdError" 
+                                       Grid.Column="1" 
+                                       Content="Required" 
+                                       Foreground="Yellow" 
+                                       FontWeight="Bold"
+                                       Margin="8,0,0,0"
+                                       VerticalAlignment="Center"
+                                       Visibility="Collapsed"/>
+                            </Grid>
+                        </StackPanel>
+
+                        <!-- Inventory ID -->
+                        <StackPanel Grid.Row="2" Margin="0,0,0,12">
+                            <Label Content="{DynamicResource UI.Overlay.ReportEmojiSticker.InventoryID}" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox Name="OverlayInventoryIdTextBox" Grid.Column="0" TextChanged="OverlayOnInputFieldChanged"/>
+                                <Label Name="OverlayInventoryIdError"
+                                       Grid.Column="1" 
+                                       Content="Required" 
+                                       Foreground="Yellow" 
+                                       FontWeight="Bold"
+                                       Margin="8,0,0,0"
+                                       VerticalAlignment="Center"
+                                       Visibility="Collapsed"/>
+                            </Grid>
+                        </StackPanel>
+
+                        <!-- Category -->
+                        <StackPanel Grid.Row="3" Margin="0,0,0,12">
+                            <Label Content="{DynamicResource UI.Overlay.ReportEmojiSticker.Category}" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                            <TextBox Name="OverlayCategoryTextBox" IsReadOnly="True"/>
+                        </StackPanel>
+
+                        <!-- Report Type -->
+                        <StackPanel Grid.Row="4" Margin="0,0,0,12">
+                            <Label Content="{DynamicResource UI.Overlay.ReportEmojiSticker.ReportReason}" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                            <ComboBox Name="OverlayReportReasonComboBox" 
+                                      DisplayMemberPath="DisplayName"
+                                      SelectedValuePath="Value"/>
+                        </StackPanel>
+
+                        <!-- Report Description -->
+                        <StackPanel Grid.Row="5" Margin="0,0,0,12">
+                            <Label Content="{DynamicResource UI.Overlay.ReportEmojiSticker.ReportDescription}" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                            <TextBox Name="OverlayReportDescriptionTextBox" 
+                                     TextWrapping="Wrap" 
+                                     AcceptsReturn="True" 
+                                     VerticalScrollBarVisibility="Auto"
+                                     IsReadOnly="False"
+                                     MinHeight="150"/>
+                        </StackPanel>
+
+                        <!-- Action Buttons -->
+                        <StackPanel Grid.Row="6" Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button Name="OverlayCancelButton" Content="{DynamicResource UI.Overlay.ReportEmojiSticker.Action.Cancel}" Width="100" Margin="0,0,12,0" Click="OverlayCancel_Click"/>
+                            <Button Name="OverlaySubmitButton" Content="{DynamicResource UI.Overlay.ReportEmojiSticker.Action.Submit}" Width="100" Click="OverlaySubmit_Click"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Right side - Image display -->
+                    <Border Grid.Column="1" 
+                            BorderBrush="Gray" 
+                            BorderThickness="2" Padding="8" 
+                            VerticalAlignment="Top"                            
+                            Height="250" Width="230">
+                        <StackPanel>
+                            <Label Content="{DynamicResource UI.Overlay.ReportEmojiSticker.ImagePreview}" FontWeight="Bold" HorizontalAlignment="Center" Foreground="#FFE6E6E6"/>
+                            <Image Name="OverlayInventoryImagePreview" 
+                                   Width="200" Height="200" Stretch="Uniform"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </Border>
+        </Border>
+        <!-- #endregion Report Emoji & Sticker Overlay -->
+
+        <!-- #region Report Print Inventory Overlay -->
         <Border Name="ReportPrintInventoryOverlay"
                 Background="#CC000000" 
-                Panel.ZIndex="1010"
+                Panel.ZIndex="{x:Static local:TailgrabPanelConst.ZINDEX_LEVEL_REPORT_OVERLAY}"
                 Visibility="Collapsed">
             <Border Background="#FF2D2D30" 
                     Width="550"
@@ -3036,135 +3110,101 @@ Title="Tailgrab Player Panel"
                 </Grid>
             </Border>
         </Border>
+        <!-- #endregion Report Print Inventory Overlay -->
 
-        <!-- Overlay Panel for Report Emoji & Sticker -->
-        <Border Name="ReportInventoryOverlay" 
+        <!-- #region Report Profile Overlay -->
+        <Border Name="OverlayProfileReport" 
                 Background="#CC000000"                 
-                Panel.ZIndex="1010"
+                Panel.ZIndex="{x:Static local:TailgrabPanelConst.ZINDEX_LEVEL_REPORT_OVERLAY}" 
+                Margin="0,0,0,100"
                 Visibility="Collapsed">
             <Border Background="#FF2D2D30" 
-                    MaxWidth="950" MaxHeight="550" 
-                    CornerRadius="8" Padding="16"
-                    VerticalAlignment="Center" HorizontalAlignment="Center">
+                    Width="400"
+                    MaxWidth="650" 
+                    MaxHeight="500" 
+                    CornerRadius="8"
+                    Padding="16"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Center">
                 <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="250"/>
-                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
 
-                    <!-- Left side - Form fields -->
-                    <Grid Grid.Column="0" Margin="0,0,16,0">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
+                    <!-- Title -->
+                    <TextBlock Grid.Row="0"
+                               Text="{DynamicResource UI.Overlay.ProfileReport.Title}" 
+                               FontSize="20" 
+                               FontWeight="Bold" 
+                               Foreground="#FFE6E6E6"
+                               Margin="0,0,0,16"/>
 
-                        <!-- Title -->
-                        <TextBlock Grid.Row="0" 
-                                   Text="{DynamicResource UI.Overlay.ReportEmojiSticker.Title}" 
-                                   FontSize="20" FontWeight="Bold" 
-                                   Foreground="#FFE6E6E6"
-                                   Margin="0,0,0,16"/>
+                    <!-- User ID -->
+                    <StackPanel Grid.Row="1" Margin="0,0,0,12">
+                        <Label Content="{DynamicResource UI.Overlay.ProfileReport.UserID}" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox Name="OverlayProfileReportUserIdTextBox" Grid.Column="0" IsReadOnly="True"/>
+                            <Label Name="OverlayProfileReportUserIdError" 
+                                   Grid.Column="1" 
+                                   Content="{DynamicResource UI.Overlay.ProfileReport.Required}" 
+                                   Foreground="Red" 
+                                   FontWeight="Bold"
+                                   Margin="8,0,0,0"
+                                   VerticalAlignment="Center"
+                                   Visibility="Collapsed"/>
+                        </Grid>
+                    </StackPanel>
 
-                        <!-- User ID -->
-                        <StackPanel Grid.Row="1" Margin="0,0,0,12">
-                            <Label Content="{DynamicResource UI.Overlay.ReportEmojiSticker.UserID}" FontWeight="Bold" Foreground="#FFE6E6E6"/>
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBox Name="OverlayUserIdTextBox" Grid.Column="0" TextChanged="OverlayOnInputFieldChanged"/>
-                                <Label Name="OverlayUserIdError" 
-                                       Grid.Column="1" 
-                                       Content="Required" 
-                                       Foreground="Yellow" 
-                                       FontWeight="Bold"
-                                       Margin="8,0,0,0"
-                                       VerticalAlignment="Center"
-                                       Visibility="Collapsed"/>
-                            </Grid>
-                        </StackPanel>
+                    <!-- Category -->
+                    <StackPanel Grid.Row="2" Margin="0,0,0,12">
+                        <Label Content="{DynamicResource UI.Overlay.ProfileReport.Category}" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                        <TextBox Name="OverlayProfileReportCategoryTextBox" IsReadOnly="True" Text="Profile"/>
+                    </StackPanel>
 
-                        <!-- Inventory ID -->
-                        <StackPanel Grid.Row="2" Margin="0,0,0,12">
-                            <Label Content="{DynamicResource UI.Overlay.ReportEmojiSticker.InventoryID}" FontWeight="Bold" Foreground="#FFE6E6E6"/>
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBox Name="OverlayInventoryIdTextBox" Grid.Column="0" TextChanged="OverlayOnInputFieldChanged"/>
-                                <Label Name="OverlayInventoryIdError"
-                                       Grid.Column="1" 
-                                       Content="Required" 
-                                       Foreground="Yellow" 
-                                       FontWeight="Bold"
-                                       Margin="8,0,0,0"
-                                       VerticalAlignment="Center"
-                                       Visibility="Collapsed"/>
-                            </Grid>
-                        </StackPanel>
+                    <!-- Report Reason -->
+                    <StackPanel Grid.Row="3" Margin="0,0,0,12">
+                        <Label Content="{DynamicResource UI.Overlay.ProfileReport.ReportReason}" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                        <ComboBox Name="OverlayProfileReportReasonComboBox" 
+                                  DisplayMemberPath="DisplayName"
+                                  SelectedValuePath="Value"/>
+                    </StackPanel>
 
-                        <!-- Category -->
-                        <StackPanel Grid.Row="3" Margin="0,0,0,12">
-                            <Label Content="{DynamicResource UI.Overlay.ReportEmojiSticker.Category}" FontWeight="Bold" Foreground="#FFE6E6E6"/>
-                            <TextBox Name="OverlayCategoryTextBox" IsReadOnly="True"/>
-                        </StackPanel>
+                    <!-- Report Description -->
+                    <StackPanel Grid.Row="4" Margin="0,0,0,12">
+                        <Label Content="{DynamicResource UI.Overlay.ProfileReport.ReportDescription}" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                        <TextBox Name="OverlayProfileReportDescriptionTextBox"
+                                 TextWrapping="Wrap" 
+                                 AcceptsReturn="True" 
+                                 VerticalScrollBarVisibility="Auto"
+                                 IsReadOnly="False"
+                                 MinHeight="200"/>
+                    </StackPanel>
 
-                        <!-- Report Type -->
-                        <StackPanel Grid.Row="4" Margin="0,0,0,12">
-                            <Label Content="{DynamicResource UI.Overlay.ReportEmojiSticker.ReportReason}" FontWeight="Bold" Foreground="#FFE6E6E6"/>
-                            <ComboBox Name="OverlayReportReasonComboBox" 
-                                      DisplayMemberPath="DisplayName"
-                                      SelectedValuePath="Value"/>
-                        </StackPanel>
-
-                        <!-- Report Description -->
-                        <StackPanel Grid.Row="5" Margin="0,0,0,12">
-                            <Label Content="{DynamicResource UI.Overlay.ReportEmojiSticker.ReportDescription}" FontWeight="Bold" Foreground="#FFE6E6E6"/>
-                            <TextBox Name="OverlayReportDescriptionTextBox" 
-                                     TextWrapping="Wrap" 
-                                     AcceptsReturn="True" 
-                                     VerticalScrollBarVisibility="Auto"
-                                     IsReadOnly="False"
-                                     MinHeight="150"/>
-                        </StackPanel>
-
-                        <!-- Action Buttons -->
-                        <StackPanel Grid.Row="6" Orientation="Horizontal" HorizontalAlignment="Right">
-                            <Button Name="OverlayCancelButton" Content="{DynamicResource UI.Overlay.ReportEmojiSticker.Action.Cancel}" Width="100" Margin="0,0,12,0" Click="OverlayCancel_Click"/>
-                            <Button Name="OverlaySubmitButton" Content="{DynamicResource UI.Overlay.ReportEmojiSticker.Action.Submit}" Width="100" Click="OverlaySubmit_Click"/>
-                        </StackPanel>
-                    </Grid>
-
-                    <!-- Right side - Image display -->
-                    <Border Grid.Column="1" 
-                            BorderBrush="Gray" 
-                            BorderThickness="2" Padding="8" 
-                            VerticalAlignment="Top"                            
-                            Height="250" Width="230">
-                        <StackPanel>
-                            <Label Content="{DynamicResource UI.Overlay.ReportEmojiSticker.ImagePreview}" FontWeight="Bold" HorizontalAlignment="Center" Foreground="#FFE6E6E6"/>
-                            <Image Name="OverlayInventoryImagePreview" 
-                                   Width="200" Height="200" Stretch="Uniform"/>
-                        </StackPanel>
-                    </Border>
+                    <!-- Action Buttons -->
+                    <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Name="OverlayProfileReportCancelButton" Content="{DynamicResource UI.Overlay.ProfileReport.Action.Cancel}" Width="100" Margin="0,0,12,0" Click="OverlayProfileReportCancel_Click"/>
+                        <Button Name="OverlayProfileReportSubmitButton" Content="{DynamicResource UI.Overlay.ProfileReport.Action.Submit}" Width="100" Click="OverlayProfileReportSubmit_Click"/>
+                    </StackPanel>
                 </Grid>
             </Border>
         </Border>
+        <!-- #endregion Report Profile Overlay -->
 
-        <!-- Overlay Panel for Test AI Evaluation -->
+        <!-- #region Test Profile Prompt AI Evaluation Results Overlay -->
         <Border Name="OverlayTestProfileEval"
                 Grid.Row="0" 
                 Grid.RowSpan="3" Grid.ColumnSpan="2"
                 Background="#CC000000" 
-                Panel.ZIndex="1000"
+                Panel.ZIndex="{x:Static local:TailgrabPanelConst.ZINDEX_LEVEL_OVERLAY}"
                 Visibility="Collapsed">
             <Border Background="#FF2D2D30" 
                     Width="550" Height="500"
@@ -3229,11 +3269,12 @@ Title="Tailgrab Player Panel"
                 </Grid>
             </Border>
         </Border>
-        
-        <!-- Overlay Panel for Test AI Evaluation -->
+        <!-- #endregion Test Profile Prompt AI Evaluation Results Overlay -->
+
+        <!-- #region Test Image Prompt AI Evaluation Results Overlay -->
         <Border Name="OverlayTestImageEval" 
                 Background="#CC000000" 
-                Panel.ZIndex="1000"
+                Panel.ZIndex="{x:Static local:TailgrabPanelConst.ZINDEX_LEVEL_OVERLAY}"
                 Visibility="Collapsed">
             <Border Background="#FF2D2D30" 
                     Width="800" Height="600"
@@ -3326,12 +3367,12 @@ Title="Tailgrab Player Panel"
                 </Grid>
             </Border>
         </Border>
+        <!-- #endregion Test Image Prompt AI Evaluation Results Overlay -->
 
-
-        <!-- Overlay Panel for Test AI Evaluation -->
+        <!-- #region Status Message Overlay -->
         <Border Name="OverlayMessage" 
                 Background="#CC000000" 
-                Panel.ZIndex="1050"
+                Panel.ZIndex="{x:Static local:TailgrabPanelConst.ZINDEX_LEVEL_MESSAGE_OVERLAY}"
                 Visibility="Collapsed">
             <Border Background="#FF2D2D30" 
                     MaxWidth="1080" MaxHeight="700" 
@@ -3367,8 +3408,9 @@ Title="Tailgrab Player Panel"
                 </Grid>
             </Border>
         </Border>
+        <!-- #endregion Status Message Overlay -->
 
-        <!-- Status Bar -->
+        <!-- #region Status Bar -->
         <StatusBar Grid.Row="1" Background="#FF2D2D30" Foreground="#FFE6E6E6">
             <StatusBarItem HorizontalAlignment="Left">
                 <TextBlock>
@@ -3404,5 +3446,6 @@ Title="Tailgrab Player Panel"
                 </TextBlock>
             </StatusBarItem>
         </StatusBar>
+        <!-- #endregion Status Bar -->
     </Grid>
 </Window>

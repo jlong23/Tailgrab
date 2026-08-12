@@ -20,11 +20,19 @@ using static Tailgrab.Clients.VRChat.VRChatClient;
 
 namespace Tailgrab.PlayerManagement
 {
+
+    public static class TailgrabPanelConst
+    {
+        public const int ZINDEX_LEVEL_NORMAL = 0;
+        public const int ZINDEX_LEVEL_OVERLAY = 1000;
+        public const int ZINDEX_LEVEL_REPORT_OVERLAY = 1010;
+        public const int ZINDEX_LEVEL_MESSAGE_OVERLAY = 1050;
+    }
+
     public partial class TailgrabPanel : Window, IDisposable, INotifyPropertyChanged
     {
         public const int CONST_CONFIG_TAB_INDEX = 5;
         public const int CONST_BAN_MGMT_TAB_INDEX = 9;
-
 
         public static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
@@ -804,6 +812,7 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
+        #region Message Overlay Handling
         public void ShowOverlayMessage(string title, string body)
         {
             OverlayMessageTitle = title;
@@ -819,7 +828,9 @@ namespace Tailgrab.PlayerManagement
             OverlayMessageBody = string.Empty;
             OverlayMessageBodyTextBox.Text = string.Empty;
         }
+        #endregion
 
+        #region Config / Secret Tab Handling
         private void Reset2FA_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -843,289 +854,6 @@ namespace Tailgrab.PlayerManagement
                 System.Windows.MessageBox.Show($"Failed to reset 2FA key: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
-
-        private async void SaveAIConfig_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                // Save Ollama credentials to registry protected store
-                if (!string.IsNullOrEmpty(VrOllamaBox.Password)) ConfigStore.SaveSecret(CommonConst.Registry_Ollama_API_Key, VrOllamaBox.Password.Trim());
-                ConfigStore.PutStoredKeyString(CommonConst.Registry_Ollama_API_Endpoint, VrOllamaEndpointBox.Text ?? CommonConst.Default_Ollama_API_Endpoint);
-                ConfigStore.PutStoredKeyString(CommonConst.Registry_Ollama_API_Prompt, VrOllamaPromptBox.Text ?? CommonConst.Default_Ollama_API_Prompt);
-                ConfigStore.PutStoredKeyString(CommonConst.Registry_Ollama_API_Image_Prompt, VrOllamaImagePromptBox.Text ?? CommonConst.Default_Ollama_API_Image_Prompt);
-                ConfigStore.PutStoredKeyString(CommonConst.Registry_Ollama_API_Model, (string)VrOllamaModelBox.SelectedValue ?? CommonConst.Default_Ollama_API_Model);
-
-                // Load available models from Ollama after saving credentials
-                await LoadOllamaModelsAsync();
-
-                System.Windows.MessageBox.Show("AI Configuration saved. Restart the Application for all changes to take effect.", "AI Config", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            catch (Exception ex)
-            {
-                System.Windows.MessageBox.Show($"Failed to save AI configuration: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        private void ResetOllama_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                var result = System.Windows.MessageBox.Show(
-                    "This will erase your Ollama Configuration. Are you sure you want to continue?",
-                    "Confirm Ollama Configuration Deletion",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Warning);
-
-                if (result != MessageBoxResult.Yes)
-                    return;
-
-
-                ConfigStore.DeleteSecret(CommonConst.Registry_Ollama_API_Key);
-                ConfigStore.DeleteSecret(CommonConst.Registry_Ollama_API_Endpoint);
-                ConfigStore.DeleteSecret(CommonConst.Registry_Ollama_API_Model);
-                VrOllamaBox.ToolTip = null;
-                VrOllamaBox.Password = string.Empty;
-                VrOllamaEndpointBox.Text = string.Empty;
-                VrOllamaModelBox.SelectedValue = null;
-                System.Windows.MessageBox.Show("Ollama Configuration reset. Please re-enter your API key or leave blank for no Profile & Image AI Evalutation.", "Reset Ollama Configuration", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            catch (Exception ex)
-            {
-                System.Windows.MessageBox.Show($"Failed to reset Ollama Configuration: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-
-
-        private async Task LoadOllamaModelsAsync()
-        {
-            try
-            {
-                var models = await Clients.Ollama.OllamaClient.GetModels();
-
-                // Update the ObservableCollection on the UI thread
-                System.Windows.Application.Current.Dispatcher.Invoke(() =>
-                {
-                    OllamaModelOptions.Clear();
-                    OllamaModelOptions = [.. models.Select(s => new KeyValuePair<string, string>(s, s))];
-                    
-                    // If there's a currently saved model, try to select it
-                    string? currentModel = ConfigStore.GetStoredKeyString(CommonConst.Registry_Ollama_API_Model);
-                    if (!string.IsNullOrEmpty(currentModel) && OllamaModelOptions.Contains(new KeyValuePair<string, string>( currentModel, currentModel )))
-                    {
-                        VrOllamaModelBox.SelectedValue = currentModel;
-                    }
-                    else if (OllamaModelOptions.Count > 0)
-                    {
-                        VrOllamaModelBox.SelectedValue = OllamaModelOptions[0].Value;
-                    }
-
-                    // Update the test button state after loading models
-                    UpdateCanTestProfilePrompt();
-                });
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex, "Failed to load Ollama models");
-                System.Windows.MessageBox.Show($"Failed to load Ollama models: {ex.Message}", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
-            }
-        }
-
-
-        private void UpdateCanTestProfilePrompt()
-        {
-            CanTestProfilePrompt =
-                !string.IsNullOrEmpty(ConfigStore.GetStoredKeyString(CommonConst.Registry_Ollama_API_Endpoint)) &&
-                !string.IsNullOrEmpty((string)VrOllamaModelBox.SelectedValue) &&
-                (VrOllamaPromptBox.Text?.Length ?? 0) > 60 &&
-                (UserAccountTestBox.Text?.StartsWith("usr_") ?? false);
-        }
-
-        private void TestProfilePromptInput_Changed(object sender, EventArgs e)
-        {
-            UpdateCanTestProfilePrompt();
-        }
-
-        private async void TestProfilePrompt_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                TestProfilePromptButton.IsEnabled = false;
-                var userId = UserAccountTestBox.Text?.Trim();
-                var prompt = VrOllamaPromptBox.Text?.Trim();
-                var model = ((string)VrOllamaModelBox.SelectedValue)?.Trim();
-
-                if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(prompt) || string.IsNullOrEmpty(model))
-                {
-                    System.Windows.MessageBox.Show("Please ensure User ID, Prompt, and Model are specified.", "Validation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return;
-                }
-
-                // Call Ollama test method
-                ProfileEvaluation? result = await Clients.Ollama.OllamaClient.TestProfilePrompt(_serviceRegistry, userId, prompt, model);
-                if (result != null) {
-                    logger.Info("Profile prompt test successful for user {UserId} with model {Model} as {Evaluation}", userId, model, result.Evaluation);
-
-                    OverlayTestProfileEvalUserIdTextBox.Text = userId;
-                    OverlayTestProfileEvalProfileTextBox.Text = System.Text.Encoding.UTF8.GetString( result.ProfileText );
-                    OverlayTestProfileEvalEvaluationTextBox.Text = System.Text.Encoding.UTF8.GetString( result.Evaluation );
-                    OverlayTestProfileEval.Visibility = Visibility.Visible;
-                }
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex, "Failed to test profile prompt");
-                System.Windows.MessageBox.Show($"Failed to test profile prompt: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-            finally
-            {
-                TestProfilePromptButton.IsEnabled = true;
-            }
-        }
-
-        private async void TestProfilePrompt_Ok_Click(object sender, RoutedEventArgs e)
-        {
-            OverlayTestProfileEvalUserIdTextBox.Text = string.Empty;
-            OverlayTestProfileEvalProfileTextBox.Text = string.Empty;
-            OverlayTestProfileEvalEvaluationTextBox.Text = string.Empty;
-            OverlayTestProfileEval.Visibility = Visibility.Collapsed;
-        }
-
-        private async Task ProcessAIImagePromptTest()
-        {
-            OllamaClient ollamaClient = _serviceRegistry.GetOllamaAPIClient();
-            try
-            {
-                var prompt = VrOllamaImagePromptBox.Text?.Trim();
-                var model = ((string)VrOllamaModelBox.SelectedValue)?.Trim();
-
-                if (model != null && prompt != null)
-                {
-                    // Clear existing items
-                    TestImageAIEvalItems.Clear();
-
-                    // Get test images from the test-images folder
-                    List<string> testImages = tailgrab.Common.TestImageManager.GetAvailableImages();
-
-                    // Stub implementation - create placeholder items
-                    foreach (string imageName in testImages)
-                    {
-                        string? imagePath = GetTestImagePath(imageName);
-                        logger.Info("Processing test image {ImageName} at path {ImagePath}", imageName, imagePath);
-                        if (imagePath != null)
-                        {
-
-                            string evaluation = await OllamaClient.TestImagePrompt(model, prompt, imagePath);
-
-                            Models.TestImageAIEvalItem item = new()
-                            {
-                                ImagePath = imagePath,
-                                AIEvaluation = evaluation,
-                                AlertInfo = AIEvalutionEnumMapper.MapEnumToAlertDisplayItem(evaluation)
-                            };
-
-                            TestImageAIEvalItems.Add(item);
-                        }
-                    }
-
-                    logger.Info($"Loaded {TestImageAIEvalItems.Count} test images for AI evaluation");
-                }
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex, "Failed to process AI image prompt test");
-                System.Windows.MessageBox.Show($"Failed to load test images: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        private string? GetTestImagePath(string imageName)
-        {
-            string[] extensions = [".png", ".jpg", ".gif", ".webp"];
-            foreach (string extension in extensions)
-            {
-                string imagePath = Path.Combine(CommonConst.APPLICATION_LOCAL_DATA_PATH, "test-images", imageName + extension);
-                if (System.IO.File.Exists(imagePath))
-                {
-                    return imagePath;
-                }
-
-            }
-
-            return null;
-        }
-
-        private void CloseTestImageEval_Click(object sender, RoutedEventArgs e)
-        {
-            OverlayTestImageEval.Visibility = Visibility.Collapsed;
-            TestImageAIEvalItems.Clear();
-        }
-
-        private async void TestImagePrompt_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                TestImagePromptButton.IsEnabled = false;
-
-                // Process the test images
-                await ProcessAIImagePromptTest();
-
-                // Show the overlay with results
-                OverlayTestImageEval.Visibility = Visibility.Visible;
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex, "Failed to test image prompt");
-                System.Windows.MessageBox.Show($"Failed to test image prompt: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-            finally
-            {
-                TestImagePromptButton.IsEnabled = true;
-            }
-        }
-
-
-        private void SaveAlerts_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                // Avatar Alerts
-                SetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Watch, CommonConst.Sound_Alert_Key, (string)AvatarWarnSound.SelectedValue);
-                SetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Sound_Alert_Key, (string)AvatarNuisanceSound.SelectedValue);
-                SetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Sound_Alert_Key, (string)AvatarCrasherSound.SelectedValue);
-                SetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Watch, CommonConst.Color_Alert_Key, (string)AvatarWarnColor.SelectedValue);
-                SetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Color_Alert_Key, (string)AvatarNuisanceColor.SelectedValue);
-                SetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Color_Alert_Key, (string)AvatarCrasherColor.SelectedValue);
-
-                // Group Alerts
-                SetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Watch, CommonConst.Sound_Alert_Key, (string)GroupWarnSound.SelectedValue);
-                SetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Sound_Alert_Key, (string)GroupNuisanceSound.SelectedValue);
-                SetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Sound_Alert_Key, (string)GroupCrasherSound.SelectedValue);
-                SetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Watch, CommonConst.Color_Alert_Key, (string)GroupWarnColor.SelectedValue);
-                SetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Color_Alert_Key, (string)GroupNuisanceColor.SelectedValue);
-                SetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Color_Alert_Key, (string)GroupCrasherColor.SelectedValue);
-
-                // Group Alerts
-                SetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Watch, CommonConst.Sound_Alert_Key, (string)ProfileWarnSound.SelectedValue);
-                SetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Sound_Alert_Key, (string)ProfileNuisanceSound.SelectedValue);
-                SetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Sound_Alert_Key, (string)ProfileCrasherSound.SelectedValue);
-                SetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Watch, CommonConst.Color_Alert_Key, (string)ProfileWarnColor.SelectedValue);
-                SetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Color_Alert_Key, (string)ProfileNuisanceColor.SelectedValue);
-                SetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Color_Alert_Key, (string)ProfileCrasherColor.SelectedValue);
-            }
-            catch (Exception ex)
-            {
-                System.Windows.MessageBox.Show($"Failed to save configuration: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        private void TestSound_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is System.Windows.Controls.Button button && button.Tag is string soundName)
-            {
-                SoundManager.PlaySound(soundName);
-            }
-        }
-
         private void GistUrl_TextChanged(object sender, TextChangedEventArgs e)
         {
             // Enable/disable the corresponding "Check Now" button based on whether there's text in the textbox
@@ -1279,6 +1007,292 @@ namespace Tailgrab.PlayerManagement
             {
                 logger.Error(ex, "Failed to export group GIST data");
                 System.Windows.MessageBox.Show($"Failed to export group data: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+        #endregion
+
+        #region Config / AI Config Tab Handling
+        private async void SaveAIConfig_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // Save Ollama credentials to registry protected store
+                if (!string.IsNullOrEmpty(VrOllamaBox.Password)) ConfigStore.SaveSecret(CommonConst.Registry_Ollama_API_Key, VrOllamaBox.Password.Trim());
+                ConfigStore.PutStoredKeyString(CommonConst.Registry_Ollama_API_Endpoint, VrOllamaEndpointBox.Text ?? CommonConst.Default_Ollama_API_Endpoint);
+                ConfigStore.PutStoredKeyString(CommonConst.Registry_Ollama_API_Prompt, VrOllamaPromptBox.Text ?? CommonConst.Default_Ollama_API_Prompt);
+                ConfigStore.PutStoredKeyString(CommonConst.Registry_Ollama_API_Image_Prompt, VrOllamaImagePromptBox.Text ?? CommonConst.Default_Ollama_API_Image_Prompt);
+                ConfigStore.PutStoredKeyString(CommonConst.Registry_Ollama_API_Model, (string)VrOllamaModelBox.SelectedValue ?? CommonConst.Default_Ollama_API_Model);
+
+                // Load available models from Ollama after saving credentials
+                await LoadOllamaModelsAsync();
+
+                System.Windows.MessageBox.Show("AI Configuration saved. Restart the Application for all changes to take effect.", "AI Config", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"Failed to save AI configuration: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void ResetOllama_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var result = System.Windows.MessageBox.Show(
+                    "This will erase your Ollama Configuration. Are you sure you want to continue?",
+                    "Confirm Ollama Configuration Deletion",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning);
+
+                if (result != MessageBoxResult.Yes)
+                    return;
+
+
+                ConfigStore.DeleteSecret(CommonConst.Registry_Ollama_API_Key);
+                ConfigStore.DeleteSecret(CommonConst.Registry_Ollama_API_Endpoint);
+                ConfigStore.DeleteSecret(CommonConst.Registry_Ollama_API_Model);
+                VrOllamaBox.ToolTip = null;
+                VrOllamaBox.Password = string.Empty;
+                VrOllamaEndpointBox.Text = string.Empty;
+                VrOllamaModelBox.SelectedValue = null;
+                System.Windows.MessageBox.Show("Ollama Configuration reset. Please re-enter your API key or leave blank for no Profile & Image AI Evalutation.", "Reset Ollama Configuration", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"Failed to reset Ollama Configuration: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private async Task LoadOllamaModelsAsync()
+        {
+            try
+            {
+                var models = await Clients.Ollama.OllamaClient.GetModels();
+
+                // Update the ObservableCollection on the UI thread
+                System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                {
+                    OllamaModelOptions.Clear();
+                    OllamaModelOptions = [.. models.Select(s => new KeyValuePair<string, string>(s, s))];
+                    
+                    // If there's a currently saved model, try to select it
+                    string? currentModel = ConfigStore.GetStoredKeyString(CommonConst.Registry_Ollama_API_Model);
+                    if (!string.IsNullOrEmpty(currentModel) && OllamaModelOptions.Contains(new KeyValuePair<string, string>( currentModel, currentModel )))
+                    {
+                        VrOllamaModelBox.SelectedValue = currentModel;
+                    }
+                    else if (OllamaModelOptions.Count > 0)
+                    {
+                        VrOllamaModelBox.SelectedValue = OllamaModelOptions[0].Value;
+                    }
+
+                    // Update the test button state after loading models
+                    UpdateCanTestProfilePrompt();
+                });
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to load Ollama models");
+                System.Windows.MessageBox.Show($"Failed to load Ollama models: {ex.Message}", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+
+        private void UpdateCanTestProfilePrompt()
+        {
+            CanTestProfilePrompt =
+                !string.IsNullOrEmpty(ConfigStore.GetStoredKeyString(CommonConst.Registry_Ollama_API_Endpoint)) &&
+                !string.IsNullOrEmpty((string)VrOllamaModelBox.SelectedValue) &&
+                (VrOllamaPromptBox.Text?.Length ?? 0) > 60 &&
+                (UserAccountTestBox.Text?.StartsWith("usr_") ?? false);
+        }
+
+        private void TestProfilePromptInput_Changed(object sender, EventArgs e)
+        {
+            UpdateCanTestProfilePrompt();
+        }
+
+        private async void TestProfilePrompt_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                TestProfilePromptButton.IsEnabled = false;
+                var userId = UserAccountTestBox.Text?.Trim();
+                var prompt = VrOllamaPromptBox.Text?.Trim();
+                var model = ((string)VrOllamaModelBox.SelectedValue)?.Trim();
+
+                if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(prompt) || string.IsNullOrEmpty(model))
+                {
+                    System.Windows.MessageBox.Show("Please ensure User ID, Prompt, and Model are specified.", "Validation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                // Call Ollama test method
+                ProfileEvaluation? result = await Clients.Ollama.OllamaClient.TestProfilePrompt(_serviceRegistry, userId, prompt, model);
+                if (result != null) {
+                    logger.Info("Profile prompt test successful for user {UserId} with model {Model} as {Evaluation}", userId, model, result.Evaluation);
+
+                    OverlayTestProfileEvalUserIdTextBox.Text = userId;
+                    OverlayTestProfileEvalProfileTextBox.Text = System.Text.Encoding.UTF8.GetString( result.ProfileText );
+                    OverlayTestProfileEvalEvaluationTextBox.Text = System.Text.Encoding.UTF8.GetString( result.Evaluation );
+                    OverlayTestProfileEval.Visibility = Visibility.Visible;
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to test profile prompt");
+                System.Windows.MessageBox.Show($"Failed to test profile prompt: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                TestProfilePromptButton.IsEnabled = true;
+            }
+        }
+
+        private async void TestProfilePrompt_Ok_Click(object sender, RoutedEventArgs e)
+        {
+            OverlayTestProfileEvalUserIdTextBox.Text = string.Empty;
+            OverlayTestProfileEvalProfileTextBox.Text = string.Empty;
+            OverlayTestProfileEvalEvaluationTextBox.Text = string.Empty;
+            OverlayTestProfileEval.Visibility = Visibility.Collapsed;
+        }
+
+        private async Task ProcessAIImagePromptTest()
+        {
+            OllamaClient ollamaClient = _serviceRegistry.GetOllamaAPIClient();
+            try
+            {
+                var prompt = VrOllamaImagePromptBox.Text?.Trim();
+                var model = ((string)VrOllamaModelBox.SelectedValue)?.Trim();
+
+                if (model != null && prompt != null)
+                {
+                    // Clear existing items
+                    TestImageAIEvalItems.Clear();
+
+                    // Get test images from the test-images folder
+                    List<string> testImages = tailgrab.Common.TestImageManager.GetAvailableImages();
+
+                    // Stub implementation - create placeholder items
+                    foreach (string imageName in testImages)
+                    {
+                        string? imagePath = GetTestImagePath(imageName);
+                        logger.Info("Processing test image {ImageName} at path {ImagePath}", imageName, imagePath);
+                        if (imagePath != null)
+                        {
+
+                            string evaluation = await OllamaClient.TestImagePrompt(model, prompt, imagePath);
+
+                            Models.TestImageAIEvalItem item = new()
+                            {
+                                ImagePath = imagePath,
+                                AIEvaluation = evaluation,
+                                AlertInfo = AIEvalutionEnumMapper.MapEnumToAlertDisplayItem(evaluation)
+                            };
+
+                            TestImageAIEvalItems.Add(item);
+                        }
+                    }
+
+                    logger.Info($"Loaded {TestImageAIEvalItems.Count} test images for AI evaluation");
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to process AI image prompt test");
+                System.Windows.MessageBox.Show($"Failed to load test images: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private string? GetTestImagePath(string imageName)
+        {
+            string[] extensions = [".png", ".jpg", ".gif", ".webp"];
+            foreach (string extension in extensions)
+            {
+                string imagePath = Path.Combine(CommonConst.APPLICATION_LOCAL_DATA_PATH, "test-images", imageName + extension);
+                if (System.IO.File.Exists(imagePath))
+                {
+                    return imagePath;
+                }
+
+            }
+
+            return null;
+        }
+        #endregion
+
+        #region Test Image Evaluation Overlay Handling
+        private void CloseTestImageEval_Click(object sender, RoutedEventArgs e)
+        {
+            OverlayTestImageEval.Visibility = Visibility.Collapsed;
+            TestImageAIEvalItems.Clear();
+        }
+        #endregion
+
+        #region Test Image Evaluation Handling
+        private async void TestImagePrompt_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                TestImagePromptButton.IsEnabled = false;
+
+                // Process the test images
+                await ProcessAIImagePromptTest();
+
+                // Show the overlay with results
+                OverlayTestImageEval.Visibility = Visibility.Visible;
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to test image prompt");
+                System.Windows.MessageBox.Show($"Failed to test image prompt: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                TestImagePromptButton.IsEnabled = true;
+            }
+        }
+        #endregion
+
+        #region Config / Alert Tab Handling
+        private void SaveAlerts_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // Avatar Alerts
+                SetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Watch, CommonConst.Sound_Alert_Key, (string)AvatarWarnSound.SelectedValue);
+                SetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Sound_Alert_Key, (string)AvatarNuisanceSound.SelectedValue);
+                SetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Sound_Alert_Key, (string)AvatarCrasherSound.SelectedValue);
+                SetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Watch, CommonConst.Color_Alert_Key, (string)AvatarWarnColor.SelectedValue);
+                SetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Color_Alert_Key, (string)AvatarNuisanceColor.SelectedValue);
+                SetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Color_Alert_Key, (string)AvatarCrasherColor.SelectedValue);
+
+                // Group Alerts
+                SetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Watch, CommonConst.Sound_Alert_Key, (string)GroupWarnSound.SelectedValue);
+                SetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Sound_Alert_Key, (string)GroupNuisanceSound.SelectedValue);
+                SetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Sound_Alert_Key, (string)GroupCrasherSound.SelectedValue);
+                SetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Watch, CommonConst.Color_Alert_Key, (string)GroupWarnColor.SelectedValue);
+                SetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Color_Alert_Key, (string)GroupNuisanceColor.SelectedValue);
+                SetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Color_Alert_Key, (string)GroupCrasherColor.SelectedValue);
+
+                // Group Alerts
+                SetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Watch, CommonConst.Sound_Alert_Key, (string)ProfileWarnSound.SelectedValue);
+                SetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Sound_Alert_Key, (string)ProfileNuisanceSound.SelectedValue);
+                SetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Sound_Alert_Key, (string)ProfileCrasherSound.SelectedValue);
+                SetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Watch, CommonConst.Color_Alert_Key, (string)ProfileWarnColor.SelectedValue);
+                SetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Color_Alert_Key, (string)ProfileNuisanceColor.SelectedValue);
+                SetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Color_Alert_Key, (string)ProfileCrasherColor.SelectedValue);
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"Failed to save configuration: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void TestSound_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is System.Windows.Controls.Button button && button.Tag is string soundName)
+            {
+                SoundManager.PlaySound(soundName);
             }
         }
 
@@ -1472,6 +1486,7 @@ namespace Tailgrab.PlayerManagement
                 System.Windows.MessageBox.Show($"Failed to reset color settings: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+        #endregion
 
         private void StatusBarTimer_Tick(object? sender, EventArgs e)
         {
