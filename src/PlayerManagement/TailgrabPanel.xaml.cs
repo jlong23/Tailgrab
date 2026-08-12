@@ -252,6 +252,19 @@ namespace Tailgrab.PlayerManagement
             new ReportReasonItem("Other", "other")
         ];
 
+        public List<ReportReasonItem> AvatarReportReasonsOptions =
+        [
+            new ReportReasonItem("Sexual Content", "sexual"),
+            new ReportReasonItem("Harassment or Bullying", "harassing"),
+            new ReportReasonItem("Hateful and Discriminatory Content", "hateful"),
+            new ReportReasonItem("Violence or Gore", "gore"),
+            new ReportReasonItem("Suicide and Self-Harm", "suicide"),
+            new ReportReasonItem("Integrity and Authenticity", "integrity"),
+            new ReportReasonItem("Child Exploitation and abuse", "child"),
+            new ReportReasonItem("Copyright", "copyright"),
+            new ReportReasonItem("Something Else", "other")
+        ];
+
         // Color options for selection
         public List<ColorOption> ColorOptions { get; } =
         [
@@ -1954,6 +1967,27 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
+        private void ReportAvatar_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not System.Windows.Controls.Button btn) return;
+
+            // Find the DataContext for the row (should be PlayerViewModel)
+            if (btn.DataContext is UserAvatarViewModel uavm)
+            {
+                string avatarId = uavm.AvatarId;
+                try
+                {
+                    ShowAvatarReportOverlay(avatarId);
+                }
+                catch (Exception ex)
+                {
+                    logger.Error(ex, "Failed to open Report Avatar overlay");
+                    System.Windows.MessageBox.Show($"Failed to open Report Avatar overlay: {ex.Message}",
+                        "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                }
+            }
+        }
+
         private void ShowProfileReportOverlay(string userId)
         {
             // Populate the overlay fields
@@ -2093,6 +2127,7 @@ namespace Tailgrab.PlayerManagement
         }
 
         // Reusable method to submit profile report - can be called from other places in the future if needed
+        // TODO: Move this to the ProfileManager class if it becomes more widely used
         private async Task<bool> SubmitProfileReport(string userId, string category, string reportReason, string reportDescription)
         {
             bool success = true;
@@ -2121,6 +2156,175 @@ namespace Tailgrab.PlayerManagement
             else
             {
                 logger.Warn($"Failed to submit profile report - UserId: {userId}, Category: {category}, ReportReason: {reportReason}, Description: {reportDescription}");
+                success = false;
+            }
+            return success;
+        }
+
+
+        private void ShowAvatarReportOverlay(string avatarId)
+        {
+            // Populate the overlay fields
+            OverlayAvatarReportAvatarIdTextBox.Text = avatarId.Trim();
+
+            // Setup report reasons for avatar (includes Child Exploitation)
+            OverlayAvatarReportReasonComboBox.ItemsSource = AvatarReportReasonsOptions;
+            OverlayAvatarReportReasonComboBox.SelectedIndex = 0;
+
+            if (string.IsNullOrEmpty(avatarId))
+            {
+                OverlayAvatarReportDescriptionTextBox.Text = string.Empty;
+            }
+            else
+            {
+                try
+                {
+                    // Get the avatar from ServiceRegistry
+                    Result<Avatar?> result = _serviceRegistry.GetVRChatAPIClient().GetAvatarById(avatarId);
+
+                    if (result.Value != null)
+                    {
+                        OverlayAvatarReportDescriptionTextBox.Text = $"{result.Value.Name} by \"{result.Value.AuthorName}\"\nID: {result.Value.Id}\n{result.Value.Description}";
+                        logger.Debug($"Loaded Base Description for avatar: {avatarId}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.Error(ex, $"Error loading Base Description  for avatar: {avatarId}");
+                    OverlayAvatarReportDescriptionTextBox.Text = $"Error loading Base Description: {ex.Message}";
+                }
+            }
+
+            // Clear any validation errors
+            ClearAvatarReportValidationErrors();
+
+            // Show the overlay
+            OverlayAvatarReport.Visibility = Visibility.Visible;
+        }
+
+        private void ClearAvatarReportValidationErrors()
+        {
+            // Reset AvatarID field
+            OverlayAvatarReportAvatarIdTextBox.BorderBrush = System.Windows.SystemColors.ControlDarkBrush;
+            OverlayAvatarReportAvatarIdTextBox.BorderThickness = new Thickness(1);
+            OverlayAvatarReportAvatarIdError.Visibility = Visibility.Collapsed;
+        }
+
+        private bool ValidateAvatarReportFields()
+        {
+            bool isValid = true;
+
+            // Clear any previous validation errors first
+            ClearAvatarReportValidationErrors();
+
+            // Validate Avatar ID
+            if (string.IsNullOrWhiteSpace(OverlayAvatarReportAvatarIdTextBox.Text))
+            {
+                OverlayAvatarReportAvatarIdTextBox.BorderBrush = new SolidColorBrush(Colors.Yellow);
+                OverlayAvatarReportAvatarIdTextBox.BorderThickness = new Thickness(3);
+                OverlayAvatarReportAvatarIdError.Visibility = Visibility.Visible;
+                isValid = false;
+            }
+
+            return isValid;
+        }
+
+        private void OverlayAvatarReportCancel_Click(object sender, RoutedEventArgs e)
+        {
+            // Hide the overlay
+            OverlayAvatarReport.Visibility = Visibility.Collapsed;
+
+            // Clear the fields
+            OverlayAvatarReportAvatarIdTextBox.Text = string.Empty;
+            OverlayAvatarReportDescriptionTextBox.Text = string.Empty;
+
+            // Clear validation errors
+            ClearAvatarReportValidationErrors();
+        }
+
+        private async void OverlayAvatarReportSubmit_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // Validate required fields
+                if (!ValidateAvatarReportFields())
+                {
+                    return;
+                }
+
+                string avatarId = OverlayAvatarReportAvatarIdTextBox.Text.Trim();
+                string category = OverlayAvatarReportCategoryTextBox.Text;
+                string reportReason = OverlayAvatarReportReasonComboBox.SelectedValue?.ToString() ?? string.Empty;
+                string reportDescription = OverlayAvatarReportDescriptionTextBox.Text;
+
+                // Disable the submit button to prevent double-submission
+                OverlayAvatarReportSubmitButton.IsEnabled = false;
+
+                // Call the method that will handle the future web service call
+                bool success = await SubmitAvatarReport(avatarId, category, reportReason, reportDescription);
+
+                // Show success message
+                if (!success)
+                {
+                    System.Windows.MessageBox.Show("Failed to submit report. Please try again later.", "Error",
+                        System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                    OverlayAvatarReportSubmitButton.IsEnabled = true;
+                    return;
+                }
+
+                // Hide the overlay
+                OverlayAvatarReport.Visibility = Visibility.Collapsed;
+
+                // Clear the fields
+                OverlayAvatarReportAvatarIdTextBox.Text = string.Empty;
+                OverlayAvatarReportDescriptionTextBox.Text = string.Empty;
+
+                // Clear validation errors
+                ClearAvatarReportValidationErrors();
+
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to submit avatar report");
+                System.Windows.MessageBox.Show($"Failed to submit report: {ex.Message}",
+                    "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+            }
+            finally
+            {
+                OverlayAvatarReportSubmitButton.IsEnabled = true;
+            }
+        }
+
+        // Reusable method to submit avatar report - can be called from other places in the future if needed
+        // TODO: Move this method to the AvatarManager
+        private async Task<bool> SubmitAvatarReport(string avatarId, string category, string reportReason, string reportDescription)
+        {
+            bool success = true;
+            ModerationReportPayload rpt = new()
+            {
+                Type = "avatar",
+                Category = "avatar",
+                Reason = reportReason,
+                ContentId = avatarId,
+                Description = reportDescription
+            };
+
+            ModerationReportDetails rptDtls = new()
+            {
+                InstanceType = "Group Public",
+                InstanceAgeGated = false
+            };
+            rpt.Details = [rptDtls];
+
+            ModerationReportResponse? response = await _serviceRegistry.GetVRChatAPIClient().SubmitModerationReportAsync(rpt);
+            if (response != null)
+            {
+                logger.Info($"Avatar Report submitted - AvatarId: {avatarId}, Category: {category}, ReportReason: {reportReason}, Description: {reportDescription}");
+                await _serviceRegistry.GetPlayerManager().SaveModerationReport(rpt, response, string.Empty, false);
+            }
+            else
+            {
+                logger.Warn($"Failed to submit avatar report - AvatarId: {avatarId}, Category: {category}, ReportReason: {reportReason}, Description: {reportDescription}");
                 success = false;
             }
             return success;

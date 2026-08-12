@@ -296,6 +296,16 @@
     <sys:String x:Key="UI.Overlay.ProfileReport.Action.Submit">Submit</sys:String>
     <sys:String x:Key="UI.Overlay.ProfileReport.Required">Required</sys:String>
 
+    <!-- Overlay Avatar Report-->
+    <sys:String x:Key="UI.Overlay.AvatarReport.Title">Report User Avatar</sys:String>
+    <sys:String x:Key="UI.Overlay.AvatarReport.AvatarId">Avatar ID: *</sys:String>
+    <sys:String x:Key="UI.Overlay.AvatarReport.Category">Category:</sys:String>
+    <sys:String x:Key="UI.Overlay.AvatarReport.ReportReason">Report Reason:</sys:String>
+    <sys:String x:Key="UI.Overlay.AvatarReport.ReportDescription">Report Description:</sys:String>
+    <sys:String x:Key="UI.Overlay.AvatarReport.Action.Cancel">Cancel</sys:String>
+    <sys:String x:Key="UI.Overlay.AvatarReport.Action.Submit">Submit</sys:String>
+    <sys:String x:Key="UI.Overlay.AvatarReport.Required">Required</sys:String>
+
     <!-- User Avatar Overlay -->
     <sys:String x:Key="UI.Overlay.UserAvatar.Title">User Avatar Management</sys:String>
     <sys:String x:Key="UI.Overlay.UserAvatar.Group.Title">User Information</sys:String>

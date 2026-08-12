@@ -2263,11 +2263,10 @@ Title="Tailgrab Player Panel"
             </TabControl>
         </Grid>
 
-
-        <!-- Overlay Panel for Report Active Profile -->
+        <!-- Report Profile Overlay -->
         <Border Name="OverlayProfileReport" 
                 Background="#CC000000"                 
-                Panel.ZIndex="1000" 
+                Panel.ZIndex="1010" 
                 Margin="0,0,0,100"
                 Visibility="Collapsed">
             <Border Background="#FF2D2D30" 
@@ -2350,6 +2349,91 @@ Title="Tailgrab Player Panel"
             </Border>
         </Border>
 
+        <!-- Report Avatar Overlay -->
+        <Border Name="OverlayAvatarReport" 
+                Background="#CC000000"                 
+                Panel.ZIndex="1010" 
+                Margin="0,0,0,100"
+                Visibility="Collapsed">
+            <Border Background="#FF2D2D30" 
+                    Width="400"
+                    MaxWidth="650" 
+                    MaxHeight="500" 
+                    CornerRadius="8"
+                    Padding="16"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Center">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Title -->
+                    <TextBlock Grid.Row="0"
+                               Text="{DynamicResource UI.Overlay.AvatarReport.Title}" 
+                               FontSize="20" 
+                               FontWeight="Bold" 
+                               Foreground="#FFE6E6E6"
+                               Margin="0,0,0,16"/>
+
+                    <!-- Avatar ID -->
+                    <StackPanel Grid.Row="1" Margin="0,0,0,12">
+                        <Label Content="{DynamicResource UI.Overlay.AvatarReport.AvatarId}" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox Name="OverlayAvatarReportAvatarIdTextBox" Grid.Column="0" IsReadOnly="True"/>
+                            <Label Name="OverlayAvatarReportAvatarIdError" 
+                                   Grid.Column="1" 
+                                   Content="{DynamicResource UI.Overlay.AvatarReport.Required}" 
+                                   Foreground="Red" 
+                                   FontWeight="Bold"
+                                   Margin="8,0,0,0"
+                                   VerticalAlignment="Center"
+                                   Visibility="Collapsed"/>
+                        </Grid>
+                    </StackPanel>
+
+                    <!-- Category -->
+                    <StackPanel Grid.Row="2" Margin="0,0,0,12">
+                        <Label Content="{DynamicResource UI.Overlay.AvatarReport.Category}" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                        <TextBox Name="OverlayAvatarReportCategoryTextBox" IsReadOnly="True" Text="Avatar"/>
+                    </StackPanel>
+
+                    <!-- Report Reason -->
+                    <StackPanel Grid.Row="3" Margin="0,0,0,12">
+                        <Label Content="{DynamicResource UI.Overlay.AvatarReport.ReportReason}" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                        <ComboBox Name="OverlayAvatarReportReasonComboBox" 
+                                  DisplayMemberPath="DisplayName"
+                                  SelectedValuePath="Value"/>
+                    </StackPanel>
+
+                    <!-- Report Description -->
+                    <StackPanel Grid.Row="4" Margin="0,0,0,12">
+                        <Label Content="{DynamicResource UI.Overlay.AvatarReport.ReportDescription}" FontWeight="Bold" Foreground="#FFE6E6E6"/>
+                        <TextBox Name="OverlayAvatarReportDescriptionTextBox"
+                                 TextWrapping="Wrap" 
+                                 AcceptsReturn="True" 
+                                 VerticalScrollBarVisibility="Auto"
+                                 IsReadOnly="False"
+                                 MinHeight="200"/>
+                    </StackPanel>
+
+                    <!-- Action Buttons -->
+                    <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Name="OverlayAvatarReportCancelButton" Content="{DynamicResource UI.Overlay.AvatarReport.Action.Cancel}" Width="100" Margin="0,0,12,0" Click="OverlayAvatarReportCancel_Click"/>
+                        <Button Name="OverlayAvatarReportSubmitButton" Content="{DynamicResource UI.Overlay.AvatarReport.Action.Submit}" Width="100" Click="OverlayAvatarReportSubmit_Click"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Border>
 
         <!-- Overlay Panel for User Avatar Management -->
         <Border Name="UserAvatarOverlay" 
@@ -2541,7 +2625,7 @@ Title="Tailgrab Player Panel"
                                                 Name="OverlayReportAvatarButton"
                                                 DataContext="{Binding}"
                                                 Tag="{Binding}"
-                                                Click="OverlayReportAvatarButton_Click"                                                 
+                                                Click="ReportAvatar_Click"                                                 
                                                 Margin="0,0,6,0" Background="#FFCC0000" Foreground="White"
                                                 IsEnabled="True"/>
 
@@ -2549,11 +2633,13 @@ Title="Tailgrab Player Panel"
                                                 <TextBlock Text="{DynamicResource UI.Overlay.UserAvatar.Column.Description}" 
                                                            FontWeight="Bold" 
                                                            Foreground="#FFE6E6E6" 
+                                                           HorizontalAlignment="Left"
                                                            Margin="0,0,0,4"/>
                                                 <TextBlock Text="{Binding Description}" 
                                                            TextWrapping="Wrap" 
                                                            Foreground="#FFE6E6E6"
-                                                           MaxHeight="100"
+                                                           MinHeight="50" MaxWidth="500"
+                                                           HorizontalAlignment="Left"
                                                            Margin="8,0,0,0"/>
                                             </StackPanel>
                                         </Grid>
@@ -2827,7 +2913,7 @@ Title="Tailgrab Player Panel"
         <!-- Overlay Panel for Report Print Inventory -->
         <Border Name="ReportPrintInventoryOverlay"
                 Background="#CC000000" 
-                Panel.ZIndex="1000"
+                Panel.ZIndex="1010"
                 Visibility="Collapsed">
             <Border Background="#FF2D2D30" 
                     Width="550"
@@ -2954,7 +3040,7 @@ Title="Tailgrab Player Panel"
         <!-- Overlay Panel for Report Emoji & Sticker -->
         <Border Name="ReportInventoryOverlay" 
                 Background="#CC000000"                 
-                Panel.ZIndex="1000"
+                Panel.ZIndex="1010"
                 Visibility="Collapsed">
             <Border Background="#FF2D2D30" 
                     MaxWidth="950" MaxHeight="550" 
