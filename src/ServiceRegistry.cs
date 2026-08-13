@@ -27,6 +27,7 @@ namespace Tailgrab
         AIEvaluationManager? aiEvaluationManager = null;
         AvatarManager? avatarManager = null;
         GroupManager? groupManager = null;
+        ModerationManager? moderationManager = null;
         ServiceCollection services = new ServiceCollection();
         private VRCDBClient _VRCDBClient = new VRCDBClient();
 
@@ -98,8 +99,9 @@ namespace Tailgrab
 
                 logger.Info("All services started.");
 
-                await playerManager.GetModerationReports(false);
-                await playerManager.GetModerationReports(true);
+                // Get Active and Closed moderation reports to ensure the database is up to date
+                await moderationManager.GetModerationReports(false);
+                await moderationManager.GetModerationReports(true);
 
             }
             catch (Exception ex)
@@ -191,6 +193,15 @@ namespace Tailgrab
                 throw new InvalidOperationException("Group Manager has not been initialized. Call StartAllServices() first.");
             }
             return groupManager;
+        }
+
+        public ModerationManager GetModerationManager()
+        {
+            if (moderationManager == null)
+            {
+                throw new InvalidOperationException("Moderation Manager has not been initialized. Call StartAllServices() first.");
+            }
+            return moderationManager;
         }
 
         public async Task ProcessAvatarGist()

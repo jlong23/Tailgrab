@@ -36,6 +36,9 @@ namespace Tailgrab.PlayerManagement
 
         public static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
+        // Initialize synthesizer
+        SpeechSynthesizer synthesizer = new SpeechSynthesizer();
+
         protected ServiceRegistry _serviceRegistry;
 
         private readonly DispatcherTimer fallbackTimer;
@@ -753,6 +756,10 @@ namespace Tailgrab.PlayerManagement
             this.Loaded += Window_Loaded;
             this.SizeChanged += Window_SizeChanged;
             this.LocationChanged += Window_LocationChanged;
+
+            synthesizer.SelectVoice("Microsoft Zira Desktop");
+            // Speak text asynchronously to avoid freezing the UI
+            synthesizer.SpeakAsync("Tail Grab is up and running");
         }
 
 
@@ -2107,7 +2114,7 @@ namespace Tailgrab.PlayerManagement
                 OverlayProfileReportSubmitButton.IsEnabled = false;
 
                 // Call the method that will handle the future web service call
-                bool success = await SubmitProfileReport(userId, category, reportReason, reportDescription);
+                bool success = await _serviceRegistry.GetModerationManager().SubmitProfileReport(userId, category, reportReason, reportDescription);
 
                 // Show success message
                 if (!success)
@@ -2140,42 +2147,6 @@ namespace Tailgrab.PlayerManagement
                 OverlayProfileReportSubmitButton.IsEnabled = true;
             }
         }
-
-        // Reusable method to submit profile report - can be called from other places in the future if needed
-        // TODO: Move this to the ProfileManager class if it becomes more widely used
-        private async Task<bool> SubmitProfileReport(string userId, string category, string reportReason, string reportDescription)
-        {
-            bool success = true;
-            ModerationReportPayload rpt = new()
-            {
-                Type = "user",
-                Category = "profile",
-                Reason = reportReason,
-                ContentId = userId,
-                Description = reportDescription
-            };
-
-            ModerationReportDetails rptDtls = new()
-            {
-                InstanceType = "Group Public",
-                InstanceAgeGated = false
-            };
-            rpt.Details = [rptDtls];
-
-            ModerationReportResponse? response = await _serviceRegistry.GetVRChatAPIClient().SubmitModerationReportAsync(rpt);
-            if (response != null)
-            {
-                logger.Info($"Profile Report submitted - UserId: {userId}, Category: {category}, ReportReason: {reportReason}, Description: {reportDescription}");
-                await _serviceRegistry.GetPlayerManager().SaveModerationReport(rpt, response, userId, false);    
-            }
-            else
-            {
-                logger.Warn($"Failed to submit profile report - UserId: {userId}, Category: {category}, ReportReason: {reportReason}, Description: {reportDescription}");
-                success = false;
-            }
-            return success;
-        }
-
 
         private void ShowAvatarReportOverlay(string avatarId)
         {
@@ -2276,7 +2247,7 @@ namespace Tailgrab.PlayerManagement
                 OverlayAvatarReportSubmitButton.IsEnabled = false;
 
                 // Call the method that will handle the future web service call
-                bool success = await SubmitAvatarReport(avatarId, category, reportReason, reportDescription);
+                bool success = await _serviceRegistry.GetModerationManager().SubmitAvatarReport(avatarId, category, reportReason, reportDescription);
 
                 // Show success message
                 if (!success)
@@ -2308,41 +2279,6 @@ namespace Tailgrab.PlayerManagement
             {
                 OverlayAvatarReportSubmitButton.IsEnabled = true;
             }
-        }
-
-        // Reusable method to submit avatar report - can be called from other places in the future if needed
-        // TODO: Move this method to the AvatarManager
-        private async Task<bool> SubmitAvatarReport(string avatarId, string category, string reportReason, string reportDescription)
-        {
-            bool success = true;
-            ModerationReportPayload rpt = new()
-            {
-                Type = "avatar",
-                Category = "avatar",
-                Reason = reportReason,
-                ContentId = avatarId,
-                Description = reportDescription
-            };
-
-            ModerationReportDetails rptDtls = new()
-            {
-                InstanceType = "Group Public",
-                InstanceAgeGated = false
-            };
-            rpt.Details = [rptDtls];
-
-            ModerationReportResponse? response = await _serviceRegistry.GetVRChatAPIClient().SubmitModerationReportAsync(rpt);
-            if (response != null)
-            {
-                logger.Info($"Avatar Report submitted - AvatarId: {avatarId}, Category: {category}, ReportReason: {reportReason}, Description: {reportDescription}");
-                await _serviceRegistry.GetPlayerManager().SaveModerationReport(rpt, response, string.Empty, false);
-            }
-            else
-            {
-                logger.Warn($"Failed to submit avatar report - AvatarId: {avatarId}, Category: {category}, ReportReason: {reportReason}, Description: {reportDescription}");
-                success = false;
-            }
-            return success;
         }
         #endregion
 
@@ -2720,7 +2656,7 @@ namespace Tailgrab.PlayerManagement
             if (report != null)
             {
                 logger.Info($"Print Report submitted - UserId: {userId}, Category: {category}, ReportReason: {reportReason}, Description: {reportDescription}");
-                await _serviceRegistry.GetPlayerManager().SaveModerationReport(rpt, report, userId, false);
+                await _serviceRegistry.GetModerationManager().SaveModerationReport(rpt, report, userId, false);
             }
             else
             {
@@ -3170,7 +3106,7 @@ namespace Tailgrab.PlayerManagement
             if (report != null)
             {
                 logger.Info($"Inventory Report submitted - UserId: {userId}, Category: {category}, ReportReason: {reportReason}, Description: {reportDescription}");
-                await _serviceRegistry.GetPlayerManager().SaveModerationReport(rpt, report, userId, false);
+                await _serviceRegistry.GetModerationManager().SaveModerationReport(rpt, report, userId, false);
             }
             else
             {
@@ -4288,34 +4224,6 @@ namespace Tailgrab.PlayerManagement
             ModerationReportThumbnail.Source = null;
         }
 
-        private async void DeleteModerationReport_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is System.Windows.Controls.Button button && button.Tag is ModerationInfoViewModel report)
-            {
-                try
-                {
-                    // TODO: Implement VRCClient call to delete moderation report
-                    VRChatClient vrcClient = _serviceRegistry.GetVRChatAPIClient();
-                    await vrcClient.DeleteModerationReportAsync(report.Id);
-
-                    // Update local database to mark as deleted
-                    var db = _serviceRegistry.GetDBContext();
-                    var entity = db.ModerationInfos.Find(report.Id);
-                    if (entity != null)
-                    {
-                        entity.IsDeleted = true;
-                        entity.DeletedDate = DateTime.UtcNow;
-                        db.SaveChanges();
-                        RefreshModerationDb();
-                    }                    
-                }
-                catch (Exception ex)
-                {
-                    logger.Error(ex, $"Failed to delete moderation report {report.Id}");
-                }
-            }
-        }
-
         #endregion
 
         private void UserSelectionTextBox_Pasting(object sender, DataObjectPastingEventArgs e)
@@ -4605,8 +4513,6 @@ namespace Tailgrab.PlayerManagement
                 }                
             }
         }
-
-
 
         private void SubscribeToColumnWidthChanges()
         {
@@ -5381,6 +5287,9 @@ namespace Tailgrab.PlayerManagement
             statusBarTimer.Tick -= StatusBarTimer_Tick;
 
             PlayerManager.PlayerChanged -= PlayerManager_PlayerChanged;
+
+            synthesizer.Speak("Tail Grab shut down");
+            synthesizer.Dispose();
         }
 
         private void TestProfilePromptInput_Changed(object sender, SelectionChangedEventArgs e)

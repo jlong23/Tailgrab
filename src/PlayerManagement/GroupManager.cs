@@ -206,13 +206,18 @@ namespace Tailgrab.PlayerManagement
 
         private async static Task<bool> GetUserModerations(QueuedProcess item)
         {
+            if (serviceRegistry == null)
+            {
+                throw new InvalidOperationException("ServiceRegistry is not initialized.");
+            }
+
             bool userModerations = false;
             logger.Debug($"Processing User Group subscription for userId: {item.UserId}");
             Player? player = PlayerManager.GetPlayerByUserId(item.UserId ?? string.Empty);
 
             if (player != null)
             {
-                List<ModerationInfo> moderationReports = await PlayerManager.GetModerationReportsByUserId(item.UserId ?? string.Empty);
+                List<ModerationInfo> moderationReports = await serviceRegistry.GetModerationManager().GetModerationReportsByUserId(item.UserId ?? string.Empty);
                 if (moderationReports.Count != 0)
                 {
                     userModerations = true;
