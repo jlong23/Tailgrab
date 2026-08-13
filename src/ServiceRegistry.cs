@@ -28,6 +28,7 @@ namespace Tailgrab
         AvatarManager? avatarManager = null;
         GroupManager? groupManager = null;
         ModerationManager? moderationManager = null;
+        ConfigurationManager? configurationManager = null;
         ServiceCollection services = new ServiceCollection();
         private VRCDBClient _VRCDBClient = new VRCDBClient();
 
@@ -64,6 +65,9 @@ namespace Tailgrab
                 dbContext.Database.EnsureCreated();
                 dbContext.UpgradeDatabase();
 
+                logger.Info("Starting Configuration Manager...");
+                configurationManager = new ConfigurationManager(this);
+
                 logger.Info("Starting VR Chat API Client...");
                 await vrcAPIClient.Initialize();
 
@@ -85,6 +89,9 @@ namespace Tailgrab
                 logger.Info("Starting Avatar Manager...");
                 avatarManager = new AvatarManager(this);
                 _ = Task.Run(() => avatarManager.ProcessAvatarGistList());
+
+                logger.Info("Starting Moderation Manager...");
+                moderationManager = new ModerationManager(this);
 
                 bool saveAvatars = ConfigStore.GetStoredKeyBool(CommonConst.Registry_Moderated_Avatar_Caching, true);
                 if (saveAvatars)
@@ -202,6 +209,15 @@ namespace Tailgrab
                 throw new InvalidOperationException("Moderation Manager has not been initialized. Call StartAllServices() first.");
             }
             return moderationManager;
+        }
+
+        public ConfigurationManager GetConfigurationManager()
+        {
+            if (configurationManager == null)
+            {
+                throw new InvalidOperationException("Configuration Manager has not been initialized. Call StartAllServices() first.");
+            }
+            return configurationManager;
         }
 
         public async Task ProcessAvatarGist()

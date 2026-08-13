@@ -21,8 +21,9 @@ Title="Tailgrab Player Panel"
 
             <local:MinutesToHoursMinutesConverter x:Key="MinutesToHoursMinutesConverter"/>
             <local:SoundNotNoneConverter x:Key="SoundNotNoneConverter"/>
+            <local:StringNotNullOrEmptyConverter x:Key="StringNotNullOrEmptyConverter"/>
 
-        <!-- Dark theme TabItem style with template -->
+            <!-- Dark theme TabItem style with template -->
         <Style TargetType="{x:Type TabItem}">
             <Setter Property="Background" Value="#FF2D2D30"/>
             <Setter Property="Foreground" Value="#FFE6E6E6"/>
@@ -1374,9 +1375,158 @@ Title="Tailgrab Player Panel"
                         <!-- #endregion Config / KnownUsers Tab -->
 
                         <!-- #region Config / LineMatchers Tab -->
-                        <TabItem Header="{DynamicResource UI.Tab.LineMatchers.Tab}" IsEnabled="False" Name="LineMatchersTab">
-                            <Grid>
-                                <TextBlock Margin="12" Text="Config view not implemented yet." />
+                        <TabItem Header="{DynamicResource UI.Tab.LineMatchers.Tab}" Name="LineMatchersTab">
+                            <Grid Margin="6">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+
+                                <!-- Toolbar -->
+                                <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,6">
+                                    <Button Name="SaveConfigButton" Padding="8,4" Margin="4" Content="Save Configuration" />
+                                    <Button Name="ReloadConfigButton" Padding="8,4" Margin="4" Content="Reload from File" />
+                                </StackPanel>
+
+                                <!-- Main Content Area -->
+                                <Grid Grid.Row="1">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="0.35*" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="0.65*" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <!-- Left Panel: Handlers List -->
+                                    <Grid Grid.Column="0" Margin="0,0,6,0">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="*" />
+                                        </Grid.RowDefinitions>
+
+                                        <TextBlock Grid.Row="0" Text="Line Handlers" FontWeight="Bold" Margin="0,0,0,4" />
+
+                                        <DataGrid Grid.Row="1" Name="HandlersDataGrid" 
+                                                  AutoGenerateColumns="False" 
+                                                  CanUserAddRows="False"
+                                                  CanUserDeleteRows="False"
+                                                  SelectionMode="Single">
+                                            <DataGrid.Columns>
+                                                <DataGridTextColumn Header="Handler Type" 
+                                                                  Binding="{Binding HandlerTypeValue}" 
+                                                                  IsReadOnly="True" />
+                                                <DataGridCheckBoxColumn Header="Enabled" 
+                                                                      Binding="{Binding Enabled}" IsReadOnly="True"/>
+                                                <DataGridTextColumn Header="Pattern Type" 
+                                                                  Binding="{Binding PatternTypeValue}" 
+                                                                  IsReadOnly="True" />
+                                            </DataGrid.Columns>
+                                        </DataGrid>
+                                    </Grid>
+
+                                    <!-- Splitter -->
+                                    <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Center" />
+
+                                    <!-- Right Panel: Handler Details -->
+                                    <ScrollViewer Grid.Column="2" Margin="6,0,0,0">
+                                        <StackPanel Margin="0" Background="Transparent">
+                                            <GroupBox Header="Handler Properties" Margin="0,0,0,6">
+                                                <Grid Margin="6">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="120" />
+                                                        <ColumnDefinition Width="*" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="Auto" />
+                                                        <RowDefinition Height="Auto" />
+                                                        <RowDefinition Height="Auto" />
+                                                        <RowDefinition Height="Auto" />
+                                                        <RowDefinition Height="Auto" />
+                                                        <RowDefinition Height="Auto" />
+                                                    </Grid.RowDefinitions>
+
+                                                    <!-- Handler Type (Read-only) -->
+                                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Handler Type:" VerticalAlignment="Center" />
+                                                    <TextBlock Grid.Row="0" Grid.Column="1" Name="HandlerTypeTextBlock" Margin="6,0,0,0" VerticalAlignment="Center" />
+
+                                                    <!-- Enabled Toggle -->
+                                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Enabled:" VerticalAlignment="Center" />
+                                                    <CheckBox Grid.Row="1" Grid.Column="1" Name="EnabledCheckBox" Margin="6,4" VerticalAlignment="Center" />
+
+                                                    <!-- Log Output -->
+                                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Log Output:" VerticalAlignment="Center" />
+                                                    <CheckBox Grid.Row="2" Grid.Column="1" Name="LogOutputCheckBox" Margin="6,4" VerticalAlignment="Center" />
+
+                                                    <!-- Log Output Color -->
+                                                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Log Color:" VerticalAlignment="Center" />
+                                                    <ComboBox Grid.Row="3" Grid.Column="1" Name="LogOutputColorCombo" Margin="6,4" Height="24" />
+
+                                                    <!-- Pattern Type -->
+                                                    <TextBlock Grid.Row="4" Grid.Column="0" Text="Pattern Type:" VerticalAlignment="Center" />
+                                                    <ComboBox Grid.Row="4" Grid.Column="1" Name="PatternTypeCombo" Margin="6,4" Height="24" />
+
+                                                    <!-- Pattern Input -->
+                                                    <TextBlock Grid.Row="5" Grid.Column="0" Text="Pattern:" VerticalAlignment="Top" Margin="0,4" />
+                                                    <Grid Grid.Row="5" Grid.Column="1" Margin="6,0">
+                                                        <Grid.RowDefinitions>
+                                                            <RowDefinition Height="Auto" />
+                                                            <RowDefinition Height="Auto" />
+                                                        </Grid.RowDefinitions>
+                                                        <TextBox Grid.Row="0" Name="PatternTextBox" Height="60" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" />
+                                                        <TextBlock Grid.Row="1" Name="PatternErrorText" Foreground="Red" Margin="0,2,0,0" TextWrapping="Wrap" />
+                                                    </Grid>
+                                                </Grid>
+                                            </GroupBox>
+
+                                            <!-- Actions Section -->
+                                            <GroupBox Header="Actions" Margin="0,0,0,6">
+                                                <Grid Margin="6">
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="Auto" />
+                                                        <RowDefinition Height="*" />
+                                                        <RowDefinition Height="Auto" />
+                                                    </Grid.RowDefinitions>
+
+                                                    <!-- Actions Toolbar -->
+                                                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,6">
+                                                        <TextBlock Text="Add Action:" VerticalAlignment="Center" Margin="0,0,6,0" />
+                                                        <ComboBox Name="ActionTypeCombo" Width="120" Height="24" Margin="0,0,6,0" />
+                                                        <Button Name="AddActionButton" Padding="8,4" Content="Add" />
+                                                        <Button Name="RemoveActionButton" Padding="8,4" Margin="6,0,0,0" Content="Remove" />
+                                                        <Separator Margin="6,0" />
+                                                        <Button Name="MoveActionUpButton" Padding="8,4" Content="Move Up" ToolTip="Move selected action up" />
+                                                        <Button Name="MoveActionDownButton" Padding="8,4" Margin="6,0,0,0" Content="Move Down" ToolTip="Move selected action down" />
+                                                    </StackPanel>
+
+                                                    <!-- Actions List -->
+                                                    <DataGrid Grid.Row="1" Name="ActionsDataGrid" 
+                                                              AutoGenerateColumns="False"
+                                                              CanUserAddRows="False"
+                                                              CanUserDeleteRows="False"
+                                                              SelectionMode="Single"
+                                                              AllowDrop="True"
+                                                              PreviewMouseLeftButtonDown="ActionsDataGrid_PreviewMouseLeftButtonDown">
+                                                        <DataGrid.Columns>
+                                                            <DataGridTextColumn Header="Type" Binding="{Binding ActionTypeValue}" IsReadOnly="True" Width="100" />
+                                                            <DataGridTextColumn Header="Details" IsReadOnly="False" Width="*" />
+                                                        </DataGrid.Columns>
+                                                    </DataGrid>
+
+                                                    <!-- Action Details Editor -->
+                                                    <GroupBox Grid.Row="2" Header="Action Details" Margin="0,6,0,0">
+                                                        <Grid Name="ActionDetailsGrid" Margin="6" />
+                                                    </GroupBox>
+                                                </Grid>
+                                            </GroupBox>
+                                        </StackPanel>
+                                    </ScrollViewer>
+                                </Grid>
+
+                                <!-- Status Bar -->
+                                <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,6,0,0">
+                                    <TextBlock Name="StatusText" Text="Ready" Margin="0" />
+                                    <ProgressBar Name="SavingProgress" Width="100" Height="4" Margin="12,0,0,0" IsIndeterminate="True" Visibility="Collapsed" />
+                                </StackPanel>
                             </Grid>
                         </TabItem>
                         <!-- #endregion Config / LineMatchers Tab -->

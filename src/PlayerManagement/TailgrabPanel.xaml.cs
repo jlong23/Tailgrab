@@ -1,3 +1,4 @@
+using BuildSoft.VRChat.Osc;
 using NLog;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -13,9 +14,9 @@ using System.Windows.Threading;
 using Tailgrab.Clients.Ollama;
 using Tailgrab.Clients.VRChat;
 using Tailgrab.Common;
+using Tailgrab.Configuration;
 using Tailgrab.Models;
 using VRChat.API.Model;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.Tab;
 using static Tailgrab.Clients.VRChat.VRChatClient;
 
 namespace Tailgrab.PlayerManagement
@@ -705,8 +706,6 @@ namespace Tailgrab.PlayerManagement
                 UpdateAlertComboBoxValues();
             }
             catch { }
-
-
             #endregion
 
             // Initial load of Avatars, Groups and Users
@@ -727,6 +726,8 @@ namespace Tailgrab.PlayerManagement
                     logger.Warn(ex, "Failed to load Ollama models during initialization");
                 }
             });
+
+            InitializeLineMatchersTab();
 
             // Initialize button state for Test Profile Prompt
             UpdateCanTestProfilePrompt();
@@ -5654,6 +5655,605 @@ namespace Tailgrab.PlayerManagement
             }
         }
         #endregion
+
+        #region LineMatchers Event Handlers
+        private LineHandlerEditorViewModel? _lineHandlerEditorViewModel;
+
+        private void InitializeLineMatchersTab()
+        {
+            _lineHandlerEditorViewModel = new LineHandlerEditorViewModel(_serviceRegistry.GetConfigurationManager());
+
+            if (HandlersDataGrid != null)
+            {
+                HandlersDataGrid.ItemsSource = _lineHandlerEditorViewModel.Handlers;
+                HandlersDataGrid.SelectionChanged += HandlersDataGrid_SelectionChanged;
+                HandlersDataGrid.CellEditEnding += HandlersDataGrid_CellEditEnding;
+            }
+
+            if (ActionsDataGrid != null)
+            {
+                ActionsDataGrid.ItemsSource = _lineHandlerEditorViewModel.Actions;
+                ActionsDataGrid.SelectionChanged += ActionsDataGrid_SelectionChanged;
+                ActionsDataGrid.DragEnter += ActionsDataGrid_DragEnter;
+                ActionsDataGrid.DragOver += ActionsDataGrid_DragOver;
+                ActionsDataGrid.Drop += ActionsDataGrid_Drop;
+            }
+
+            // Wire up event handlers
+            if (SaveConfigButton != null) SaveConfigButton.Click += SaveConfigButton_Click;
+            if (ReloadConfigButton != null) ReloadConfigButton.Click += ReloadConfigButton_Click;
+            if (AddActionButton != null) AddActionButton.Click += AddActionButton_Click;
+            if (RemoveActionButton != null) RemoveActionButton.Click += RemoveActionButton_Click;
+            if (MoveActionUpButton != null) MoveActionUpButton.Click += MoveActionUpButton_Click;
+            if (MoveActionDownButton != null) MoveActionDownButton.Click += MoveActionDownButton_Click;
+            if (PatternTextBox != null) PatternTextBox.LostFocus += PatternTextBox_LostFocus;
+
+            // Populate dropdowns
+            InitializeComboBoxes();
+
+            // Bind handler details
+            BindHandlerDetails();
+        }
+
+        private void InitializeComboBoxes()
+        {
+            // Log Output Color options
+            if (LogOutputColorCombo != null)
+            {
+                LogOutputColorCombo.ItemsSource = Enum.GetValues(typeof(AnsiColor)).Cast<AnsiColor>().ToList();
+            }
+
+            // Pattern Type options
+            if (PatternTypeCombo != null)
+            {
+                PatternTypeCombo.ItemsSource = Enum.GetValues(typeof(PatternType)).Cast<PatternType>().ToList();
+            }
+
+            // Action Type options
+            if (ActionTypeCombo != null)
+            {
+                ActionTypeCombo.ItemsSource = Enum.GetValues(typeof(ActionType)).Cast<ActionType>().ToList();
+            }
+
+            // Handler Type options (for Add Handler)
+            // This will be used in a dialog/popup
+        }
+
+        private void BindHandlerDetails()
+        {
+            if (_lineHandlerEditorViewModel?.SelectedHandler != null)
+            {
+                var handler = _lineHandlerEditorViewModel.SelectedHandler;
+                if (HandlerTypeTextBlock != null) HandlerTypeTextBlock.Text = handler.HandlerTypeValue.ToString();
+                if (EnabledCheckBox != null) EnabledCheckBox.IsChecked = handler.Enabled;
+                if (LogOutputCheckBox != null) LogOutputCheckBox.IsChecked = handler.LogOutput;
+                if (LogOutputColorCombo != null) LogOutputColorCombo.SelectedItem =
+                    Enum.TryParse<AnsiColor>(handler.LogOutputColor, out var color) ? color : AnsiColor.White;
+                if (PatternTypeCombo != null) PatternTypeCombo.SelectedItem = handler.PatternTypeValue;
+                if (PatternTextBox != null) PatternTextBox.Text = handler.Pattern;
+                if (PatternErrorText != null) PatternErrorText.Text = "";
+
+                // Wire up change handlers
+                if (EnabledCheckBox != null) EnabledCheckBox.Checked -= EnabledCheckBox_Changed;
+                if (EnabledCheckBox != null) EnabledCheckBox.Unchecked -= EnabledCheckBox_Changed;
+                if (EnabledCheckBox != null)
+                {
+                    EnabledCheckBox.Checked += EnabledCheckBox_Changed;
+                    EnabledCheckBox.Unchecked += EnabledCheckBox_Changed;
+                }
+
+                if (LogOutputCheckBox != null) LogOutputCheckBox.Checked -= LogOutputCheckBox_Changed;
+                if (LogOutputCheckBox != null) LogOutputCheckBox.Unchecked -= LogOutputCheckBox_Changed;
+                if (LogOutputCheckBox != null)
+                {
+                    LogOutputCheckBox.Checked += LogOutputCheckBox_Changed;
+                    LogOutputCheckBox.Unchecked += LogOutputCheckBox_Changed;
+                }
+
+                if (LogOutputColorCombo != null) LogOutputColorCombo.SelectionChanged -= LogOutputColorCombo_SelectionChanged;
+                if (LogOutputColorCombo != null) LogOutputColorCombo.SelectionChanged += LogOutputColorCombo_SelectionChanged;
+
+                if (PatternTypeCombo != null) PatternTypeCombo.SelectionChanged -= PatternTypeCombo_SelectionChanged;
+                if (PatternTypeCombo != null) PatternTypeCombo.SelectionChanged += PatternTypeCombo_SelectionChanged;
+            }
+            else
+            {
+                ClearHandlerDetails();
+            }
+        }
+
+        private void ClearHandlerDetails()
+        {
+            if (HandlerTypeTextBlock != null) HandlerTypeTextBlock.Text = "";
+            if (EnabledCheckBox != null) EnabledCheckBox.IsChecked = false;
+            if (LogOutputCheckBox != null) LogOutputCheckBox.IsChecked = false;
+            if (LogOutputColorCombo != null) LogOutputColorCombo.SelectedIndex = -1;
+            if (PatternTypeCombo != null) PatternTypeCombo.SelectedIndex = -1;
+            if (PatternTextBox != null) PatternTextBox.Text = "";
+            if (PatternErrorText != null) PatternErrorText.Text = "";
+        }
+
+        private void HandlersDataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (HandlersDataGrid?.SelectedItem is LineHandlerConfig handler)
+            {
+                _lineHandlerEditorViewModel!.SelectedHandler = handler;
+                BindHandlerDetails();
+            }
+        }
+
+        private void HandlersDataGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
+        {
+            if (e.EditingElement is System.Windows.Controls.CheckBox checkBox && e.Row.Item is LineHandlerConfig handler)
+            {
+                handler.Enabled = checkBox.IsChecked ?? false;
+                // Update the detail panel checkbox to reflect the change
+                if (EnabledCheckBox != null)
+                {
+                    EnabledCheckBox.IsChecked = handler.Enabled;
+                }
+                SaveConfigAsync();
+            }
+        }
+
+        private void ActionsDataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (ActionsDataGrid?.SelectedItem is ActionBase action)
+            {
+                _lineHandlerEditorViewModel!.SelectedAction = action;
+                BindActionDetails(action);
+            }
+        }
+
+        private void BindActionDetails(ActionBase action)
+        {
+            if (ActionDetailsGrid == null) return;
+
+            ActionDetailsGrid.Children.Clear();
+
+            if (action is OSCActionConfig oscAction)
+            {
+                BuildOSCActionUI(oscAction);
+            }
+            else if (action is DelayActionConfig delayAction)
+            {
+                BuildDelayActionUI(delayAction);
+            }
+            else if (action is PlaySoundActionConfig soundAction)
+            {
+                BuildPlaySoundActionUI(soundAction);
+            }
+            else if (action is KeyStrokeConfig keyAction)
+            {
+                BuildKeyStrokeActionUI(keyAction);
+            }
+            else if (action is TTSActionConfig ttsAction)
+            {
+                BuildTTSActionUI(ttsAction);
+            }
+        }
+
+        private void BuildOSCActionUI(OSCActionConfig action)
+        {
+            var grid = new Grid();
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(120) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+            // Parameter Name
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            var paramLabel = new TextBlock { Text = "Parameter Name:", VerticalAlignment = VerticalAlignment.Center };
+            Grid.SetColumn(paramLabel, 0);
+            Grid.SetRow(paramLabel, 0);
+            var paramBox = new System.Windows.Controls.TextBox { Text = action.ParameterName ?? "", Margin = new Thickness(6, 4, 0, 4) };
+            Grid.SetColumn(paramBox, 1);
+            Grid.SetRow(paramBox, 0);
+            paramBox.TextChanged += (s, e) => action.ParameterName = paramBox.Text;
+            grid.Children.Add(paramLabel);
+            grid.Children.Add(paramBox);
+
+            // OSC Type
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            var typeLabel = new TextBlock { Text = "Type:", VerticalAlignment = VerticalAlignment.Center };
+            Grid.SetColumn(typeLabel, 0);
+            Grid.SetRow(typeLabel, 1);
+            var typeCombo = new System.Windows.Controls.ComboBox { Height = 24, Margin = new Thickness(6, 4, 0, 4) };
+            typeCombo.ItemsSource = Enum.GetValues(typeof(OscType)).Cast<OscType>().ToList();
+            typeCombo.SelectedItem = action.OscValueType;
+            Grid.SetColumn(typeCombo, 1);
+            Grid.SetRow(typeCombo, 1);
+            typeCombo.SelectionChanged += (s, e) => { if (e.AddedItems.Count > 0 && e.AddedItems[0] is OscType t) action.OscValueType = t; };
+            grid.Children.Add(typeLabel);
+            grid.Children.Add(typeCombo);
+
+            // Value
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            var valueLabel = new TextBlock { Text = "Value:", VerticalAlignment = VerticalAlignment.Center };
+            Grid.SetColumn(valueLabel, 0);
+            Grid.SetRow(valueLabel, 2);
+            var valueBox = new System.Windows.Controls.TextBox { Text = action.Value ?? "", Margin = new Thickness(6, 4, 0, 4) };
+            Grid.SetColumn(valueBox, 1);
+            Grid.SetRow(valueBox, 2);
+            valueBox.TextChanged += (s, e) => action.Value = valueBox.Text;
+            grid.Children.Add(valueLabel);
+            grid.Children.Add(valueBox);
+
+            ActionDetailsGrid!.Children.Add(grid);
+        }
+
+        private void BuildDelayActionUI(DelayActionConfig action)
+        {
+            var grid = new Grid();
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(120) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+
+            var label = new TextBlock { Text = "Milliseconds:", VerticalAlignment = VerticalAlignment.Center };
+            Grid.SetColumn(label, 0);
+            var box = new System.Windows.Controls.TextBox { Text = action.Milliseconds.ToString(), Margin = new Thickness(6, 4, 0, 4) };
+            Grid.SetColumn(box, 1);
+            box.TextChanged += (s, e) =>
+            {
+                if (int.TryParse(box.Text, out var ms)) action.Milliseconds = ms;
+            };
+            grid.Children.Add(label);
+            grid.Children.Add(box);
+
+            ActionDetailsGrid!.Children.Add(grid);
+        }
+
+        private void BuildPlaySoundActionUI(PlaySoundActionConfig action)
+        {
+            var grid = new Grid();
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(120) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+
+            var label = new TextBlock { Text = "Sound File:", VerticalAlignment = VerticalAlignment.Center };
+            Grid.SetColumn(label, 0);
+            var box = new System.Windows.Controls.TextBox { Text = action.SoundFile ?? "", Margin = new Thickness(6, 4, 0, 4) };
+            Grid.SetColumn(box, 1);
+            box.TextChanged += (s, e) => action.SoundFile = box.Text;
+            grid.Children.Add(label);
+            grid.Children.Add(box);
+
+            ActionDetailsGrid!.Children.Add(grid);
+        }
+
+        private void BuildKeyStrokeActionUI(KeyStrokeConfig action)
+        {
+            var grid = new Grid();
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(120) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+            // Window Title
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            var wLabel = new TextBlock { Text = "Window Title:", VerticalAlignment = VerticalAlignment.Center };
+            Grid.SetColumn(wLabel, 0);
+            Grid.SetRow(wLabel, 0);
+            var wBox = new System.Windows.Controls.TextBox { Text = action.WindowTitle ?? "", Margin = new Thickness(6, 4, 0, 4) };
+            Grid.SetColumn(wBox, 1);
+            Grid.SetRow(wBox, 0);
+            wBox.TextChanged += (s, e) => action.WindowTitle = wBox.Text;
+            grid.Children.Add(wLabel);
+            grid.Children.Add(wBox);
+
+            // Keys
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            var kLabel = new TextBlock { Text = "Keys:", VerticalAlignment = VerticalAlignment.Center };
+            Grid.SetColumn(kLabel, 0);
+            Grid.SetRow(kLabel, 1);
+            var kBox = new System.Windows.Controls.TextBox { Text = action.Keys ?? "", Margin = new Thickness(6, 4, 0, 4) };
+            Grid.SetColumn(kBox, 1);
+            Grid.SetRow(kBox, 1);
+            kBox.TextChanged += (s, e) => action.Keys = kBox.Text;
+            grid.Children.Add(kLabel);
+            grid.Children.Add(kBox);
+
+            ActionDetailsGrid!.Children.Add(grid);
+        }
+
+        private void BuildTTSActionUI(TTSActionConfig action)
+        {
+            var grid = new Grid();
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(120) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+            // Text
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            var tLabel = new TextBlock { Text = "Text:", VerticalAlignment = VerticalAlignment.Center };
+            Grid.SetColumn(tLabel, 0);
+            Grid.SetRow(tLabel, 0);
+            var tBox = new System.Windows.Controls.TextBox { Text = action.Text ?? "", Height = 60, AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(6, 4, 0, 4) };
+            Grid.SetColumn(tBox, 1);
+            Grid.SetRow(tBox, 0);
+            tBox.TextChanged += (s, e) => action.Text = tBox.Text;
+            grid.Children.Add(tLabel);
+            grid.Children.Add(tBox);
+
+            // Volume
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            var vLabel = new TextBlock { Text = "Volume:", VerticalAlignment = VerticalAlignment.Center };
+            Grid.SetColumn(vLabel, 0);
+            Grid.SetRow(vLabel, 1);
+            var vBox = new System.Windows.Controls.TextBox { Text = action.Volume.ToString(), Margin = new Thickness(6, 4, 0, 4) };
+            Grid.SetColumn(vBox, 1);
+            Grid.SetRow(vBox, 1);
+            vBox.TextChanged += (s, e) => { if (int.TryParse(vBox.Text, out var v)) action.Volume = v; };
+            grid.Children.Add(vLabel);
+            grid.Children.Add(vBox);
+
+            // Rate
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            var rLabel = new TextBlock { Text = "Rate:", VerticalAlignment = VerticalAlignment.Center };
+            Grid.SetColumn(rLabel, 0);
+            Grid.SetRow(rLabel, 2);
+            var rBox = new System.Windows.Controls.TextBox { Text = action.Rate.ToString(), Margin = new Thickness(6, 4, 0, 4) };
+            Grid.SetColumn(rBox, 1);
+            Grid.SetRow(rBox, 2);
+            rBox.TextChanged += (s, e) => { if (int.TryParse(rBox.Text, out var r)) action.Rate = r; };
+            grid.Children.Add(rLabel);
+            grid.Children.Add(rBox);
+
+            ActionDetailsGrid!.Children.Add(grid);
+        }
+
+        private async void SaveConfigButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_lineHandlerEditorViewModel != null)
+            {
+                if (SavingProgress != null) SavingProgress.Visibility = Visibility.Visible;
+                if (StatusText != null) StatusText.Text = "Saving...";
+
+                var success = await _lineHandlerEditorViewModel.SaveHandlers();
+
+                if (SavingProgress != null) SavingProgress.Visibility = Visibility.Collapsed;
+                if (StatusText != null) StatusText.Text = success ? "Configuration saved successfully" : "Failed to save configuration";
+            }
+        }
+
+        private void ReloadConfigButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_lineHandlerEditorViewModel != null)
+            {
+                _lineHandlerEditorViewModel.LoadHandlers();
+                _lineHandlerEditorViewModel.SelectedHandler = _lineHandlerEditorViewModel.Handlers.FirstOrDefault();
+                if (StatusText != null) StatusText.Text = "Configuration reloaded";
+            }
+        }
+
+        private void AddHandlerButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_lineHandlerEditorViewModel != null)
+            {
+                var dialog = new SelectHandlerTypeDialog(_lineHandlerEditorViewModel.Handlers.Select(h => h.HandlerTypeValue).ToList());
+                if (dialog.ShowDialog() == true && dialog.SelectedHandlerType.HasValue)
+                {
+                    _lineHandlerEditorViewModel.AddHandler(dialog.SelectedHandlerType.Value);
+                }
+            }
+        }
+
+        private void RemoveHandlerButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_lineHandlerEditorViewModel?.SelectedHandler != null)
+            {
+                var result = System.Windows.MessageBox.Show(
+                    $"Remove handler '{_lineHandlerEditorViewModel.SelectedHandler.HandlerTypeValue}'?",
+                    "Confirm Removal", System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Question);
+
+                if (result == System.Windows.MessageBoxResult.Yes)
+                {
+                    _lineHandlerEditorViewModel.RemoveHandler(_lineHandlerEditorViewModel.SelectedHandler);
+                }
+            }
+        }
+
+        private void AddActionButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (ActionTypeCombo?.SelectedItem is ActionType actionType && _lineHandlerEditorViewModel != null)
+            {
+                _lineHandlerEditorViewModel.AddAction(actionType);
+            }
+        }
+
+        private void RemoveActionButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_lineHandlerEditorViewModel?.SelectedAction != null)
+            {
+                var result = System.Windows.MessageBox.Show(
+                    $"Remove this action?",
+                    "Confirm Removal", System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Question);
+
+                if (result == System.Windows.MessageBoxResult.Yes)
+                {
+                    _lineHandlerEditorViewModel.RemoveAction(_lineHandlerEditorViewModel.SelectedAction);
+                }
+            }
+        }
+
+        private void MoveActionUpButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_lineHandlerEditorViewModel?.SelectedAction != null)
+            {
+                var action = _lineHandlerEditorViewModel.SelectedAction;
+                _lineHandlerEditorViewModel.MoveActionUp(action);
+                _lineHandlerEditorViewModel.SelectedAction = action;
+                if (ActionsDataGrid != null)
+                {
+                    ActionsDataGrid.SelectedItem = action;
+                    ActionsDataGrid.ScrollIntoView(action);
+                }
+                SaveConfigAsync();
+            }
+        }
+
+        private void MoveActionDownButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_lineHandlerEditorViewModel?.SelectedAction != null)
+            {
+                var action = _lineHandlerEditorViewModel.SelectedAction;
+                _lineHandlerEditorViewModel.MoveActionDown(action);
+                _lineHandlerEditorViewModel.SelectedAction = action;
+                if (ActionsDataGrid != null)
+                {
+                    ActionsDataGrid.SelectedItem = action;
+                    ActionsDataGrid.ScrollIntoView(action);
+                }
+                SaveConfigAsync();
+            }
+        }
+
+        private ActionBase? _draggedAction;
+
+        private void ActionsDataGrid_PreviewMouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            if (ActionsDataGrid?.SelectedItem is ActionBase action)
+            {
+                _draggedAction = action;
+                try
+                {
+                    System.Windows.DragDrop.DoDragDrop(ActionsDataGrid, action, System.Windows.DragDropEffects.Move);
+                }
+                catch
+                {
+                    // Drag-drop operation failed or was cancelled
+                }
+                _draggedAction = null;
+            }
+        }
+
+        private void ActionsDataGrid_DragEnter(object sender, System.Windows.DragEventArgs e)
+        {
+            if (!e.Data.GetDataPresent(typeof(ActionBase)))
+            {
+                e.Effects = System.Windows.DragDropEffects.None;
+                e.Handled = true;
+            }
+        }
+
+        private void ActionsDataGrid_DragOver(object sender, System.Windows.DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent(typeof(ActionBase)))
+            {
+                e.Effects = System.Windows.DragDropEffects.Move;
+            }
+            else
+            {
+                e.Effects = System.Windows.DragDropEffects.None;
+            }
+            e.Handled = true;
+        }
+
+        private void ActionsDataGrid_Drop(object sender, System.Windows.DragEventArgs e)
+        {
+            if (e.Data.GetData(typeof(ActionBase)) is ActionBase draggedAction)
+            {
+                if (ActionsDataGrid?.SelectedItem is ActionBase targetAction && draggedAction != targetAction)
+                {
+                    // Reorder actions
+                    if (_lineHandlerEditorViewModel?.SelectedHandler != null)
+                    {
+                        int draggedIndex = _lineHandlerEditorViewModel.SelectedHandler.Actions.IndexOf(draggedAction);
+                        int targetIndex = _lineHandlerEditorViewModel.SelectedHandler.Actions.IndexOf(targetAction);
+
+                        if (draggedIndex >= 0 && targetIndex >= 0 && draggedIndex != targetIndex)
+                        {
+                            _lineHandlerEditorViewModel.SelectedHandler.Actions.RemoveAt(draggedIndex);
+                            int insertIndex = draggedIndex < targetIndex ? targetIndex - 1 : targetIndex;
+                            _lineHandlerEditorViewModel.SelectedHandler.Actions.Insert(insertIndex, draggedAction);
+
+                            // Update observable collection
+                            int draggedObservableIndex = _lineHandlerEditorViewModel.Actions.IndexOf(draggedAction);
+                            int targetObservableIndex = _lineHandlerEditorViewModel.Actions.IndexOf(targetAction);
+
+                            if (draggedObservableIndex >= 0 && targetObservableIndex >= 0)
+                            {
+                                _lineHandlerEditorViewModel.Actions.RemoveAt(draggedObservableIndex);
+                                int insertObservableIndex = draggedObservableIndex < targetObservableIndex ? targetObservableIndex - 1 : targetObservableIndex;
+                                _lineHandlerEditorViewModel.Actions.Insert(insertObservableIndex, draggedAction);
+                            }
+
+                            // Maintain selection on the dragged item
+                            _lineHandlerEditorViewModel.SelectedAction = draggedAction;
+                            if (ActionsDataGrid != null)
+                            {
+                                ActionsDataGrid.SelectedItem = draggedAction;
+                                ActionsDataGrid.ScrollIntoView(draggedAction);
+                            }
+                            SaveConfigAsync();
+                        }
+                    }
+                }
+            }
+            e.Handled = true;
+        }
+
+        private async void SaveConfigAsync()
+        {
+            if (_lineHandlerEditorViewModel != null && StatusText != null)
+            {
+                StatusText.Text = "Saving configuration...";
+                bool success = await _lineHandlerEditorViewModel.SaveHandlers();
+                StatusText.Text = success ? "Configuration saved" : "Failed to save configuration";
+            }
+        }
+
+        private void PatternTextBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+            if (_lineHandlerEditorViewModel != null && PatternTextBox != null)
+            {
+                _lineHandlerEditorViewModel.ValidatePattern(PatternTextBox.Text);
+                if (_lineHandlerEditorViewModel.SelectedHandler != null)
+                {
+                    _lineHandlerEditorViewModel.SelectedHandler.Pattern = PatternTextBox.Text;
+                }
+
+                if (PatternErrorText != null)
+                {
+                    PatternErrorText.Text = _lineHandlerEditorViewModel.PatternValidationError ?? "";
+                }
+            }
+        }
+
+        private void EnabledCheckBox_Changed(object sender, RoutedEventArgs e)
+        {
+            if (_lineHandlerEditorViewModel?.SelectedHandler != null && EnabledCheckBox != null)
+            {
+                _lineHandlerEditorViewModel.SelectedHandler.Enabled = EnabledCheckBox.IsChecked ?? false;
+                // Refresh the DataGrid to show the updated value
+                if (HandlersDataGrid != null)
+                {
+                    HandlersDataGrid.Items.Refresh();
+                }
+                SaveConfigAsync();
+            }
+        }
+
+        private void LogOutputCheckBox_Changed(object sender, RoutedEventArgs e)
+        {
+            if (_lineHandlerEditorViewModel?.SelectedHandler != null && LogOutputCheckBox != null)
+            {
+                _lineHandlerEditorViewModel.SelectedHandler.LogOutput = LogOutputCheckBox.IsChecked ?? false;
+            }
+        }
+
+        private void LogOutputColorCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_lineHandlerEditorViewModel?.SelectedHandler != null && LogOutputColorCombo?.SelectedItem is AnsiColor color)
+            {
+                _lineHandlerEditorViewModel.SelectedHandler.LogOutputColor = color.ToString();
+            }
+        }
+
+        private void PatternTypeCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_lineHandlerEditorViewModel?.SelectedHandler != null && PatternTypeCombo?.SelectedItem is PatternType patternType)
+            {
+                _lineHandlerEditorViewModel.SelectedHandler.PatternTypeValue = patternType;
+            }
+        }
+        #endregion
+
     }
 
     #region ViewModels

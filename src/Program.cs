@@ -116,8 +116,8 @@ public class FileTailer
             return;
         }
 
-        ConfigurationManager configurationManager = new ConfigurationManager(_serviceRegistry);
-        configurationManager.LoadLineHandlersFromConfig(HandlerList);
+        
+        _serviceRegistry.GetConfigurationManager().LoadLineHandlersFromConfig(HandlerList);
 
         // Start the watcher task on a background thread so it doesn't block the STA UI thread
         logger.Info($"Starting file watcher and showing UI for: '{filePath}'");
@@ -127,8 +127,6 @@ public class FileTailer
         string ampPath = VRChatAmplitudePath + Path.DirectorySeparatorChar;
         logger.Info($"Starting Amplitude Cache watcher for: '{ampPath}'");
         _ = Task.Run(() => WatchAmpCache(ampPath, _serviceRegistry));
-
-        //SyncAvatarModerations(_serviceRegistry);
 
         // Check for updates before showing the main window
         _ = Task.Run(async () => await CheckForUpdatesAsync());

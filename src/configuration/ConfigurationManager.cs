@@ -3,6 +3,7 @@ using NLog;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 using Tailgrab.Actions;
 using Tailgrab.Common;
 using Tailgrab.LineHandler;
@@ -28,6 +29,64 @@ namespace Tailgrab.Configuration
         public string GetConfigFilePath()
         {
             return Path.Combine(CommonConst.APPLICATION_LOCAL_DATA_PATH, "config.json");
+        }
+
+        public (bool isValid, string? errorMessage) ValidateRegexPattern(string? pattern)
+        {
+            if (string.IsNullOrWhiteSpace(pattern))
+            {
+                return (true, null);
+            }
+
+            try
+            {
+                _ = new Regex(pattern);
+                return (true, null);
+            }
+            catch (ArgumentException ex)
+            {
+                return (false, $"Invalid regex pattern: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                return (false, $"Regex validation error: {ex.Message}");
+            }
+        }
+
+        public (bool success, string? errorMessage) SaveConfig(List<LineHandlerConfig> handlers)
+        {
+            try
+            {
+                string path = (File.Exists("config.json") ? Path.GetFullPath("config.json") : GetConfigFilePath());
+
+                // Ensure directory exists
+                string? directory = Path.GetDirectoryName(path);
+                if (!string.IsNullOrWhiteSpace(directory) && !Directory.Exists(directory))
+                {
+                    Directory.CreateDirectory(directory);
+                }
+
+                var config = new TailgrabConfig { LineHandlers = handlers };
+
+                var options = new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true,
+                    WriteIndented = true,
+                    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+                };
+                options.Converters.Add(new JsonStringEnumConverter());
+
+                string jsonString = JsonSerializer.Serialize(config, options);
+                File.WriteAllText(path, jsonString);
+
+                logger.Info($"Configuration saved successfully to '{path}'");
+                return (true, null);
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to save configuration");
+                return (false, $"Failed to save configuration: {ex.Message}");
+            }
         }
 
         public List<LineHandlerConfig> LoadConfig()
