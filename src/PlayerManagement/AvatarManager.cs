@@ -486,6 +486,7 @@ namespace Tailgrab.PlayerManagement
 
         public static async Task AvatarCheckTask(ConcurrentPriorityQueue<IHavePriority<int>, int> priorityQueue, ServiceRegistry serviceRegistry)
         {
+            int processedCount = 0;
             OllamaClient.logger.Info($"Avatar Queue Running");
             TailgrabDBContext dBContext = serviceRegistry.GetDBContext();
             while (true)
@@ -496,6 +497,7 @@ namespace Tailgrab.PlayerManagement
                     var result = priorityQueue.Dequeue();
                     if (result.IsSuccess)
                     {
+                        processedCount++;
                         if (result.Value is QueuedAvatarProcess item && item.AvatarId != null)
                         {
                             await UpdateAmpAvatarRecord(serviceRegistry, dBContext, item.AvatarId);
@@ -507,6 +509,12 @@ namespace Tailgrab.PlayerManagement
                         else if (result.Value is QueuedModeratedAvatarWatch item3)
                         {
                             await UpdateModeratedAvatarRecord(serviceRegistry, dBContext, item3);
+                        }
+
+                        if(processedCount % 50 == 0)
+                        {
+                            logger.Info($"Processed {processedCount} avatars from the queue. Throttling for 10 seconds to avoid overwhelming the API.");
+                            await Task.Delay(10000); // Throttle processing to avoid overwhelming the API
                         }
                     }
                     else
