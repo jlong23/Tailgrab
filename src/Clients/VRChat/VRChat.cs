@@ -771,6 +771,35 @@ namespace Tailgrab.Clients.VRChat
         }
         #endregion
 
+        #region World Management
+        public async Task<World?> GetWorldInfo(string worldId)
+        {
+            try
+            {
+                if (_vrchat == null)
+                {
+                    logger.Error("VRChat client not initialized");
+                    return null;
+                }
+                
+                World world = _vrchat.Worlds.GetWorld(worldId);
+                if (world == null)
+                {
+                    logger.Warn($"World with ID {worldId} not found.");
+                    return null;
+                }
+
+                
+                return world;
+            }
+            catch (Exception ex)
+            {
+                logger.Error($"Error getting world info for {worldId}: {ex.Message}");
+                return null;
+            }
+        }
+        #endregion
+
         #region Cookie Persistence
         private static List<Cookie>? LoadCookies()
         {
