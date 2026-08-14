@@ -1,11 +1,29 @@
 [Back](../README.md)
 # Application Log line parsing and actions - "./Config.json" File
 
-The confiuration for TailGrab uses a JSON formated payload of the base attribute "lineHandlers" that contains a array of LineHandler Objects, Those may have a attribute of "actions" that contain an array of Action Objects.  This configuration is loaded on application start.
+The confiuration for TailGrab uses a JSON formated payload of the base attribute "lineHandlers" that contains a array of LineHandler Objects, Those may have a attribute of "actions" that contain an array of Action Objects.  This configuration is loaded on application start. Starting with V1.1.6, line handlers expose some log data to the actions and actions can use that data elements in TTS, HTTP/S APIs
 
 ## LineHandler Definition
 
 The LineHandler defines what type of system action to perform, what regular expression to use to detect that type of log line and user actions to perform when detected.
+
+|LineHandlerType | Definition |
+|--------|--------|
+| AvatarChange | Detects when the VRChat user changes avatars; Primary function is to link the Active Users with their currently worn Avatar |
+| AvatarUnpack | Detects when the VRChat avatar unpacks; Primary function is to look up publicly available avatar data and report the avatarId in the logs for crashers |
+| Emoji | Detects when the VRChat user uses an Emoji; Primary function is to link the Active Users with Emoji Image AI Evaluation for SFW Instance management |
+| OnPlayerJoin | Detects when a VRChat user joins or leaves the instance; Primary function is to lookup the user for Active User panel or Past User panel |	
+| OnPlayerNetwork | Broken at the moment, was used to detect what user's instance network ID was assigned to them for linkage to Furry Hideout's Pen Usage; Relies on World Debug output |
+| PenNetwork | Broken at the moment, was used to detect what user's instance network ID was assigned to them for linkage to Furry Hideout's Pen Usage; Relies on World Debug output |
+| Print | Detects when a VRChat user has dropped a print in the instance; Primary function is to link the Active Users with Print Image AI Evaluation for SFW Instance management |
+| Sticker | Detects when a VRChat user has dropped a sticker in the instance; Primary function is to link the Active Users with Sticker Image AI Evaluation for SFW Instance management |
+| VTK | Detects when a VRChat user has a Vote to Kick (VTK) action; Primary function is to link the Active Users with VTK notice and log it |
+| WarnKick | Detects when a Moderator has warned or Kicked a user in the instance; Primary function is to link the Active Users with Warn/Kick notice and log it. | 
+| WorldChange | Detects when the VRChat user changes worlds; Primary function is to flush queues and clean up lists for the next world instance. |
+| Quit | Detects when the VRChat user quits the application; Primary function is to flush queues and clean up lists for the next world instance. |
+
+
+The LineHandler configuration is a JSON object with the following attributes:
 
 |Attribute | Definition |
 |--------|--------|
@@ -17,6 +35,127 @@ The LineHandler defines what type of system action to perform, what regular expr
 | logOutputColor | A value of ```Default``` will use the programmers ANSI codes for the log output, if you use the last digits of the ANSI codes here, they are used.  EG ```"37m"``` |
 | actions | A array of Action Configuration elements or do nothing by leaving it as an empty array ```[]``` |
 
+
+### LineHandler Exposed Variables for Actions
+
+When the line is parsed and matched, each handler may extract information and place them into replacement varibles for usage by the actions attached to the LineHandler.
+
+For example, the WarnKick LineHandler will extract the userId, userName and what action was used on them from the log line and place them into the replacement variables ```{userId}```, ```{userName}``` and ```{action}``` for usage by the actions of the LineHandler, like TextToSpeech that could report "You have {action} user name {userName}" or a HTTP/S API Call to your groups server to record the activity.
+
+#### AvatarChange LineHandler
+
+| Replacement Variable | Contents | Source |
+|--------|--------|
+| timestamp | The timestamp of the log line | Log line |
+| userId | The VRChat userId of the user that changed avatars| VRC API |
+| userName | The VRChat userName of the user that changed avatars | Log Line |
+| avatarName | The VRChat avatarName of the avatar that was changed into, from the log line| Log line |
+
+#### AvatarUnpack LineHandler
+
+| Replacement Variable | Contents | Source |
+|--------|--------|
+| timestamp | The timestamp of the log line | Log line |
+| userName | The VRChat userName of the user that UPLOADED the avatar | Log Line |
+| avatarName | The VRChat avatarName of the avatar that was changed into, from the log line| Log line |
+
+#### AvatarUnpack LineHandler
+
+| Replacement Variable | Contents | Source |
+|--------|--------|
+| timestamp | The timestamp of the log line | Log line |
+| userName | The VRChat userName of the user that UPLOADED the avatar | Log Line |
+| avatarName | The VRChat avatarName of the avatar that was changed into, from the log line| Log line |
+
+#### Emoji LineHandler
+
+| Replacement Variable | Contents | Source |
+|--------|--------|
+| timestamp | The timestamp of the log line | Log line |
+| userId | The VRChat userId of the user that used the emoji| Log line |
+| userName | The VRChat userName of the user that emitted the emoji | VRC API |
+| inventoryId | The VRChat inventoryId of the emoji that was used | Log line |
+
+#### OnPlayerJoin LineHandler
+
+| Replacement Variable | Contents | Source |
+|--------|--------|
+| timestamp | The timestamp of the log line | Log line |
+| userId | The VRChat userId of the user that joined | Log line |
+| userName | The VRChat userName of the user that joined | Log line |
+| action | The user instance state Join/Left | Log line |
+
+#### OnPlayerNetwork LineHandler
+
+| Replacement Variable | Contents | Source |
+|--------|--------|
+| timestamp | The timestamp of the log line | Log line |
+| userName | The VRChat userName of the user that joined | Log line |
+| networkId | The user instance state network id | Log line |
+
+#### PenNetworkId LineHandler
+
+| Replacement Variable | Contents | Source |
+|--------|--------|
+| timestamp | The timestamp of the log line | Log line |
+| objectId | The VRChat World Object NetworkId of the pen that was used | Log line |
+| fromUserId | The VRChat user network id that was 'Owner' of the pen before | Log line |
+| toUserId | The VRChat user network id that is now the 'Owner' | Log line |
+
+#### Print LineHandler
+
+| Replacement Variable | Contents | Source |
+|--------|--------|
+| timestamp | The timestamp of the log line | Log line |
+| fileUrl | The VRChat Print Data URL | Log line |
+
+#### Quit LineHandler
+
+| Replacement Variable | Contents | Source |
+|--------|--------|
+| timestamp | The timestamp of the log line | Log line |
+| action | Always 'quit' | Hard Coded |
+| totalTime | The total time the user spent in VRChat (hh:mm:ss.ssss) | Log line |
+
+#### Sticker LineHandler
+
+| Replacement Variable | Contents | Source |
+|--------|--------|
+| timestamp | The timestamp of the log line | Log line |
+| userId | The VRChat userId of the user that used the sticker| Log line |
+| userName | The VRChat userName of the user that emitted the sticker | Log line |
+| fileUrl | The VRChat inventoryId of the sticker that was used | Log line |
+
+#### VTK LineHandler
+
+| Replacement Variable | Contents | Source |
+|--------|--------|
+| timestamp | The timestamp of the log line | Log line |
+| userId | The VRChat userId of the user that had the VTK | VRC API |
+| userName | The VRChat userName of the user that had the VTK | Log line |
+
+#### Warn/Kick LineHandler
+
+| Replacement Variable | Contents | Source |
+|--------|--------|
+| timestamp | The timestamp of the log line | Log line |
+| userId | The VRChat userId of the user that had the VTK | VRC API |
+| userName | The VRChat userName of the user that had the VTK | Log line |
+| action | The user instance moderation state Warn/Kick | Log line |
+
+#### WorldChange LineHandler
+
+| Replacement Variable | Contents | Source |
+|--------|--------|
+| timestamp | The timestamp of the log line | Log line |
+| worldId | The VRChat worldId of the world that was changed to | Log line |
+| instanceId | The VRChat instanceId of the world that was changed to 93883~group(grp_b6593dd3-6e86-4951-a8d8-e2fa3cb91096)~groupAccessType(public)~region(us) | Log line |
+
+
+
+
+## Action Definitions
+
 ### actionTypeValue Enum Values
 
 |actionTypeValue | Definition |
@@ -24,6 +163,10 @@ The LineHandler defines what type of system action to perform, what regular expr
 | DelayAction | Delay a defined amount of time before next action. |
 | OSCAction | Send OSC Avatar Parameter values to your VRChat Avatar. |
 | KeyPressAction | Send Keystrokes to a named open window title on your system. |
+| PlaySoundAction | Play a local application sound file. |
+| TTSAction | Text to Speech phrase to be spoken. |
+| HTTPGetAction | Send a HTTP GET request to a defined URL. |
+| HTTPPostAction | Send a HTTP POST request to a defined URL. |
 
 
 ### Action: DelayAction Definition
