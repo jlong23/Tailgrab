@@ -25,6 +25,7 @@ public class StickerHandler : AbstractLineHandler
         Match m = regex.Match(line);
         if (m.Success)
         {
+            string timeStamp = m.Groups[VRC_DATETIME].Value;
             string fileURL = m.Groups[VRC_FILEURL].Value;
             string userName = m.Groups[VRC_DISPLAYNAME].Value;
             string userId = m.Groups[VRC_USERID].Value;
@@ -36,6 +37,7 @@ public class StickerHandler : AbstractLineHandler
 
             Dictionary<string, string> actionData = new Dictionary<string, string>
             {
+                { "timeStamp", timeStamp },
                 { "userId", userId },
                 { "userName", userName },
                 { "fileURL", fileURL }
