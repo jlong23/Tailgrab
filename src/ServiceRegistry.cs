@@ -10,6 +10,7 @@ using Tailgrab.Common;
 using Tailgrab.Configuration;
 using Tailgrab.Models;
 using Tailgrab.PlayerManagement;
+using tailgrab.src.PlayerManagement;
 
 namespace Tailgrab
 {
@@ -29,6 +30,7 @@ namespace Tailgrab
         GroupManager? groupManager = null;
         ModerationManager? moderationManager = null;
         ConfigurationManager? configurationManager = null;
+        TTSManager? ttsManager = null;
         ServiceCollection services = new ServiceCollection();
         private VRCDBClient _VRCDBClient = new VRCDBClient();
 
@@ -93,6 +95,9 @@ namespace Tailgrab
                 logger.Info("Starting Moderation Manager...");
                 moderationManager = new ModerationManager(this);
 
+                logger.Info("Starting TTS Manager...");
+                ttsManager = new TTSManager(this);
+
                 bool saveAvatars = ConfigStore.GetStoredKeyBool(CommonConst.Registry_Moderated_Avatar_Caching, true);
                 if (saveAvatars)
                 {
@@ -117,6 +122,17 @@ namespace Tailgrab
             }
         }
 
+        public async void ShutdownAllServices()
+        {
+            try
+            {
+                logger.Info("Shutting down all services...");
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex);
+            }
+        }
 
         public VRChatClient GetVRChatAPIClient()
         {
@@ -218,6 +234,15 @@ namespace Tailgrab
                 throw new InvalidOperationException("Configuration Manager has not been initialized. Call StartAllServices() first.");
             }
             return configurationManager;
+        }
+
+        public TTSManager GetTTSManager()
+        {
+            if (ttsManager == null)
+            {
+                throw new InvalidOperationException("TTS Manager has not been initialized. Call StartAllServices() first.");
+            }
+            return ttsManager;
         }
 
         public async Task ProcessAvatarGist()

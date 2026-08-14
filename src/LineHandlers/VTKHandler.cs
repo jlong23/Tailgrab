@@ -35,8 +35,16 @@ public class VTKHandler : AbstractLineHandler
             {
                 player.AddAlertMessage(AlertClassEnum.Profile, AlertTypeEnum.Nuisance, $"VTK");
             }
-            
-            ExecuteActions();
+
+            Dictionary<string, string> actionData = new Dictionary<string, string>
+            {
+                { "timestamp", timestamp },
+                { "userName", userName },
+                { "userId", player?.UserId.ToString() ?? string.Empty  },
+            };
+
+            ExecuteActions(actionData);
+
             return true;
         }
         return false;

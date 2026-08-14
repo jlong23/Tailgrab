@@ -77,7 +77,15 @@ public class PenNetworkHandler : AbstractLineHandler
                 }
             }
 
-            ExecuteActions();
+            Dictionary<string, string> actionData = new Dictionary<string, string>
+            {
+                { "timestamp", timestamp },
+                { "objectId", objectId.ToString() },
+                { "fromUserId", fromUserId.ToString() },
+                { "toUserId", toUserId.ToString() }
+            };
+
+            ExecuteActions(actionData);
             return true;
         }
         return false;

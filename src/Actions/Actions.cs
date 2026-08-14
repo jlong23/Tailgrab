@@ -11,9 +11,27 @@ namespace Tailgrab.Actions
 {
     public interface IAction
     {
-        void PerformAction();
+        void PerformAction(Dictionary<string, string> content);
     }
 
+    public static class ActionDataFormater
+    {
+        static Logger logger = LogManager.GetCurrentClassLogger();
+
+        public static string FormatData(string text, Dictionary<string, string> actionData)
+        {      
+            logger.Info($"Formatting data for text: '{text}' with actionData: {string.Join(", ", actionData.Select(kvp => $"{kvp.Key}={kvp.Value}"))}");
+            if (string.IsNullOrEmpty(text))
+            {
+                return text;
+            }
+            foreach (var kvp in actionData)
+            {
+                text = text.Replace($"{{{kvp.Key}}}", kvp.Value);
+            }
+            return text;
+        }
+    }
 
     public class DelayAction : IAction
     {
@@ -27,7 +45,7 @@ namespace Tailgrab.Actions
 
         }
 
-        public void PerformAction()
+        public void PerformAction(Dictionary<string, string> content)
         {
             if (DelayMilliseconds <= 0)
             {
@@ -35,6 +53,11 @@ namespace Tailgrab.Actions
             }
 
             Thread.Sleep(DelayMilliseconds);
+        }
+
+        public override string ToString()
+        {
+            return $"DelayAction: Delay for : '{DelayMilliseconds}' milliseconds.";
         }
     }
 
@@ -54,7 +77,7 @@ namespace Tailgrab.Actions
             logger.Info($"Added KeystrokesAction: Window Title: '{WindowTitle}' with Keys: {Keys}.");
         }
 
-        public void PerformAction()
+        public void PerformAction(Dictionary<string, string> content)
         {
             if (WindowTitle == null || Keys == null)
             {
@@ -95,7 +118,7 @@ namespace Tailgrab.Actions
 
 
                 // Use SendInput with unicode characters for reliable keystroke delivery
-                System.Windows.Forms.SendKeys.SendWait(Keys);
+                System.Windows.Forms.SendKeys.SendWait(ActionDataFormater.FormatData(Keys, content));
             }
             catch (Exception ex)
             {
@@ -158,6 +181,11 @@ namespace Tailgrab.Actions
             }
 
             return result;
+        }
+
+        public override string ToString()
+        {
+            return $"KeystrokesAction: Window Title: '{WindowTitle}' with Keys: {Keys}.";
         }
 
         #region PInvoke
@@ -257,7 +285,7 @@ namespace Tailgrab.Actions
 
         }
 
-        public void PerformAction()
+        public void PerformAction(Dictionary<string, string> content)
         {
             var parameterName = ParameterName;
             var value = Value;
@@ -288,6 +316,11 @@ namespace Tailgrab.Actions
                     break;
             }
         }
+
+        public override string ToString()
+        {
+            return $"OSCAction: Parameter: '{ParameterName}'; Type: {OscTypeValue}; Value: {Value}.";
+        }   
     }
 
     public class TTSAction : IAction
@@ -300,6 +333,8 @@ namespace Tailgrab.Actions
 
         public string Text { get; set; }
 
+        public ServiceRegistry? LocalSvcRegistry { get; set; }
+
         public TTSAction(string text, int volume, int rate)
         {
             Text = text;
@@ -310,23 +345,27 @@ namespace Tailgrab.Actions
 
         }
 
-        public void PerformAction()
+        public void PerformAction(Dictionary<string, string> content)
         {
             if (string.IsNullOrEmpty(Text))
             {
                 return;
             }
-            // Create an instance of the synthesizer
-            //SpeechSynthesizer synthesizer = new SpeechSynthesizer();
 
-            // Configure the synthesizer (optional)
-            //synthesizer.Volume = Volume;
-            //synthesizer.Rate = Rate;
+            if(LocalSvcRegistry == null)
+            {
+                logger.Error("TTSAction: LocalSvcRegistry is null. Cannot perform TTS action.");
+                return;
+            }
 
-            // Convert text to speech
-            //synthesizer.Speak(Text);
-            logger.Info($"TTSAction: (Simulated) Speaking Text: '{Text}' with Volume: {Volume} and Rate: {Rate}.");
+            string textToSpeak = ActionDataFormater.FormatData(Text, content);
+            LocalSvcRegistry.GetTTSManager().EnqueueSpeech(textToSpeak);
+            logger.Info($"TTSAction: Speaking Text: '{textToSpeak}' with Volume: {Volume} and Rate: {Rate}.");
+        }
 
+        public override string ToString()
+        {
+            return $"TTSAction: Parameter: '{Text}'; Volume: {Volume}; Rate: {Rate}.";
         }
     }
 
@@ -345,7 +384,7 @@ namespace Tailgrab.Actions
             logger.Info($"Added PlaySoundAction: SoundFile: '{soundFile}'.");
         }
 
-        public void PerformAction()
+        public void PerformAction(Dictionary<string, string> content)
         {
             var soundFile = this.soundFile;
             if (string.IsNullOrEmpty(soundFile))
@@ -357,6 +396,11 @@ namespace Tailgrab.Actions
             // (Implementation depends on the audio library you are using)
             logger.Info($"PlaySoundAction: Playing SoundFile: '{soundFile}'.");
             SoundManager.PlaySound(soundFile);
+        }
+
+        public override string ToString()
+        {
+            return $"PlaySoundAction: SoundFile: '{soundFile}'.";
         }
     }
 }

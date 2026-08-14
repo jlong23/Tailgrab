@@ -30,7 +30,14 @@ public class OnPlayerNetworkHandler : AbstractLineHandler
             {
                 logger.Info($"{COLOR_PREFIX}Network_ID : {userName} ({networkId}){COLOR_RESET}");
             }
-            ExecuteActions();
+
+            Dictionary<string, string> actionData = new Dictionary<string, string>
+            {
+                { "timestamp", timestamp },
+                { "userName", userName },
+                { "networkId", networkId.ToString() }
+            };
+            ExecuteActions(actionData);
 
             PlayerManager.AssignPlayerNetworkId(userName, networkId);
 

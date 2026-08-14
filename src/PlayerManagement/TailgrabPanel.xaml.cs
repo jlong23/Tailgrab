@@ -3,7 +3,6 @@ using NLog;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
-using System.Speech.Synthesis;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows;
@@ -36,9 +35,6 @@ namespace Tailgrab.PlayerManagement
         public const int CONST_BAN_MGMT_TAB_INDEX = 9;
 
         public static readonly Logger logger = LogManager.GetCurrentClassLogger();
-
-        // Initialize synthesizer
-        SpeechSynthesizer synthesizer = new SpeechSynthesizer();
 
         protected ServiceRegistry _serviceRegistry;
 
@@ -758,9 +754,7 @@ namespace Tailgrab.PlayerManagement
             this.SizeChanged += Window_SizeChanged;
             this.LocationChanged += Window_LocationChanged;
 
-            synthesizer.SelectVoice("Microsoft Zira Desktop");
-            // Speak text asynchronously to avoid freezing the UI
-            synthesizer.SpeakAsync("Tail Grab is up and running");
+            serviceRegistry.GetTTSManager().EnqueueSpeech("Tail Grab is up and running");            
         }
 
 
@@ -5289,8 +5283,8 @@ namespace Tailgrab.PlayerManagement
 
             PlayerManager.PlayerChanged -= PlayerManager_PlayerChanged;
 
-            synthesizer.Speak("Tail Grab shut down");
-            synthesizer.Dispose();
+            _serviceRegistry.GetTTSManager().EnqueueSpeech("Tail Grab shut down");
+            _serviceRegistry.ShutdownAllServices();
         }
 
         private void TestProfilePromptInput_Changed(object sender, SelectionChangedEventArgs e)
@@ -5779,6 +5773,11 @@ namespace Tailgrab.PlayerManagement
             {
                 _lineHandlerEditorViewModel!.SelectedHandler = handler;
                 BindHandlerDetails();
+                // Reset the ActionDetailsGrid when switching handlers
+                if (ActionDetailsGrid != null)
+                {
+                    ActionDetailsGrid.Children.Clear();
+                }
             }
         }
 
@@ -6053,6 +6052,7 @@ namespace Tailgrab.PlayerManagement
             if (ActionTypeCombo?.SelectedItem is ActionType actionType && _lineHandlerEditorViewModel != null)
             {
                 _lineHandlerEditorViewModel.AddAction(actionType);
+                SaveConfigAsync();
             }
         }
 

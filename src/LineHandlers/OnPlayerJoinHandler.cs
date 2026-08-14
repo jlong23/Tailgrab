@@ -27,7 +27,6 @@ public class OnPlayerJoinHandler : AbstractLineHandler
             string action = m.Groups[VRC_ACTION].Value;
             string userName = m.Groups[VRC_DISPLAYNAME].Value;
             string userId = m.Groups[VRC_USERID].Value;
-            ExecuteActions();
 
             if (action.Equals("Joined"))
             {
@@ -37,6 +36,15 @@ public class OnPlayerJoinHandler : AbstractLineHandler
             {
                 _serviceRegistry.GetPlayerManager().PlayerLeft(userName, this);
             }
+
+            Dictionary<string, string> actionData = new Dictionary<string, string>
+            {
+                { "timestamp", timestamp },
+                { "action", action },
+                { "userName", userName },
+                { "userId", userId }
+            };
+            ExecuteActions(actionData);
 
             return true;
         }

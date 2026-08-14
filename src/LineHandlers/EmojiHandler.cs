@@ -2,6 +2,7 @@ namespace Tailgrab.LineHandler;
 
 using System.Text.RegularExpressions;
 using Tailgrab.Common;
+using Tailgrab.PlayerManagement;
 
 public class EmojiHandler : AbstractLineHandler
 {
@@ -31,7 +32,18 @@ public class EmojiHandler : AbstractLineHandler
             {
                 logger.Info($"{COLOR_PREFIX}Emoji/Inventory : {userId} / {inventoryId}{COLOR_RESET.GetAnsiEscape()}");
             }
-            ExecuteActions();
+
+            Player? player = PlayerManager.GetPlayerByUserId(userId);
+
+            Dictionary<string, string> actionData = new Dictionary<string, string>
+            {
+                { "timestamp", timestamp },
+                { "userId", userId },
+                { "userName", player?.DisplayName ?? string.Empty },
+                { "inventoryId", inventoryId }
+            };
+
+            ExecuteActions(actionData);
             return true;
         }
         return false;

@@ -34,7 +34,14 @@ public class StickerHandler : AbstractLineHandler
             }
             InventoryManager.AddStickerEvent(userName, fileURL);
 
-            ExecuteActions();
+            Dictionary<string, string> actionData = new Dictionary<string, string>
+            {
+                { "userId", userId },
+                { "userName", userName },
+                { "fileURL", fileURL }
+            };
+
+            ExecuteActions(actionData);
             return true;
         }
         return false;

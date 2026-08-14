@@ -42,7 +42,14 @@ public class QuitHandler : AbstractLineHandler
             OverlayManager overlay = _serviceRegistry.GetXSOverlay();
             overlay.Dispose();
 
-            ExecuteActions();
+            Dictionary<string, string> actionData = new Dictionary<string, string>
+            {
+                { "action", "quit" },
+                { "timestamp", timestamp },
+                { "totalTime", totalTime }
+            };
+
+            ExecuteActions(actionData);
             return true;
         }
         return false;

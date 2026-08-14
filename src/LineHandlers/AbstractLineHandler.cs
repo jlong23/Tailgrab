@@ -75,11 +75,20 @@ namespace Tailgrab.LineHandler
             Actions.Add(action);
         }
 
-        protected void ExecuteActions()
+        protected void ExecuteActions(Dictionary<string, string> content)
         {
-            foreach (var action in Actions)
+            foreach (IAction? action in Actions)
             {
-                action.PerformAction();
+                if(action == null)
+                {
+                    logger.Warn("Action is null, skipping execution.");
+                    continue;
+                }
+                else
+                {
+                    logger.Info(action.ToString() ?? "Action description is null");
+                    action.PerformAction(content);
+                }
             }
         }
 

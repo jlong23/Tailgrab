@@ -57,6 +57,7 @@ namespace Tailgrab.Configuration
         {
             try
             {
+                // Resolve path: prefer explicit, then local repo config.json, then user config path
                 string path = (File.Exists("config.json") ? Path.GetFullPath("config.json") : GetConfigFilePath());
 
                 // Ensure directory exists
@@ -91,8 +92,6 @@ namespace Tailgrab.Configuration
 
         public List<LineHandlerConfig> LoadConfig()
         {
-            logger.Debug("** Loading Configuration file");
-
             // Resolve path: prefer explicit, then local repo config.json, then user config path
             string path = (File.Exists("config.json") ? Path.GetFullPath("config.json") : GetConfigFilePath());
 
@@ -118,6 +117,8 @@ namespace Tailgrab.Configuration
                 TailgrabConfig? config = JsonSerializer.Deserialize<TailgrabConfig>(jsonString, options);
                 if (config?.LineHandlers != null)
                 {
+                    logger.Info($"Configuration loaded successfully from '{path}'");
+
                     return config.LineHandlers;
                 }
 
@@ -308,6 +309,22 @@ namespace Tailgrab.Configuration
 
                     actions.Add(new KeystrokesAction(keyStrokeConfig.WindowTitle, keyStrokeConfig.Keys));
                 }
+                
+                if (actionConfig.GetType() == typeof(TTSActionConfig))
+                {
+                    var ttsActionConfig = (TTSActionConfig)actionConfig;
+                    if (ttsActionConfig.Text == null)
+                    {
+                        logger.Warn("TTS Action configuration is missing required field; 'text', skipping this action.");
+                        continue;
+                    }
+
+                    TTSAction ttsAcction = new TTSAction(ttsActionConfig.Text, ttsActionConfig.Volume, ttsActionConfig.Rate);
+                    ttsAcction.LocalSvcRegistry = _serviceRegistry;
+
+                    actions.Add(ttsAcction);
+                }
+
             }
 
             return actions;

@@ -35,7 +35,14 @@ public class WorldChangeHandler : AbstractLineHandler
             PlayerManager.UpdateCurrentSession(worldId, instanceId);
             PlayerManager.ClearAllPlayers(this);
 
-            ExecuteActions();
+            Dictionary<string, string> actionData = new Dictionary<string, string>
+            {
+                { "timestamp", timestamp },
+                { "worldId", worldId },
+                { "instanceId", instanceId }
+            };
+
+            ExecuteActions(actionData);
             return true;
         }
         return false;

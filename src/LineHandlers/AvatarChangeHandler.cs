@@ -2,6 +2,7 @@ namespace Tailgrab.LineHandler;
 
 using System.Text.RegularExpressions;
 using Tailgrab.Common;
+using Tailgrab.PlayerManagement;
 
 public class AvatarChangeHandler : AbstractLineHandler
 {
@@ -33,7 +34,17 @@ public class AvatarChangeHandler : AbstractLineHandler
 
             _serviceRegistry.GetAvatarManager().SetAvatarForPlayer(userName, avatarName);
 
-            ExecuteActions();
+            Player? player = PlayerManager.GetPlayerByDisplayName(userName);
+
+            Dictionary<string, string> actionData = new Dictionary<string, string>
+            {
+                { "timestamp", timestamp },
+                { "userName", userName },
+                { "userId", player?.UserId.ToString() ?? string.Empty },
+                { "avatarName", avatarName }
+            };
+
+            ExecuteActions(actionData);
             return true;
         }
         return false;

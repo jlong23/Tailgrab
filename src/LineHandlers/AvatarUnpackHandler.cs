@@ -30,9 +30,16 @@ public class AvatarUnpackHandler : AbstractLineHandler
             {
                 logger.Info($"{COLOR_PREFIX}Avatar Unpack : {avatarName} by {userName}{COLOR_RESET.GetAnsiEscape()}");
             }
-            ExecuteActions();
 
             _serviceRegistry.GetAvatarManager().ProcessAvatarUnpack(userName, avatarName);
+
+            Dictionary<string, string> actionData = new Dictionary<string, string>
+            {
+                { "timestamp", timestamp },
+                { "userName", userName },
+                { "avatarName", avatarName }
+            };
+            ExecuteActions(actionData);
 
             return true;
         }

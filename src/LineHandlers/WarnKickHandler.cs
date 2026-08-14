@@ -38,7 +38,15 @@ public class WarnKickHandler : AbstractLineHandler
                 player.AddAlertMessage(AlertClassEnum.Profile, AlertTypeEnum.Nuisance, action);
             }
 
-            ExecuteActions();
+            Dictionary<string, string> actionData = new Dictionary<string, string>
+            {
+                { "timestamp", timestamp },
+                { "userName", userName },
+                { "action", action },
+                { "userId", player?.UserId.ToString() ?? string.Empty  },
+            };
+
+            ExecuteActions(actionData);
             return true;
         }
         return false;

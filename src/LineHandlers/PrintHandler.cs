@@ -29,7 +29,14 @@ public class PrintHandler : AbstractLineHandler
             {
                 logger.Info($"{COLOR_PREFIX}Print : {fileURL}{COLOR_RESET.GetAnsiEscape()}");
             }
-            ExecuteActions();
+
+            Dictionary<string, string> actionData = new Dictionary<string, string>
+            {
+                { "timestamp", timestamp },
+                { "fileURL", fileURL }
+            };
+
+            ExecuteActions(actionData);
             return true;
         }
         return false;
