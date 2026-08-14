@@ -1,4 +1,5 @@
 using BuildSoft.VRChat.Osc;
+using Newtonsoft.Json.Bson;
 using NLog;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -5830,6 +5831,14 @@ namespace Tailgrab.PlayerManagement
             {
                 BuildTTSActionUI(ttsAction);
             }
+            else if (action is HTTPGetActionConfig httpGetAction)
+            {
+                BuildHTTPGetActionUI(httpGetAction);
+            }
+            else if (action is HTTPPostActionConfig httpPostAction)
+            {
+                BuildHTTPPostActionUI(httpPostAction);
+            }
         }
 
         private void BuildOSCActionUI(OSCActionConfig action)
@@ -5996,6 +6005,109 @@ namespace Tailgrab.PlayerManagement
             ActionDetailsGrid!.Children.Add(grid);
         }
 
+        private void BuildHTTPGetActionUI(HTTPGetActionConfig action)
+        {
+            var grid = new Grid();
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(120) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            
+            // URL
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            var urlLabel = new TextBlock { Text = "URL:", VerticalAlignment = VerticalAlignment.Center };
+            Grid.SetColumn(urlLabel, 0);
+            Grid.SetRow(urlLabel, 0);
+            var urlBox = new System.Windows.Controls.TextBox { Text = action.Url ?? "", Margin = new Thickness(6, 4, 0, 4) };            
+            Grid.SetColumn(urlBox, 1);
+            Grid.SetRow(urlBox, 0);
+            urlBox.TextChanged += (s, e) => action.Url = urlBox.Text;
+            grid.Children.Add(urlLabel);
+            grid.Children.Add(urlBox);
+
+            // Cookies
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            var cookiesLabel = new TextBlock { Text = "Cookies:", VerticalAlignment = VerticalAlignment.Center };
+            Grid.SetColumn(cookiesLabel, 0);
+            Grid.SetRow(cookiesLabel, 1);
+            var cookiesBox = new System.Windows.Controls.TextBox { Text = action.cookies ?? "", Margin = new Thickness(6, 4, 0, 4) };
+            Grid.SetColumn(cookiesBox, 1);
+            Grid.SetRow(cookiesBox, 1);
+            cookiesBox.TextChanged += (s, e) => action.cookies = cookiesBox.Text;
+            grid.Children.Add(cookiesLabel);
+            grid.Children.Add(cookiesBox);
+
+            // Timeout
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            var rLabel = new TextBlock { Text = "Timeout:", VerticalAlignment = VerticalAlignment.Center };
+            Grid.SetColumn(rLabel, 0);
+            Grid.SetRow(rLabel, 2);
+            var rBox = new System.Windows.Controls.TextBox { Text = action.timeout.ToString(), Margin = new Thickness(6, 4, 0, 4) };
+            Grid.SetColumn(rBox, 1);
+            Grid.SetRow(rBox, 2);
+            rBox.TextChanged += (s, e) => { if (int.TryParse(rBox.Text, out var r)) action.timeout = r; };
+            grid.Children.Add(rLabel);
+            grid.Children.Add(rBox);
+
+            ActionDetailsGrid!.Children.Add(grid);
+        }
+
+        private void BuildHTTPPostActionUI(HTTPPostActionConfig action)
+        {
+            var grid = new Grid();
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(120) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+            // URL
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            var urlLabel = new TextBlock { Text = "URL:", VerticalAlignment = VerticalAlignment.Center };
+            Grid.SetColumn(urlLabel, 0);
+            Grid.SetRow(urlLabel, 0);
+            var urlBox = new System.Windows.Controls.TextBox { Text = action.Url ?? "", Margin = new Thickness(6, 4, 0, 4) };
+            Grid.SetColumn(urlBox, 1);
+            Grid.SetRow(urlBox, 0);
+            urlBox.TextChanged += (s, e) => action.Url = urlBox.Text;
+            grid.Children.Add(urlLabel);
+            grid.Children.Add(urlBox);
+
+            // Cookies
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            var cookiesLabel = new TextBlock { Text = "Cookies:", VerticalAlignment = VerticalAlignment.Center };
+            Grid.SetColumn(cookiesLabel, 0);
+            Grid.SetRow(cookiesLabel, 1);
+            var cookiesBox = new System.Windows.Controls.TextBox { Text = action.cookies ?? "", Margin = new Thickness(6, 4, 0, 4) };
+            Grid.SetColumn(cookiesBox, 1);
+            Grid.SetRow(cookiesBox, 1);
+            cookiesBox.TextChanged += (s, e) => action.cookies = cookiesBox.Text;
+            grid.Children.Add(cookiesLabel);
+            grid.Children.Add(cookiesBox);
+
+
+            // Timeout
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            var rLabel = new TextBlock { Text = "Timeout:", VerticalAlignment = VerticalAlignment.Center };
+            Grid.SetColumn(rLabel, 0);
+            Grid.SetRow(rLabel, 2);
+            var rBox = new System.Windows.Controls.TextBox { Text = action.timeout.ToString(), Margin = new Thickness(6, 4, 0, 4) };
+            Grid.SetColumn(rBox, 1);
+            Grid.SetRow(rBox, 2);
+            rBox.TextChanged += (s, e) => { if (int.TryParse(rBox.Text, out var r)) action.timeout = r; };
+            grid.Children.Add(rLabel);
+            grid.Children.Add(rBox);
+
+            // Body
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            var bodyLabel = new TextBlock { Text = "Body:", VerticalAlignment = VerticalAlignment.Center };
+            Grid.SetColumn(bodyLabel, 0);
+            Grid.SetRow(bodyLabel, 3);
+            var bodyBox = new System.Windows.Controls.TextBox { Text = action.payload ?? "", Height = 160, AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(6, 4, 0, 4) };
+            Grid.SetColumn(bodyBox, 1);
+            Grid.SetRow(bodyBox, 3);
+            bodyBox.TextChanged += (s, e) => action.payload = bodyBox.Text;
+            grid.Children.Add(bodyLabel);
+            grid.Children.Add(bodyBox);
+
+            ActionDetailsGrid!.Children.Add(grid);
+        }
+
         private async void SaveConfigButton_Click(object sender, RoutedEventArgs e)
         {
             if (_lineHandlerEditorViewModel != null)
@@ -6017,33 +6129,6 @@ namespace Tailgrab.PlayerManagement
                 _lineHandlerEditorViewModel.LoadHandlers();
                 _lineHandlerEditorViewModel.SelectedHandler = _lineHandlerEditorViewModel.Handlers.FirstOrDefault();
                 if (StatusText != null) StatusText.Text = "Configuration reloaded";
-            }
-        }
-
-        private void AddHandlerButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (_lineHandlerEditorViewModel != null)
-            {
-                var dialog = new SelectHandlerTypeDialog(_lineHandlerEditorViewModel.Handlers.Select(h => h.HandlerTypeValue).ToList());
-                if (dialog.ShowDialog() == true && dialog.SelectedHandlerType.HasValue)
-                {
-                    _lineHandlerEditorViewModel.AddHandler(dialog.SelectedHandlerType.Value);
-                }
-            }
-        }
-
-        private void RemoveHandlerButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (_lineHandlerEditorViewModel?.SelectedHandler != null)
-            {
-                var result = System.Windows.MessageBox.Show(
-                    $"Remove handler '{_lineHandlerEditorViewModel.SelectedHandler.HandlerTypeValue}'?",
-                    "Confirm Removal", System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Question);
-
-                if (result == System.Windows.MessageBoxResult.Yes)
-                {
-                    _lineHandlerEditorViewModel.RemoveHandler(_lineHandlerEditorViewModel.SelectedHandler);
-                }
             }
         }
 

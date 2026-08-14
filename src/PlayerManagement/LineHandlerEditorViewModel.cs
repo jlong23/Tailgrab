@@ -192,6 +192,8 @@ namespace Tailgrab.PlayerManagement
                 ActionType.PlaySoundAction => new PlaySoundActionConfig(),
                 ActionType.KeyPressAction => new KeyStrokeConfig(),
                 ActionType.TTSAction => new TTSActionConfig(),
+                ActionType.HTTPGetAction => new HTTPGetActionConfig(),
+                ActionType.HTTPPostAction => new HTTPPostActionConfig(),
                 _ => throw new InvalidOperationException($"Unknown action type: {actionType}")
             };
 

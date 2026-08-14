@@ -403,7 +403,10 @@ namespace Tailgrab.Configuration
         DelayAction,
         KeyPressAction,
         TTSAction,
-        PlaySoundAction
+        PlaySoundAction,
+        HTTPGetAction,
+        HTTPPostAction,
+
     }
 
     [JsonPolymorphic(TypeDiscriminatorPropertyName = "actionTypeValue")]
@@ -412,6 +415,8 @@ namespace Tailgrab.Configuration
     [JsonDerivedType(typeof(KeyStrokeConfig), "KeyPressAction")]
     [JsonDerivedType(typeof(TTSActionConfig), "TTSAction")]
     [JsonDerivedType(typeof(PlaySoundActionConfig), "PlaySoundAction")]
+    [JsonDerivedType(typeof(HTTPGetActionConfig), "HTTPGetAction")]
+    [JsonDerivedType(typeof(HTTPPostActionConfig), "HTTPPostAction")]
     public abstract class ActionBase
     {
         public ActionType ActionTypeValue { get; set; }
@@ -471,6 +476,33 @@ namespace Tailgrab.Configuration
         public TTSActionConfig()
         {
             ActionTypeValue = ActionType.TTSAction;
+        }
+    }
+
+    public class HTTPGetActionConfig : ActionBase
+    {
+        public string? Url { get; set; }
+
+        public string? cookies { get; set; } = string.Empty;
+        public int timeout { get; set; } = 10000;
+
+        public HTTPGetActionConfig()
+        {
+            ActionTypeValue = ActionType.HTTPGetAction;
+        }
+    }
+
+    public class HTTPPostActionConfig : ActionBase
+    {
+        public string? Url { get; set; }
+        public string? cookies { get; set; } = string.Empty;
+        public string? contentType { get; set; } = "application/json";
+        public string payload { get; set; } = string.Empty;
+        public int timeout { get; set; } = 10000;
+
+        public HTTPPostActionConfig()
+        {
+            ActionTypeValue = ActionType.HTTPPostAction;
         }
     }
 }
