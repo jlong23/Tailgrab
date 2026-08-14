@@ -2,6 +2,7 @@ using ConcurrentPriorityQueue.Core;
 using Microsoft.EntityFrameworkCore;
 using NLog;
 using System.ComponentModel;
+using System.Reflection.Metadata;
 using System.Text;
 using System.Windows;
 using Tailgrab.Clients.XSOverlay;
@@ -384,9 +385,122 @@ namespace Tailgrab.PlayerManagement
 
         #endregion
 
+        #region World Instance Info Management
+        public async Task<WorldInstanceInfo> GetWorldInstanceInfo(string worldId, string instanceId)
+        {
+
+            WorldInstanceInfo worldInfo = new WorldInstanceInfo(worldId, instanceId);
+
+            if( !string.IsNullOrEmpty(worldInfo.WorldId) )
+            {
+                World? worldData = await serviceRegistry.GetVRChatAPIClient().GetWorldInfo(worldInfo.WorldId);
+                if (worldData != null)
+                {
+                    worldInfo.WorldName = worldData.Name ?? string.Empty;
+                }
+            }
+
+            if(!string.IsNullOrEmpty(worldInfo.GroupId))
+            {
+                Result<Group?> groupResult = serviceRegistry.GetVRChatAPIClient().GetGroupById(worldInfo.GroupId);
+                if (groupResult.Value != null)
+                {
+                    worldInfo.GroupName = groupResult.Value.Name ?? string.Empty;
+                }
+            }
+
+            if(!string.IsNullOrEmpty(worldInfo.UserId))
+            {
+                User? userData = serviceRegistry.GetVRChatAPIClient().GetProfile(worldInfo.UserId);
+                if (userData != null)
+                {
+                    worldInfo.UserName = userData.DisplayName ?? string.Empty;
+                }
+            }
+
+            return worldInfo;
+        }
+        #endregion
+
     }
 
+    #region World Instance Info Class
+    public class WorldInstanceInfo
+    {
+        public string WorldId { get; set; } = string.Empty;
+        public string WorldName { get; set; } = string.Empty;
 
+        public string UserId { get; set; } = string.Empty;
+        public string UserName { get; set; } = string.Empty;
+        public string PrivateAccessType { get; set; } = string.Empty;
+
+        public string InstanceId { get; set; } = string.Empty;
+        public string GroupAccessType { get; set; } = string.Empty;
+        public string GroupId { get; set; } = string.Empty;
+        public string GroupName { get; set; } = string.Empty;
+        public string Region { get; set; } = string.Empty;
+        public bool AgeGated { get; set; }
+
+        public WorldInstanceInfo(string worldId, string instanceId)
+        {
+            WorldId = worldId;
+
+            List<string> instanceParts = instanceId.Split('~').ToList();
+            if (instanceParts.Count > 1)
+            {
+                foreach (string part in instanceParts)
+                {
+                    if (part.StartsWith("group("))
+                    {
+                        string value = part.Replace("group(", "").Replace(")", "");
+                        GroupId = value;
+                    }
+                    else if (part.StartsWith("groupAccessType("))
+                    {
+                        string value = part.Replace("groupAccessType(", "").Replace(")", "");
+                        GroupAccessType = value;
+                    }
+                    else if (part.StartsWith("region("))
+                    {
+                        string value = part.Replace("region(", "").Replace(")", "");
+                        Region = value;
+                    }
+                    else if (part.StartsWith("ageGate"))
+                    {
+                        AgeGated = true;
+                    }
+                    else if (part.StartsWith("private("))
+                    {
+                        string value = part.Replace("private(", "").Replace(")", "");
+                        UserId = value;
+                        PrivateAccessType = "Request";
+                    }
+                    else if (part.StartsWith("hidden("))
+                    {
+                        string value = part.Replace("hidden(", "").Replace(")", "");
+                        UserId = value;
+                        PrivateAccessType = "Friends+";
+                    }
+                    else if (part.StartsWith("friends("))
+                    {
+                        string value = part.Replace("friends(", "").Replace(")", "");
+                        UserId = value;
+                        PrivateAccessType = "Friends";
+                    }
+                    else if (part.StartsWith("canRequestInvite"))
+                    {
+                        PrivateAccessType = "Request+";
+                    }
+                }
+                InstanceId = instanceParts[0];
+            }
+            else
+            {
+                InstanceId = instanceId;
+            }
+        }
+    }
+    #endregion
 
     #region Avatar Queue Classes
     #endregion

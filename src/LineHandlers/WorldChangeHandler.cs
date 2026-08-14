@@ -35,16 +35,34 @@ public class WorldChangeHandler : AbstractLineHandler
             PlayerManager.UpdateCurrentSession(worldId, instanceId);
             PlayerManager.ClearAllPlayers(this);
 
+            WorldInstanceInfo worldInfo = GetWorldInfo(worldId, instanceId);
+
             Dictionary<string, string> actionData = new Dictionary<string, string>
             {
                 { "timestamp", timestamp },
                 { "worldId", worldId },
-                { "instanceId", instanceId }
+                { "worldName", worldInfo.WorldName },
+                { "instanceId", instanceId },
+                { "userId", worldInfo.UserId },
+                { "userName", worldInfo.UserName },
+                { "privateAccessType", worldInfo.PrivateAccessType },
+                { "groupAccessType", worldInfo.GroupAccessType },
+                { "groupId", worldInfo.GroupId },
+                { "groupName", worldInfo.GroupName },
+                { "region", worldInfo.Region },
+                { "ageGated", worldInfo.AgeGated.ToString() }
             };
+
+            logger.Info(string.Join(", ", actionData.Select(kv => $"{kv.Key}: {kv.Value}")));
 
             ExecuteActions(actionData);
             return true;
         }
         return false;
+    }
+
+    private WorldInstanceInfo GetWorldInfo(string worldId, string instanceId)
+    {
+        return Task.Run(() => _serviceRegistry.GetPlayerManager().GetWorldInstanceInfo(worldId, instanceId)).Result;
     }
 }
