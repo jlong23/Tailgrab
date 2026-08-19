@@ -43,7 +43,8 @@ namespace Tailgrab.Clients.VRChat
         private IVRChat? _vrchat;
 
         #region Authentication
-        public async Task Initialize()
+        [STAThread]
+        public async Task<bool> Initialize()
         {
             string? username = ConfigStore.LoadSecret(CommonConst.Registry_VRChat_Web_UserName);
             string? password = ConfigStore.LoadSecret(CommonConst.Registry_VRChat_Web_Password);
@@ -52,11 +53,10 @@ namespace Tailgrab.Clients.VRChat
             // Persist cookies to disk (cookies.json) for reuse
             try
             {
-
-                if (username is null || password is null || twoFactorSecret is null)
+                if (username is null || password is null )
                 {
                     System.Windows.MessageBox.Show("VR Chat Web API Credentials are not set yet, use the Config / Secrets tab to update credenials and restart Tailgrab.", "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
-                    return;
+                    return false;
                 }
 
                 if (LoginVRChat() && _vrchat != null)
@@ -64,13 +64,22 @@ namespace Tailgrab.Clients.VRChat
                     var response = await _vrchat.Authentication.GetCurrentUserAsync();
                     if (response != null && response is not null)
                     {
+                        if( response.RequiresTwoFactorAuth != null && response.RequiresTwoFactorAuth.Count > 0)
+                        {
+                            logger.Warn($"2FA is required for this account. Style : {string.Join(", ", response.RequiresTwoFactorAuth)}");
+                        }
+
                         if (response.RequiresTwoFactorAuth != null && response.RequiresTwoFactorAuth.Contains("emailOtp"))
                         {
                             logger.Warn("An verification code was sent to your email address!");
                             logger.Warn("Prompt user for code: ");
 
-                            string code = Microsoft.VisualBasic.Interaction.InputBox("Please enter EMail OTP code (6 digits)");
-                            var otpResponse = await _vrchat.Authentication.Verify2FAEmailCodeAsync(new TwoFactorEmailCode(code));
+                            string? code = NativeOtpDialog.PromptForOtpCode("Please enter Email OTP code (6 digits)");
+
+                            if (!string.IsNullOrEmpty(code))
+                            {
+                                var otpResponse = await _vrchat.Authentication.Verify2FAEmailCodeAsync(new TwoFactorEmailCode(code));
+                            }
                         }
                         else if (response.RequiresTwoFactorAuth != null && response.RequiresTwoFactorAuth.Contains("totp"))
                         {
@@ -78,7 +87,7 @@ namespace Tailgrab.Clients.VRChat
                             if (string.IsNullOrEmpty(twoFactorSecret))
                             {
                                 logger.Error("2FA secret is not set, Prompting user for code.");
-                                code = Microsoft.VisualBasic.Interaction.InputBox("Please enter Authenitcator OTP code (6 digits)");
+                                code = NativeOtpDialog.PromptForOtpCode("Please enter Authenticator OTP code (6 digits)") ?? string.Empty;
                             } 
                             else
                             {
@@ -86,7 +95,10 @@ namespace Tailgrab.Clients.VRChat
                                 code = totp.ComputeTotp();
                             }
 
-                            var otpResponse = await _vrchat.Authentication.Verify2FAAsync(new TwoFactorAuthCode(code));
+                            if (!string.IsNullOrEmpty(code))
+                            {
+                                var otpResponse = await _vrchat.Authentication.Verify2FAAsync(new TwoFactorAuthCode(code));
+                            }
                         }
 
                         var currentUser = await _vrchat.Authentication.GetCurrentUserAsync();
@@ -99,14 +111,17 @@ namespace Tailgrab.Clients.VRChat
                 {
                     logger.Warn("Unable to login to VRChat ");
                     System.Windows.MessageBox.Show("VR Chat Web API failed to log in, check the log file and restart Tailgrab.", "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
-                    return;
+                    return false;
                 }
             }
             catch (Exception ex)
             {
                 logger.Error(ex, $"Failed to Log Into VRC and to save cookies': {ex.Message}");
                 System.Windows.MessageBox.Show($"Failed to Log Into VRChat Web API, check logs for details. Error: {ex.Message}", "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                return false;
             }
+
+            return true;
         }
 
         private bool LoginVRChat()

@@ -186,7 +186,11 @@
     <sys:String x:Key="UI.Tab.Secrets.Group.Behaviors.DiscoveredGroupCaching">Discovered Group Caching</sys:String>
     <sys:String x:Key="UI.Tab.Secrets.Group.Behaviors.XSOverlayNotifications">XS Overlay Notifications</sys:String>
     <sys:String x:Key="UI.Tab.Secrets.Action.SaveConfig">Save Config</sys:String>
+    <sys:String x:Key="UI.Tab.Secrets.Action.Cancel">Cancel</sys:String>
     <sys:String x:Key="UI.Tab.Secrets.Action.ResetLayout">Reset Layout</sys:String>
+    <sys:String x:Key="UI.Tab.Secrets.OverlayMessageTitle">VR Chat User Credentials are missing, please provide them to continue:</sys:String>
+    <sys:String x:Key="UI.Tab.Secrets.OverlayOTPTitle">VR Chat requires the 6 digit OTP code, please provide it to continue:</sys:String>
+    <sys:String x:Key="UI.Tab.Secrets.Group.VRCCredentials.OTPCode">OTP Code:</sys:String>
 
 
     <!-- AI Config Tab Panel -->

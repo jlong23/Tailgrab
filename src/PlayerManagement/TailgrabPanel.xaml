@@ -1025,6 +1025,7 @@ Title="Tailgrab Player Panel"
 
                 <TabItem Header="{DynamicResource UI.Tab.Config.Tab}" Name="ConfigTab">
                     <TabControl x:Name="ConfigTabControl">
+                        
                         <!-- #region Config / KnownAvatars Tab -->
                         <TabItem Header="{DynamicResource UI.Tab.KnownAvatars.Tab}" Name="KnownAvatarsTab">
                             <Grid>
@@ -3518,6 +3519,136 @@ Title="Tailgrab Player Panel"
             </Border>
         </Border>
         <!-- #endregion Test Image Prompt AI Evaluation Results Overlay -->
+
+        <!-- #region VR Chat User Credentials Overlay -->
+        <Border Name="VRChatUserCredentialsOverlay" 
+                Background="#CC000000" 
+                Panel.ZIndex="{x:Static local:TailgrabPanelConst.ZINDEX_LEVEL_MESSAGE_OVERLAY}"
+                Visibility="Collapsed">
+            <Border Background="#FF2D2D30" 
+                    MaxWidth="1080" MaxHeight="700" 
+                    CornerRadius="8" Padding="16"
+                    VerticalAlignment="Center" HorizontalAlignment="Center" Width="500">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Title -->
+                    <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2"
+                               Text="{DynamicResource UI.Tab.Secrets.OverlayMessageTitle}" 
+                               FontSize="20" FontWeight="Bold" 
+                               Foreground="#FFE6E6E6"
+                               Margin="0,0,0,16" TextWrapping="Wrap"/>
+
+                    <!-- User Id -->
+                    <TextBlock Grid.Row="1" Grid.Column="0"
+                               Text="{DynamicResource UI.Tab.Secrets.Group.VRCCredentials.User}" 
+                               FontSize="20" FontWeight="Bold" 
+                               Foreground="#FFE6E6E6"
+                               Margin="0,0,0,16" HorizontalAlignment="Right"/>
+
+                    <TextBox Name="OverlayVRChatUserIdTextBox" 
+                             Grid.Row="1" Grid.Column="1"
+                             TextWrapping="Wrap" AcceptsReturn="True" 
+                             VerticalScrollBarVisibility="Auto"
+                             IsReadOnly="False"/>
+
+                    <!-- Password Id -->
+                    <TextBlock Grid.Row="2" Grid.Column="0"
+                               Text="{DynamicResource UI.Tab.Secrets.Group.VRCCredentials.Password}" 
+                               FontSize="20" FontWeight="Bold" 
+                               Foreground="#FFE6E6E6"
+                               Margin="0,0,0,16" HorizontalAlignment="Right"/>
+
+                    <TextBox Name="OverlayVRChatPasswordTextBox" 
+                             Grid.Row="2" Grid.Column="1"
+                             TextWrapping="Wrap" AcceptsReturn="True" 
+                             VerticalScrollBarVisibility="Auto"
+                             IsReadOnly="False"/>
+
+                    <!-- 2FA Seed -->
+                    <TextBlock Grid.Row="3" Grid.Column="0"
+                               Text="{DynamicResource UI.Tab.Secrets.Group.VRCCredentials.TwoFASeedKey}" 
+                               FontSize="20" FontWeight="Bold" 
+                               Foreground="#FFE6E6E6"
+                               Margin="0,0,0,16" HorizontalAlignment="Right"/>
+
+                    <TextBox Name="OverlayVRChatTwoFASeedTextBox"  MaxLength="32"
+                             Grid.Row="3" Grid.Column="1"
+                             TextWrapping="Wrap" AcceptsReturn="True" 
+                             VerticalScrollBarVisibility="Auto"
+                             IsReadOnly="False"/>
+
+                    <!-- Close Button -->
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,0" Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2">
+                        <Button Name="OkButton_VRChatUserCredentialsOverlay" Content="{DynamicResource UI.Tab.Secrets.Action.SaveConfig}" Click="VRChatUserCredentialsOverlay_OkButton_Click" Width="75" Margin="0,0,10,0" IsDefault="True"/>
+                        <Button Name="CancelButton_VRChatUserCredentialsOverlay" Content="{DynamicResource UI.Tab.Secrets.Action.Cancel}" Click="VRChatUserCredentialsOverlay_CancelButton_Click" Width="75" IsCancel="True"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Border>
+        <!-- #endregion VR Chat User Credentials Overlay -->
+
+
+        <!-- #region VR Chat OTP Overlay -->
+        <Border Name="VRChatOTPOverlay" 
+                Background="#CC000000" 
+                Panel.ZIndex="{x:Static local:TailgrabPanelConst.ZINDEX_LEVEL_MESSAGE_OVERLAY}"
+                Visibility="Collapsed">
+            <Border Background="#FF2D2D30" 
+                    MaxWidth="1080" MaxHeight="700" 
+                    CornerRadius="8" Padding="16"
+                    VerticalAlignment="Center" HorizontalAlignment="Center" Width="500">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Title -->
+                    <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2"
+                               Text="{DynamicResource UI.Tab.Secrets.OverlayOTPTitle}" 
+                               FontSize="20" FontWeight="Bold" 
+                               Foreground="#FFE6E6E6"
+                               Margin="0,16,0,16" TextWrapping="Wrap"/>
+
+                    <!-- OTP Code -->
+                    <TextBlock Grid.Row="1" Grid.Column="0"
+                               Text="{DynamicResource UI.Tab.Secrets.Group.VRCCredentials.OTPCode}" 
+                               FontSize="20" FontWeight="Bold" 
+                               Foreground="#FFE6E6E6"
+                               Margin="0,8,8,8" HorizontalAlignment="Right"/>
+
+                    <TextBox Name="OverlayVRChatOTPTextBox" MaxLength="6"
+                             Grid.Row="1" Grid.Column="1"
+                             TextWrapping="Wrap" AcceptsReturn="True" 
+                             VerticalScrollBarVisibility="Auto"
+                             IsReadOnly="False"/>
+
+                    <!-- Close Button -->
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,8,16" Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2">
+                        <Button Name="OkButton_VRChatOTPOverlay" Content="{DynamicResource UI.Tab.Secrets.Action.SaveConfig}" Click="VRChatOTPOverlay_OkButton_Click" Width="75" Margin="0,0,10,0" IsDefault="True"/>
+                        <Button Name="CancelButton_VRChatOTPOverlay" Content="{DynamicResource UI.Tab.Secrets.Action.Cancel}" Click="VRChatOTPOverlay_CancelButton_Click" Width="75" IsCancel="True"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Border>
+        <!-- #endregion VR Chat OTP Overlay -->
+
 
         <!-- #region Status Message Overlay -->
         <Border Name="OverlayMessage" 

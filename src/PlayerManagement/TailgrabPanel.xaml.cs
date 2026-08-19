@@ -755,7 +755,7 @@ namespace Tailgrab.PlayerManagement
             this.SizeChanged += Window_SizeChanged;
             this.LocationChanged += Window_LocationChanged;
 
-            serviceRegistry.GetTTSManager().EnqueueSpeech("Tail Grab is up and running");            
+            //serviceRegistry.GetTTSManager().EnqueueSpeech("Tail Grab is up and running");            
         }
 
 
@@ -6335,6 +6335,52 @@ namespace Tailgrab.PlayerManagement
             if (_lineHandlerEditorViewModel?.SelectedHandler != null && PatternTypeCombo?.SelectedItem is PatternType patternType)
             {
                 _lineHandlerEditorViewModel.SelectedHandler.PatternTypeValue = patternType;
+            }
+        }
+        #endregion
+
+        #region VRChat Credentials Overlay
+        private void VRChatUserCredentialsOverlay_OkButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (VRChatUserCredentialsOverlay != null)
+            {
+                var username = OverlayVRChatUserIdTextBox.Text;
+                var password = OverlayVRChatPasswordTextBox.Text;
+                var seedKey = OverlayVRChatTwoFASeedTextBox.Text;
+                // Save credentials securely
+                // Hide the overlay
+                VRChatUserCredentialsOverlay.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        private void VRChatUserCredentialsOverlay_CancelButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (VRChatUserCredentialsOverlay != null)
+            {
+                // Hide the overlay without saving
+                VRChatUserCredentialsOverlay.Visibility = Visibility.Collapsed;
+            }
+        }
+        #endregion
+
+        #region VRChat OTP Overlay
+        private void VRChatOTPOverlay_OkButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (VRChatOTPOverlay != null)
+            {
+                var code = OverlayVRChatOTPTextBox.Text;
+                // Save OTP code securely
+                // Hide the overlay
+                VRChatOTPOverlay.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        private void VRChatOTPOverlay_CancelButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (VRChatOTPOverlay != null)
+            {
+                // Hide the overlay without saving
+                VRChatOTPOverlay.Visibility = Visibility.Collapsed;
             }
         }
         #endregion

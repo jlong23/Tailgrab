@@ -43,7 +43,7 @@ namespace Tailgrab
         {
         }
 
-        public async void StartAllServices()
+        public async Task StartAllServices()
         {
             try
             {
@@ -70,8 +70,12 @@ namespace Tailgrab
                 logger.Info("Starting Configuration Manager...");
                 configurationManager = new ConfigurationManager(this);
 
-                logger.Info("Starting VR Chat API Client...");
-                await vrcAPIClient.Initialize();
+                logger.Info("Starting VR Chat API Client...");           
+                bool result = await vrcAPIClient.Initialize();
+                if (!result)
+                {
+                    throw new InvalidOperationException("Failed to initialize VRChat API Client. Please check the application logs for details.");
+                }
 
                 logger.Info("Starting OLLama API Client...");
                 ollamaAPIClient = new OllamaClient(this);

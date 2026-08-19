@@ -97,7 +97,7 @@ public class FileTailer
         }
 
         _serviceRegistry = new ServiceRegistry();
-        _serviceRegistry.StartAllServices();
+        _serviceRegistry.StartAllServices().GetAwaiter().GetResult();
 
         UpgradeApplication(_serviceRegistry);
 
