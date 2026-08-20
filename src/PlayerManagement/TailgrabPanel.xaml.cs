@@ -1513,7 +1513,7 @@ namespace Tailgrab.PlayerManagement
                     if (WorldId != currentSession.WorldId || InstanceId != currentSession.InstanceId)
                     {
                         WorldId = currentSession.WorldId ?? string.Empty;
-                        InstanceId = currentSession.InstanceId ?? string.Empty;
+                        InstanceId = currentSession.ToStatusString();
                     }
 
                     // Update elapsed time

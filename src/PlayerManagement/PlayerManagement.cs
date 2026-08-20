@@ -32,7 +32,7 @@ namespace Tailgrab.PlayerManagement
         private static Dictionary<string, string> userIdByDisplayName = [];
         private static Dictionary<string, string> avatarByDisplayName = [];
         private static Dictionary<string, PlayerAvatar> playerAvatarByName = [];
-        public static SessionInfo CurrentSession = new("", "");
+        public static WorldInstanceInfo CurrentSession = new WorldInstanceInfo(string.Empty, string.Empty);
 
         public static readonly AnsiColor COLOR_PREFIX_LEAVE = AnsiColor.Yellow;
         public static readonly AnsiColor COLOR_PREFIX_JOIN = AnsiColor.Green;
@@ -113,11 +113,51 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
-        public static void UpdateCurrentSession(string worldId, string instanceId)
+        public async Task<WorldInstanceInfo> UpdateCurrentSession(string worldId, string instanceId)
         {
-            CurrentSession = new SessionInfo(worldId, instanceId);
+            WorldInstanceInfo worldInfo = await GetWorldInstanceInfo(worldId, instanceId);
+
+
+            CurrentSession = worldInfo;
             OverlayManager overlay = serviceRegistry.GetXSOverlay();
             overlay.Initialize();
+
+            return worldInfo;
+        }
+
+        public async Task<WorldInstanceInfo> GetWorldInstanceInfo(string worldId, string instanceId)
+        {
+
+            WorldInstanceInfo worldInfo = new WorldInstanceInfo(worldId, instanceId);
+
+            if (!string.IsNullOrEmpty(worldInfo.WorldId))
+            {
+                World? worldData = await serviceRegistry.GetVRChatAPIClient().GetWorldInfo(worldInfo.WorldId);
+                if (worldData != null)
+                {
+                    worldInfo.WorldName = worldData.Name ?? string.Empty;
+                }
+            }
+
+            if (!string.IsNullOrEmpty(worldInfo.GroupId))
+            {
+                Result<Group?> groupResult = serviceRegistry.GetVRChatAPIClient().GetGroupById(worldInfo.GroupId);
+                if (groupResult.Value != null)
+                {
+                    worldInfo.GroupName = groupResult.Value.Name ?? string.Empty;
+                }
+            }
+
+            if (!string.IsNullOrEmpty(worldInfo.UserId))
+            {
+                User? userData = serviceRegistry.GetVRChatAPIClient().GetProfile(worldInfo.UserId);
+                if (userData != null)
+                {
+                    worldInfo.UserName = userData.DisplayName ?? string.Empty;
+                }
+            }
+
+            return worldInfo;
         }
 
         public void PlayerJoined(string userId, string displayName, AbstractLineHandler handler)
@@ -385,48 +425,12 @@ namespace Tailgrab.PlayerManagement
 
         #endregion
 
-        #region World Instance Info Management
-        public async Task<WorldInstanceInfo> GetWorldInstanceInfo(string worldId, string instanceId)
-        {
-
-            WorldInstanceInfo worldInfo = new WorldInstanceInfo(worldId, instanceId);
-
-            if( !string.IsNullOrEmpty(worldInfo.WorldId) )
-            {
-                World? worldData = await serviceRegistry.GetVRChatAPIClient().GetWorldInfo(worldInfo.WorldId);
-                if (worldData != null)
-                {
-                    worldInfo.WorldName = worldData.Name ?? string.Empty;
-                }
-            }
-
-            if(!string.IsNullOrEmpty(worldInfo.GroupId))
-            {
-                Result<Group?> groupResult = serviceRegistry.GetVRChatAPIClient().GetGroupById(worldInfo.GroupId);
-                if (groupResult.Value != null)
-                {
-                    worldInfo.GroupName = groupResult.Value.Name ?? string.Empty;
-                }
-            }
-
-            if(!string.IsNullOrEmpty(worldInfo.UserId))
-            {
-                User? userData = serviceRegistry.GetVRChatAPIClient().GetProfile(worldInfo.UserId);
-                if (userData != null)
-                {
-                    worldInfo.UserName = userData.DisplayName ?? string.Empty;
-                }
-            }
-
-            return worldInfo;
-        }
-        #endregion
-
     }
 
     #region World Instance Info Class
     public class WorldInstanceInfo
     {
+        private string _instanceId = string.Empty;
         public string WorldId { get; set; } = string.Empty;
         public string WorldName { get; set; } = string.Empty;
 
@@ -440,9 +444,12 @@ namespace Tailgrab.PlayerManagement
         public string GroupName { get; set; } = string.Empty;
         public string Region { get; set; } = string.Empty;
         public bool AgeGated { get; set; }
+        public DateTime StartDateTime { get; } = DateTime.Now;
+
 
         public WorldInstanceInfo(string worldId, string instanceId)
         {
+            _instanceId = instanceId;
             WorldId = worldId;
 
             List<string> instanceParts = instanceId.Split('~').ToList();
@@ -499,6 +506,55 @@ namespace Tailgrab.PlayerManagement
                 InstanceId = instanceId;
             }
         }
+
+        public string ToInstanceId() 
+        { 
+            return _instanceId; 
+        }
+
+        public string ToStatusString()
+        {
+            StringBuilder sb = new StringBuilder();
+
+            if(!string.IsNullOrEmpty(WorldName))
+            {
+                sb.Append($"{WorldName}");
+            }
+            else
+            {
+                sb.Append($"{WorldId}");
+            }
+
+            if( !string.IsNullOrEmpty(GroupName))
+            {
+                if( sb.Length > 0)
+                {
+                    sb.Append(" - ");
+                }
+                sb.Append($" Group: ({GroupName})");
+            }
+
+            if (!string.IsNullOrEmpty(UserName))
+            {
+                if( sb.Length > 0)
+                {
+                    sb.Append(" - ");
+                }
+                sb.Append($" User: ({UserName})");
+            }
+
+            if( AgeGated)
+            {
+                if( sb.Length > 0)
+                {
+                    sb.Append(" - ");
+                }
+                sb.Append($" Age-Gated");
+            }
+
+            return sb.ToString();
+        }
+
     }
     #endregion
 
@@ -570,7 +626,7 @@ namespace Tailgrab.PlayerManagement
         public string? CreatedBy { get; set; } = createdBy;
     }
 
-    public class Player(string userId, string displayName, SessionInfo session) : INotifyPropertyChanged
+    public class Player(string userId, string displayName, WorldInstanceInfo session) : INotifyPropertyChanged
     {
         public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -588,7 +644,7 @@ namespace Tailgrab.PlayerManagement
         public DateTime? InstanceEndTime { get; set; }
         public List<PlayerEvent> Events { get; set; } = [];
         public List<PlayerInventory> Inventory { get; set; } = [];
-        public SessionInfo Session { get; set; } = session;
+        public WorldInstanceInfo Session { get; set; } = session;
         public string? LastStickerUrl { get; set; } = string.Empty;
 
         public Dictionary<string, PlayerPrint> PrintData = [];
@@ -824,7 +880,7 @@ namespace Tailgrab.PlayerManagement
             sb.AppendLine($"InstanceStart: {InstanceStartTime:u}");
             sb.AppendLine($"InstanceEnd: {(InstanceEndTime.HasValue ? InstanceEndTime.Value.ToString("u") : string.Empty)}");
             sb.AppendLine($"WorldId: {Session.WorldId}");
-            sb.AppendLine($"InstanceId: {Session.InstanceId}");
+            sb.AppendLine($"InstanceId: {Session.ToInstanceId()}");
 
             if (PrintData != null && PrintData.Count > 0)
             {
@@ -854,13 +910,6 @@ namespace Tailgrab.PlayerManagement
 
             return sb.ToString();
         }
-    }
-
-    public class SessionInfo(string worldId, string instanceId)
-    {
-        public string WorldId { get; set; } = worldId;
-        public string InstanceId { get; set; } = instanceId;
-        public DateTime StartDateTime { get; } = DateTime.Now;
     }
 
     public class PlayerChangedEventArgs(PlayerChangedEventArgs.ChangeType type, Player player) : EventArgs

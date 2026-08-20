@@ -1,6 +1,7 @@
 namespace Tailgrab.LineHandler;
 
 using System.Text.RegularExpressions;
+using System.Windows.Documents;
 using Tailgrab.Common;
 using Tailgrab.PlayerManagement;
 
@@ -32,10 +33,8 @@ public class WorldChangeHandler : AbstractLineHandler
                 logger.Info($"{COLOR_PREFIX}World Join : {worldId} as instance {instanceId}{COLOR_RESET.GetAnsiEscape()}");
             }
 
-            PlayerManager.UpdateCurrentSession(worldId, instanceId);
-            PlayerManager.ClearAllPlayers(this);
-
             WorldInstanceInfo worldInfo = GetWorldInfo(worldId, instanceId);
+            PlayerManager.ClearAllPlayers(this);
 
             Dictionary<string, string> actionData = new Dictionary<string, string>
             {
@@ -63,6 +62,6 @@ public class WorldChangeHandler : AbstractLineHandler
 
     private WorldInstanceInfo GetWorldInfo(string worldId, string instanceId)
     {
-        return Task.Run(() => _serviceRegistry.GetPlayerManager().GetWorldInstanceInfo(worldId, instanceId)).Result;
+        return Task.Run(() => _serviceRegistry.GetPlayerManager().UpdateCurrentSession(worldId, instanceId)).Result;
     }
 }
