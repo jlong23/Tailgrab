@@ -1042,11 +1042,27 @@ Title="Tailgrab Player Panel"
 
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="3">
                                     <TextBox Name="AvatarDbFilterBox" Width="300" Margin="0,0,8,0" />
-                                    <Button Content="{DynamicResource UI.Tab.KnownAvatars.Filter.Apply}" Click="AvatarDbApplyFilter_Click" Margin="0,0,6,0"/>
-                                    <Button Content="{DynamicResource UI.Tab.KnownAvatars.Filter.Clear}" Click="AvatarDbClearFilter_Click" Margin="0,0,6,0"/>
-                                    <Button Content="{DynamicResource UI.Tab.KnownAvatars.Filter.Refresh}" Click="AvatarDbRefresh_Click" Margin="0,0,6,0"/>
-                                    <Button Content="{DynamicResource UI.Tab.KnownAvatars.Filter.FetchAvatar}" Click="AvatarFetch_Click" Margin="0,0,6,0"/>
-                                    <Button Content="{DynamicResource UI.Tab.KnownAvatars.Filter.PurgeNoneRecords}" Click="AvatarPurgeNoneRecords_Click" Margin="0,0,6,0" Background="#FFCC0000" Foreground="White"/>
+                                    <Button Content="{DynamicResource UI.Tab.KnownAvatars.Filter.Apply}" 
+                                            Click="AvatarDbApplyFilter_Click" 
+                                            Margin="0,0,6,0"
+                                            Width="80"/>
+                                    <Button Content="{DynamicResource UI.Tab.KnownAvatars.Filter.Clear}" 
+                                            Click="AvatarDbClearFilter_Click" 
+                                            Margin="0,0,6,0"
+                                            Width="80"/>
+                                    <Button Content="{DynamicResource UI.Tab.KnownAvatars.Filter.Refresh}" 
+                                            Click="AvatarDbRefresh_Click" 
+                                            Margin="0,0,6,0"
+                                            Width="80"/>
+                                    <Button Content="{DynamicResource UI.Tab.KnownAvatars.Filter.FetchAvatar}" 
+                                            Click="AvatarFetch_Click" 
+                                            Margin="0,0,6,0"
+                                            Width="110"/>
+                                    <Button Content="{DynamicResource UI.Tab.KnownAvatars.Filter.PurgeNoneRecords}" 
+                                            Click="AvatarPurgeNoneRecords_Click" 
+                                            Margin="0,0,6,0" 
+                                            Background="Red" Foreground="White" FontWeight="Bold" 
+                                            Width="130"/>
                                 </StackPanel>
 
                                 <GroupBox Header="{DynamicResource UI.Tab.KnownAvatars.Group.Title}" Grid.Row="1"  Grid.ColumnSpan="3" Margin="0,0,0,12" Name="AvatarInfoGroup">
@@ -1187,11 +1203,27 @@ Title="Tailgrab Player Panel"
 
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="3">
                                     <TextBox Name="GroupDbFilterBox" Width="300" Margin="0,0,8,0" />
-                                    <Button Content="{DynamicResource UI.Tab.KnownGroups.Filter.Apply}" Click="GroupDbApplyFilter_Click" Margin="0,0,6,0"/>
-                                    <Button Content="{DynamicResource UI.Tab.KnownGroups.Filter.Clear}" Click="GroupDbClearFilter_Click" Margin="0,0,6,0"/>
-                                    <Button Content="{DynamicResource UI.Tab.KnownGroups.Filter.Refresh}" Click="GroupDbRefresh_Click" Margin="0,0,6,0"/>
-                                    <Button Content="{DynamicResource UI.Tab.KnownGroups.Filter.FetchGroup}" Click="GroupFetch_Click" Margin="0,0,6,0"/>
-                                    <Button Content="{DynamicResource UI.Tab.KnownGroups.Filter.PurgeNoneRecords}" Click="GroupPurgeNoneRecords_Click" Margin="0,0,6,0" Background="#FFCC0000" Foreground="White"/>
+                                    <Button Content="{DynamicResource UI.Tab.KnownGroups.Filter.Apply}" 
+                                            Click="GroupDbApplyFilter_Click" 
+                                            Margin="0,0,6,0"
+                                            Width="80"/>
+                                    <Button Content="{DynamicResource UI.Tab.KnownGroups.Filter.Clear}" 
+                                            Click="GroupDbClearFilter_Click" 
+                                            Margin="0,0,6,0"
+                                            Width="80"/>
+                                    <Button Content="{DynamicResource UI.Tab.KnownGroups.Filter.Refresh}" 
+                                            Click="GroupDbRefresh_Click" 
+                                            Margin="0,0,6,0"
+                                            Width="80"/>
+                                    <Button Content="{DynamicResource UI.Tab.KnownGroups.Filter.FetchGroup}" 
+                                            Click="GroupFetch_Click" 
+                                            Margin="0,0,6,0"
+                                            Width="110"/>
+                                    <Button Content="{DynamicResource UI.Tab.KnownGroups.Filter.PurgeNoneRecords}" 
+                                            Click="GroupPurgeNoneRecords_Click" 
+                                            Margin="0,0,6,0" 
+                                            Background="Red" Foreground="White" FontWeight="Bold"
+                                            Width="130"/>
                                 </StackPanel>
 
                                 <GroupBox Header="{DynamicResource UI.Tab.KnownGroups.Group.Title}" Grid.Row="1"  Grid.ColumnSpan="3" Margin="0,0,0,12" Name="GroupInfoGroup">
@@ -1333,10 +1365,23 @@ Title="Tailgrab Player Panel"
 
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="3">
                                     <TextBox Name="UserDbFilterBox" Width="300" Margin="0,0,8,0" />
-                                    <Button Content="Apply Filter" Click="UserDbApplyFilter_Click" Margin="0,0,6,0"/>
-                                    <Button Content="Clear Filter" Click="UserDbClearFilter_Click" Margin="0,0,6,0"/>
-                                    <Button Content="Refresh" Click="UserDbRefresh_Click" Margin="0,0,6,0"/>
-                                    <Button Content="Purge Inactive Users" Click="PurgeInactiveUsers_Click" Margin="0,0,6,0" Background="#FFCC0000" Foreground="White"/>
+                                    <Button Content="Apply Filter" 
+                                            Click="UserDbApplyFilter_Click" 
+                                            Margin="0,0,6,0"
+                                            Width="80"/>
+                                    <Button Content="Clear Filter" 
+                                            Click="UserDbClearFilter_Click" 
+                                            Margin="0,0,6,0"
+                                            Width="80"/>
+                                    <Button Content="Refresh" 
+                                            Click="UserDbRefresh_Click" 
+                                            Margin="0,0,6,0"
+                                            Width="80"/>
+                                    <Button Content="Purge Inactive Users" 
+                                            Click="PurgeInactiveUsers_Click" 
+                                            Margin="0,0,6,0" 
+                                            Background="Red" Foreground="White" FontWeight="Bold"
+                                            Width="130"/>
                                 </StackPanel>
 
                                 <DataGrid Name="UserDbGrid" Grid.Row="1" AutoGenerateColumns="False" CanUserSortColumns="True" IsReadOnly="False" ItemsSource="{Binding UserDbView}" CellEditEnding="UserDbGrid_CellEditEnding" Grid.ColumnSpan="3">
@@ -1566,7 +1611,10 @@ Title="Tailgrab Player Panel"
                                         <Label Grid.Row="2" Grid.Column="0" Content="{DynamicResource UI.Tab.Secrets.Group.VRCCredentials.TwoFASeedKey}" VerticalAlignment="Center" HorizontalAlignment="Right"/>
                                         <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,6" >
                                             <PasswordBox Name="Vr2FaBox" Width="300" Margin="6,2" />
-                                            <Button Content="{DynamicResource UI.Tab.Secrets.Group.VRCCredentials.Action.2FAReset}" Width="120" Margin="6,2" Click="Reset2FA_Click" Background="#FFCC0000" Foreground="White"/>
+                                            <Button Content="{DynamicResource UI.Tab.Secrets.Group.VRCCredentials.Action.2FAReset}" 
+                                                    Width="120" Margin="6,2" 
+                                                    Click="Reset2FA_Click" 
+                                                    Background="Red" Foreground="White" FontWeight="Bold"/>
                                         </StackPanel>
 
                                     </Grid>
@@ -2187,6 +2235,7 @@ Title="Tailgrab Player Panel"
                                             <ColumnDefinition Width="Auto"/>
                                             <ColumnDefinition Width="Auto"/>
                                             <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
                                             <ColumnDefinition Width="*"/>
                                         </Grid.ColumnDefinitions>
 
@@ -2202,21 +2251,29 @@ Title="Tailgrab Player Panel"
                                         <Button Grid.Row="0" Grid.Column="2" 
                                                 Content="{DynamicResource UI.Tab.BanManagement.Group.Action.LoadUser}" 
                                                 Click="BanMgmtLoadUser_Click" 
-                                                Width="100"
+                                                Width="80"
                                                 Padding="4,2"
                                                 Margin="0,0,8,0"/>
                                         <Button Grid.Row="0" Grid.Column="3" 
                                                 Content="{DynamicResource UI.Tab.BanManagement.Group.Action.ReportUser}" 
                                                 Click="BanMgmtReportUser_Click" 
-                                                Width="100"
+                                                Width="80"
+                                                Background="Red" Foreground="White" FontWeight="Bold"
                                                 Padding="4,2"
                                                 Margin="0,0,8,0"/>
                                         <Button Grid.Row="0" Grid.Column="4" 
+                                                Content="{DynamicResource UI.Tab.KnownAvatars.Group.Action.ShowOwnerAvatars}" 
+                                                Name="BanMgmtShowOwnerAvatarsButton"
+                                                Click="BanMgmtAvatarCheckAvatars_Click" 
+                                                Width="80"
+                                                Padding="4,2"
+                                                Margin="0,0,8,0"/>
+                                        <Button Grid.Row="0" Grid.Column="5" 
                                                 Content="{DynamicResource UI.Tab.BanManagement.Group.Action.CheckGroups}" 
                                                 Click="BanMgmtCheckGroups_Click" 
                                                 Width="100"
                                                 Padding="4,2"/>
-                                        <TextBlock Grid.Row="0" Grid.Column="5"
+                                        <TextBlock Grid.Row="0" Grid.Column="6"
                                                    Name="BanMgmtUserStatusText"
                                                    VerticalAlignment="Center"
                                                    Margin="12,0,0,0"

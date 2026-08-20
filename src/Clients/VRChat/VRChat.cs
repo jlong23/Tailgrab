@@ -851,6 +851,24 @@ namespace Tailgrab.Clients.VRChat
             }
         }
 
+        public void DeleteCookies()
+        {
+            string filePath = Path.Combine(CommonConst.APPLICATION_LOCAL_DATA_PATH, "cookies.json");
+
+            if (!System.IO.File.Exists(filePath))
+                return;
+
+
+            try
+            {
+                System.IO.File.Delete(filePath);
+            }
+            catch (Exception ex)
+            {
+                logger.Error($"Failed to delete cookies: {ex.Message}");
+            }
+        }
+
         private static void PersistCookies(List<Cookie> cookies)
         {
             string filePath = Path.Combine(CommonConst.APPLICATION_LOCAL_DATA_PATH, "cookies.json");

@@ -839,7 +839,7 @@ namespace Tailgrab.PlayerManagement
             try
             {
                 var result = System.Windows.MessageBox.Show(
-                    "This will erase your Two Factor Authentication Seed Key. Are you sure you want to continue?",
+                    "This will erase your Two Factor Authentication Seed Key and Reset Cookies. Are you sure you want to continue?",
                     "Confirm 2FA Key Deletion",
                     MessageBoxButton.YesNo,
                     MessageBoxImage.Warning);
@@ -848,6 +848,7 @@ namespace Tailgrab.PlayerManagement
                     return;
 
                 ConfigStore.DeleteSecret(CommonConst.Registry_VRChat_Web_2FactorKey);
+                _serviceRegistry.GetVRChatAPIClient().DeleteCookies();
                 Vr2FaBox.Password = string.Empty;
                 Vr2FaBox.ToolTip = null;
                 System.Windows.MessageBox.Show("2FA key reset. Please re-enter your 2FA key or leave blank for Prompting of the One Time Codes.", "Reset 2FA", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -5462,6 +5463,37 @@ namespace Tailgrab.PlayerManagement
 
                 // Get display name if user is already loaded, otherwise use userId
                 string displayName = BanMgmtAvatarOwner.Text ?? userId;
+
+                // Call ShowUserAvatarsOverlay with the userId and display name
+                ShowUserAvatarsOverlay(userId, displayName);
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error checking groups for user");
+                System.Windows.MessageBox.Show($"Failed to check groups: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void BanMgmtAvatarCheckAvatars_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                string userId = BanMgmtUserIdTextBox.Text.Trim();
+
+                if (string.IsNullOrWhiteSpace(userId))
+                {
+                    System.Windows.MessageBox.Show("Please enter a User ID first.", "Validation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                if (!userId.StartsWith("usr_"))
+                {
+                    System.Windows.MessageBox.Show("Invalid User ID format (must start with usr_).", "Validation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                // Get display name if user is already loaded, otherwise use userId
+                string displayName = BanMgmtUserName.Text ?? userId;
 
                 // Call ShowUserAvatarsOverlay with the userId and display name
                 ShowUserAvatarsOverlay(userId, displayName);
