@@ -613,6 +613,8 @@ namespace Tailgrab.PlayerManagement
             System.Windows.DataObject.AddPastingHandler(OverlayUserIdTextBox, UserSelectionTextBox_Pasting);
             // User Account Test Box for Ollama testing
             System.Windows.DataObject.AddPastingHandler(UserAccountTestBox, UserSelectionTextBox_Pasting);
+            // Moderation Report UserIdTextBox for moderation report testing
+            System.Windows.DataObject.AddPastingHandler(ModerationUserIdFilterBox, UserSelectionTextBox_Pasting);
 
             // Hook paste event for EmojiFilterBox to clear on paste
             System.Windows.DataObject.AddPastingHandler(EmojiFilterBox, InventorySelectionTextBox_Pasting);
