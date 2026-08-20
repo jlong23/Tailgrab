@@ -3,6 +3,8 @@ namespace Tailgrab.LineHandler;
 using System.Text.RegularExpressions;
 using Tailgrab.Common;
 using Tailgrab.PlayerManagement;
+using VRChat.API.Model;
+using static Tailgrab.Clients.VRChat.VRChatClient;
 
 public class EmojiHandler : AbstractLineHandler
 {
@@ -27,25 +29,40 @@ public class EmojiHandler : AbstractLineHandler
             string timestamp = m.Groups[VRC_DATETIME].Value;
             string userId = m.Groups[VRC_USERID].Value;
             string inventoryId = m.Groups[VRC_INVENTORYID].Value;
-            _serviceRegistry.GetInventoryManager().AddInventorySpawn(userId, inventoryId);
-            if (LogOutput)
+            VRChatInventoryItem? item = GetInventorySpawn(userId, inventoryId);
+            if (item != null && ( item.ItemTypeLabel == "Emoji" || item.ItemTypeLabel == "Sticker"))
             {
-                logger.Info($"{COLOR_PREFIX}Emoji/Inventory : {userId} / {inventoryId}{COLOR_RESET.GetAnsiEscape()}");
+                if (LogOutput)
+                {
+                    logger.Info($"{COLOR_PREFIX}Emoji/Inventory : {userId} / {inventoryId}{COLOR_RESET.GetAnsiEscape()}");
+                }
+
+                Player? player = PlayerManager.GetPlayerByUserId(userId);
+
+                Dictionary<string, string> actionData = new Dictionary<string, string>
+                {
+                    { "timestamp", timestamp },
+                    { "userId", userId },
+                    { "userName", player?.DisplayName ?? string.Empty },
+                    { "inventoryId", inventoryId },
+                    { "itemName", item.Name },
+                    { "itemType", item.ItemType },
+                    { "itemTypeLabel", item.ItemTypeLabel },
+                    { "itemDescription", item.Description },
+                    { "itemImageUrl", item.ImageUrl }
+                };
+
+                ExecuteActions(actionData);
+                return true;
             }
-
-            Player? player = PlayerManager.GetPlayerByUserId(userId);
-
-            Dictionary<string, string> actionData = new Dictionary<string, string>
-            {
-                { "timestamp", timestamp },
-                { "userId", userId },
-                { "userName", player?.DisplayName ?? string.Empty },
-                { "inventoryId", inventoryId }
-            };
-
-            ExecuteActions(actionData);
-            return true;
         }
+
         return false;
     }
+
+    private VRChatInventoryItem? GetInventorySpawn(string userId, string inventoryId)
+    {
+        return Task.Run(() => _serviceRegistry.GetInventoryManager().AddInventorySpawn(userId, inventoryId)).Result;
+    }
+
 }

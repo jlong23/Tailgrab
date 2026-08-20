@@ -86,7 +86,7 @@ namespace Tailgrab.LineHandler
                 }
                 else
                 {
-                    logger.Info(action.ToString() ?? "Action description is null");
+                    logger.Debug(action.ToString() ?? "Action description is null");
                     action.PerformAction(content);
                 }
             }

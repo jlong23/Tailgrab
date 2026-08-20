@@ -3,6 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 using Tailgrab.Clients.Ollama;
 using Tailgrab.Common;
 using Tailgrab.Models;
+using static Tailgrab.Clients.VRChat.VRChatClient;
 
 namespace Tailgrab.PlayerManagement
 {
@@ -21,12 +22,14 @@ namespace Tailgrab.PlayerManagement
             serviceRegistry = registry;
         }
 
-        public async void AddInventorySpawn(string userId, string inventoryId)
+        public async Task<VRChatInventoryItem?> AddInventorySpawn(string userId, string inventoryId)
         {
             if ( serviceRegistry == null) {
                 logger.Warn("ServiceRegistry is not initialized. Cannot fetch inventory item.");
-                return;
+                return null;
             }
+
+            VRChatInventoryItem? item = null;
 
             Player? player = PlayerManager.GetPlayerByUserId(userId);
             if (player != null)
@@ -38,17 +41,17 @@ namespace Tailgrab.PlayerManagement
                 string aiClassification = AIEvalutionEnumMapper.MapEnumToDescription(AIEvalutionEnum.NOT_AVAILABLE);
                 try
                 {
-                    var inventoryItem = await serviceRegistry.GetVRChatAPIClient()?.GetUserInventoryItem(userId, inventoryId)!;
-                    if (inventoryItem != null)
+                    item = await serviceRegistry.GetVRChatAPIClient()?.GetUserInventoryItem(userId, inventoryId)!;
+                    if (item != null)
                     {
-                        logger.Info($"{inventoryItem.ToString()}");
+                        logger.Debug($"{item.ToString()}");
 
-                        itemName = inventoryItem.Name ?? inventoryItem.ItemType ?? "Unknown Item";
-                        itemUrl = inventoryItem.ImageUrl ?? "";
-                        itemContent = inventoryItem.Metadata?.ImageUrl ?? itemUrl;
-                        inventoryType = inventoryItem.ItemTypeLabel ?? "Unknown Type";
+                        itemName = item.Name ?? item.ItemType ?? "Unknown Item";
+                        itemUrl = item.ImageUrl ?? "";
+                        itemContent = item.Metadata?.ImageUrl ?? itemUrl;
+                        inventoryType = item.ItemTypeLabel ?? "Unknown Type";
 
-                        logger.Info($"Fetched inventory item: {itemName} / ({inventoryItem.ItemTypeLabel}) for user {userId} / URL : {itemUrl}");
+                        logger.Info($"Fetched inventory item: {itemName} / ({item.ItemTypeLabel}) for user {userId} / URL : {itemUrl}");
                     }
                 }
                 catch (Exception ex)
@@ -80,6 +83,8 @@ namespace Tailgrab.PlayerManagement
                     }
                 }
             }
+
+            return item;
         }
 
         public void UpdatePlayerInventory(ImageReference processItem, ImageEvaluation? evaluated)

@@ -20,7 +20,7 @@ namespace Tailgrab.Actions
 
         public static string FormatData(string text, Dictionary<string, string> actionData)
         {      
-            logger.Info($"Formatting data for text: '{text}' with actionData: {string.Join(", ", actionData.Select(kvp => $"{kvp.Key}={kvp.Value}"))}");
+            logger.Debug($"Formatting data for text: '{text}' with actionData: {string.Join(", ", actionData.Select(kvp => $"{kvp.Key}={kvp.Value}"))}");
             if (string.IsNullOrEmpty(text))
             {
                 return text;

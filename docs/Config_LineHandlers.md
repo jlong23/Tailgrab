@@ -11,12 +11,12 @@ The LineHandler defines what type of system action to perform, what regular expr
 |--------|--------|
 | AvatarChange | Detects when the VRChat user changes avatars; Primary function is to link the Active Users with their currently worn Avatar |
 | AvatarUnpack | Detects when the VRChat avatar unpacks; Primary function is to look up publicly available avatar data and report the avatarId in the logs for crashers |
-| Emoji | Detects when the VRChat user uses an Emoji; Primary function is to link the Active Users with Emoji Image AI Evaluation for SFW Instance management |
+| Emoji | Detects when the VRChat user uses an Emoji or Stickers; Primary function is to link the Active Users with Emoji/Sticker Image AI Evaluation for SFW Instance management |
 | OnPlayerJoin | Detects when a VRChat user joins or leaves the instance; Primary function is to lookup the user for Active User panel or Past User panel |	
 | OnPlayerNetwork | Broken at the moment, was used to detect what user's instance network ID was assigned to them for linkage to Furry Hideout's Pen Usage; Relies on World Debug output |
 | PenNetwork | Broken at the moment, was used to detect what user's instance network ID was assigned to them for linkage to Furry Hideout's Pen Usage; Relies on World Debug output |
 | Print | Detects when a VRChat user has dropped a print in the instance; Primary function is to link the Active Users with Print Image AI Evaluation for SFW Instance management |
-| Sticker | Detects when a VRChat user has dropped a sticker in the instance; Primary function is to link the Active Users with Sticker Image AI Evaluation for SFW Instance management |
+| Sticker | Detects when a VRChat user has dropped a sticker in the instance; Primary function is to link the Active Users with LAST Sticker Image; Sticker Recording by EmojiHandler |
 | VTK | Detects when a VRChat user has a Vote to Kick (VTK) action; Primary function is to link the Active Users with VTK notice and log it |
 | WarnKick | Detects when a Moderator has warned or Kicked a user in the instance; Primary function is to link the Active Users with Warn/Kick notice and log it. | 
 | WorldChange | Detects when the VRChat user changes worlds; Primary function is to flush queues and clean up lists for the next world instance. |
@@ -75,6 +75,11 @@ For example, the WarnKick LineHandler will extract the userId, userName and what
 | userId | The VRChat userId of the user that used the emoji| Log line |
 | userName | The VRChat userName of the user that emitted the emoji | VRC API |
 | inventoryId | The VRChat inventoryId of the emoji that was used | Log line |
+| itemName | The VRChat itemName of the emoji that was used | VRC API |
+| itemType | The VRChat itemType of the emoji that was used | VRC API |
+| itemTypeLabel | The VRChat itemTypeLabel of the emoji that was used | VRC API |
+| itemDescription | The VRChat itemDescription of the emoji that was used | VRC API |
+| itemImageUrl | The VRChat itemImageUrl of the emoji that was used | VRC API |
 
 #### OnPlayerJoin LineHandler
 
