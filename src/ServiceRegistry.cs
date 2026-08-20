@@ -114,11 +114,6 @@ namespace Tailgrab
                 _ = Task.Run(() => groupManager.ProcessGroupGistList( null, false ));
 
                 logger.Info("All services started.");
-
-                // Get Active and Closed moderation reports to ensure the database is up to date
-                await moderationManager.GetModerationReports(false);
-                await moderationManager.GetModerationReports(true);
-
             }
             catch (Exception ex)
             {

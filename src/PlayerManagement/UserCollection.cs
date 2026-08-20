@@ -89,7 +89,53 @@ namespace Tailgrab.PlayerManagement
                     }
 
                     var items = query.OrderBy(a => a.DisplayName).Skip(skip).Take(_pageSize).ToList();
-                    list = items.Select(a => new UserInfoViewModel(a)).ToList();
+                    list = items.Select(a =>
+                    {
+                        var vm = new UserInfoViewModel(a);
+
+                        // Load ModerationInfo count for this user
+                        vm.ModerationRecordCount = db.ModerationInfos
+                            .Where(m => m.UserId == a.UserId)
+                            .Count();
+
+                        var moderationLast = db.ModerationInfos
+                            .Where(m => m.UserId == a.UserId)
+                            .OrderByDescending(m => m.EventDateTime)
+                            .FirstOrDefault();
+
+                        if (moderationLast != null)
+                        {
+                            vm.ModeratedLastDateTime = moderationLast.EventDateTime;
+                        }
+
+                        // Load ProfileEvaluation data for this user
+                        var profileEval = db.ProfileEvaluations
+                            .Where(p => p.Md5checksum == a.LastProfileChecksum)
+                            .OrderByDescending(p => p.LastDateTime)
+                            .FirstOrDefault();
+
+                        if (profileEval != null)
+                        {
+                            vm.ProfileEvaluationDateTime = profileEval.LastDateTime;
+
+                            // Extract first line from Evaluation byte array
+                            if (profileEval.Evaluation != null && profileEval.Evaluation.Length > 0)
+                            {
+                                try
+                                {
+                                    string evaluationText = System.Text.Encoding.UTF8.GetString(profileEval.Evaluation);
+                                    string firstLine = evaluationText.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None)[0];
+                                    vm.EvaluationFirstLine = firstLine.Length > 100 ? firstLine.Substring(0, 100) + "..." : firstLine;
+                                }
+                                catch
+                                {
+                                    vm.EvaluationFirstLine = null;
+                                }
+                            }
+                        }
+
+                        return vm;
+                    }).ToList();
                     _pages[page] = list;
                     var keep = new HashSet<int> { page, page - 1, page + 1 };
                     var keys = _pages.Keys.ToList();
@@ -171,6 +217,62 @@ namespace Tailgrab.PlayerManagement
         }
 
         public DateTime UpdatedAt { get; set; }
+
+        private int _moderationRecordCount;
+        public int ModerationRecordCount
+        {
+            get => _moderationRecordCount;
+            set
+            {
+                if (_moderationRecordCount != value)
+                {
+                    _moderationRecordCount = value;
+                    OnPropertyChanged(nameof(ModerationRecordCount));
+                }
+            }
+        }
+
+        private DateTime? _profileEvaluationDateTime;
+        public DateTime? ProfileEvaluationDateTime
+        {
+            get => _profileEvaluationDateTime;
+            set
+            {
+                if (_profileEvaluationDateTime != value)
+                {
+                    _profileEvaluationDateTime = value;
+                    OnPropertyChanged(nameof(ProfileEvaluationDateTime));
+                }
+            }
+        }
+
+        private string? _evaluationFirstLine;
+        public string? EvaluationFirstLine
+        {
+            get => _evaluationFirstLine;
+            set
+            {
+                if (_evaluationFirstLine != value)
+                {
+                    _evaluationFirstLine = value;
+                    OnPropertyChanged(nameof(EvaluationFirstLine));
+                }
+            }
+        }
+
+        private DateTime? _moderatedLastDateTime;
+        public DateTime? ModeratedLastDateTime
+        {
+            get => _moderatedLastDateTime;
+            set
+            {
+                if (_moderatedLastDateTime != value)
+                {
+                    _moderatedLastDateTime = value;
+                    OnPropertyChanged(nameof(ModeratedLastDateTime));
+                }
+            }
+        }
 
         public UserInfoViewModel(Models.UserInfo u)
         {

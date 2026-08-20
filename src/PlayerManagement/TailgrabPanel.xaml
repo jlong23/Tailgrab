@@ -934,6 +934,7 @@ Title="Tailgrab Player Panel"
                             <Button Content="{DynamicResource UI.Tab.ModerationReports.Filter.Apply}" Click="ModerationDbApplyFilter_Click" Margin="0,0,6,0"/>
                             <Button Content="{DynamicResource UI.Tab.ModerationReports.Filter.Clear}" Click="ModerationDbClearFilter_Click" Margin="0,0,6,0"/>
                             <Button Content="{DynamicResource UI.Tab.ModerationReports.Filter.Refresh}" Click="ModerationDbRefresh_Click" Margin="0,0,6,0"/>
+                            <Button Content="{DynamicResource UI.Tab.ModerationReports.Filter.Download}" Click="ModerationCheck_Click" Margin="0,0,6,0"/>
                         </StackPanel>
 
                         <GroupBox Header="{DynamicResource UI.Tab.ModerationReports.Group.Title}" Grid.Row="1" Grid.ColumnSpan="3" Margin="0,0,0,12">
@@ -1413,7 +1414,11 @@ Title="Tailgrab Player Panel"
                                                 </Style>
                                             </DataGridTextColumn.EditingElementStyle>
                                         </DataGridTextColumn>
-                                        <DataGridTextColumn Header="{DynamicResource UI.Tab.KnownUsers.Column.LastUpdated}" Binding="{Binding UpdatedAt, StringFormat={}{0:u}}" SortMemberPath="UpdatedAt" Width="200" IsReadOnly="True" />
+                                        <DataGridTextColumn Header="{DynamicResource UI.Tab.KnownUsers.Column.ProfileEvaluationDateTime}" Binding="{Binding ProfileEvaluationDateTime, StringFormat={}{0:u}}" Width="200" IsReadOnly="True" />
+                                        <DataGridTextColumn Header="{DynamicResource UI.Tab.KnownUsers.Column.EvaluationFirstLine}" Binding="{Binding EvaluationFirstLine}" Width="300" IsReadOnly="True" />
+                                        <DataGridTextColumn Header="{DynamicResource UI.Tab.KnownUsers.Column.ModerationRecordCount}" Binding="{Binding ModerationRecordCount}" Width="150" IsReadOnly="True" />
+                                        <DataGridTextColumn Header="{DynamicResource UI.Tab.KnownUsers.Column.ModeratedLastDateTime}" Binding="{Binding ModeratedLastDateTime, StringFormat={}{0:u}}" Width="200" IsReadOnly="True" />
+
                                     </DataGrid.Columns>
                                 </DataGrid>
                             </Grid>

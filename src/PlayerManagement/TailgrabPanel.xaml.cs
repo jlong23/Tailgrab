@@ -4120,6 +4120,14 @@ namespace Tailgrab.PlayerManagement
             RefreshModerationDb();
         }
 
+        private async void ModerationCheck_Click(object sender, RoutedEventArgs e)
+        {
+            // Get Active and Closed moderation reports to ensure the database is up to date
+            await _serviceRegistry.GetModerationManager().GetModerationReports(false);
+            await _serviceRegistry.GetModerationManager().GetModerationReports(true);
+            RefreshModerationDb();
+        }
+
         private void ModerationDbApplyFilter_Click(object sender, RoutedEventArgs e)
         {
             ApplyModerationDbFilter(ModerationUserIdFilterBox.Text, ModerationContentIdFilterBox.Text);

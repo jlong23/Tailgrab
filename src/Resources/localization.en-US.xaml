@@ -78,6 +78,7 @@
     <sys:String x:Key="UI.Tab.ModerationReports.Filter.Apply">Apply Filter</sys:String>
     <sys:String x:Key="UI.Tab.ModerationReports.Filter.Clear">Clear Filter</sys:String>
     <sys:String x:Key="UI.Tab.ModerationReports.Filter.Refresh">Refresh</sys:String>
+    <sys:String x:Key="UI.Tab.ModerationReports.Filter.Download">Check Reports</sys:String>
     <sys:String x:Key="UI.Tab.ModerationReports.Group.Title">Moderation Report Information</sys:String>
     <sys:String x:Key="UI.Tab.ModerationReports.Group.ReportId">Report ID:</sys:String>
     <sys:String x:Key="UI.Tab.ModerationReports.Group.ContentType">Content Type:</sys:String>
@@ -159,7 +160,10 @@
     <sys:String x:Key="UI.Tab.KnownUsers.Column.DisplayName">Display Name</sys:String>
     <sys:String x:Key="UI.Tab.KnownUsers.Column.UserId">User ID</sys:String>
     <sys:String x:Key="UI.Tab.KnownUsers.Column.ElapsedTime">Elapsed Time (hh:mm)</sys:String>
-    <sys:String x:Key="UI.Tab.KnownUsers.Column.LastUpdated">Last Updated</sys:String>
+    <sys:String x:Key="UI.Tab.KnownUsers.Column.ProfileEvaluationDateTime">Profile Evaluation DateTime</sys:String>
+    <sys:String x:Key="UI.Tab.KnownUsers.Column.EvaluationFirstLine">AI Evaluation</sys:String>
+    <sys:String x:Key="UI.Tab.KnownUsers.Column.ModerationRecordCount">Mod Rpt</sys:String>
+    <sys:String x:Key="UI.Tab.KnownUsers.Column.ModeratedLastDateTime">Rpt Date</sys:String>
 
 
     <!-- Line Matchers Tab Panel -->
