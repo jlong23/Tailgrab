@@ -19,7 +19,7 @@
 
     <SolidColorBrush x:Key="Brush.AgeVerificationEnum.VERIFIED" Color="Green" />
     <SolidColorBrush x:Key="Brush.AgeVerificationEnum.HIDDEN" Color="Gray" />
-    <SolidColorBrush x:Key="Brush.AgeVerificationEnum.PLUS18" Color="Purple" />
+    <SolidColorBrush x:Key="Brush.AgeVerificationEnum.PLUS18" Color="#ff3bff" />
     <SolidColorBrush x:Key="Brush.AgeVerificationEnum.Default" Color="White" />
 
 	<sys:String x:Key="Text.AgeVerificationEnum.UNVERIFIED">Unverified</sys:String>
