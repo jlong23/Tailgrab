@@ -476,12 +476,7 @@ namespace Tailgrab.PlayerManagement
                     {
                         AgeGated = true;
                     }
-                    else if (part.StartsWith("private("))
-                    {
-                        string value = part.Replace("private(", "").Replace(")", "");
-                        UserId = value;
-                        PrivateAccessType = "Request";
-                    }
+
                     else if (part.StartsWith("hidden("))
                     {
                         string value = part.Replace("hidden(", "").Replace(")", "");
@@ -494,9 +489,15 @@ namespace Tailgrab.PlayerManagement
                         UserId = value;
                         PrivateAccessType = "Friends";
                     }
+                    else if (part.StartsWith("private("))
+                    {
+                        string value = part.Replace("private(", "").Replace(")", "");
+                        UserId = value;
+                        PrivateAccessType = "Invite";
+                    }
                     else if (part.StartsWith("canRequestInvite"))
                     {
-                        PrivateAccessType = "Request+";
+                        PrivateAccessType = "Invite+";
                     }
                 }
                 InstanceId = instanceParts[0];
@@ -534,6 +535,15 @@ namespace Tailgrab.PlayerManagement
                 sb.Append($" Group: ({GroupName})");
             }
 
+            if(!string.IsNullOrEmpty(GroupAccessType))
+            {
+                if (sb.Length > 0)
+                {
+                    sb.Append(" - ");
+                }
+                sb.Append($" Access: ({GroupAccessType})");
+            }
+
             if (!string.IsNullOrEmpty(UserName))
             {
                 if( sb.Length > 0)
@@ -543,7 +553,25 @@ namespace Tailgrab.PlayerManagement
                 sb.Append($" User: ({UserName})");
             }
 
-            if( AgeGated)
+            if (!string.IsNullOrEmpty(PrivateAccessType))
+            {
+                if (sb.Length > 0)
+                {
+                    sb.Append(" - ");
+                }
+                sb.Append($" Access: ({PrivateAccessType})");
+            }
+
+            if (!string.IsNullOrEmpty(Region))
+            {
+                if (sb.Length > 0)
+                {
+                    sb.Append(" - ");
+                }
+                sb.Append($" Region: ({Region})");
+            }
+
+            if ( AgeGated)
             {
                 if( sb.Length > 0)
                 {
