@@ -816,8 +816,9 @@ namespace Tailgrab.PlayerManagement
                     }
                     else if (elapsed.TotalDays < 1)
                     {
-                        double hours = elapsed.Hours;
-                        return $"{hours:F1}H";
+                        //double hours = elapsed.Hours;
+                        //return $"{hours:F1}H";
+                        return "< day";
                     }
                 }
                 catch
@@ -909,6 +910,7 @@ namespace Tailgrab.PlayerManagement
             sb.AppendLine($"InstanceEnd: {(InstanceEndTime.HasValue ? InstanceEndTime.Value.ToString("u") : string.Empty)}");
             sb.AppendLine($"WorldId: {Session.WorldId}");
             sb.AppendLine($"InstanceId: {Session.ToInstanceId()}");
+            sb.AppendLine($"Instance Details: {Session.ToStatusString()}");
 
             if (PrintData != null && PrintData.Count > 0)
             {
