@@ -1,8 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Text;
+using System.Windows;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace Tailgrab.Common
 {
@@ -68,6 +72,58 @@ namespace Tailgrab.Common
             }
 
             return newImage;
+        }
+
+        public static string ConvertImageToBase64(Image image)
+        {
+            using (MemoryStream ms = new MemoryStream())
+            {
+                // XSOverlay accepts standard formats like PNG or JPEG.
+                // PNG is recommended to preserve transparency.
+                image.Save(ms, ImageFormat.Png);
+
+                byte[] imageBytes = ms.ToArray();
+
+                // Convert byte array to Base64 string
+                return Convert.ToBase64String(imageBytes);
+            }
+        }
+
+        public static Image ConvertGeometryToGdiImage(Geometry geometry, int width, int height)
+        {
+            // 1. Create a WPF DrawingVisual and draw the geometry
+            DrawingVisual drawingVisual = new DrawingVisual();
+            using (DrawingContext drawingContext = drawingVisual.RenderOpen())
+            {
+                drawingContext.DrawGeometry(System.Windows.Media.Brushes.Blue,
+                    new System.Windows.Media.Pen(System.Windows.Media.Brushes.Black, 2), geometry);
+            }
+
+            // 2. Render the visual to a RenderTargetBitmap
+            RenderTargetBitmap renderBitmap = new RenderTargetBitmap(
+                width, height, 96d, 96d, PixelFormats.Pbgra32);
+            renderBitmap.Render(drawingVisual);
+
+            // 3. Create a System.Drawing Bitmap with matching pixel formatting
+            Bitmap gdiBitmap = new Bitmap(width, height, System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
+
+            // 4. Safely copy the pixel byte data into GDI memory
+            BitmapData bitmapData = gdiBitmap.LockBits(
+                new Rectangle(0, 0, width, height),
+                ImageLockMode.WriteOnly,
+                gdiBitmap.PixelFormat);
+
+            try
+            {
+                int stride = bitmapData.Stride;
+                renderBitmap.CopyPixels(Int32Rect.Empty, bitmapData.Scan0, stride * height, stride);
+            }
+            finally
+            {
+                gdiBitmap.UnlockBits(bitmapData);
+            }
+
+            return gdiBitmap; // Returns as System.Drawing.Image
         }
     }
 }
