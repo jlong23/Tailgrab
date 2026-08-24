@@ -9,6 +9,7 @@ using System.Text;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Media;
+using Tailgrab.Clients.Prismic;
 using Tailgrab.Common;
 using Tailgrab.Configuration;
 using Tailgrab.LineHandler;
@@ -62,6 +63,8 @@ public class FileTailer
         NLog.GlobalDiagnosticsContext.Set("StartTime", DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss"));
         string configFilePath = Path.Combine(CommonConst.APPLICATION_LOCAL_DATA_PATH, "NLog.config");
         LogManager.Setup().LoadConfigurationFromFile(configFilePath);
+
+        //PrismicBinaryReader.GetPrismicObjAsync("C:\\Users\\jlong\\Nextcloud\\The Distinguished Furs Group\\pasavtrdb.txt").GetAwaiter().GetResult();
 
         // Basic command line parsing:
         // -l <FilePath>    : use explicit log folder/file path
