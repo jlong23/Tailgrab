@@ -915,7 +915,7 @@ namespace Tailgrab.PlayerManagement
                 foreach (var group in groupInfos)
                 {
                     string alertTypeString = AlertTypeEnumMapper.MapEnumToString(group.AlertType);
-                    sb.AppendLine($"\"{group.GroupId}\",\"{group.GroupName}\",\"{alertTypeString}\"");
+                    sb.AppendLine($"{Utility.EscapeCsvField(group.GroupId)},{Utility.EscapeCsvField(group.GroupName)},{Utility.EscapeCsvField(alertTypeString)}");
                 }
 
                 return sb.ToString();

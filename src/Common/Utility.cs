@@ -141,5 +141,22 @@ namespace Tailgrab.Common
                 }
             }
         }
+
+        public static string EscapeCsvField(string field)
+        {
+            if (string.IsNullOrEmpty(field))
+                return "\"\"";
+
+            // If field contains special characters, wrap in quotes and escape internal quotes
+            if (field.Contains('"') || field.Contains(',') || field.Contains('\n') || field.Contains('\r'))
+            {
+                return $"\"{field.Replace("\"", "\"\"")}\"";
+            }
+
+            // Wrap all fields in quotes for consistency and UTF-8 safety
+            return $"\"{field}\"";
+        }
+
+
     }
 }

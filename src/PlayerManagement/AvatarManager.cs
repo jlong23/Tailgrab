@@ -1114,7 +1114,7 @@ namespace Tailgrab.PlayerManagement
                 foreach (var avatar in avatarInfos)
                 {
                     string alertTypeString = AlertTypeEnumMapper.MapEnumToString(avatar.AlertType);
-                    sb.AppendLine($"\"{avatar.AvatarId}\",\"{avatar.AvatarName}\",\"{alertTypeString}\"");
+                    sb.AppendLine($"{Utility.EscapeCsvField(avatar.AvatarId)},{Utility.EscapeCsvField(avatar.AvatarName)},{Utility.EscapeCsvField(alertTypeString)}");
                 }
 
                 return sb.ToString();
@@ -1125,7 +1125,7 @@ namespace Tailgrab.PlayerManagement
                 return string.Empty;
             }
         }
-        #endregion 
+        #endregion
 
         #region User Avatar Overlay
         public async Task<List<UserAvatarViewModel>> LoadUserAvatarAsync(string userId)
@@ -1345,5 +1345,6 @@ namespace Tailgrab.PlayerManagement
             Message = message;
         }
     }
+
     #endregion
 }
