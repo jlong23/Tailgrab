@@ -218,7 +218,14 @@ namespace Tailgrab.PlayerManagement
                         player = PlayerManager.AddPlayerEventByDisplayName(displayName, PlayerEvent.EventType.AvatarWatch, $"User has used a watched Avatar : {avatarName} alertType: {watchedAvatar.AlertType}");
                         player?.AddAlertMessage(AlertClassEnum.Avatar, watchedAvatar.AlertType, $"{avatarName}");
                         OverlayManager overlay = serviceRegistry.GetXSOverlay();
-                        _ = overlay.SendNotification(watchedAvatar.AlertType, $"Player \\b1{displayName}\\b0 has used a watched Avatar \\b1\\i1{avatarName}\\i0\\b0");
+
+                        Image? avatarAlert = null;
+
+                        _ = overlay.SendNotification(
+                            watchedAvatar.AlertType,
+                            "Avatar Watch Alert",
+                            $"Player \\b1{displayName}\\b0 has used a watched Avatar \\b1\\i1{avatarName}\\i0\\b0",
+                            avatarAlert);
                     }
                 }
                 if (player != null)
@@ -1078,6 +1085,45 @@ namespace Tailgrab.PlayerManagement
             }
 
             return new AvatarImportItem(lineNumber, avatarId, avatarName, alertType);
+        }
+
+
+        public async Task<string> GetAvatarExport()
+        {
+            try
+            {
+                var context = serviceRegistry.GetDBContext();
+                if (context == null)
+                {
+                    logger.Warn("Database context is not available.");
+                    return string.Empty;
+                }
+
+                var avatarInfos = context.AvatarInfos
+                    .Where(a => a.AlertType > AlertTypeEnum.None)
+                    .OrderBy(a => a.AvatarName)
+                    .ToList();
+
+                if (avatarInfos.Count == 0)
+                {
+                    logger.Info("No avatars with alerts found to export.");
+                    return string.Empty;
+                }
+
+                var sb = new StringBuilder();
+                foreach (var avatar in avatarInfos)
+                {
+                    string alertTypeString = AlertTypeEnumMapper.MapEnumToString(avatar.AlertType);
+                    sb.AppendLine($"\"{avatar.AvatarId}\",\"{avatar.AvatarName}\",\"{alertTypeString}\"");
+                }
+
+                return sb.ToString();
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to get avatar export data");
+                return string.Empty;
+            }
         }
         #endregion 
 

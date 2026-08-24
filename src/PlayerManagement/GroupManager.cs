@@ -195,7 +195,12 @@ namespace Tailgrab.PlayerManagement
                 if (player != null && player.IsWatched)
                 {
                     OverlayManager overlay = serviceRegistry.GetXSOverlay();
-                    await overlay.SendNotification(maxAlertType, $"Player \b1{player.DisplayName}\b0 has questionable group memberships:\r\n{groupNames}");
+                    Image? groupAlert = null;
+                    await overlay.SendNotification(
+                        maxAlertType, 
+                        "Group Watch Alert", 
+                        $"Player \\b1{player.DisplayName}\\b0 has group membership alerts:\r\n{groupNames}", 
+                        groupAlert);
 
                     SoundManager.PlayAlertSound(CommonConst.Group_Alert_Key, maxAlertType);
                     return true;
@@ -882,6 +887,44 @@ namespace Tailgrab.PlayerManagement
             }
 
             return existing;
+        }
+
+        public async Task<string> GetGroupExport()
+        {
+            try
+            {
+                var context = serviceRegistry.GetDBContext();
+                if (context == null)
+                {
+                    logger.Warn("Database context is not available.");
+                    return string.Empty;
+                }
+
+                var groupInfos = context.GroupInfos
+                    .Where(g => g.AlertType > AlertTypeEnum.None)
+                    .OrderBy(g => g.GroupName)
+                    .ToList();
+
+                if (groupInfos.Count == 0)
+                {
+                    logger.Info("No Groups with alerts found to export.");
+                    return string.Empty;
+                }
+
+                var sb = new StringBuilder();
+                foreach (var group in groupInfos)
+                {
+                    string alertTypeString = AlertTypeEnumMapper.MapEnumToString(group.AlertType);
+                    sb.AppendLine($"\"{group.GroupId}\",\"{group.GroupName}\",\"{alertTypeString}\"");
+                }
+
+                return sb.ToString();
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to export group GIST data");
+                return string.Empty;
+            }
         }
         #endregion
     }

@@ -41,6 +41,17 @@ namespace Tailgrab.Common
             };
         }
 
+        public static string MapEnumToString(AlertTypeEnum alertType)
+        {
+            return alertType switch
+            {
+                AlertTypeEnum.Watch => "Watch",
+                AlertTypeEnum.Nuisance => "Nuisance",
+                AlertTypeEnum.Crasher => "Crasher",
+                _ => "None"
+            };
+        }   
+
         public static AlertDisplayItem MapEnumToAlertDisplayItem(AlertTypeEnum alertType)
         {
             return new AlertDisplayItem

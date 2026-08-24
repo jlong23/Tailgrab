@@ -11,6 +11,7 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
 using System.Windows.Threading;
+using Tailgrab.Clients.Github;
 using Tailgrab.Clients.Ollama;
 using Tailgrab.Clients.VRChat;
 using Tailgrab.Common;
@@ -920,46 +921,13 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
-        private void ExportAvatarGist_Click(object sender, RoutedEventArgs e)
+        private async void ExportAvatarGist_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                var context = _serviceRegistry.GetDBContext();
-                if (context == null)
-                {
-                    System.Windows.MessageBox.Show("Database context is not available.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
-
-                var avatarInfos = context.AvatarInfos
-                    .Where(a => a.AlertType > AlertTypeEnum.None)
-                    .OrderBy(a => a.AvatarName)
-                    .ToList();
-
-                if (avatarInfos.Count == 0)
-                {
-                    System.Windows.MessageBox.Show("No avatars with alerts found to export.", "Export to Clipboard", MessageBoxButton.OK, MessageBoxImage.Information);
-                    return;
-                }
-
-                var sb = new StringBuilder();
-                foreach (var avatar in avatarInfos)
-                {
-                    string alertTypeString = avatar.AlertType switch
-                    {
-                        AlertTypeEnum.Watch => "Watch",
-                        AlertTypeEnum.Nuisance => "Nuisance",
-                        AlertTypeEnum.Crasher => "Crasher",
-                        _ => "NONE"
-                    };
-
-                    sb.AppendLine($"\"{avatar.AvatarId}\",\"{avatar.AvatarName}\",\"{alertTypeString}\"");
-                }
-
-                string result = sb.ToString();
+                string result = await _serviceRegistry.GetAvatarManager().GetAvatarExport();
                 System.Windows.Clipboard.SetText(result);
-
-                System.Windows.MessageBox.Show($"Exported {avatarInfos.Count} Avatar(s) to clipboard.", "Export to Clipboard", MessageBoxButton.OK, MessageBoxImage.Information);
+                System.Windows.MessageBox.Show($"Exported Avatar(s) to clipboard.", "Export to Clipboard", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
@@ -968,46 +936,13 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
-        private void ExportGroupGist_Click(object sender, RoutedEventArgs e)
+        private async void ExportGroupGist_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                var context = _serviceRegistry.GetDBContext();
-                if (context == null)
-                {
-                    System.Windows.MessageBox.Show("Database context is not available.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
-
-                var groupInfos = context.GroupInfos
-                    .Where(g => g.AlertType > AlertTypeEnum.None)
-                    .OrderBy(g => g.GroupName)
-                    .ToList();
-
-                if (groupInfos.Count == 0)
-                {
-                    System.Windows.MessageBox.Show("No Groups with alerts found to export.", "Export to Clipboard", MessageBoxButton.OK, MessageBoxImage.Information);
-                    return;
-                }
-
-                var sb = new StringBuilder();
-                foreach (var group in groupInfos)
-                {
-                    string alertTypeString = group.AlertType switch
-                    {
-                        AlertTypeEnum.Watch => "Watch",
-                        AlertTypeEnum.Nuisance => "Nuisance",
-                        AlertTypeEnum.Crasher => "Crasher",
-                        _ => "NONE"
-                    };
-
-                    sb.AppendLine($"\"{group.GroupId}\",\"{group.GroupName}\",\"{alertTypeString}\"");
-                }
-
-                string result = sb.ToString();
+                string result = await _serviceRegistry.GetGroupManager().GetGroupExport();
                 System.Windows.Clipboard.SetText(result);
-
-                System.Windows.MessageBox.Show($"Exported {groupInfos.Count} group(s) to clipboard.", "Export to Clipboard", MessageBoxButton.OK, MessageBoxImage.Information);
+                System.Windows.MessageBox.Show($"Exported group(s) to clipboard.", "Export to Clipboard", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
