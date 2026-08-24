@@ -119,8 +119,7 @@ namespace Tailgrab.PlayerManagement
 
 
             CurrentSession = worldInfo;
-            OverlayManager overlay = serviceRegistry.GetXSOverlay();
-            overlay.Initialize();
+            await serviceRegistry.GetXSOverlay().Initialize();
 
             return worldInfo;
         }

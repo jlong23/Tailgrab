@@ -10,22 +10,22 @@ using System.Threading.Tasks;
 
 namespace Tailgrab.Clients.Prismic
 {
-    public class AvatarEntry
+    public class AvatarEntry    
     {
-        public string AvatarId { get; set; }
-        public string Name { get; set; }
-        public string Author { get; set; }
-        public string Description { get; set; }
+        public required string AvatarId { get; set; }
+        public required string Name { get; set; }
+        public required string Author { get; set; }
+        public required string Description { get; set; }
         public bool Quest { get; set; }
         public bool Ios { get; set; }
-        public int[] Flags { get; set; } // [Platform, Impostor, PC Rating, Quest Rating, IOS Rating, Content Warnings, Style Filter, Marketplace]
+        public required int[] Flags { get; set; } // [Platform, Impostor, PC Rating, Quest Rating, IOS Rating, Content Warnings, Style Filter, Marketplace]
     }
 
     public class AvatarData
     {
         public int AvatarCount { get; set; }
         public int AuthorCount { get; set; }
-        public string LastUpdate { get; set; }
+        public string? LastUpdate { get; set; }
         public List<AvatarEntry> Entries { get; set; } = new List<AvatarEntry>();
         public Dictionary<string, AvatarEntry> IdMap { get; set; } = new Dictionary<string, AvatarEntry>();
 

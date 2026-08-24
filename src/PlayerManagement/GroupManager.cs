@@ -497,7 +497,7 @@ namespace Tailgrab.PlayerManagement
         public async Task<bool> ProcessGroupGistList(string? tempUrl, bool ignoreChecksum)
         {
             string? gistUrl = string.Empty;
-            string gistId = ConfigStore.GetStoredKeyString(CommonConst.Registry_Github_Gist_ID);
+            string? gistId = ConfigStore.GetStoredKeyString(CommonConst.Registry_Github_Gist_ID);
 
             if (!string.IsNullOrWhiteSpace(tempUrl))
             {
@@ -906,6 +906,11 @@ namespace Tailgrab.PlayerManagement
         {
             try
             {
+                if (serviceRegistry == null)
+                {
+                    return string.Empty;
+                }
+
                 var context = serviceRegistry.GetDBContext();
                 if (context == null)
                 {

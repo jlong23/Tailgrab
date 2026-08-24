@@ -815,7 +815,7 @@ namespace Tailgrab.PlayerManagement
                     logger.Info($"Updated AvatarInfo for {AvatarId} to AlertType None due to 404 Not Found.");
 
                     if( serviceRegistry != null)
-                        serviceRegistry.GetVRChatAPIClient().DeleteAvatarGlobal(AvatarId);
+                        Task.Run(() => serviceRegistry.GetVRChatAPIClient().DeleteAvatarGlobal(AvatarId));
 
                 }
                 catch (Exception ex)
@@ -866,7 +866,7 @@ namespace Tailgrab.PlayerManagement
         public async Task<bool> ProcessAvatarGistList()
         {
             string? gistUrl = null;
-            string gistId = ConfigStore.GetStoredKeyString(CommonConst.Registry_Github_Gist_ID);
+            string? gistId = ConfigStore.GetStoredKeyString(CommonConst.Registry_Github_Gist_ID);
 
             if ( ConfigStore.GetStoredKeyBool(CommonConst.Registry_Github_Use_Automation, false) == true && !string.IsNullOrEmpty(gistId))
             {
@@ -1106,6 +1106,12 @@ namespace Tailgrab.PlayerManagement
         {
             try
             {
+                if(serviceRegistry == null)
+                {
+                    logger.Warn("ServiceRegistry is not initialized.");
+                    return string.Empty;
+                }
+
                 var context = serviceRegistry.GetDBContext();
                 if (context == null)
                 {

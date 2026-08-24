@@ -11,8 +11,14 @@ namespace Tailgrab.Clients.Github
 {
     public class GithubClient
     {
-        public static async Task<bool> UpdateGist(string personalAccessToken, string gistId, string fileNameToUpdate, string newContent)
+        public static async Task<bool> UpdateGist(string? personalAccessToken, string? gistId, string fileNameToUpdate, string newContent)
         {
+            if( personalAccessToken == null || gistId == null)
+            {
+                Console.WriteLine("Personal Access Token or Gist ID is null.");
+                return false;
+            }
+
             using (var client = new HttpClient())
             {
                 // Configure Headers
