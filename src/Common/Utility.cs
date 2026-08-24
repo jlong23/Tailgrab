@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Net.Http;
 using System.Text;
 using System.Windows;
 using System.Windows.Media;
@@ -124,6 +125,21 @@ namespace Tailgrab.Common
             }
 
             return gdiBitmap; // Returns as System.Drawing.Image
+        }
+
+        public static async Task<Image> DownloadImageFromUrlAsync(string url)
+        {
+            using (HttpClient client = new HttpClient())
+            {
+                // Download the image data as a byte array
+                byte[] imageBytes = await client.GetByteArrayAsync(url);
+
+                // Wrap the bytes in a memory stream and create the Image object
+                using (MemoryStream ms = new MemoryStream(imageBytes))
+                {
+                    return Image.FromStream(ms);
+                }
+            }
         }
     }
 }
