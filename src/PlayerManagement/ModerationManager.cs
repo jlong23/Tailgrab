@@ -179,6 +179,10 @@ namespace Tailgrab.PlayerManagement
 
             try
             {
+                if( string.IsNullOrEmpty(UserId))
+                {
+                    UserId = convertModerationsReportTypeToUserId(response);
+                }
                 TailgrabDBContext dBContext = serviceRegistry.GetDBContext();
 
 

@@ -7,6 +7,7 @@ using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using Tailgrab.Clients.Github;
 using Tailgrab.Clients.Ollama;
 using Tailgrab.Clients.VRCDB;
 using Tailgrab.Clients.XSOverlay;
@@ -864,7 +865,20 @@ namespace Tailgrab.PlayerManagement
         /// <returns>True if processing was successful, false otherwise</returns>
         public async Task<bool> ProcessAvatarGistList()
         {
-            string? gistUrl = GetStoredUri();
+            string? gistUrl = null;
+            string gistId = ConfigStore.GetStoredKeyString(CommonConst.Registry_Github_Gist_ID);
+
+            if ( ConfigStore.GetStoredKeyBool(CommonConst.Registry_Github_Use_Automation, false) == true && !string.IsNullOrEmpty(gistId))
+            {
+                gistUrl = await GithubClient.GetGistFileUrl(gistId, "Avatars.csv");
+                logger.Info($"Using GIST URL from GitHub Automation: {gistUrl}");
+            } 
+            else
+            {
+                gistUrl = GetStoredUri();
+                logger.Info($"Using GIST URL from stored URI: {gistUrl}");
+            }
+
             if (string.IsNullOrWhiteSpace(gistUrl))
             {
                 logger.Error("Avatar GIST URL was empty, no update.");

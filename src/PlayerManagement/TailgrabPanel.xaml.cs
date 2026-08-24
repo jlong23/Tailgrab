@@ -680,6 +680,10 @@ namespace Tailgrab.PlayerManagement
             var groupGistUri = ConfigStore.GetStoredKeyString(CommonConst.Registry_Group_Gist);
             var xsOverlayLevel = ConfigStore.GetStoredKeyString(CommonConst.Registry_XSOverlay_Level) ?? CommonConst.XSOverlay_Level_None;
 
+            var GithubGistPAT = ConfigStore.GetStoredKeyString(CommonConst.Registry_Github_Gist_PAT);
+            var GithubGistID = ConfigStore.GetStoredKeyString(CommonConst.Registry_Github_Gist_ID);
+
+
             // Populate UI boxes but do not reveal secrets
             if (!string.IsNullOrEmpty(vrUser)) VrUserBox.Text = vrUser;
             if (!string.IsNullOrEmpty(vrPass)) VrPassBox.ToolTip = "Stored (hidden)";
@@ -689,6 +693,11 @@ namespace Tailgrab.PlayerManagement
             if (!string.IsNullOrEmpty(ollamaModel)) VrOllamaModelBox.SelectedValue = ollamaModel;
             if (!string.IsNullOrEmpty(ollamaProfilePrompt)) VrOllamaPromptBox.Text = ollamaProfilePrompt;
             if (!string.IsNullOrEmpty(ollamaImagePrompt)) VrOllamaImagePromptBox.Text = ollamaImagePrompt;
+
+            UseGistAutomation.IsChecked = ConfigStore.GetStoredKeyBool(CommonConst.Registry_Github_Use_Automation, false);
+            if (!string.IsNullOrEmpty(GithubGistPAT)) GithubPersonalAccessToken.ToolTip = "Stored (hidden)";
+            if (!string.IsNullOrEmpty(GithubGistPAT)) GithubPersonalAccessToken.Text = string.Empty;
+            if (!string.IsNullOrEmpty(GithubGistID)) GithubGistUrl.Text = GithubGistID;
 
             if (!string.IsNullOrEmpty(avatarGistUri)) avatarGistUrl.Text = avatarGistUri;
             if (!string.IsNullOrEmpty(groupGistUri)) groupGistUrl.Text = groupGistUri;
@@ -796,13 +805,18 @@ namespace Tailgrab.PlayerManagement
         {
             try
             {
+                ClearGistUrlsIfAutomationEnabled();
+
                 // Save to registry protected store
                 ConfigStore.SaveSecret(CommonConst.Registry_VRChat_Web_UserName, VrUserBox.Text.Trim() ?? string.Empty);
                 if (!string.IsNullOrEmpty(VrPassBox.Password)) ConfigStore.SaveSecret(CommonConst.Registry_VRChat_Web_Password, VrPassBox.Password.Trim());
                 if (!string.IsNullOrEmpty(Vr2FaBox.Password)) ConfigStore.SaveSecret(CommonConst.Registry_VRChat_Web_2FactorKey, Vr2FaBox.Password.Trim());
 
-                ConfigStore.PutStoredKeyString(Common.CommonConst.Registry_Avatar_Gist, avatarGistUrl.Text);
-                ConfigStore.PutStoredKeyString(CommonConst.Registry_Group_Gist, groupGistUrl.Text);
+                ConfigStore.PutStoredKeyString(CommonConst.Registry_Avatar_Gist, avatarGistUrl.Text.Trim() ?? string.Empty);
+                ConfigStore.PutStoredKeyString(CommonConst.Registry_Group_Gist, groupGistUrl.Text.Trim() ?? string.Empty);
+                ConfigStore.SaveSecret(CommonConst.Registry_Github_Gist_PAT, GithubPersonalAccessToken.Text.Trim() ?? string.Empty);
+                ConfigStore.PutStoredKeyString(CommonConst.Registry_Github_Gist_ID, GithubGistUrl.Text.Trim() ?? string.Empty);
+                ConfigStore.PutStoredKeyBool(CommonConst.Registry_Github_Use_Automation, UseGistAutomation.IsChecked == true);
 
                 ConfigStore.PutStoredKeyBool(CommonConst.Registry_Discovered_Avatar_Caching, DiscoveredAvatarCaching.IsChecked == true);
                 ConfigStore.PutStoredKeyBool(CommonConst.Registry_Moderated_Avatar_Caching, ModeratedAvatarCaching.IsChecked == true);
@@ -815,6 +829,17 @@ namespace Tailgrab.PlayerManagement
             catch (Exception ex)
             {
                 System.Windows.MessageBox.Show($"Failed to save configuration: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void ClearGistUrlsIfAutomationEnabled()
+        {
+            if (UseGistAutomation.IsChecked == true && !string.IsNullOrEmpty(GithubGistUrl.Text))
+            {
+                avatarGistUrl.Text = string.Empty;
+                groupGistUrl.Text = string.Empty;
+                ConfigStore.PutStoredKeyString(CommonConst.Registry_Avatar_Gist, string.Empty);
+                ConfigStore.PutStoredKeyString(CommonConst.Registry_Group_Gist, string.Empty);
             }
         }
 
@@ -861,6 +886,7 @@ namespace Tailgrab.PlayerManagement
                 System.Windows.MessageBox.Show($"Failed to reset 2FA key: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+
         private void GistUrl_TextChanged(object sender, TextChangedEventArgs e)
         {
             // Enable/disable the corresponding "Check Now" button based on whether there's text in the textbox
@@ -871,6 +897,15 @@ namespace Tailgrab.PlayerManagement
             else if (sender == groupGistUrl)
             {
                 groupGistCheckButton.IsEnabled = !string.IsNullOrWhiteSpace(groupGistUrl.Text);
+            }
+            else if( sender == GithubGistUrl)
+            {
+                if (UseGistAutomation.IsChecked == true && !string.IsNullOrEmpty(GithubGistUrl.Text))
+                {
+                    avatarGistCheckButton.IsEnabled = true;
+                    groupGistCheckButton.IsEnabled = true;
+                }
+
             }
         }
 
@@ -926,8 +961,21 @@ namespace Tailgrab.PlayerManagement
             try
             {
                 string result = await _serviceRegistry.GetAvatarManager().GetAvatarExport();
+
+                if( ConfigStore.GetStoredKeyBool(CommonConst.Registry_Github_Use_Automation, false) && !string.IsNullOrEmpty(ConfigStore.GetStoredKeyString(CommonConst.Registry_Github_Gist_PAT)) && !string.IsNullOrEmpty(ConfigStore.GetStoredKeyString(CommonConst.Registry_Github_Gist_ID)))
+                {
+                    await GithubClient.UpdateGist(
+                        ConfigStore.LoadSecret(CommonConst.Registry_Github_Gist_PAT), 
+                        ConfigStore.GetStoredKeyString(CommonConst.Registry_Github_Gist_ID), 
+                        "Avatars.csv", 
+                        result);
+                    logger.Info("Exported Avatar GIST data to GitHub Gist");
+                }
                 System.Windows.Clipboard.SetText(result);
-                System.Windows.MessageBox.Show($"Exported Avatar(s) to clipboard.", "Export to Clipboard", MessageBoxButton.OK, MessageBoxImage.Information);
+                logger.Info("Exported Avatar GIST data to clipboard");
+
+                //System.Windows.MessageBox.Show($"Exported Avatar(s) to clipboard.", "Export to Clipboard", MessageBoxButton.OK, MessageBoxImage.Information);
+                ShowOverlayMessage("Export Avatar Watch Data", $"Exported Avatar(s) to clipboard.");
             }
             catch (Exception ex)
             {
@@ -941,8 +989,21 @@ namespace Tailgrab.PlayerManagement
             try
             {
                 string result = await _serviceRegistry.GetGroupManager().GetGroupExport();
+                if (ConfigStore.GetStoredKeyBool(CommonConst.Registry_Github_Use_Automation, false) && !string.IsNullOrEmpty(ConfigStore.GetStoredKeyString(CommonConst.Registry_Github_Gist_PAT)) && !string.IsNullOrEmpty(ConfigStore.GetStoredKeyString(CommonConst.Registry_Github_Gist_ID)))
+                {
+                    await GithubClient.UpdateGist(
+                        ConfigStore.LoadSecret(CommonConst.Registry_Github_Gist_PAT),
+                        ConfigStore.GetStoredKeyString(CommonConst.Registry_Github_Gist_ID),
+                        "Groups.csv",
+                        result);
+                    logger.Info("Exported Group GIST data to GitHub Gist");
+                }
+
                 System.Windows.Clipboard.SetText(result);
-                System.Windows.MessageBox.Show($"Exported group(s) to clipboard.", "Export to Clipboard", MessageBoxButton.OK, MessageBoxImage.Information);
+                logger.Info("Exported Group GIST data to clipboard");
+
+                //System.Windows.MessageBox.Show($"Exported group(s) to clipboard.", "Export to Clipboard", MessageBoxButton.OK, MessageBoxImage.Information);
+                ShowOverlayMessage("Export Group Watch Data", $"Exported group(s) to clipboard.");
             }
             catch (Exception ex)
             {

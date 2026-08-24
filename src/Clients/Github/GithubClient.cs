@@ -56,5 +56,40 @@ namespace Tailgrab.Clients.Github
                 return false;
             }
         }
+
+        public static async Task<string?> GetGistFileUrl(string gistId, string fileNameToRetrieve)
+        {
+            using (var client = new HttpClient())
+            {
+                BuildClientHeaders(client);
+                // Send GET request
+                var response = await client.GetAsync($"https://api.github.com/gists/{gistId}");
+                if (response.IsSuccessStatusCode)
+                {
+                    var responseBody = await response.Content.ReadAsStringAsync();
+                    using (JsonDocument doc = JsonDocument.Parse(responseBody))
+                    {
+                        if (doc.RootElement.TryGetProperty("files", out JsonElement filesElement) &&
+                            filesElement.TryGetProperty(fileNameToRetrieve, out JsonElement fileElement) &&
+                            fileElement.TryGetProperty("raw_url", out JsonElement contentElement))
+                        {
+                            return contentElement.GetString();
+                        }
+                    }
+                }
+                var errorBody = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Failed to retrieve Gist. Status: {response.StatusCode}");
+                Console.WriteLine($"Error: {errorBody}");
+                return null;
+            }
+        }
+
+        private static void BuildClientHeaders(HttpClient client)
+        {
+            client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(CommonConst.ApplicationName, BuildInfo.GetInformationalVersion()));
+            client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
+            // Optional: Specify API version
+            client.DefaultRequestHeaders.Add("X-GitHub-Api-Version", "2022-11-28");
+        }
     }
 }

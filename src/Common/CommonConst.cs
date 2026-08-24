@@ -43,6 +43,9 @@ namespace Tailgrab.Common
         // Avatar Gist related registry keys
         public const string Registry_Avatar_Checksum = "GIST_AVATAR_LIST_CHECKSUM";
         public const string Registry_Avatar_Gist = "GIST_AVATAR_LIST_URL";
+        public static string Registry_Github_Use_Automation = "GITHUB_USE_AUTOMATION";
+        public const string Registry_Github_Gist_PAT = "GITHUB_GIST_PAT";
+        public const string Registry_Github_Gist_ID = "GITHUB_GIST_ID";
 
         public const string Avatar_Alert_Key = "Avatar";
         public const string Group_Alert_Key = "Group";

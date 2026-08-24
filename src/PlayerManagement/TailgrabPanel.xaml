@@ -1638,17 +1638,31 @@ Title="Tailgrab Player Panel"
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="Auto" />
                                             <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
 
-                                        <Label Grid.Row="0" Grid.Column="0" Content="{DynamicResource UI.Tab.Secrets.Group.AlertList.AvatarGistUrl}" VerticalAlignment="Center"/>
-                                        <TextBox Grid.Row="0" Grid.Column="1" Name="avatarGistUrl" Width="300" Margin="6,2" TextChanged="GistUrl_TextChanged"/>
-                                        <Button Grid.Row="0" Grid.Column="2" Name="avatarGistCheckButton" Content="{DynamicResource UI.Tab.Secrets.Group.AlertList.Action.Avatar.CheckNow}" Width="100" Margin="6,2" Click="CheckAvatarGist_Click" IsEnabled="False"/>
-                                        <Button Grid.Row="0" Grid.Column="3" Name="avatarGistExportButton" Content="{DynamicResource UI.Tab.Secrets.Group.AlertList.Action.Avatar.ExportToClipboard}" Width="150" Margin="6,2" Click="ExportAvatarGist_Click"/>
+                                        <Label Grid.Row="0" Grid.Column="0" Content="Use Github GIST Automation:" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                                        <CheckBox Grid.Row="0" Grid.Column="1" Name="UseGistAutomation" VerticalAlignment="Center" Margin="6,2" ToolTip="When enabled, Tailgrab will update your Avatar and Group settings to GISTs.  You must have a valid GIST Access Token and URL for this to work."/>
 
-                                        <Label Grid.Row="1" Grid.Column="0" Content="{DynamicResource UI.Tab.Secrets.Group.AlertList.GroupGistUrl}" VerticalAlignment="Center"/>
-                                        <TextBox Grid.Row="1" Grid.Column="1" Name="groupGistUrl" Width="300" Margin="6,2" TextChanged="GistUrl_TextChanged"/>
-                                        <Button Grid.Row="1" Grid.Column="2" Name="groupGistCheckButton" Content="{DynamicResource UI.Tab.Secrets.Group.AlertList.Action.Group.CheckNow}" Width="100" Margin="6,2" Click="CheckGroupGist_Click" IsEnabled="False"/>
-                                        <Button Grid.Row="1" Grid.Column="3" Name="groupGistExportButton" Content="{DynamicResource UI.Tab.Secrets.Group.AlertList.Action.Group.ExportToClipboard}" Width="150" Margin="6,2" Click="ExportGroupGist_Click"/>
+                                        <Label Grid.Row="1" Grid.Column="0" Content="Github Personal Access Token:" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                                        <TextBox Grid.Row="1" Grid.Column="1" Name="GithubPersonalAccessToken" Width="300" VerticalAlignment="Center" Margin="6,2" ToolTip="When enabled, Tailgrab will update your Avatar and Group settings to GISTs.  You must have a valid GIST Access Token and URL for this to work."/>
+
+                                        <Label Grid.Row="1" Grid.Column="2" Content="Github GIST ID:" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                                        <TextBox Grid.Row="1" Grid.Column="3" Name="GithubGistUrl" Width="300" TextChanged="GistUrl_TextChanged" VerticalAlignment="Center" Margin="6,2" ToolTip="When enabled, Tailgrab will update your Avatar and Group settings to GISTs.  You must have a valid GIST Access Token and URL for this to work."/>
+
+                                        <Label Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="4" Content="When Github GIST Automation is enabled these settings will be updated automatically:" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+
+                                        <Label Grid.Row="3" Grid.Column="0" Content="{DynamicResource UI.Tab.Secrets.Group.AlertList.AvatarGistUrl}" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                                        <TextBox Grid.Row="3" Grid.Column="1" Name="avatarGistUrl" Width="300" Margin="6,2" TextChanged="GistUrl_TextChanged" IsReadOnly="{Binding IsChecked, ElementName=UseGistAutomation}"/>
+                                        <Button Grid.Row="3" Grid.Column="2" Name="avatarGistCheckButton" Content="{DynamicResource UI.Tab.Secrets.Group.AlertList.Action.Avatar.CheckNow}" Width="100" Margin="6,2" Click="CheckAvatarGist_Click" IsEnabled="False" HorizontalAlignment="Left"/>
+                                        <Button Grid.Row="3" Grid.Column="3" Name="avatarGistExportButton" Content="{DynamicResource UI.Tab.Secrets.Group.AlertList.Action.Avatar.ExportToClipboard}" Width="150" Margin="6,2" Click="ExportAvatarGist_Click" HorizontalAlignment="Left"/>
+
+                                        <Label Grid.Row="4" Grid.Column="0" Content="{DynamicResource UI.Tab.Secrets.Group.AlertList.GroupGistUrl}" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                                        <TextBox Grid.Row="4" Grid.Column="1" Name="groupGistUrl" Width="300" Margin="6,2" TextChanged="GistUrl_TextChanged" IsReadOnly="{Binding IsChecked, ElementName=UseGistAutomation}"/>
+                                        <Button Grid.Row="4" Grid.Column="2" Name="groupGistCheckButton" Content="{DynamicResource UI.Tab.Secrets.Group.AlertList.Action.Group.CheckNow}" Width="100" Margin="6,2" Click="CheckGroupGist_Click" IsEnabled="False" HorizontalAlignment="Left"/>
+                                        <Button Grid.Row="4" Grid.Column="3" Name="groupGistExportButton" Content="{DynamicResource UI.Tab.Secrets.Group.AlertList.Action.Group.ExportToClipboard}" Width="150" Margin="6,2" Click="ExportGroupGist_Click" HorizontalAlignment="Left"/>
                                     </Grid>
                                 </GroupBox>
 

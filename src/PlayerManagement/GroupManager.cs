@@ -10,6 +10,7 @@ using System.Security.Cryptography;
 using System.Text;  
 using Tailgrab.Clients.Ollama;
 using Tailgrab.Clients.XSOverlay;
+using Tailgrab.Clients.Github;
 using Tailgrab.Common;
 using Tailgrab.Configuration;
 using Tailgrab.Models;
@@ -496,13 +497,25 @@ namespace Tailgrab.PlayerManagement
         public async Task<bool> ProcessGroupGistList(string? tempUrl, bool ignoreChecksum)
         {
             string? gistUrl = string.Empty;
+            string gistId = ConfigStore.GetStoredKeyString(CommonConst.Registry_Github_Gist_ID);
+
             if (!string.IsNullOrWhiteSpace(tempUrl))
             {
                 gistUrl = tempUrl;
             }
             else
             {
-                gistUrl = GetStoredUri();
+                if (ConfigStore.GetStoredKeyBool(CommonConst.Registry_Github_Use_Automation, false) == true &&
+                 !string.IsNullOrEmpty(gistId))
+                {
+                    gistUrl = await GithubClient.GetGistFileUrl(gistId, "Groups.csv");
+                    logger.Info($"Using GIST URL from GitHub Automation: {gistUrl}");
+                }
+                else
+                {
+                    gistUrl = GetStoredUri();
+                    logger.Info($"Using GIST URL from stored URI: {gistUrl}");
+                }
             }
 
             if (string.IsNullOrWhiteSpace(gistUrl))
