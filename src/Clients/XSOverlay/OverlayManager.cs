@@ -52,7 +52,7 @@ namespace Tailgrab.Clients.XSOverlay
             }
         }
 
-        public async Task SendNotification(AlertTypeEnum alertType, string message )
+        public async Task SendNotification(AlertTypeEnum alertType, string? title, string message, Image? icon )
         {
             AlertTypeEnum xsOverlayLevel = 
                 CommonConst.AlertTypeEnumFromString( ConfigStore.GetStoredKeyString(CommonConst.Registry_XSOverlay_Level) ?? CommonConst.XSOverlay_Level_None);
@@ -76,7 +76,7 @@ namespace Tailgrab.Clients.XSOverlay
 
             XSNotificationObject notificationObject = new()
             {
-                title = $"{alertType.ToString()} Notifcation",
+                title = $"{alertType.ToString()} Notification",
                 content = message,
                 timeout = 5,
                 height = 174,
@@ -84,6 +84,17 @@ namespace Tailgrab.Clients.XSOverlay
                 icon = "warning"
 
             };
+
+            if( !string.IsNullOrEmpty(title))
+            {
+                notificationObject.title = title;
+            }
+
+            if (icon != null)
+            {
+                notificationObject.icon = Utility.ConvertImageToBase64(icon);
+                notificationObject.useBase64Icon = true;
+            }
             await connector.SendNotification(notificationObject);
         }
     }
