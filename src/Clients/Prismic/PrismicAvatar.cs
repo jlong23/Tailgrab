@@ -2,7 +2,10 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Tailgrab.Clients.Prismic
@@ -239,6 +242,85 @@ namespace Tailgrab.Clients.Prismic
             char[] chars = input.ToCharArray();
             Array.Reverse(chars);
             return new string(chars);
+        }
+
+        static async Task<List<string>> GetFileUris(string apiUrl)
+        {
+            List<string> rawUrls = new List<string>();
+            using var client = new HttpClient();
+
+            // GitHub API requires a User-Agent header
+            client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("GistRawUrlFetcher", "1.0"));
+
+            // Optional: Add authentication token if accessing private gists
+            // string token = "YOUR_GITHUB_TOKEN";
+            // client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("token", token);
+
+            try
+            {
+                HttpResponseMessage response = await client.GetAsync(apiUrl);
+                response.EnsureSuccessStatusCode();
+
+                string jsonResponse = await response.Content.ReadAsStringAsync();
+                using JsonDocument doc = JsonDocument.Parse(jsonResponse);
+
+                var filesElement = doc.RootElement.GetProperty("files");
+
+                // Iterate over all files in the gist
+                foreach (var fileProperty in filesElement.EnumerateObject())
+                {
+                    var fileObject = fileProperty.Value;
+                    if (fileObject.TryGetProperty("raw_url", out JsonElement rawUrlElement))
+                    {
+                        string? rawUrl = rawUrlElement.GetString();
+                        if (!string.IsNullOrEmpty(rawUrl))
+                        {
+                            rawUrls.Add(rawUrl);
+                            logger.Debug($"File: {fileProperty.Name} -> Raw URL: {rawUrl}");
+                        }
+                    }
+                }
+
+                logger.Debug($"\nTotal files found: {rawUrls.Count}");
+            }
+            catch (HttpRequestException ex)
+            {
+                logger.Error($"HTTP error: {ex.Message}");
+                if (ex.StatusCode == System.Net.HttpStatusCode.Forbidden)
+                {
+                    logger.Error("Hint: Did you set a User-Agent header? GitHub requires it.");
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error($"Error: {ex.Message}");
+            }
+
+            return rawUrls;
+        }
+
+        public static async Task<string> GetURLContentString(string uri)
+        {
+            using var client = new HttpClient();
+            try
+            {
+                HttpResponseMessage response = await client.GetAsync(uri);
+                response.EnsureSuccessStatusCode();
+                string content = await response.Content.ReadAsStringAsync();
+                return content;
+
+            }
+            catch (HttpRequestException ex)
+            {
+                logger.Error($"HTTP error while fetching {uri}: {ex.Message}");
+                return string.Empty;
+            }
+            catch (Exception ex)
+            {
+                logger.Error($"Error while fetching {uri}: {ex.Message}");
+                return string.Empty;
+
+            }
         }
 
         public static async Task<AvatarData> GetPrismicObjAsync(string filePath)
