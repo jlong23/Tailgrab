@@ -113,6 +113,10 @@ namespace Tailgrab
                 groupManager = new GroupManager(this);
                 _ = Task.Run(() => groupManager.ProcessGroupGistList( null, false ));
 
+                logger.Info("Starting XS Overlay Manager...");
+                xsOverlay = new OverlayManager();
+                _ = Task.Run(() => xsOverlay.Initialize());
+
                 logger.Info("All services started.");
             }
             catch (Exception ex)

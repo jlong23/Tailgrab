@@ -116,10 +116,7 @@ namespace Tailgrab.PlayerManagement
         public async Task<WorldInstanceInfo> UpdateCurrentSession(string worldId, string instanceId)
         {
             WorldInstanceInfo worldInfo = await GetWorldInstanceInfo(worldId, instanceId);
-
-
             CurrentSession = worldInfo;
-            await serviceRegistry.GetXSOverlay().Initialize();
 
             return worldInfo;
         }
