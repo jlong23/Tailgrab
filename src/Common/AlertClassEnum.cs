@@ -60,6 +60,12 @@ namespace Tailgrab.Common
                 AlertClassEnum.Moderation => "Icon.AlertClass.Moderation",
                 _ => "Icon.AlertClass.Default",
             };
+            if (key == "Icon.AlertClass.Default")
+            {
+                return Geometry.Empty;
+            }
+
+
             return (Geometry)resources[key];
         }
 

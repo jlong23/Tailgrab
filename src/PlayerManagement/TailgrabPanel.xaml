@@ -215,7 +215,7 @@ Title="Tailgrab Player Panel"
                                                         </Viewbox>
                                                         <Viewbox Width="16" Height="16">
                                                             <Path Data="{Binding AgeVerifiedIconGeometry}" 
-                                                                  Fill="{Binding AgeVerifiedIconBrush}"
+                                                                  Fill="{Binding UserTrustIconBrush}"
                                                                   Stroke="White"
                                                                   StrokeThickness="0.5"/>
                                                         </Viewbox>
@@ -479,7 +479,7 @@ Title="Tailgrab Player Panel"
                                                         </Viewbox>
                                                         <Viewbox Width="24" Height="24">
                                                             <Path Data="{Binding AgeVerifiedIconGeometry}" 
-                                                                  Fill="{Binding AgeVerifiedIconBrush}"
+                                                                  Fill="{Binding UserTrustIconBrush}"
                                                                   Stroke="White"
                                                                   StrokeThickness="0.5"/>
                                                         </Viewbox>

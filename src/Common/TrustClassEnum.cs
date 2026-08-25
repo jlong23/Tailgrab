@@ -136,6 +136,12 @@ namespace Tailgrab.Common
                 TrustClassEnum.NUISANCE => "Icon.TrustClassEnum.NUISANCE",
                 _ => "Icon.TrustClassEnum.Default",
             };
+
+            if( key == "Icon.TrustClassEnum.Default")
+            {
+                return Geometry.Empty;
+            }
+
             return (Geometry)resources[key];
         }
 

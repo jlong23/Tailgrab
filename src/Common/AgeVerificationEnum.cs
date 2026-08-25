@@ -82,6 +82,12 @@ namespace Tailgrab.Common
                 AgeVerificationEnum.PLUS18 => "Icon.AgeVerificationEnum.PLUS18",
                 _ => "Icon.AgeVerificationEnum.Default",
             };
+            
+            if (key == "Icon.AgeVerificationEnum.Default")
+            {
+                return Geometry.Empty;
+            }
+
             return (Geometry)resources[key];
         }
 

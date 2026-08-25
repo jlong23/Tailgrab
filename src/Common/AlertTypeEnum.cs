@@ -76,6 +76,12 @@ namespace Tailgrab.Common
                 AlertTypeEnum.Crasher => "Icon.AlertTypeEnum.Crasher",
                 _ => "Icon.AlertTypeEnum.Default",
             };
+            if (key == "Icon.AlertTypeEnum.Default")
+            {
+                return Geometry.Empty;
+            }
+
+
             return (Geometry)resources[key];
         }
 

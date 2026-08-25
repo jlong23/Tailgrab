@@ -82,6 +82,12 @@ namespace Tailgrab.Common
                 AIEvalutionEnum.SELF_HARM => "Icon.AIEvalutionEnum.SELF_HARM",
                 _ => "Icon.AIEvalutionEnum.Default",
             };
+            if (key == "Icon.AIEvalutionEnum.Default")
+            {
+                return Geometry.Empty;
+            }
+
+
             return (Geometry)resources[key];
         }
 
