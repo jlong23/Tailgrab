@@ -117,6 +117,7 @@ namespace Tailgrab.PlayerManagement
         {
             WorldInstanceInfo worldInfo = await GetWorldInstanceInfo(worldId, instanceId);
             CurrentSession = worldInfo;
+            serviceRegistry.GetXSOverlay().Initialize();
 
             return worldInfo;
         }
