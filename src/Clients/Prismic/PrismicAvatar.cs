@@ -2,11 +2,13 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using VRChat.API.Model;
 
 namespace Tailgrab.Clients.Prismic
 {
@@ -19,6 +21,95 @@ namespace Tailgrab.Clients.Prismic
         public bool Quest { get; set; }
         public bool Ios { get; set; }
         public required int[] Flags { get; set; } // [Platform, Impostor, PC Rating, Quest Rating, IOS Rating, Content Warnings, Style Filter, Marketplace]
+
+        // Platform: 1 - PC, 2 - Quest, 4 - IOS
+        public string Platform => Flags.Length > 0 ? GetPlatformString(Flags[0]) : "Unknown";
+
+        // Impostor: 1 - PC, 2 - Quest, 4 - IOS
+        public string Impostor => Flags.Length > 1 ? GetImpostorString(Flags[1]) : "Unknown";
+
+        // PC Rating: 0 - Unknown, 1 - Excellent, 2 - Good, 3 - Medium, 4 - Poor, 5 - Very Poor
+        public string PCRating => Flags.Length > 2 ? GetRatingString(Flags[2]) : "Unknown";
+
+        // Quest Rating: 0 - Unknown, 1 - Excellent, 2 - Good, 3 - Medium, 4 - Poor, 5 - Very Poor
+        public string QuestRating => Flags.Length > 3 ? GetRatingString(Flags[3]) : "Unknown";
+
+        // IOS Rating: 0 - Unknown, 1 - Excellent, 2 - Good, 3 - Medium, 4 - Poor, 5 - Very Poor
+        public string IOSRating => Flags.Length > 4 ? GetRatingString(Flags[4]) : "Unknown";
+
+        // Content Warnings: 1 - Sexually suggestive, 2 - Adult Language, 4 - Graphic Violence, 8 - Excessive Gore, 16 - Extreme Horror
+        public string ContentWarnings => Flags.Length > 5 ? GetContentWarningsString(Flags[5]) : "None";
+
+        // Style Filter: 1 - Pop Culture, 2 - Furry, 4 - Sci-Fi, 8 - Anime, 16 - Cartoon, 32 - Objects, 64 - Human, 128 - Realistic, 256 - Animal, 512 - Fantasy, 1024 - Fashion
+        public string StyleFilter => Flags.Length > 6 ? GetStyleFilterString(Flags[6]) : "None";
+
+        // Marketplace: 0 - Not in Marketplace, 1 - In Marketplace
+        public string Marketplace => Flags.Length > 7 ? (Flags[7] == 1 ? "In Marketplace" : "Not in Marketplace") : "Unknown";
+
+        private static string GetPlatformString(int value)
+        {
+            var platforms = new List<string>();
+            if ((value & 1) != 0) platforms.Add("PC");
+            if ((value & 2) != 0) platforms.Add("Quest");
+            if ((value & 4) != 0) platforms.Add("IOS");
+            return platforms.Count > 0 ? string.Join(", ", platforms) : "Unknown";
+        }
+
+        private static string GetImpostorString(int value)
+        {
+            var impostors = new List<string>();
+            if ((value & 1) != 0) impostors.Add("PC");
+            if ((value & 2) != 0) impostors.Add("Quest");
+            if ((value & 4) != 0) impostors.Add("IOS");
+            return impostors.Count > 0 ? string.Join(", ", impostors) : "Unknown";
+        }
+
+        private static string GetRatingString(int value)
+        {
+            return value switch
+            {
+                0 => "Unknown",
+                1 => "Excellent",
+                2 => "Good",
+                3 => "Medium",
+                4 => "Poor",
+                5 => "Very Poor",
+                _ => "Unknown"
+            };
+        }
+
+        private static string GetContentWarningsString(int value)
+        {
+            var warnings = new List<string>();
+            if ((value & 1) != 0) warnings.Add("Sexually suggestive");
+            if ((value & 2) != 0) warnings.Add("Adult Language");
+            if ((value & 4) != 0) warnings.Add("Graphic Violence");
+            if ((value & 8) != 0) warnings.Add("Excessive Gore");
+            if ((value & 16) != 0) warnings.Add("Extreme Horror");
+            return warnings.Count > 0 ? string.Join(", ", warnings) : "None";
+        }
+
+        private static string GetStyleFilterString(int value)
+        {
+            var styles = new List<string>();
+            if ((value & 1) != 0) styles.Add("Pop Culture");
+            if ((value & 2) != 0) styles.Add("Furry");
+            if ((value & 4) != 0) styles.Add("Sci-Fi");
+            if ((value & 8) != 0) styles.Add("Anime");
+            if ((value & 16) != 0) styles.Add("Cartoon");
+            if ((value & 32) != 0) styles.Add("Objects");
+            if ((value & 64) != 0) styles.Add("Human");
+            if ((value & 128) != 0) styles.Add("Realistic");
+            if ((value & 256) != 0) styles.Add("Animal");
+            if ((value & 512) != 0) styles.Add("Fantasy");
+            if ((value & 1024) != 0) styles.Add("Fashion");
+            return styles.Count > 0 ? string.Join(", ", styles) : "None";
+        }
+
+        public override string ToString()
+        {
+            return $"AvatarId: {AvatarId}, Name: {Name}, Author: {Author}, Description: {Description}, Quest: {Quest}, IOS: {Ios}, Platform: {Platform}, Impostor: {Impostor}, PC Rating: {PCRating}, Quest Rating: {QuestRating}, IOS Rating: {IOSRating}, Content Warnings: {ContentWarnings}, Style Filter: {StyleFilter}, Marketplace: {Marketplace}";
+        }
     }
 
     public class AvatarData
@@ -35,7 +126,7 @@ namespace Tailgrab.Clients.Prismic
             sb.AppendLine($"AvatarCount: {AvatarCount}, AuthorCount: {AuthorCount}, LastUpdate: {LastUpdate}");
             foreach (var entry in Entries)
             {
-                sb.AppendLine($"AvatarId: {entry.AvatarId}, Name: {entry.Name}, Author: {entry.Author}, Description: {entry.Description}, Quest: {entry.Quest}, Ios: {entry.Ios}, Flags: [{string.Join(", ", entry.Flags)}]");
+                sb.AppendLine(entry.ToString());
             }
             return sb.ToString();
         }
@@ -93,9 +184,8 @@ namespace Tailgrab.Clients.Prismic
             for (int i = 0; i < count; i++)
             {
                 var bytes = ReadBytes(4);
-                // JavaScript bitwise operations on typed arrays often imply Big Endian network order 
-                // or depend on how the bytes were written. Assuming Big Endian (byte0 << 24).
-                result[i] = (bytes[0] << 24) | (bytes[1] << 16) | (bytes[2] << 8) | bytes[3];
+                // Little Endian: least significant byte first (byte0 is LSB).
+                result[i] = bytes[0] | (bytes[1] << 8) | (bytes[2] << 16) | (bytes[3] << 24);
             }
             return result;
         }
@@ -150,11 +240,10 @@ namespace Tailgrab.Clients.Prismic
             // Read Avatar IDs (16 bytes each)
             int dataSize = fileAvatars * 16;
             var avatarIdBytes = ReadBytes(dataSize);
-
             // Read Flags and Author IDs
             // Note: JS says "shit will break" if flagSize != 4. Assuming 4-byte integers.
-            var flags = ReadIntArray(fileAvatars);
-            var authorIds = ReadIntArray(fileAvatars);
+            Int32[] flags = ReadIntArray(fileAvatars);
+            Int32[] authorIds = ReadIntArray(fileAvatars);
 
             // Read Strings
             var remainingBytes = ReadBytes(Remaining);
@@ -169,6 +258,59 @@ namespace Tailgrab.Clients.Prismic
             for (int i = 0; i < fileAvatars; i++)
             {
                 int f = flags[i];
+
+                /*
+                Platform:
+                    1 - PC
+                    2 - Quest
+                    4 - IOS
+                Impostor:
+                    1 - PC
+                    2 - Quest
+                    4 - IOS
+                PC Rating:
+                    0 - Unknown
+                    1 - Excellent
+                    2 - Good
+                    3 - Medium
+                    4 - Poor
+                    5 - Very Poor
+                Quest Rating:
+                    0 - Unknown
+                    1 - Excellent
+                    2 - Good
+                    3 - Medium
+                    4 - Poor
+                    5 - Very Poor
+                IOS Rating:
+                    0 - Unknown
+                    1 - Excellent
+                    2 - Good
+                    3 - Medium
+                    4 - Poor
+                    5 - Very Poor
+                Content Warnings:
+                    1 - Sexually suggestive
+                    2 - Adult Language
+                    4 - Graphic Violence
+                    8 - Excessive Gore
+                    16 - Extreme Horror
+                Style Filter:
+                    1 - Pop Culture
+                    2 - Furry
+                    4 - Sci-Fi
+                    8 - Anime
+                    16 - Cartoon
+                    32 - Objects
+                    64 - Human
+                    128 - Realistic
+                    256 - Animal
+                    512 - Fantasy
+                    1024 - Fashion
+                Marketplace:
+                    0 - Not in Marketplace
+                    1 - In Marketplace
+                */
 
                 // Extract Flags
                 int[] avatarFlags = new int[]
@@ -219,21 +361,23 @@ namespace Tailgrab.Clients.Prismic
             return avatarData;
         }
 
-        private string DecodeAvatarId(byte[] idBytes, byte[] dynamicKey)
+        private string DecodeAvatarId(byte[] crypt, byte[] iv)
         {
-            // The JS code calls decodeAvatarId, but the function body isn't provided in the snippet.
-            // Typically, this involves XORing the ID bytes with the dynamic key.
-            // Assuming a simple XOR loop similar to the dynamicBytes generation or a direct XOR.
-            // Based on common patterns in such binary formats:
-
-            byte[] decoded = new byte[16];
-            for (int i = 0; i < 16; i++)
+            for (int i = crypt.Length - 1; i >= 0; i--)
             {
-                decoded[i] = (byte)(idBytes[i] ^ dynamicKey[i % dynamicKey.Length]);
+                int k = crypt[i] ^ crypt[(i + crypt.Length - 1) % crypt.Length] ^ iv[i];
+                crypt[i] = (byte)k;
             }
 
-            // Return as Hex String (common for IDs) or GUID string
-            return BitConverter.ToString(decoded).Replace("-", "").ToLowerInvariant();
+            var hexString = string.Concat(crypt.Select(x => x.ToString("x2")));
+            var decrypt = hexString.ToCharArray().Reverse().ToList();
+
+            decrypt.Insert(8, '-');
+            decrypt.Insert(13, '-');
+            decrypt.Insert(18, '-');
+            decrypt.Insert(23, '-');
+
+            return "avtr_" + string.Concat(decrypt);
         }
 
         private string ReverseString(string input)
@@ -244,7 +388,7 @@ namespace Tailgrab.Clients.Prismic
             return new string(chars);
         }
 
-        static async Task<List<string>> GetFileUris(string apiUrl)
+        public static async Task<List<string>> GetFileUris(string apiUrl)
         {
             List<string> rawUrls = new List<string>();
             using var client = new HttpClient();
@@ -323,9 +467,73 @@ namespace Tailgrab.Clients.Prismic
             }
         }
 
+        public static async Task<byte[]> GetURLContentBytes(string uri)
+        {
+            using var client = new HttpClient();
+            try
+            {
+                HttpResponseMessage response = await client.GetAsync(uri);
+                response.EnsureSuccessStatusCode();
+                byte[] content = await response.Content.ReadAsByteArrayAsync();
+                return content;
+
+            }
+            catch (HttpRequestException ex)
+            {
+                logger.Error($"HTTP error while fetching {uri}: {ex.Message}");
+                return Array.Empty<byte>();
+            }
+            catch (Exception ex)
+            {
+                logger.Error($"Error while fetching {uri}: {ex.Message}");
+                return Array.Empty<byte>();
+
+            }
+        }
+
+        public static async Task<AvatarData> GetPrismicDataAsync(string gistHash)
+        {
+            AvatarData resultData = new AvatarData();
+
+            List<string> uris = await GetFileUris($"https://api.github.com/gists/{gistHash}");
+
+
+            foreach (string apiUrl in uris)
+            {
+                if(apiUrl.Contains("pasavtrdb.txt"))
+                {
+                    byte[] byteResponse = await GetURLContentBytes(apiUrl);
+
+                    var reader = new PrismicBinaryReader(byteResponse);
+                    AvatarData avatarData = reader.Parse();
+                    logger.Info($"Successfully parsed avatar data from {apiUrl}");
+                    logger.Info($"{avatarData.AvatarCount} avatars, {avatarData.AuthorCount} authors, last update: {avatarData.LastUpdate}");
+                    logger.Info($"Total entries parsed: {avatarData.Entries.Count}");
+                    logger.Info($"Total unique IDs in IdMap: {avatarData.IdMap.Count}");
+
+                    resultData.AvatarCount += avatarData.AvatarCount;
+                    resultData.Entries.AddRange(avatarData.Entries);
+                    foreach (var kvp in avatarData.IdMap)
+                    {
+                        if (!resultData.IdMap.ContainsKey(kvp.Key))
+                        {
+                            resultData.IdMap[kvp.Key] = kvp.Value;
+                        }
+                    }
+
+                    foreach (AvatarEntry entry in resultData.Entries.AsEnumerable().Reverse().Take(50))
+                    {
+                        logger.Info(entry.ToString());
+                    }
+                }
+            }
+
+            return resultData;
+        }
+
         public static async Task<AvatarData> GetPrismicObjAsync(string filePath)
         {
-            byte[] fileBytes = await File.ReadAllBytesAsync(filePath);
+            byte[] fileBytes = await System.IO.File.ReadAllBytesAsync(filePath);
             var reader = new PrismicBinaryReader(fileBytes);
             return reader.Parse();
         }
