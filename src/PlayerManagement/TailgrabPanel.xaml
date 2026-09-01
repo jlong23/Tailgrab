@@ -2597,7 +2597,7 @@ Title="Tailgrab Player Panel"
                                 </DataGridTemplateColumn>
 
                                 <!-- Name -->
-                                <DataGridTextColumn Header="{DynamicResource UI.Overlay.UserAvatar.Column.Name}" Binding="{Binding Name}" Width="150" IsReadOnly="True"/>
+                                <DataGridTextColumn Header="{DynamicResource UI.Overlay.UserAvatar.Column.Name}" Binding="{Binding Name}" Width="150" MaxWidth="150" IsReadOnly="True"/>
 
                                 <!-- Avatar ID -->
                                 <DataGridTemplateColumn Header="{DynamicResource UI.Overlay.UserAvatar.Column.AvatarId}" Width="200">
@@ -2699,7 +2699,7 @@ Title="Tailgrab Player Panel"
 
                             </DataGrid.Columns>
 
-                            <!-- Row Details Template for Description and Rules -->
+                            <!-- Row Details Template for Description -->
                             <DataGrid.RowDetailsTemplate>
                                 <DataTemplate>
                                     <Border BorderBrush="#FF3F3F46" BorderThickness="1" Background="#FF252526" Padding="8" Margin="0,0,0,0">
@@ -2740,7 +2740,7 @@ Title="Tailgrab Player Panel"
                                                 <TextBlock Text="{Binding Description}" 
                                                            TextWrapping="Wrap" 
                                                            Foreground="#FFE6E6E6"
-                                                           MinHeight="50" MaxWidth="500"
+                                                           MaxWidth="450"
                                                            HorizontalAlignment="Left"
                                                            Margin="8,0,0,0"/>
                                             </StackPanel>
