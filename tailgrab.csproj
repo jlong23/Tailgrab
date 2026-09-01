@@ -73,6 +73,7 @@
 	</PackageReference>
 	<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.2" />
 	<PackageReference Include="NLog.Web.AspNetCore" Version="6.1.0" />
+	<PackageReference Include="obs-websocket-dotnet" Version="5.0.1" />
 	<PackageReference Include="OllamaSharp" Version="5.4.16" />
 	<PackageReference Include="Otp.NET" Version="1.4.1" />
 	<PackageReference Include="JsonSubTypes" Version="2.0.1" />
@@ -81,6 +82,7 @@
 	<PackageReference Include="SQLite" Version="3.13.0" />
 	<!-- Override vulnerable transitive dependency SQLitePCLRaw.lib.e_sqlite3 2.1.11 with fixed version -->
 	<PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3" />
+	<PackageReference Include="StackExchange.Redis" Version="3.1.31" />
 	<PackageReference Include="System.Speech" Version="10.0.2" />
 	<PackageReference Include="VRCOscLib" Version="1.6.0" />
 	<MySourceFiles Include="src\config.json" />
