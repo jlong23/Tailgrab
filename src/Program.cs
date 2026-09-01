@@ -135,7 +135,7 @@ public class FileTailer
         _ = Task.Run(async () => await CheckForUpdatesAsync());
 
 
-        //AvatarData data = Task.Run(async() => await PrismicBinaryReader.GetPrismicDataAsync("930d08f34c61e4282992cdb3afbafca0")).GetAwaiter().GetResult();
+        //PrismicBinaryReader.GetPrismicDataAsync("930d08f34c61e4282992cdb3afbafca0");
 
         BuildAppWindow(_serviceRegistry);
 

@@ -1,13 +1,18 @@
 ﻿using NLog;
+using StackExchange.Redis;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using System.Xml.Linq;
+using Tailgrab.Common;
 using VRChat.API.Model;
 
 namespace Tailgrab.Clients.Prismic
@@ -18,31 +23,44 @@ namespace Tailgrab.Clients.Prismic
         public required string Name { get; set; }
         public required string Author { get; set; }
         public required string Description { get; set; }
+
+        [JsonIgnore]
         public bool Quest { get; set; }
+        
+        [JsonIgnore]
         public bool Ios { get; set; }
+
         public required int[] Flags { get; set; } // [Platform, Impostor, PC Rating, Quest Rating, IOS Rating, Content Warnings, Style Filter, Marketplace]
 
+        [JsonIgnore]
         // Platform: 1 - PC, 2 - Quest, 4 - IOS
         public string Platform => Flags.Length > 0 ? GetPlatformString(Flags[0]) : "Unknown";
 
+        [JsonIgnore]
         // Impostor: 1 - PC, 2 - Quest, 4 - IOS
         public string Impostor => Flags.Length > 1 ? GetImpostorString(Flags[1]) : "Unknown";
 
+        [JsonIgnore]
         // PC Rating: 0 - Unknown, 1 - Excellent, 2 - Good, 3 - Medium, 4 - Poor, 5 - Very Poor
         public string PCRating => Flags.Length > 2 ? GetRatingString(Flags[2]) : "Unknown";
-
+        
+        [JsonIgnore]
         // Quest Rating: 0 - Unknown, 1 - Excellent, 2 - Good, 3 - Medium, 4 - Poor, 5 - Very Poor
         public string QuestRating => Flags.Length > 3 ? GetRatingString(Flags[3]) : "Unknown";
-
+        
+        [JsonIgnore]
         // IOS Rating: 0 - Unknown, 1 - Excellent, 2 - Good, 3 - Medium, 4 - Poor, 5 - Very Poor
         public string IOSRating => Flags.Length > 4 ? GetRatingString(Flags[4]) : "Unknown";
-
+        
+        [JsonIgnore]
         // Content Warnings: 1 - Sexually suggestive, 2 - Adult Language, 4 - Graphic Violence, 8 - Excessive Gore, 16 - Extreme Horror
         public string ContentWarnings => Flags.Length > 5 ? GetContentWarningsString(Flags[5]) : "None";
-
+        
+        [JsonIgnore]
         // Style Filter: 1 - Pop Culture, 2 - Furry, 4 - Sci-Fi, 8 - Anime, 16 - Cartoon, 32 - Objects, 64 - Human, 128 - Realistic, 256 - Animal, 512 - Fantasy, 1024 - Fashion
         public string StyleFilter => Flags.Length > 6 ? GetStyleFilterString(Flags[6]) : "None";
 
+        [JsonIgnore]
         // Marketplace: 0 - Not in Marketplace, 1 - In Marketplace
         public string Marketplace => Flags.Length > 7 ? (Flags[7] == 1 ? "In Marketplace" : "Not in Marketplace") : "Unknown";
 
@@ -108,7 +126,9 @@ namespace Tailgrab.Clients.Prismic
 
         public override string ToString()
         {
-            return $"AvatarId: {AvatarId}, Name: {Name}, Author: {Author}, Description: {Description}, Quest: {Quest}, IOS: {Ios}, Platform: {Platform}, Impostor: {Impostor}, PC Rating: {PCRating}, Quest Rating: {QuestRating}, IOS Rating: {IOSRating}, Content Warnings: {ContentWarnings}, Style Filter: {StyleFilter}, Marketplace: {Marketplace}";
+            string avKey = "avtr:" + Checksum.CreateMD5(Name + ":" + Author);
+
+            return $"AvatarId: {AvatarId}, Name: {Name}, Author: {Author}, Description: {Description}, Quest: {Quest}, IOS: {Ios}, Platform: {Platform}, Impostor: {Impostor}, PC Rating: {PCRating}, Quest Rating: {QuestRating}, IOS Rating: {IOSRating}, Content Warnings: {ContentWarnings}, Style Filter: {StyleFilter}, Marketplace: {Marketplace}, avKey: {avKey}";
         }
     }
 
@@ -190,8 +210,22 @@ namespace Tailgrab.Clients.Prismic
             return result;
         }
 
-        public AvatarData Parse()
+        public async Task RemoveHashesByPatternAsync(IConnectionMultiplexer connection, string pattern, int databaseId = 0)
         {
+            var script = LuaScript.Prepare(
+                "for _,k in ipairs(redis.call('keys', @pattern)) do redis.call('del', k) end");
+
+            await connection.GetDatabase(databaseId).ScriptEvaluateAsync(script, new { pattern = pattern });
+        
+            logger.Info($"Deleted keys matching pattern '{pattern}'");
+        }
+
+        public async void Parse()
+        {
+            ConnectionMultiplexer redis = ConnectionMultiplexer.Connect("warren01:6379");           
+            IDatabase db = redis.GetDatabase();
+            await RemoveHashesByPatternAsync(redis, "avtr_idx:*");
+
             if (_data.Length == 0) throw new Exception("Data has length zero");
 
             // Check Header "PAS"
@@ -255,6 +289,7 @@ namespace Tailgrab.Clients.Prismic
             var authorNames = stringParts[0].Split('\r');
             var avatarNames = stringParts[1].Split('\r');
 
+            var startTime = Stopwatch.GetTimestamp();
             for (int i = 0; i < fileAvatars; i++)
             {
                 int f = flags[i];
@@ -355,10 +390,41 @@ namespace Tailgrab.Clients.Prismic
                 };
 
                 avatarData.Entries.Add(entry);
-                avatarData.IdMap[avatarId] = entry;
+                avatarData.IdMap.Add(avatarId, entry);
+
+                string avKeyFull = "avtr:" + Checksum.CreateMD5(author) + ":" + Checksum.CreateMD5(name);
+                string avKeyAuthor = "avtr_idx:" + Checksum.CreateMD5(author);
+
+                if( !db.KeyExists(avKeyFull))
+                {
+                    logger.Info($"Adding new avatar entry: {entry.ToString()}");
+                }
+
+                IBatch batch = db.CreateBatch();
+                Task set1 = batch.StringSetAsync(avKeyFull, JsonSerializer.Serialize(entry));
+                Task set2 = batch.SetAddAsync(avKeyAuthor, Checksum.CreateMD5(name));
+                batch.Execute();
+                await Task.WhenAll(set1, set2);
+
+                if (i % 10000 == 0)
+                {
+                    var elapsed = Stopwatch.GetElapsedTime(startTime);
+                    logger.Info($"Processed Prismic Avatars #{i} of {fileAvatars} in {elapsed.TotalMilliseconds}");
+                    startTime = Stopwatch.GetTimestamp();
+                }
             }
 
-            return avatarData;
+            logger.Info($"{avatarData.AvatarCount} avatars, {avatarData.AuthorCount} authors, last update: {avatarData.LastUpdate}");
+            logger.Info($"Total entries parsed: {avatarData.Entries.Count}");
+            logger.Info($"Total unique IDs in IdMap: {avatarData.IdMap.Count}");
+
+            foreach (AvatarEntry entry in avatarData.Entries.AsEnumerable().Reverse().Take(50))
+            {
+                logger.Info(entry.ToString());
+            }
+
+            redis.Close();
+            redis.Dispose();
         }
 
         private string DecodeAvatarId(byte[] crypt, byte[] iv)
@@ -396,16 +462,13 @@ namespace Tailgrab.Clients.Prismic
             // GitHub API requires a User-Agent header
             client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("GistRawUrlFetcher", "1.0"));
 
-            // Optional: Add authentication token if accessing private gists
-            // string token = "YOUR_GITHUB_TOKEN";
-            // client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("token", token);
-
             try
             {
                 HttpResponseMessage response = await client.GetAsync(apiUrl);
                 response.EnsureSuccessStatusCode();
 
                 string jsonResponse = await response.Content.ReadAsStringAsync();
+                logger.Info(jsonResponse);
                 using JsonDocument doc = JsonDocument.Parse(jsonResponse);
 
                 var filesElement = doc.RootElement.GetProperty("files");
@@ -491,51 +554,28 @@ namespace Tailgrab.Clients.Prismic
             }
         }
 
-        public static async Task<AvatarData> GetPrismicDataAsync(string gistHash)
+        public static async void GetPrismicDataAsync(string gistHash)
         {
-            AvatarData resultData = new AvatarData();
-
             List<string> uris = await GetFileUris($"https://api.github.com/gists/{gistHash}");
-
 
             foreach (string apiUrl in uris)
             {
                 if(apiUrl.Contains("pasavtrdb.txt"))
                 {
                     byte[] byteResponse = await GetURLContentBytes(apiUrl);
+                    logger.Info($"Successfully downloaded avatar data from {apiUrl}");
 
                     var reader = new PrismicBinaryReader(byteResponse);
-                    AvatarData avatarData = reader.Parse();
-                    logger.Info($"Successfully parsed avatar data from {apiUrl}");
-                    logger.Info($"{avatarData.AvatarCount} avatars, {avatarData.AuthorCount} authors, last update: {avatarData.LastUpdate}");
-                    logger.Info($"Total entries parsed: {avatarData.Entries.Count}");
-                    logger.Info($"Total unique IDs in IdMap: {avatarData.IdMap.Count}");
-
-                    resultData.AvatarCount += avatarData.AvatarCount;
-                    resultData.Entries.AddRange(avatarData.Entries);
-                    foreach (var kvp in avatarData.IdMap)
-                    {
-                        if (!resultData.IdMap.ContainsKey(kvp.Key))
-                        {
-                            resultData.IdMap[kvp.Key] = kvp.Value;
-                        }
-                    }
-
-                    foreach (AvatarEntry entry in resultData.Entries.AsEnumerable().Reverse().Take(50))
-                    {
-                        logger.Info(entry.ToString());
-                    }
+                    reader.Parse();
                 }
             }
-
-            return resultData;
         }
 
-        public static async Task<AvatarData> GetPrismicObjAsync(string filePath)
+        public static async void GetPrismicObjAsync(string filePath)
         {
             byte[] fileBytes = await System.IO.File.ReadAllBytesAsync(filePath);
             var reader = new PrismicBinaryReader(fileBytes);
-            return reader.Parse();
+            reader.Parse();
         }
     }
 
