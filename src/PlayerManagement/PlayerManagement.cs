@@ -2,9 +2,12 @@ using ConcurrentPriorityQueue.Core;
 using Microsoft.EntityFrameworkCore;
 using NLog;
 using System.ComponentModel;
+using System.Numerics;
 using System.Reflection.Metadata;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Windows;
+using Tailgrab.Clients.OBS;
 using Tailgrab.Clients.XSOverlay;
 using Tailgrab.Common;
 using Tailgrab.LineHandler;
@@ -315,6 +318,63 @@ namespace Tailgrab.PlayerManagement
                     PrintPlayerInfo(player);
                 }
             }
+        }
+
+        public static Player? UserInventorySpawnPublic(string displayName, string imageUri)
+        {
+            Player? player = GetPlayerByDisplayName(displayName);
+            if (player != null)
+            {
+                string html = Utility.GetHTMLResource("HtmlTemplates", "VTK_Template.html");
+
+                // Build formatted string from the viewmodel alone
+                var sb = new System.Text.StringBuilder();
+                sb.AppendLine("<dl>");
+                sb.AppendLine(player.ToHTML(true));
+                sb.AppendLine("</dl>");
+                var content = sb.ToString();
+
+                string text = html.Replace("{content}", content);
+                text = text.Replace("{thumbnailUrl}", imageUri);
+
+                OBSClient? obsClient = serviceRegistry.GetOBSClient();
+                if (obsClient != null)
+                {
+                    Task.Run(() => obsClient.ImageExposeEvent("VRChat-VTK", "VTK_Details", text)).GetAwaiter().GetResult();
+                }
+            }
+
+            return player;
+        }
+
+        public static Player? VoteToKickEventPublic(string displayName, string eventDescription)
+        {
+            Player? player = AddPlayerEventByDisplayName(displayName, PlayerEvent.EventType.Moderation, eventDescription);
+            if (player != null)
+            {
+                player.AddAlertMessage(AlertClassEnum.Profile, AlertTypeEnum.Nuisance, $"VTK");
+
+                string html = Utility.GetHTMLResource("HtmlTemplates", "VTK_Template.html");
+
+                // Build formatted string from the viewmodel alone
+                var sb = new System.Text.StringBuilder();
+                sb.AppendLine("<dl>");
+                sb.AppendLine(player.ToHTML(true));
+                sb.AppendLine("</dl>");
+                var content = sb.ToString();
+
+                string text = html.Replace("{content}", content);
+                text = text.Replace("{thumbnailUrl}", player.ProfileImage);
+
+                OBSClient? obsClient = serviceRegistry.GetOBSClient();
+                if (obsClient != null)
+                {
+                    string filename = $"{player.UserId}-{displayName}_{DateTime.Now:yyyyMMdd_HHmmss}";
+                    Task.Run(() => obsClient.VTKRecording("VRChat-VTK", "VTK_Details", filename, text)).GetAwaiter().GetResult();
+                }
+            }
+
+            return player;
         }
 
         public static Player? AddPlayerEventByDisplayName(string displayName, PlayerEvent.EventType eventType, string eventDescription)
@@ -933,6 +993,55 @@ namespace Tailgrab.PlayerManagement
 
                 sb.AppendLine("Player Profile At Join:");
                 sb.AppendLine(UserBio);
+            }
+
+            return sb.ToString();
+        }
+
+        public string ToHTML(bool full)
+        {
+            StringBuilder sb = new();
+            sb.AppendLine($"<dt>DisplayName:</dt><dd>{DisplayName}</dd>");
+            sb.AppendLine($"<dt>UserId:</dt><dd>{UserId}</dd>");
+            sb.AppendLine($"<dt>Current Avatar Name:</dt><dd>{(string.IsNullOrEmpty(AvatarName) ? string.Empty : AvatarName)}</dd>");
+            if (!string.IsNullOrEmpty(LastStickerUrl))
+            {
+                sb.AppendLine($"<dt>Last Sticker:</dt><dd>{(string.IsNullOrEmpty(LastStickerUrl) ? string.Empty : LastStickerUrl)}</dd>");
+            }
+            if (!string.IsNullOrEmpty(PenActivity))
+            {
+                sb.AppendLine($"<dt>Last Pen Activity:</dt><dd>{(string.IsNullOrEmpty(PenActivity) ? string.Empty : PenActivity)}</dd>");
+            }
+            sb.AppendLine($"<dt>InstanceStart:</dt><dd>{InstanceStartTime:u}</dd>");
+            sb.AppendLine($"<dt>InstanceEnd:</dt><dd>{(InstanceEndTime.HasValue ? InstanceEndTime.Value.ToString("u") : string.Empty)}</dd>");
+            sb.AppendLine($"<dt>WorldId:</dt><dd>{Session.WorldId}</dd>");
+            sb.AppendLine($"<dt>InstanceId:</dt><dd>{Session.ToInstanceId()}</dd>");
+            sb.AppendLine($"<dt>Instance Details:</dt><dd>{Session.ToStatusString()}</dd>");
+
+            if (PrintData != null && PrintData.Count > 0)
+            {
+                sb.AppendLine("<dt>Events:</dt>");
+                foreach (var ev in PrintData.Values)
+                {
+                    sb.AppendLine($"<dd>  - {ev.CreatedAt:u} {ev.PrintId} {ev.AuthorName} {ev.AIEvaluation}</dd>");
+                }
+            }
+
+            if (Events != null && Events.Count > 0)
+            {
+                sb.AppendLine("<dt>Events:</dt>");
+                foreach (var ev in Events)
+                {
+                    sb.AppendLine($"<dd>  - {ev.EventTime:u} {ev.Type} {ev.EventDescription}</dd>");
+                }
+            }
+
+            if (full && UserBio != null && UserBio.Length > 0)
+            {
+                sb.AppendLine("<dt>Player Profile At Join:</dt>");
+                sb.AppendLine("<dd>");
+                sb.AppendLine(UserBio);
+                sb.AppendLine("</dd>");
             }
 
             return sb.ToString();

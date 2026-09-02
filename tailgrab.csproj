@@ -126,11 +126,19 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="HtmlTemplates\VTK_Template.html" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Content Include="src\Resources\tailgrab.ico">
 		<CopyToOutputDirectory>PreserverNewest</CopyToOutputDirectory>
 		<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
 		<TargetPath>%(Filename)%(Extension)</TargetPath>
 	</Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="HtmlTemplates\VTK_Template.html" />
   </ItemGroup>
 
   <ItemGroup>

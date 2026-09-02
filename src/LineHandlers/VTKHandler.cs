@@ -30,12 +30,7 @@ public class VTKHandler : AbstractLineHandler
                 logger.Info($"{COLOR_PREFIX}VTK : {userName}{COLOR_RESET.GetAnsiEscape()}");
             }
 
-            Player? player = PlayerManager.AddPlayerEventByDisplayName(userName, PlayerEvent.EventType.Moderation, "Vote kick initiated against player.");
-            if (player != null)
-            {
-                player.AddAlertMessage(AlertClassEnum.Profile, AlertTypeEnum.Nuisance, $"VTK");
-            }
-
+            Player? player = PlayerManager.VoteToKickEventPublic(userName, "Vote kick initiated against player.");
             Dictionary<string, string> actionData = new Dictionary<string, string>
             {
                 { "timestamp", timestamp },

@@ -11,6 +11,7 @@ using Tailgrab.Configuration;
 using Tailgrab.Models;
 using Tailgrab.PlayerManagement;
 using tailgrab.src.PlayerManagement;
+using Tailgrab.Clients.OBS;
 
 namespace Tailgrab
 {
@@ -33,6 +34,8 @@ namespace Tailgrab
         TTSManager? ttsManager = null;
         ServiceCollection services = new ServiceCollection();
         private VRCDBClient _VRCDBClient = new VRCDBClient();
+
+        private OBSClient? obsClient = null;
 
         public VRCDBClient GetVRCDBClient()
         {
@@ -117,6 +120,10 @@ namespace Tailgrab
                 xsOverlay = new OverlayManager();
                 _ = Task.Run(() => xsOverlay.Initialize());
 
+                logger.Info("Starting OBS Client...");
+                GetOBSClient();
+                
+
                 logger.Info("All services started.");
             }
             catch (Exception ex)
@@ -130,6 +137,11 @@ namespace Tailgrab
             try
             {
                 logger.Info("Shutting down all services...");
+
+                if(obsClient != null)
+                {
+                    await obsClient.Disconnect();
+                }
             }
             catch (Exception ex)
             {
@@ -246,6 +258,25 @@ namespace Tailgrab
                 throw new InvalidOperationException("TTS Manager has not been initialized. Call StartAllServices() first.");
             }
             return ttsManager;
+        }
+
+        public OBSClient? GetOBSClient()
+        {
+            if (obsClient == null)
+            {
+                try
+                {
+                    obsClient = new OBSClient();                   
+                    Task.Run(() => obsClient.Initialize("ws://localhost:4455", "d22PvtO9JqyQRoI5")).ConfigureAwait(true);
+                }
+                catch (Exception ex)
+                {
+                    logger.Error(ex, "Failed to initialize OBS Client. Please ensure OBS is running and the WebSocket server is enabled.");
+                    obsClient = null;
+                }
+            }
+
+            return obsClient;
         }
 
         public async Task ProcessAvatarGist()

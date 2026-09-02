@@ -81,6 +81,8 @@ namespace Tailgrab.PlayerManagement
                         // @TODO: Finish Ollama Inventory & Print Queue processing.
                         ollamaClient.EnqueuePriorityItem(processItem);
                     }
+
+                    PlayerManager.UserInventorySpawnPublic(player.DisplayName, itemUrl);
                 }
             }
 

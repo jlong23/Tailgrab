@@ -135,7 +135,7 @@ public class FileTailer
         _ = Task.Run(async () => await CheckForUpdatesAsync());
 
 
-        //PrismicBinaryReader.GetPrismicDataAsync("930d08f34c61e4282992cdb3afbafca0");
+        // PrismicBinaryReader.GetPrismicDataAsync("930d08f34c61e4282992cdb3afbafca0");
 
         BuildAppWindow(_serviceRegistry);
 
