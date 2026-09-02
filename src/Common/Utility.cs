@@ -4,6 +4,7 @@ using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Net.Http;
+using System.Reflection;
 using System.Text;
 using System.Windows;
 using System.Windows.Media;
@@ -13,6 +14,20 @@ namespace Tailgrab.Common
 {
     public static class Utility
     {
+        private static readonly Assembly _asm = Assembly.GetExecutingAssembly();
+        private static readonly string _prefix = _asm.GetName().Name;
+
+        public static string GetHTMLResource(string folder, string fileName)
+        {
+            string resourceName = $"{_prefix}.{folder}.{fileName}";
+
+            using Stream stream = _asm.GetManifestResourceStream(resourceName)
+                ?? throw new FileNotFoundException(
+                    $"Embedded resource '{resourceName}' not found.");
+            using StreamReader reader = new StreamReader(stream, Encoding.UTF8);
+            return reader.ReadToEnd();
+        }
+
         public static string GetCurrentDateTimeString()
         {
             return DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
