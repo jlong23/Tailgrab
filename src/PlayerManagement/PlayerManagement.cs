@@ -69,6 +69,19 @@ namespace Tailgrab.PlayerManagement
             return player;
         }
 
+        public static List<Player> FindPlayersByAvatar(string avatarName)
+        {
+            List<Player> matchingPlayers = [];
+            foreach (var player in playersByUserId.Values)
+            {
+                if (player.AvatarName.Equals(avatarName, StringComparison.OrdinalIgnoreCase))
+                {
+                    matchingPlayers.Add(player);
+                }
+            }
+            return matchingPlayers;
+        }
+
         public static PlayerAvatar? GetPlayerAvatarByName(string avatarName)
         {
             if (playerAvatarByName.TryGetValue(avatarName, out PlayerAvatar? playerAvatar))
@@ -320,12 +333,12 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
-        public static Player? UserInventorySpawnPublic(string displayName, string imageUri)
+        public static Player? UserInventorySpawnPublic(string displayName, string imageUri, string contentType)
         {
             Player? player = GetPlayerByDisplayName(displayName);
             if (player != null)
             {
-                string html = Utility.GetHTMLResource("HtmlTemplates", "VTK_Template.html");
+                string html = Utility.GetHTMLResource("HtmlTemplates", "Image_Template.html");
 
                 // Build formatted string from the viewmodel alone
                 var sb = new System.Text.StringBuilder();
@@ -336,6 +349,10 @@ namespace Tailgrab.PlayerManagement
 
                 string text = html.Replace("{content}", content);
                 text = text.Replace("{thumbnailUrl}", imageUri);
+                text = text.Replace("{contentType}", contentType);
+
+                logger.Info($"UserInventorySpawnPublic( {displayName}, {imageUri}, {contentType}");
+                logger.Info(text);
 
                 OBSClient? obsClient = serviceRegistry.GetOBSClient();
                 if (obsClient != null)
@@ -661,6 +678,7 @@ namespace Tailgrab.PlayerManagement
             GroupWatch,
             ProfileWatch,
             AvatarWatch,
+            AvatarLookup,
             Emoji,
             ModerationReport,
         }
@@ -723,6 +741,7 @@ namespace Tailgrab.PlayerManagement
         public string UserId { get; set; } = userId;
         public string DisplayName { get; set; } = displayName;
         public string AvatarName { get; set; } = "";
+        public string AvatarId { get; set; } = "";
         public string PenActivity { get; set; } = "";
         public int NetworkId { get; set; }
         public DateTime InstanceStartTime { get; set; } = DateTime.Now;
@@ -954,7 +973,8 @@ namespace Tailgrab.PlayerManagement
             StringBuilder sb = new();
             sb.AppendLine($"DisplayName: {DisplayName}");
             sb.AppendLine($"UserId: {UserId}");
-            sb.AppendLine($"Current Avatar Name: {(string.IsNullOrEmpty(AvatarName) ? string.Empty : AvatarName)}");
+            string _avatarName = !string.IsNullOrWhiteSpace(AvatarId) ? $"{AvatarName} ({AvatarId})" : AvatarName;
+            sb.AppendLine($"Current Avatar Name: {(string.IsNullOrEmpty(_avatarName) ? string.Empty : _avatarName)}");
             if (!string.IsNullOrEmpty(LastStickerUrl))
             {
                 sb.AppendLine($"Last Sticker: {(string.IsNullOrEmpty(LastStickerUrl) ? string.Empty : LastStickerUrl)}");
@@ -1003,7 +1023,8 @@ namespace Tailgrab.PlayerManagement
             StringBuilder sb = new();
             sb.AppendLine($"<dt>DisplayName:</dt><dd>{DisplayName}</dd>");
             sb.AppendLine($"<dt>UserId:</dt><dd>{UserId}</dd>");
-            sb.AppendLine($"<dt>Current Avatar Name:</dt><dd>{(string.IsNullOrEmpty(AvatarName) ? string.Empty : AvatarName)}</dd>");
+            string _avatarName = !string.IsNullOrWhiteSpace(AvatarId) ? $"{AvatarName} ({AvatarId})" : AvatarName;
+            sb.AppendLine($"<dt>Current Avatar Name:</dt><dd>{(string.IsNullOrEmpty(_avatarName) ? string.Empty : _avatarName)}</dd>");
             if (!string.IsNullOrEmpty(LastStickerUrl))
             {
                 sb.AppendLine($"<dt>Last Sticker:</dt><dd>{(string.IsNullOrEmpty(LastStickerUrl) ? string.Empty : LastStickerUrl)}</dd>");

@@ -6501,7 +6501,7 @@ namespace Tailgrab.PlayerManagement
         {
             UserId = p.UserId;
             DisplayName = p.DisplayName;
-            AvatarName = p.AvatarName;
+            AvatarName = !string.IsNullOrWhiteSpace(p.AvatarId) ? $"{p.AvatarName} ({p.AvatarId})" : p.AvatarName;
             PenActivity = p.PenActivity;
             LastStickerUrl = p.LastStickerUrl;
             LastStickerImageUrl = p.LastStickerUrl;
@@ -6528,7 +6528,8 @@ namespace Tailgrab.PlayerManagement
 
             if (UserId != p.UserId) { UserId = p.UserId; changed = true; }
             if (DisplayName != p.DisplayName) { DisplayName = p.DisplayName; changed = true; }
-            if (AvatarName != p.AvatarName) { AvatarName = p.AvatarName; changed = true; }
+            var avatarName = !string.IsNullOrWhiteSpace(p.AvatarId) ? $"{p.AvatarName} ({p.AvatarId})" : p.AvatarName;
+            if (AvatarName != avatarName) { AvatarName = avatarName; changed = true; }
             if (PenActivity != p.PenActivity) { PenActivity = p.PenActivity; changed = true; }
             if (LastStickerUrl != p.LastStickerUrl) { LastStickerUrl = p.LastStickerUrl; LastStickerImageUrl = p.LastStickerUrl; changed = true; }
 

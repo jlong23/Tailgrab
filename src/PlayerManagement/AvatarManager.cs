@@ -107,14 +107,17 @@ namespace Tailgrab.PlayerManagement
                 return null;
             }
 
+            // Check if the authorName is in the instance
             Player? player = PlayerManager.GetPlayerByDisplayName(authorName);
             string? authorId = string.Empty;
             if (player != null)
             {
+                // Use it for the Search
                 authorId = player.UserId;
             }
             else
             {
+                // Otherwise, search for the authorId using the VRChat API
                 authorId = await serviceRegistry.GetVRChatAPIClient().SearchUserByDisplayName(authorName);
             }
 
@@ -124,7 +127,7 @@ namespace Tailgrab.PlayerManagement
                 return null;
             }
 
-
+            // Attempt to fine the Avatar by AuthorId and AvatarName, first checking for moderated avatars, then regular avatars
             Avatar? avatar = await FindModeratedAvatarByAuthorIdAndName(authorId, avatarName);
             if (avatar == null)
             {
@@ -134,6 +137,17 @@ namespace Tailgrab.PlayerManagement
             if (avatar != null)
             {
                 logger.Info($"Unpack avatar: {avatar.Name} by author: {avatar.AuthorName} (ID: {avatar.Id})");
+                List<Player> userPlayers = PlayerManager.FindPlayersByAvatar(avatar.Name);
+                foreach (Player matched in userPlayers)
+                {
+                    if (matched.AvatarId != avatar.Id)
+                    {
+                        matched.AvatarId = avatar.Id;
+                        logger.Info($"Player {matched.DisplayName} using public avatar: {avatar.Name} by author: {avatar.AuthorName} (ID: {avatar.Id})");
+                        matched.AddEvent(new PlayerEvent(PlayerEvent.EventType.AvatarLookup, $"Player is using public avatar: {avatar.Name} by author: {avatar.AuthorName} (ID: {avatar.Id})"));
+                        PlayerManager.OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Updated, matched);
+                    }
+                }
             }
 
             return null;
