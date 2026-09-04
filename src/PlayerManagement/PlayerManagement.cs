@@ -135,7 +135,30 @@ namespace Tailgrab.PlayerManagement
             CurrentSession = worldInfo;
             serviceRegistry.GetXSOverlay().Initialize();
 
+            bool recordImageEvent = ConfigStore.GetStoredKeyBool(CommonConst.Registry_OBS_StartRecordOnWorldJoin, false);
+            if (recordImageEvent)
+            {
+                OBSClient? obsClient = serviceRegistry.GetOBSClient();
+                if (obsClient != null)
+                {
+                    await obsClient.SessionRecording(true);
+                }
+            }
+
             return worldInfo;
+        }
+
+        public static async Task CloseSession()
+        {
+            bool recordImageEvent = ConfigStore.GetStoredKeyBool(CommonConst.Registry_OBS_StartRecordOnWorldJoin, false);
+            if (recordImageEvent)
+            {
+                OBSClient? obsClient = serviceRegistry.GetOBSClient();
+                if (obsClient != null)
+                {
+                    await obsClient.SessionRecording(false);
+                }
+            }
         }
 
         public async Task<WorldInstanceInfo> GetWorldInstanceInfo(string worldId, string instanceId)

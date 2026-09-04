@@ -121,6 +121,28 @@ namespace Tailgrab.Clients.OBS
             }
         }
 
+        public async Task SessionRecording(bool start)
+        {
+            if (GetSocketConnectedState())
+            {
+                try
+                {
+                    if( client.GetRecordStatus().IsRecording && !start)
+                    {
+                        client.StopRecord();
+                    }
+                    else if (!client.GetRecordStatus().IsRecording && start)
+                    {
+                        client.StartRecord();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.Error(ex);
+                }
+            }
+        }
+
         private void SaveCurrentScene()
         {
             previousScene = client.GetCurrentProgramScene();

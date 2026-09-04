@@ -38,9 +38,10 @@ public class QuitHandler : AbstractLineHandler
             }
 
             PlayerManager.ClearAllPlayers(this);
-
+            Task.Run(() => PlayerManager.CloseSession());
             OverlayManager overlay = _serviceRegistry.GetXSOverlay();
             overlay.Dispose();
+
 
             Dictionary<string, string> actionData = new Dictionary<string, string>
             {
