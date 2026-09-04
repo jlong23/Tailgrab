@@ -91,7 +91,8 @@ namespace Tailgrab.Clients.XSOverlay
                 timeout = 5,
                 height = 174,
                 sourceApp = "Tailgrab",
-                icon = "warning"
+                icon = "warning",
+                opacity = 0.75f
 
             };
 
