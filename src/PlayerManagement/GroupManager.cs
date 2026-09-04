@@ -199,8 +199,8 @@ namespace Tailgrab.PlayerManagement
                     Image? groupAlert = null;
                     await overlay.SendNotification(
                         maxAlertType, 
-                        "Group Watch Alert", 
-                        $"Player \\b1{player.DisplayName}\\b0 has group membership alerts:\r\n{groupNames}", 
+                        "<b>Group Watch Alert</b>", 
+                        $"<b>{player.DisplayName}</b> has group membership alerts:\r\n{groupNames}", 
                         groupAlert);
 
                     SoundManager.PlayAlertSound(CommonConst.Group_Alert_Key, maxAlertType);
@@ -252,7 +252,7 @@ namespace Tailgrab.PlayerManagement
                 player = PlayerManager.AddPlayerEventByUserId(item.UserId ?? string.Empty, PlayerEvent.EventType.GroupWatch, $"User is member of group: {groupInfo.GroupName} with alert level {groupInfo.AlertType}");
                 player?.AddAlertMessage(AlertClassEnum.Group, groupInfo.AlertType, groupInfo.GroupName);
                 maxAlertType = maxAlertType < groupInfo.AlertType ? groupInfo.AlertType : maxAlertType;
-                return groupInfo.GroupName + "\r\n";
+                return groupInfo.GroupName + "<br>";
             }
 
             return string.Empty;
