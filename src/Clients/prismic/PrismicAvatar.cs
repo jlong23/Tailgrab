@@ -17,11 +17,33 @@ using VRChat.API.Model;
 
 namespace Tailgrab.Clients.Prismic
 {
+    public class AvatarsLookupResponse
+    {
+        [JsonPropertyName("author")]
+        public string Author { get; set; }
+        [JsonPropertyName("count")]
+        public int Count { get; set; }
+        [JsonPropertyName("results")]
+        public List<AvatarsLookupListResponse> Results { get; set; }
+    }
+
+    public class AvatarsLookupListResponse
+    {
+        [JsonPropertyName("data")]
+        public AvatarEntry Data { get; set; }
+        [JsonPropertyName("name_md5")]
+        public string NameMd5 { get; set; }
+    }
+
     public class AvatarEntry    
     {
+        [JsonPropertyName("avatar_id")]
         public required string AvatarId { get; set; }
+        [JsonPropertyName("name")]
         public required string Name { get; set; }
+        [JsonPropertyName("author")]
         public required string Author { get; set; }
+        [JsonPropertyName("description")]
         public required string Description { get; set; }
 
         [JsonIgnore]
@@ -30,6 +52,7 @@ namespace Tailgrab.Clients.Prismic
         [JsonIgnore]
         public bool Ios { get; set; }
 
+        [JsonPropertyName("flags")]
         public required int[] Flags { get; set; } // [Platform, Impostor, PC Rating, Quest Rating, IOS Rating, Content Warnings, Style Filter, Marketplace]
 
         [JsonIgnore]
@@ -216,13 +239,13 @@ namespace Tailgrab.Clients.Prismic
                 "for _,k in ipairs(redis.call('keys', @pattern)) do redis.call('del', k) end");
 
             await connection.GetDatabase(databaseId).ScriptEvaluateAsync(script, new { pattern = pattern });
-        
+
             logger.Info($"Deleted keys matching pattern '{pattern}'");
         }
 
         public async void Parse()
         {
-            ConnectionMultiplexer redis = ConnectionMultiplexer.Connect("warren01:6379");           
+            ConnectionMultiplexer redis = ConnectionMultiplexer.Connect("warren01:6379");
             IDatabase db = redis.GetDatabase();
             await RemoveHashesByPatternAsync(redis, "avtr_idx:*");
 
@@ -395,7 +418,7 @@ namespace Tailgrab.Clients.Prismic
                 string avKeyFull = "avtr:" + Checksum.CreateMD5(author) + ":" + Checksum.CreateMD5(name);
                 string avKeyAuthor = "avtr_idx:" + Checksum.CreateMD5(author);
 
-                if( !db.KeyExists(avKeyFull))
+                if (!db.KeyExists(avKeyFull))
                 {
                     logger.Info($"Adding new avatar entry: {entry.ToString()}");
                 }
@@ -560,7 +583,7 @@ namespace Tailgrab.Clients.Prismic
 
             foreach (string apiUrl in uris)
             {
-                if(apiUrl.Contains("pasavtrdb.txt"))
+                if (apiUrl.Contains("pasavtrdb.txt"))
                 {
                     byte[] byteResponse = await GetURLContentBytes(apiUrl);
                     logger.Info($"Successfully downloaded avatar data from {apiUrl}");
@@ -578,5 +601,4 @@ namespace Tailgrab.Clients.Prismic
             reader.Parse();
         }
     }
-
 }
