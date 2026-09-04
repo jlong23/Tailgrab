@@ -2,13 +2,17 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Win32;
 using NLog;
+using SQLitePCL;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using Tailgrab.Clients.Github;
 using Tailgrab.Clients.Ollama;
+using Tailgrab.Clients.Prismic;
 using Tailgrab.Clients.VRCDB;
 using Tailgrab.Clients.XSOverlay;
 using Tailgrab.Common;
@@ -238,8 +242,8 @@ namespace Tailgrab.PlayerManagement
 
                         _ = overlay.SendNotification(
                             watchedAvatar.AlertType,
-                            "Avatar Watch Alert",
-                            $"Player \\b1{displayName}\\b0 has used a watched Avatar \\b1\\i1{avatarName}\\i0\\b0",
+                            "<b>Avatar Watch Alert</b>",
+                            $"<b>{displayName}</b> has used a watched Avatar <b><i>{avatarName}</i></b>",
                             avatarAlert);
                     }
                 }
@@ -1202,9 +1206,6 @@ namespace Tailgrab.PlayerManagement
                             OwnerName = avatarItem.AuthorName ?? string.Empty,
                             OwnerId = avatarItem.AuthorId ?? string.Empty,
                             IsOwnedByUser = avatarItem.AuthorId == userId,
-                            IsPC = avatarItem.Performance?.PcRating ?? string.Empty,
-                            IsQuest = avatarItem.Performance?.AndroidRating ?? string.Empty,
-                            IsIOS = avatarItem.Performance?.IosRating ?? string.Empty,
                             DatabaseAlertType = AlertTypeEnum.None,
                             AlertType = AlertTypeEnum.None,
                             PCPerformance = AvatarPerformanceEnumMapper.MapEnumToAlertDisplayItem(avatarItem.Performance?.PcRating ?? string.Empty),
@@ -1243,6 +1244,123 @@ namespace Tailgrab.PlayerManagement
             catch (Exception ex)
             {
                 logger.Error(ex, $"Error loading user avatars for {userId}");
+                throw;
+            }
+
+            return avatarViewModels
+                .OrderByDescending(g => g.IsOwnedByUser)
+                .ThenByDescending(g => g.AlertType)
+                .ThenBy(g => g.Name)
+                .ToList();
+        }
+
+        public async Task<AvatarsLookupResponse?> GetAvatarsLookupResponse(string author)
+        {
+            using var client = new HttpClient();
+
+            // GitHub API requires a User-Agent header
+            client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("GistRawUrlFetcher", "1.0"));
+
+            try
+            {
+                HttpResponseMessage response = await client.GetAsync($"http://blackberry.rabbitearsvideoproduction.net:5000/avatar?author={author}");
+                response.EnsureSuccessStatusCode();
+
+                string jsonResponse = await response.Content.ReadAsStringAsync();
+
+                var options = new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                };
+
+                return JsonSerializer.Deserialize<AvatarsLookupResponse>(jsonResponse, options);
+            }
+            catch (JsonException ex)
+            {
+                logger.Error($"JSON deserialization error: {ex.Message}");
+                return null;
+            }
+        }
+
+
+        public async Task<List<UserAvatarViewModel>> LoadPrismicUserAvatarAsync(string displayName, AvatarsLookupResponse? avatarsLookupResponse)
+        {
+            if (serviceRegistry == null)
+            {
+                logger.Warn("ServiceRegistry is not initialized.");
+                return new List<UserAvatarViewModel>();
+            }
+
+            var avatarViewModels = new List<UserAvatarViewModel>();
+
+            try
+            {
+                // Fetch DB data on background thread
+                TailgrabDBContext dbContext = serviceRegistry.GetDBContext();
+
+                // Fetch groups from API on background thread
+                List<AvatarsLookupListResponse> avatarItemData = avatarsLookupResponse?.Results ?? new List<AvatarsLookupListResponse>();
+                logger.Info($"Fetched {avatarItemData?.Count ?? 0} avatars for user {displayName}");
+
+                if (avatarItemData == null || avatarItemData.Count == 0)
+                {
+                    logger.Info($"No avatars found for user {displayName}");
+                    return avatarViewModels;
+                }
+
+
+                foreach (AvatarsLookupListResponse avatarItem in avatarItemData)
+                {
+                    if (avatarItem.Data.AvatarId != null)
+                    {
+
+                        UserAvatarViewModel model = new UserAvatarViewModel()
+                        {
+                            AvatarId = avatarItem.Data.AvatarId ?? string.Empty,
+                            Name = avatarItem.Data.Name ?? string.Empty,
+                            ThumbnailUrl = string.Empty,
+                            OwnerName = avatarItem.Data.Author ?? string.Empty,
+                            // Todo Get the correct owner ID from the API response if available
+                            OwnerId = avatarItem.Data.Author ?? string.Empty,
+                            IsOwnedByUser = true,
+                            DatabaseAlertType = AlertTypeEnum.None,
+                            AlertType = AlertTypeEnum.None,
+                            PCPerformance = AvatarPerformanceEnumMapper.MapEnumToAlertDisplayItem(avatarItem.Data.PCRating ?? string.Empty),
+                            QuestPerformance = AvatarPerformanceEnumMapper.MapEnumToAlertDisplayItem(avatarItem.Data.QuestRating ?? string.Empty),
+                            IOSPerformance = AvatarPerformanceEnumMapper.MapEnumToAlertDisplayItem(avatarItem.Data.IOSRating ?? string.Empty),
+                        };
+
+                        AvatarInfo? existingAvatar = dbContext.AvatarInfos.Find(avatarItem.Data.AvatarId);
+                        if (existingAvatar != null)
+                        {
+                            model.AlertType = existingAvatar.AlertType;
+                            model.DatabaseAlertType = existingAvatar.AlertType;
+                            model.ExistsInDatabase = true;
+                        }
+
+
+                        Result<Avatar?> avatarResult = serviceRegistry.GetVRChatAPIClient().GetAvatarById(model.AvatarId);
+                        if (avatarResult != null && avatarResult.Value != null)
+                        {
+                            Avatar avatar = avatarResult.Value;
+                            model.ThumbnailUrl = avatar.ThumbnailImageUrl ?? string.Empty;
+                            model.Description = avatar.Description ?? string.Empty;
+                            model.UpdatedAt = avatar.UpdatedAt;
+                            model.CreatedAt = avatar.CreatedAt;
+                        }
+                        else
+                        {
+                            logger.Warn($"Failed to fetch avatar details for Avatar ID {avatarItem.Data.AvatarId}. Exception: {avatarResult?.Exception?.Message}");
+                            model.Description = $"Failed to fetch avatar details. {avatarResult?.Exception?.Message}";
+                        }
+
+                        avatarViewModels.Add(model);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, $"Error loading user avatars for {displayName}");
                 throw;
             }
 
