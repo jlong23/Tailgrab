@@ -336,28 +336,32 @@ namespace Tailgrab.PlayerManagement
         public static Player? UserInventorySpawnPublic(string displayName, string imageUri, string contentType)
         {
             Player? player = GetPlayerByDisplayName(displayName);
-            if (player != null)
+            bool recordImageEvent = ConfigStore.GetStoredKeyBool(CommonConst.Registry_OBS_UserImageSpawnEvents, false);
+            if (recordImageEvent)
             {
-                string html = Utility.GetHTMLResource("HtmlTemplates", "Image_Template.html");
-
-                // Build formatted string from the viewmodel alone
-                var sb = new System.Text.StringBuilder();
-                sb.AppendLine("<dl>");
-                sb.AppendLine(player.ToHTML(true));
-                sb.AppendLine("</dl>");
-                var content = sb.ToString();
-
-                string text = html.Replace("{content}", content);
-                text = text.Replace("{thumbnailUrl}", imageUri);
-                text = text.Replace("{contentType}", contentType);
-
-                logger.Info($"UserInventorySpawnPublic( {displayName}, {imageUri}, {contentType}");
-                logger.Info(text);
-
-                OBSClient? obsClient = serviceRegistry.GetOBSClient();
-                if (obsClient != null)
+                if (player != null)
                 {
-                    Task.Run(() => obsClient.ImageExposeEvent("VRChat-VTK", "VTK_Details", text)).GetAwaiter().GetResult();
+                    logger.Info($"UserInventorySpawnPublic( {displayName}, {imageUri}, {contentType}");
+
+                    string html = Utility.GetHTMLResource("HtmlTemplates", "Image_Template.html");
+
+                    // Build formatted string from the viewmodel alone
+                    var sb = new System.Text.StringBuilder();
+                    sb.AppendLine("<dl>");
+                    sb.AppendLine(player.ToHTML(true));
+                    sb.AppendLine("</dl>");
+                    var content = sb.ToString();
+
+                    string text = html.Replace("{content}", content);
+                    text = text.Replace("{thumbnailUrl}", imageUri);
+                    text = text.Replace("{contentType}", contentType);
+                    logger.Info(text);
+
+                    OBSClient? obsClient = serviceRegistry.GetOBSClient();
+                    if (obsClient != null)
+                    {
+                        Task.Run(() => obsClient.ImageExposeEvent(text)).GetAwaiter().GetResult();
+                    }
                 }
             }
 
@@ -387,7 +391,7 @@ namespace Tailgrab.PlayerManagement
                 if (obsClient != null)
                 {
                     string filename = $"{player.UserId}-{displayName}_{DateTime.Now:yyyyMMdd_HHmmss}";
-                    Task.Run(() => obsClient.VTKRecording("VRChat-VTK", "VTK_Details", filename, text)).GetAwaiter().GetResult();
+                    Task.Run(() => obsClient.VTKRecording(filename, text)).GetAwaiter().GetResult();
                 }
             }
 

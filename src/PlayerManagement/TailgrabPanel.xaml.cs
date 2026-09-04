@@ -1,5 +1,4 @@
 using BuildSoft.VRChat.Osc;
-using Newtonsoft.Json.Bson;
 using NLog;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -13,6 +12,7 @@ using System.Windows.Media;
 using System.Windows.Threading;
 using Tailgrab.Clients.Github;
 using Tailgrab.Clients.Ollama;
+using Tailgrab.Clients.Prismic;
 using Tailgrab.Clients.VRChat;
 using Tailgrab.Common;
 using Tailgrab.Configuration;
@@ -681,8 +681,7 @@ namespace Tailgrab.PlayerManagement
             var xsOverlayLevel = ConfigStore.GetStoredKeyString(CommonConst.Registry_XSOverlay_Level) ?? CommonConst.XSOverlay_Level_None;
 
             var GithubGistPAT = ConfigStore.GetStoredKeyString(CommonConst.Registry_Github_Gist_PAT);
-            var GithubGistID = ConfigStore.GetStoredKeyString(CommonConst.Registry_Github_Gist_ID);
-
+            var GithubGistID = ConfigStore.GetStoredKeyString(CommonConst.Registry_Github_Gist_ID);           
 
             // Populate UI boxes but do not reveal secrets
             if (!string.IsNullOrEmpty(vrUser)) VrUserBox.Text = vrUser;
@@ -703,6 +702,29 @@ namespace Tailgrab.PlayerManagement
             if (!string.IsNullOrEmpty(groupGistUri)) groupGistUrl.Text = groupGistUri;
             if (!string.IsNullOrEmpty(xsOverlayLevel) && AlertTypeOptions.Any(o => o.Key == xsOverlayLevel))
                 XSOverlayNotifications.SelectedValue = xsOverlayLevel;
+
+            UseOBSAutomation.IsChecked = ConfigStore.GetStoredKeyBool(CommonConst.Registry_OBS_Enable, false);
+            var obsWebsocketUrl = ConfigStore.GetStoredKeyString(CommonConst.Registry_OBS_WSURI) ?? CommonConst.Default_OBS_WSURI;
+            var obsWebsocketPassword = ConfigStore.LoadSecret(CommonConst.Registry_OBS_Password);
+            if (!string.IsNullOrEmpty(obsWebsocketUrl)) OBSWebSocketURI.Text = obsWebsocketUrl;
+            if (!string.IsNullOrEmpty(obsWebsocketPassword)) OBSWebSocketPassword.ToolTip = "Stored (hidden)";
+
+            StartReplayBuffer.IsChecked = ConfigStore.GetStoredKeyBool(CommonConst.Registry_OBS_StartReplayBuffer, false);
+            StartVirtualCamera.IsChecked = ConfigStore.GetStoredKeyBool(CommonConst.Registry_OBS_StartVirtualCamera, false);
+            StartRecordOnWorldJoin.IsChecked = ConfigStore.GetStoredKeyBool(CommonConst.Registry_OBS_StartRecordOnWorldJoin, false);
+
+            ReplayBufferRecordOnKickBan.IsChecked = ConfigStore.GetStoredKeyBool(CommonConst.Registry_OBS_SaveReplayBufferOnKickBan, false);
+            var kickBanSceneName = ConfigStore.GetStoredKeyString(CommonConst.Registry_OBS_Kick_Ban_Scene_Name);
+            var kickBanSceneSourceName = ConfigStore.GetStoredKeyString(CommonConst.Registry_OBS_Kick_Ban_Browser_Name);
+            if (!string.IsNullOrEmpty(kickBanSceneName)) KickBanSceneName.Text = kickBanSceneName;
+            if (!string.IsNullOrEmpty(kickBanSceneSourceName)) KickBanBrowserSourceName.Text = kickBanSceneSourceName;
+
+            ShowUserCustomImages.IsChecked = ConfigStore.GetStoredKeyBool(CommonConst.Registry_OBS_UserImageSpawnEvents, true);
+            var imageSpawnSceneName = ConfigStore.GetStoredKeyString(CommonConst.Registry_OBS_ImageSpawn_SceneName);
+            var imageSpawnSceneSourceName = ConfigStore.GetStoredKeyString(CommonConst.Registry_OBS_ImageSpawn_BrowserName);
+            if (!string.IsNullOrEmpty(imageSpawnSceneName)) CustomSpawnSceneName.Text = imageSpawnSceneName;
+            if (!string.IsNullOrEmpty(imageSpawnSceneSourceName)) CustomSpawnBrowserSourceName.Text = imageSpawnSceneSourceName;
+
 
             ModeratedAvatarCaching.IsChecked = ConfigStore.GetStoredKeyBool(CommonConst.Registry_Moderated_Avatar_Caching, true);
             DiscoveredAvatarCaching.IsChecked = ConfigStore.GetStoredKeyBool(CommonConst.Registry_Discovered_Avatar_Caching, true);
@@ -818,6 +840,21 @@ namespace Tailgrab.PlayerManagement
                 ConfigStore.PutStoredKeyString(CommonConst.Registry_Github_Gist_ID, GithubGistUrl.Text.Trim() ?? string.Empty);
                 ConfigStore.PutStoredKeyBool(CommonConst.Registry_Github_Use_Automation, UseGistAutomation.IsChecked == true);
 
+                ConfigStore.PutStoredKeyBool(CommonConst.Registry_OBS_Enable, UseOBSAutomation.IsChecked == true);
+                ConfigStore.PutStoredKeyString(CommonConst.Registry_OBS_WSURI, OBSWebSocketURI.Text.Trim() ?? string.Empty);
+                ConfigStore.SaveSecret(CommonConst.Registry_OBS_Password, OBSWebSocketPassword.Text.Trim() ?? string.Empty);
+
+                ConfigStore.PutStoredKeyBool(CommonConst.Registry_OBS_StartReplayBuffer, StartReplayBuffer.IsChecked == true);
+                ConfigStore.PutStoredKeyBool(CommonConst.Registry_OBS_StartVirtualCamera, StartVirtualCamera.IsChecked == true);
+                ConfigStore.PutStoredKeyBool(CommonConst.Registry_OBS_StartRecordOnWorldJoin, StartRecordOnWorldJoin.IsChecked == true);
+
+                ConfigStore.PutStoredKeyBool(CommonConst.Registry_OBS_SaveReplayBufferOnKickBan, ReplayBufferRecordOnKickBan.IsChecked == true);
+                ConfigStore.PutStoredKeyString(CommonConst.Registry_OBS_Kick_Ban_Scene_Name, KickBanSceneName.Text.Trim() ?? string.Empty);
+                ConfigStore.PutStoredKeyString(CommonConst.Registry_OBS_Kick_Ban_Browser_Name, KickBanBrowserSourceName.Text.Trim() ?? string.Empty);
+                ConfigStore.PutStoredKeyBool(CommonConst.Registry_OBS_UserImageSpawnEvents, ShowUserCustomImages.IsChecked == true);
+                ConfigStore.PutStoredKeyString(CommonConst.Registry_OBS_ImageSpawn_SceneName, CustomSpawnSceneName.Text.Trim() ?? string.Empty);
+                ConfigStore.PutStoredKeyString(CommonConst.Registry_OBS_ImageSpawn_BrowserName, CustomSpawnBrowserSourceName.Text.Trim() ?? string.Empty);
+
                 ConfigStore.PutStoredKeyBool(CommonConst.Registry_Discovered_Avatar_Caching, DiscoveredAvatarCaching.IsChecked == true);
                 ConfigStore.PutStoredKeyBool(CommonConst.Registry_Moderated_Avatar_Caching, ModeratedAvatarCaching.IsChecked == true);
                 ConfigStore.PutStoredKeyBool(CommonConst.Registry_Discovered_Group_Caching, DiscoveredGroupCaching.IsChecked == true);
@@ -913,8 +950,9 @@ namespace Tailgrab.PlayerManagement
         {
             try
             {
+                string buttonContent = (string)System.Windows.Application.Current.FindResource("UI.Tab.Secrets.Group.AlertList.Action.Avatar.Checking");
                 avatarGistCheckButton.IsEnabled = false;
-                avatarGistCheckButton.Content = "Checking...";
+                avatarGistCheckButton.Content = buttonContent;
 
                 await Task.Run(() => _serviceRegistry.ProcessAvatarGist());
 
@@ -927,8 +965,9 @@ namespace Tailgrab.PlayerManagement
             }
             finally
             {
-                avatarGistCheckButton.Content = "Check Now";
-                avatarGistCheckButton.IsEnabled = !string.IsNullOrWhiteSpace(avatarGistUrl.Text);
+                string buttonContent = (string)System.Windows.Application.Current.FindResource("UI.Tab.Secrets.Group.AlertList.Action.Avatar.CheckNow");
+                avatarGistCheckButton.Content = buttonContent;
+                avatarGistCheckButton.IsEnabled = true;
             }
         }
 
@@ -938,8 +977,9 @@ namespace Tailgrab.PlayerManagement
             {
                 if (groupGistUrl.Text != null)
                 {
+                    string buttonContent = (string)System.Windows.Application.Current.FindResource("UI.Tab.Secrets.Group.AlertList.Action.Group.Checking");
                     groupGistCheckButton.IsEnabled = false;
-                    groupGistCheckButton.Content = "Checking...";
+                    groupGistCheckButton.Content = buttonContent;
                     //System.Windows.MessageBox.Show("Group GIST list processing in the background.", "Check Group GIST", MessageBoxButton.OK, MessageBoxImage.Information);
                     await _serviceRegistry.ProcessGroupGist(groupGistUrl.Text, true);
                 }
@@ -951,8 +991,9 @@ namespace Tailgrab.PlayerManagement
             }
             finally
             {
-                groupGistCheckButton.Content = "Check Now";
-                groupGistCheckButton.IsEnabled = !string.IsNullOrWhiteSpace(groupGistUrl.Text);
+                string buttonContent = (string)System.Windows.Application.Current.FindResource("UI.Tab.Secrets.Group.AlertList.Action.Group.CheckNow");
+                groupGistCheckButton.Content = buttonContent;
+                groupGistCheckButton.IsEnabled = true;
             }
         }
 
@@ -971,6 +1012,7 @@ namespace Tailgrab.PlayerManagement
                         result);
                     logger.Info("Exported Avatar GIST data to GitHub Gist");
                 }
+
                 System.Windows.Clipboard.SetText(result);
                 logger.Info("Exported Avatar GIST data to clipboard");
 
@@ -5511,6 +5553,37 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
+        private void BanMgmtAvatarCheckAvatars2_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                string userId = BanMgmtUserIdTextBox.Text.Trim();
+
+                if (string.IsNullOrWhiteSpace(userId))
+                {
+                    System.Windows.MessageBox.Show("Please enter a User ID first.", "Validation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                if (!userId.StartsWith("usr_"))
+                {
+                    System.Windows.MessageBox.Show("Invalid User ID format (must start with usr_).", "Validation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                // Get display name if user is already loaded, otherwise use userId
+                string displayName = BanMgmtUserName.Text ?? userId;
+
+                // Call ShowUserAvatarsOverlay with the userId and display name
+                ShowUserAvatarsOverlay2(userId, displayName);
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error checking groups for user");
+                System.Windows.MessageBox.Show($"Failed to check groups: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
         public async void ShowUserAvatarsOverlay(string userId, string displayName)
         {
             try
@@ -5527,6 +5600,39 @@ namespace Tailgrab.PlayerManagement
 
                 // Fetch avatars asynchronously (already async, no need for Task.Run)
                 List<UserAvatarViewModel> avatars = await _serviceRegistry.GetAvatarManager().LoadUserAvatarAsync(userId);
+
+                // Update UI (already on UI thread)
+                UserAvatarDataGrid.ItemsSource = avatars;
+
+                // Reset ScrollViewer to top
+                UserAvatarScrollViewer.ScrollToTop();
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, $"Error showing user avatars overlay for user {userId}");
+                System.Windows.MessageBox.Show($"Failed to load user avatars: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                UserAvatarOverlay.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        public async void ShowUserAvatarsOverlay2(string userId, string displayName)
+        {
+            try
+            {
+                // Set user information
+                UserAvatarOverlayUserId.Text = userId;
+                UserAvatarOverlayDisplayName.Text = displayName;
+
+                // Clear existing data
+                UserAvatarDataGrid.ItemsSource = null;
+
+                // Show the overlay
+                UserAvatarOverlay.Visibility = Visibility.Visible;
+
+                AvatarsLookupResponse? avatarsLookupResponse = await _serviceRegistry.GetAvatarManager().GetAvatarsLookupResponse(displayName);
+
+                // Fetch avatars asynchronously (already async, no need for Task.Run)
+                List<UserAvatarViewModel> avatars = await _serviceRegistry.GetAvatarManager().LoadPrismicUserAvatarAsync(displayName, avatarsLookupResponse);
 
                 // Update UI (already on UI thread)
                 UserAvatarDataGrid.ItemsSource = avatars;

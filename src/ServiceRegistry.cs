@@ -262,12 +262,13 @@ namespace Tailgrab
 
         public OBSClient? GetOBSClient()
         {
-            if (obsClient == null)
+            bool enableOBS = ConfigStore.GetStoredKeyBool(CommonConst.Registry_OBS_Enable, false);
+            if (enableOBS && obsClient == null)
             {
                 try
                 {
-                    obsClient = new OBSClient();                   
-                    Task.Run(() => obsClient.Initialize("ws://localhost:4455", "d22PvtO9JqyQRoI5")).ConfigureAwait(true);
+                    obsClient = new OBSClient();
+                    Task.Run(() => obsClient.Initialize().ConfigureAwait(true)).GetAwaiter().GetResult();
                 }
                 catch (Exception ex)
                 {

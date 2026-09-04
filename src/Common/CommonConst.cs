@@ -1,5 +1,7 @@
 ﻿using System.IO;
+using System.Reflection.Metadata;
 using System.Text.RegularExpressions;
+using System.Web;
 
 namespace Tailgrab.Common
 {
@@ -35,6 +37,21 @@ namespace Tailgrab.Common
         public const string Registry_Alert_Avatar = "ALERT_AVATAR_SOUND";
         public const string Registry_Alert_Group = "ALERT_GROUP_SOUND";
         public const string Registry_Alert_Profile = "ALERT_PROFILE_SOUND";
+
+        // OBS related registry keys
+        public const string Default_OBS_WSURI = "ws://localhost:4455";
+        public const string Registry_OBS_Enable = "OBS_ENABLE";
+        public const string Registry_OBS_Password = "OBS_PASSWORD";
+        public const string Registry_OBS_WSURI = "OBS_WS_URI";
+        public const string Registry_OBS_StartReplayBuffer = "OBS_START_REPLAY_BUFFER";
+        public const string Registry_OBS_StartVirtualCamera = "OBS_START_VIRTUAL_CAMERA";
+        public const string Registry_OBS_StartRecordOnWorldJoin = "OBS_START_RECORD_ON_WORLD_JOIN";
+        public const string Registry_OBS_SaveReplayBufferOnKickBan = "OBS_SAVE_REPLAY_BUFFER_ON_KICK_BAN";
+        public const string Registry_OBS_Kick_Ban_Scene_Name = "OBS_KICK_BAN_SCENE_NAME";
+        public const string Registry_OBS_Kick_Ban_Browser_Name = "OBS_KICK_BAN_BROWSER_NAME";
+        public const string Registry_OBS_UserImageSpawnEvents = "OBS_IMAGE_SPAWN_EVENTS";
+        public const string Registry_OBS_ImageSpawn_SceneName = "OBS_IMAGE_SPAWN_SCENE_NAME";
+        public const string Registry_OBS_ImageSpawn_BrowserName = "OBS_IMAGE_SPAWN_BROWSER_NAME";
 
         // Gist related registry keys
         public const string Registry_Group_Checksum = "GIST_GROUP_LIST_CHECKSUM";

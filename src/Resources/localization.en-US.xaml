@@ -177,13 +177,51 @@
     <sys:String x:Key="UI.Tab.Secrets.Group.VRCCredentials.Password">Password:</sys:String>
     <sys:String x:Key="UI.Tab.Secrets.Group.VRCCredentials.TwoFASeedKey">2FA Seed Key:</sys:String>
     <sys:String x:Key="UI.Tab.Secrets.Group.VRCCredentials.Action.2FAReset">Reset 2FA</sys:String>
+
     <sys:String x:Key="UI.Tab.Secrets.Group.AlertList.Title">Alert List Management</sys:String>
+    <sys:String x:Key="UI.Tab.Secrets.Group.AlertList.UseGistAutomation">Use Gist Automation:</sys:String>
+    <sys:String x:Key="UI.Tab.Secrets.Group.AlertList.UseGistAutomation.tooltip">When enabled, Tailgrab will use a multi file Gist for alert list management that takes a single MD5 Checksum id for the GIST.</sys:String>
+    <sys:String x:Key="UI.Tab.Secrets.Group.AlertList.GithubPersonalAccessToken">Github Personal Access Token:</sys:String>
+    <sys:String x:Key="UI.Tab.Secrets.Group.AlertList.GithubPersonalAccessToken.tooltip">When enabled, Tailgrab will use this token to update your Avatar and Group alert settings a single GIST.  You must have a valid GIST Access Token and GIST ID for this to work.</sys:String>
+    <sys:String x:Key="UI.Tab.Secrets.Group.AlertList.GithubGistId">Github GIST ID:</sys:String>
+    <sys:String x:Key="UI.Tab.Secrets.Group.AlertList.GithubGistId.tooltip">This is the GIST ID for the Github GIST.</sys:String>
+    
     <sys:String x:Key="UI.Tab.Secrets.Group.AlertList.AvatarGistUrl">Avatar GIST Url:</sys:String>
     <sys:String x:Key="UI.Tab.Secrets.Group.AlertList.GroupGistUrl">Group GIST Url:</sys:String>
     <sys:String x:Key="UI.Tab.Secrets.Group.AlertList.Action.Avatar.CheckNow">Check Now</sys:String>
+    <sys:String x:Key="UI.Tab.Secrets.Group.AlertList.Action.Avatar.Checking">Checking...</sys:String>
     <sys:String x:Key="UI.Tab.Secrets.Group.AlertList.Action.Avatar.ExportToClipboard">Export List to Clipboard</sys:String>
     <sys:String x:Key="UI.Tab.Secrets.Group.AlertList.Action.Group.CheckNow">Check Now</sys:String>
+    <sys:String x:Key="UI.Tab.Secrets.Group.AlertList.Action.Group.Checking">Checking...</sys:String>
     <sys:String x:Key="UI.Tab.Secrets.Group.AlertList.Action.Group.ExportToClipboard">Export List to Clipboard</sys:String>
+    <sys:String x:Key="UI.Tab.Secrets.Group.AlertList.Action.Group.Note">When Github GIST Automation is enabled these settings will be updated automatically:</sys:String>
+
+    <sys:String x:Key="UI.Tab.Secrets.Group.OBS.Title">OBS Automation</sys:String>
+    <sys:String x:Key="UI.Tab.Secrets.Group.OBS.Automation">Use OBS Automation:</sys:String>
+    <sys:String x:Key="UI.Tab.Secrets.Group.OBS.Automation.tooltip">When enabled, Tailgrab will connect to your OBS instance and control it.</sys:String>
+    <sys:String x:Key="UI.Tab.Secrets.Group.OBS.WebSocketURI">OBS WebSocket URI:</sys:String>
+    <sys:String x:Key="UI.Tab.Secrets.Group.OBS.WebSocketURI.tooltip">This is the WebSocket URI for OBS; ws://localhost:4455</sys:String>
+    <sys:String x:Key="UI.Tab.Secrets.Group.OBS.WebSocketPassword">OBS WebSocket Password:</sys:String>
+    <sys:String x:Key="UI.Tab.Secrets.Group.OBS.WebSocketPassword.tooltip">This is the WebSocket Password for OBS.</sys:String>
+    <sys:String x:Key="UI.Tab.Secrets.Group.OBS.StartReplayBuffer">Start Replay Buffer:</sys:String>
+    <sys:String x:Key="UI.Tab.Secrets.Group.OBS.StartReplayBuffer.tooltip">When enabled, Tailgrab will start the replay buffer.</sys:String>
+    <sys:String x:Key="UI.Tab.Secrets.Group.OBS.StartVirtualCamera">Start Virtual Camera:</sys:String>
+    <sys:String x:Key="UI.Tab.Secrets.Group.OBS.StartVirtualCamera.tooltip">When enabled, Tailgrab will start the virtual camera.</sys:String>
+    <sys:String x:Key="UI.Tab.Secrets.Group.OBS.StartRecordOnWorldJoin">Start Record on World Join:</sys:String>
+    <sys:String x:Key="UI.Tab.Secrets.Group.OBS.StartRecordOnWorldJoin.tooltip">When enabled, Tailgrab will ensure that session recording is active when joining a world.</sys:String>
+    <sys:String x:Key="UI.Tab.Secrets.Group.OBS.ReplayBufferRecordOnKickBan">Replay Buffer Record on Kick/Ban:</sys:String>
+    <sys:String x:Key="UI.Tab.Secrets.Group.OBS.ReplayBufferRecordOnKickBan.tooltip">When enabled, Tailgrab will save the replay buffer when a player is kicked or banned with the filename renamed to the user event.</sys:String>
+    <sys:String x:Key="UI.Tab.Secrets.Group.OBS.KickBanSceneName">Kick/Ban Scene Name:</sys:String>
+    <sys:String x:Key="UI.Tab.Secrets.Group.OBS.KickBanSceneName.tooltip">Required when Replay Buffer Record on Kick/Ban is enabled. Specifies the scene name to switch to.</sys:String>
+    <sys:String x:Key="UI.Tab.Secrets.Group.OBS.KickBanBrowserSourceName">Browser Source Name:</sys:String>
+    <sys:String x:Key="UI.Tab.Secrets.Group.OBS.KickBanBrowserSourceName.tooltip">Required when Replay Buffer Record on Kick/Ban is enabled. Specifies the browser source name to update with the player content.</sys:String>
+    <sys:String x:Key="UI.Tab.Secrets.Group.OBS.ShowUserCustomImages">Custom Image Spawn Events:</sys:String>
+    <sys:String x:Key="UI.Tab.Secrets.Group.OBS.ShowUserCustomImages.tooltip">When enabled, Tailgrab will switch scenes to show user custom image content</sys:String>
+    <sys:String x:Key="UI.Tab.Secrets.Group.OBS.CustomSpawnSceneName">Custom Spawn Scene Name:</sys:String>
+    <sys:String x:Key="UI.Tab.Secrets.Group.OBS.CustomSpawnSceneName.tooltip">Required when Custom Image Spawn is enabled. Specifies the scene name to switch to.</sys:String>
+    <sys:String x:Key="UI.Tab.Secrets.Group.OBS.CustomSpawnBrowserSourceName">Browser Source Name:</sys:String>
+    <sys:String x:Key="UI.Tab.Secrets.Group.OBS.CustomSpawnBrowserSourceName.tooltip">Required when Custom Image Spawn is enabled. Specifies the browser source name to update with the player content.</sys:String>
+
     <sys:String x:Key="UI.Tab.Secrets.Group.Behaviors.Title">Behaviors</sys:String>
     <sys:String x:Key="UI.Tab.Secrets.Group.Behaviors.DiscoveredAvatarCaching">Discovered Avatar Caching</sys:String>
     <sys:String x:Key="UI.Tab.Secrets.Group.Behaviors.ModeratedAvatarCaching">Moderated Avatar Caching</sys:String>

@@ -19,9 +19,6 @@ namespace Tailgrab.PlayerManagement
         public string Name { get; set; } = string.Empty;
         public string ThumbnailUrl { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
-        public string? IsPC { get; set; } = string.Empty;
-        public string? IsQuest { get; set; } = string.Empty;
-        public string? IsIOS { get; set; } = string.Empty;
         public string OwnerId { get; set; } = string.Empty;
         public string OwnerName { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; }
@@ -144,7 +141,7 @@ namespace Tailgrab.PlayerManagement
 
         public override string ToString()
         {
-            return $"UserAvatarViewModel: AvatarId={AvatarId}, Name={Name}, ThumbnailUrl={ThumbnailUrl}, Description={Description}, IsPC={IsPC}, IsQuest={IsQuest}, IsIOS={IsIOS}, OwnerId={OwnerId}, IsOwnedByUser={IsOwnedByUser}, ExistsInDatabase={ExistsInDatabase}, AlertType={AlertType}";
+            return $"UserAvatarViewModel: AvatarId={AvatarId}, Name={Name}, ThumbnailUrl={ThumbnailUrl}, Description={Description}, OwnerId={OwnerId}, IsOwnedByUser={IsOwnedByUser}, ExistsInDatabase={ExistsInDatabase}, AlertType={AlertType}";
         }
     }
 }

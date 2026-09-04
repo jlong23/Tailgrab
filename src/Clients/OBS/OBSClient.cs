@@ -1,10 +1,14 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using BuildSoft.OscCore;
+using Newtonsoft.Json.Linq;
 using NLog;
 using OBSWebsocketDotNet;
+using OBSWebsocketDotNet.Communication;
 using OBSWebsocketDotNet.Types; // Added to resolve ObsDisconnectionInfo
 using OBSWebsocketDotNet.Types.Events; // Add this
-using OBSWebsocketDotNet.Communication;
 using System.IO;
+using System.Net.Mime;
+using Tailgrab.Common;
+using Tailgrab.PlayerManagement;
 
 namespace Tailgrab.Clients.OBS
 {
@@ -27,10 +31,13 @@ namespace Tailgrab.Clients.OBS
 
         public static List<ReplayBufferEvent> ReplayBufferEvents { get => replayBufferEvents; }
 
-        public async Task<bool> Initialize( string connectionString, string password )
+        public async Task<bool> Initialize()
         {
-            _connectionString = connectionString;
-            _password = password;
+            _connectionString = ConfigStore.GetStoredKeyString(CommonConst.Registry_OBS_WSURI) ?? CommonConst.Default_OBS_WSURI;
+            _password = ConfigStore.LoadSecret(CommonConst.Registry_OBS_Password) ?? string.Empty;
+
+            logger.Info($"Initializing OBSClient with connection string: {_connectionString} / {_password}");
+
             try
             {
                 client = new OBSWebsocket();
@@ -82,28 +89,29 @@ namespace Tailgrab.Clients.OBS
             }
         }
 
-        public async Task ImageExposeEvent(string sceneName, string overlayName, string html)
+        public async Task ImageExposeEvent(string html)
         {
+            string sceneName = ConfigStore.GetStoredKeyString(CommonConst.Registry_OBS_ImageSpawn_SceneName) ?? string.Empty;
+            string overlayName = ConfigStore.GetStoredKeyString(CommonConst.Registry_OBS_ImageSpawn_BrowserName) ?? string.Empty;
             if (GetSocketConnectedState())
             {
+                logger.Info($"ImageExposeEvent( {sceneName}, {overlayName}, html)");
                 await DisplayBrowserSourceOverlay(sceneName, overlayName, html, 5000);
             }
         }
 
-        public async Task VTKRecording(string sceneName, string overlayName, string filename, string html)
+        public async Task VTKRecording(string filename, string html)
         {
+            string sceneName = ConfigStore.GetStoredKeyString(CommonConst.Registry_OBS_Kick_Ban_Scene_Name) ?? string.Empty;
+            string overlayName = ConfigStore.GetStoredKeyString(CommonConst.Registry_OBS_Kick_Ban_Browser_Name) ?? string.Empty;
             if (GetSocketConnectedState())
             {
                 try
                 {
+                    _filename = filename;
+                    _eventType = "VoteToKick";
+                    _eventName = filename;
                     await DisplayBrowserSourceOverlay(sceneName, overlayName, html, 5000);
-                    if (client.GetReplayBufferStatus() == false)
-                    {
-                        _filename = filename;
-                        _eventType = "VoteToKick";
-                        _eventName = filename;
-                    }
-
                     await SaveReplayBuffer();
                 }
                 catch (Exception ex)
@@ -129,18 +137,23 @@ namespace Tailgrab.Clients.OBS
         {
             try
             {
+                logger.Info($"DisplayBrowserSourceOverlay( {sceneName}, {overlayName}, html, {durationMS})");
+
                 SaveCurrentScene();
 
                 var sourceSettings = new JObject
                     {
-                        { "uri", "data:text/html,"+ Uri.EscapeDataString(html)},
+                        { "url", $"data:text/html,{Uri.EscapeDataString(html)}" },
                         { "width", 1920 },
                         { "height", 1080 },
                         { "local_file", false }
                     };
                 int inputId = client.GetSceneItemId(sceneName, overlayName, 0);
-                client.SetInputSettings(overlayName, sourceSettings);
+                client.SetInputSettings(overlayName, sourceSettings, true);
+                client.PressInputPropertiesButton(overlayName, "refreshnocache");
                 client.SetSceneItemEnabled(sceneName, inputId, true);
+                client.SetCurrentProgramScene(sceneName);
+
                 await Task.Delay(durationMS);
                 client.SetSceneItemEnabled(sceneName, inputId, false);
                 RestorePreviousScene();
@@ -153,7 +166,7 @@ namespace Tailgrab.Clients.OBS
 
         private bool RenameFile(string existingPath, string newFilename)
         {
-            if (string.IsNullOrEmpty(existingPath) && File.Exists(existingPath))
+            if (!string.IsNullOrEmpty(existingPath) && File.Exists(existingPath))
             {
                 try
                 {
@@ -161,8 +174,9 @@ namespace Tailgrab.Clients.OBS
                     string extension = Path.GetExtension(existingPath);
 
                     string newPath = Path.Combine(directoryPath, newFilename + extension);
+                    logger.Info($"Attempting to rename file from {existingPath} to {newPath}");
                     File.Move(existingPath, newPath);
-                    logger.Info($"Renamed file from {existingPath} to {newPath}");
+                    logger.Info($"Successfully renamed file from {existingPath} to {newPath}");
 
                     ReplayBufferEvent replayEvent = new ReplayBufferEvent
                     {
@@ -224,8 +238,10 @@ namespace Tailgrab.Clients.OBS
             logger.Info($"Replay buffer saved to: {e.SavedReplayPath}");
             if (!string.IsNullOrEmpty(_filename))
             {
+                logger.Info($"Attempting to rename: {e.SavedReplayPath} to {_filename}");
                 if (RenameFile(e.SavedReplayPath, _filename))
                 {
+                    logger.Info($"Successfully renamed: {e.SavedReplayPath} to {_filename}");
                     _filename = string.Empty;
                     _eventType = string.Empty;
                     _eventName = string.Empty;
