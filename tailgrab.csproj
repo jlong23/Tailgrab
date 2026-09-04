@@ -66,6 +66,7 @@
 
   <ItemGroup>
 	<PackageReference Include="ConcurrentPriorityQueue" Version="3.0.0" />
+	<PackageReference Include="EPPlus" Version="8.7.0" />
 	<PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.2" />
 	<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.2">
 	  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -138,6 +139,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="HtmlTemplates\Image_Template.html" />
     <EmbeddedResource Include="HtmlTemplates\VTK_Template.html" />
   </ItemGroup>
 
