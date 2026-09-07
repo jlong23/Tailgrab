@@ -37,7 +37,7 @@ namespace Tailgrab.Clients.Prismic
 
     public class AvatarEntry    
     {
-        [JsonPropertyName("avatar_id")]
+        [JsonPropertyName("avatarId")]
         public required string AvatarId { get; set; }
         [JsonPropertyName("name")]
         public required string Name { get; set; }
@@ -418,7 +418,8 @@ namespace Tailgrab.Clients.Prismic
                 string avKeyFull = "avtr:" + Checksum.CreateMD5(author) + ":" + Checksum.CreateMD5(name);
                 string avKeyAuthor = "avtr_idx:" + Checksum.CreateMD5(author);
 
-                if (!db.KeyExists(avKeyFull))
+                bool keyExists = await db.KeyExistsAsync(avKeyFull);
+                if (!keyExists)
                 {
                     logger.Info($"Adding new avatar entry: {entry.ToString()}");
                 }
