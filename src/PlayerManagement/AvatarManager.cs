@@ -1254,16 +1254,16 @@ namespace Tailgrab.PlayerManagement
                 .ToList();
         }
 
-        public async Task<AvatarsLookupResponse?> GetAvatarsLookupResponse(string author)
+        public async Task<List<AvatarEntry>?> GetPrismicAvatarsByAuthor(string author)
         {
             using var client = new HttpClient();
 
             // GitHub API requires a User-Agent header
-            client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("GistRawUrlFetcher", "1.0"));
+            client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(CommonConst.ApplicationName, BuildInfo.GetAssemblyVersion()));
 
             try
             {
-                HttpResponseMessage response = await client.GetAsync($"http://blackberry.rabbitearsvideoproduction.net:5000/avatar?author={author}");
+                HttpResponseMessage response = await client.GetAsync($"http://warren01.rabbitearsvideoproduction.net:5000/api/prismic/avatar?author={author}");
                 response.EnsureSuccessStatusCode();
 
                 string jsonResponse = await response.Content.ReadAsStringAsync();
@@ -1273,7 +1273,7 @@ namespace Tailgrab.PlayerManagement
                     PropertyNameCaseInsensitive = true
                 };
 
-                return JsonSerializer.Deserialize<AvatarsLookupResponse>(jsonResponse, options);
+                return JsonSerializer.Deserialize<List<AvatarEntry>?>(jsonResponse, options);
             }
             catch (JsonException ex)
             {
@@ -1283,7 +1283,7 @@ namespace Tailgrab.PlayerManagement
         }
 
 
-        public async Task<List<UserAvatarViewModel>> LoadPrismicUserAvatarAsync(string displayName, AvatarsLookupResponse? avatarsLookupResponse)
+        public async Task<List<UserAvatarViewModel>> LoadPrismicUserAvatarAsync(string displayName, List<AvatarEntry>? avatarsLookupResponse)
         {
             if (serviceRegistry == null)
             {
@@ -1299,38 +1299,37 @@ namespace Tailgrab.PlayerManagement
                 TailgrabDBContext dbContext = serviceRegistry.GetDBContext();
 
                 // Fetch groups from API on background thread
-                List<AvatarsLookupListResponse> avatarItemData = avatarsLookupResponse?.Results ?? new List<AvatarsLookupListResponse>();
-                logger.Info($"Fetched {avatarItemData?.Count ?? 0} avatars for user {displayName}");
+                logger.Info($"Fetched {avatarsLookupResponse?.Count ?? 0} avatars for user {displayName}");
 
-                if (avatarItemData == null || avatarItemData.Count == 0)
+                if (avatarsLookupResponse == null || avatarsLookupResponse.Count == 0)
                 {
                     logger.Info($"No avatars found for user {displayName}");
                     return avatarViewModels;
                 }
 
 
-                foreach (AvatarsLookupListResponse avatarItem in avatarItemData)
+                foreach (AvatarEntry avatarItem in avatarsLookupResponse)
                 {
-                    if (avatarItem.Data.AvatarId != null)
+                    if (avatarItem.AvatarId != null)
                     {
 
                         UserAvatarViewModel model = new UserAvatarViewModel()
                         {
-                            AvatarId = avatarItem.Data.AvatarId ?? string.Empty,
-                            Name = avatarItem.Data.Name ?? string.Empty,
+                            AvatarId = avatarItem.AvatarId ?? string.Empty,
+                            Name = avatarItem.Name ?? string.Empty,
                             ThumbnailUrl = string.Empty,
-                            OwnerName = avatarItem.Data.Author ?? string.Empty,
+                            OwnerName = avatarItem.Author ?? string.Empty,
                             // Todo Get the correct owner ID from the API response if available
-                            OwnerId = avatarItem.Data.Author ?? string.Empty,
+                            OwnerId = avatarItem.Author ?? string.Empty,
                             IsOwnedByUser = true,
                             DatabaseAlertType = AlertTypeEnum.None,
                             AlertType = AlertTypeEnum.None,
-                            PCPerformance = AvatarPerformanceEnumMapper.MapEnumToAlertDisplayItem(avatarItem.Data.PCRating ?? string.Empty),
-                            QuestPerformance = AvatarPerformanceEnumMapper.MapEnumToAlertDisplayItem(avatarItem.Data.QuestRating ?? string.Empty),
-                            IOSPerformance = AvatarPerformanceEnumMapper.MapEnumToAlertDisplayItem(avatarItem.Data.IOSRating ?? string.Empty),
+                            PCPerformance = AvatarPerformanceEnumMapper.MapEnumToAlertDisplayItem(avatarItem.PCRating ?? string.Empty),
+                            QuestPerformance = AvatarPerformanceEnumMapper.MapEnumToAlertDisplayItem(avatarItem.QuestRating ?? string.Empty),
+                            IOSPerformance = AvatarPerformanceEnumMapper.MapEnumToAlertDisplayItem(avatarItem.IOSRating ?? string.Empty),
                         };
 
-                        AvatarInfo? existingAvatar = dbContext.AvatarInfos.Find(avatarItem.Data.AvatarId);
+                        AvatarInfo? existingAvatar = dbContext.AvatarInfos.Find(avatarItem.AvatarId);
                         if (existingAvatar != null)
                         {
                             model.AlertType = existingAvatar.AlertType;
@@ -1350,7 +1349,7 @@ namespace Tailgrab.PlayerManagement
                         }
                         else
                         {
-                            logger.Warn($"Failed to fetch avatar details for Avatar ID {avatarItem.Data.AvatarId}. Exception: {avatarResult?.Exception?.Message}");
+                            logger.Warn($"Failed to fetch avatar details for Avatar ID {avatarItem.AvatarId}. Exception: {avatarResult?.Exception?.Message}");
                             model.Description = $"Failed to fetch avatar details. {avatarResult?.Exception?.Message}";
                         }
 
