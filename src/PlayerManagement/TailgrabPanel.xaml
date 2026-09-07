@@ -1261,7 +1261,11 @@ Title="Tailgrab Player Panel"
                                                Width="120" Height="80"
                                                Margin="0,0,12,0"
                                                Stretch="UniformToFill"
-                                               VerticalAlignment="Top"/>
+                                               VerticalAlignment="Top">
+                                            <Image.Clip>
+                                                <EllipseGeometry Center="60,40" RadiusX="50" RadiusY="50"/>
+                                            </Image.Clip>
+                                        </Image>
 
                                         <!-- User Details -->
                                         <Label Grid.Row="0" Grid.Column="2" Content="{DynamicResource UI.Tab.KnownGroups.Group.GroupName}" FontWeight="Bold" Margin="0,0,8,0" HorizontalAlignment="Right"/>
@@ -2772,6 +2776,7 @@ Title="Tailgrab Player Panel"
                                   AutoGenerateColumns="False" 
                                   CanUserSortColumns="True" 
                                   IsReadOnly="False"
+                                  CanUserAddRows="False"
                                   Background="#FF1E1E1E"
                                   RowBackground="#FF1E1E1E"
                                   AlternatingRowBackground="#FF2D2D30"
@@ -3028,6 +3033,7 @@ Title="Tailgrab Player Panel"
                         <DataGrid Name="UserGroupsDataGrid"
                                   AutoGenerateColumns="False" 
                                   CanUserSortColumns="True" 
+                                  CanUserAddRows="False"
                                   IsReadOnly="False"
                                   Background="#FF1E1E1E"
                                   RowBackground="#FF1E1E1E"
@@ -3161,11 +3167,15 @@ Title="Tailgrab Player Panel"
                                                 <TextBlock Text="{DynamicResource UI.Overlay.UserGroups.Column.Description}" 
                                                            FontWeight="Bold" 
                                                            Foreground="#FFE6E6E6" 
+                                                           MaxWidth="420"
+                                                           HorizontalAlignment="Left"
                                                            Margin="0,0,0,4"/>
                                                 <TextBlock Text="{Binding Description}" 
                                                            TextWrapping="Wrap" 
                                                            Foreground="#FFE6E6E6"
                                                            MaxHeight="100"
+                                                           MaxWidth="420"
+                                                           HorizontalAlignment="Left"
                                                            Margin="8,0,0,0"/>
                                             </StackPanel>
 
@@ -3174,11 +3184,15 @@ Title="Tailgrab Player Panel"
                                                 <TextBlock Text="{DynamicResource UI.Overlay.UserGroups.Column.Rules}" 
                                                            FontWeight="Bold" 
                                                            Foreground="#FFE6E6E6" 
+                                                           MaxWidth="420"
+                                                           HorizontalAlignment="Left"
                                                            Margin="0,0,0,4"/>
                                                 <TextBlock Text="{Binding Rules}" 
                                                            TextWrapping="Wrap" 
                                                            Foreground="#FFE6E6E6"
                                                            MaxHeight="100"
+                                                           MaxWidth="420"
+                                                           HorizontalAlignment="Left"
                                                            Margin="8,0,0,0"/>
                                             </StackPanel>
                                         </Grid>
@@ -3889,7 +3903,6 @@ Title="Tailgrab Player Panel"
         </Border>
         <!-- #endregion VR Chat User Credentials Overlay -->
 
-
         <!-- #region VR Chat OTP Overlay -->
         <Border Name="VRChatOTPOverlay" 
                 Background="#CC000000" 
@@ -3939,7 +3952,6 @@ Title="Tailgrab Player Panel"
             </Border>
         </Border>
         <!-- #endregion VR Chat OTP Overlay -->
-
 
         <!-- #region Status Message Overlay -->
         <Border Name="OverlayMessage" 

@@ -5,36 +5,221 @@ using OBSWebsocketDotNet;
 using OBSWebsocketDotNet.Communication;
 using OBSWebsocketDotNet.Types; // Added to resolve ObsDisconnectionInfo
 using OBSWebsocketDotNet.Types.Events; // Add this
+using System.Diagnostics;
 using System.IO;
 using System.Net.Mime;
+using System.Security.Permissions;
+using System.Security.Policy;
+using System.Text;
+using System.Xml.Linq;
 using Tailgrab.Common;
 using Tailgrab.PlayerManagement;
+using static System.Windows.Forms.AxHost;
 
 namespace Tailgrab.Clients.OBS
 {
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
     public class OBSClient
     {
         protected static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
-        private string _connectionString;
-        private string _password;
+        protected OBSWebsocket? client; 
 
-        protected OBSWebsocket client; 
+        protected Stopwatch _stopwatch = new Stopwatch();
+
+        private readonly Queue<string> _messages = new Queue<string>();
+
+        public int MaxLines { get; set; } = 20;
 
         protected string _filename = string.Empty;
+        public string Filename
+        {
+            get { return _filename; }
+        }
+
         protected string _eventType = string.Empty;
+        public string EventType
+        {
+            get { return _eventType; }
+        }
+
         protected string _eventName = string.Empty;
+        public string EventName 
+        { 
+            get { return _eventName; } 
+        }
 
-        protected string previousScene = string.Empty;
 
-        private static List<ReplayBufferEvent> replayBufferEvents = [];
+        protected string _previousScene = string.Empty;
+        public string PreviousScene
+        {
+            get => _previousScene;
+            set => _previousScene = value;  
+        }
 
-        public static List<ReplayBufferEvent> ReplayBufferEvents { get => replayBufferEvents; }
+        public bool IsConnected()
+        {
+            return client != null && client.IsConnected;
+        }
+
+        #region Hide the Registry Configuration for OBSClient 
+        private List<ReplayBufferEvent> _replayBufferEvents = new List<ReplayBufferEvent>();
+        public List<ReplayBufferEvent> ReplayBufferEvents { get => _replayBufferEvents; }
+
+        protected List<SessionChapterEvent> SessionEvent = new List<SessionChapterEvent>();
+
+        public bool EnableOBSIntegration
+        {
+            get
+            {
+                return ConfigStore.GetStoredKeyBool(CommonConst.Registry_OBS_Enable, false);
+            }
+
+            set
+            {
+                ConfigStore.PutStoredKeyBool(CommonConst.Registry_OBS_Enable, value);
+            }
+        }
+
+        public bool StartReplayBuffer {
+            get
+            {
+                return ConfigStore.GetStoredKeyBool(CommonConst.Registry_OBS_StartReplayBuffer, false);
+            }
+
+            set
+            {
+                ConfigStore.PutStoredKeyBool(CommonConst.Registry_OBS_StartReplayBuffer, value);
+            }
+        }
+
+        public bool StartVirtualCamera {
+            get
+            {
+                return ConfigStore.GetStoredKeyBool(CommonConst.Registry_OBS_StartVirtualCamera, false);
+            }
+
+            set
+            {
+                ConfigStore.PutStoredKeyBool(CommonConst.Registry_OBS_StartVirtualCamera, value);
+            }
+        }
+
+        public bool RecordOnWorldJoin
+        {
+            get
+            {
+                return ConfigStore.GetStoredKeyBool(CommonConst.Registry_OBS_StartRecordOnWorldJoin, false);
+            }
+            set
+            {
+                ConfigStore.PutStoredKeyBool(CommonConst.Registry_OBS_StartRecordOnWorldJoin, value);
+            }
+        }
+
+        public bool KickBanEvents
+        {
+            get
+            {
+                return ConfigStore.GetStoredKeyBool(CommonConst.Registry_OBS_SaveReplayBufferOnKickBan, false);
+            }
+            set
+            {
+                ConfigStore.PutStoredKeyBool(CommonConst.Registry_OBS_SaveReplayBufferOnKickBan, value);
+            }
+        }
+
+        public string KickBanSceneName
+        {
+            get
+            {
+                return ConfigStore.GetStoredKeyString(CommonConst.Registry_OBS_Kick_Ban_Scene_Name) ?? string.Empty;
+            }
+            set
+            {
+                ConfigStore.PutStoredKeyString(CommonConst.Registry_OBS_Kick_Ban_Scene_Name, value);
+            }
+        }
+
+        public string KickBanBrowserSourceName
+        {
+            get
+            {
+                return ConfigStore.GetStoredKeyString(CommonConst.Registry_OBS_Kick_Ban_Browser_Name) ?? string.Empty;
+            }
+            set
+            {
+                ConfigStore.PutStoredKeyString(CommonConst.Registry_OBS_Kick_Ban_Browser_Name, value);
+            }
+        }
+
+        public bool ImageSpawnEvents
+        {
+            get
+            {
+                return ConfigStore.GetStoredKeyBool(CommonConst.Registry_OBS_UserImageSpawnEvents, false);
+            }
+            set
+            {
+                ConfigStore.PutStoredKeyBool(CommonConst.Registry_OBS_UserImageSpawnEvents, value);
+            }
+        }
+
+        public string ImageSpawnSceneName
+        {
+            get
+            {
+                return ConfigStore.GetStoredKeyString(CommonConst.Registry_OBS_ImageSpawn_SceneName) ?? string.Empty;
+            }
+            set
+            {
+                ConfigStore.PutStoredKeyString(CommonConst.Registry_OBS_ImageSpawn_SceneName, value);
+            }
+        }
+
+        public string ImageSpawnBrowserSourceName
+        {
+            get
+            {
+                return ConfigStore.GetStoredKeyString(CommonConst.Registry_OBS_ImageSpawn_BrowserName) ?? string.Empty;
+            }
+            set
+            {
+                ConfigStore.PutStoredKeyString(CommonConst.Registry_OBS_ImageSpawn_BrowserName, value);
+            }
+        }
+
+
+        public string OBSWebsocketURI
+        {
+            get
+            {
+                return ConfigStore.GetStoredKeyString(CommonConst.Registry_OBS_WSURI) ?? CommonConst.Default_OBS_WSURI;
+            }
+            set
+            {
+                ConfigStore.PutStoredKeyString(CommonConst.Registry_OBS_WSURI, value);
+            }
+        }
+
+        public string OBSPassword
+        {
+            get
+            {
+                return ConfigStore.LoadSecret(CommonConst.Registry_OBS_Password) ?? string.Empty;
+            }
+            set
+            {
+                ConfigStore.SaveSecret(CommonConst.Registry_OBS_Password, value);
+            }
+        }
+        #endregion
+
 
         public async Task<bool> Initialize()
         {
-            _connectionString = ConfigStore.GetStoredKeyString(CommonConst.Registry_OBS_WSURI) ?? CommonConst.Default_OBS_WSURI;
-            _password = ConfigStore.LoadSecret(CommonConst.Registry_OBS_Password) ?? string.Empty;
+            string _connectionString = OBSWebsocketURI;
+            string _password = OBSPassword;
 
             logger.Info($"Initializing OBSClient with connection string: {_connectionString} / {_password}");
 
@@ -45,6 +230,7 @@ namespace Tailgrab.Clients.OBS
                 client.ReplayBufferSaved += OnReplayBufferSaved;
                 client.Connected += OnSocketConnected;
                 client.Disconnected += OnSocketDisconnected;
+                client.RecordStateChanged += OnOutputStateChanged;
 
                 // ConnectAsync returns void in the OBS API; run it on a background thread and await that task.
                 await Task.Run(() => client.ConnectAsync(_connectionString, _password)).ConfigureAwait(false);
@@ -57,23 +243,12 @@ namespace Tailgrab.Clients.OBS
             }
             return false;
         }
-
-        private bool GetSocketConnectedState()
-        {
-            if( client != null )
-            {
-                bool connected = client.IsConnected;
-                if (connected)
-                    return connected;
-            }
-
-            return false;
-        }
         
         public async Task Disconnect()
         {
-            if (client != null && client.IsConnected)
+            if( IsConnected())
             {
+                logger.Info("Disconnecting from OBS...");
                 client.StopReplayBuffer();
                 client.ToggleVirtualCam();
                 await Task.Run(() => client.Disconnect());
@@ -82,77 +257,111 @@ namespace Tailgrab.Clients.OBS
 
         public async Task SaveReplayBuffer()
         {
-            if(GetSocketConnectedState())
+            if(!IsConnected()) return;
+
+            if(KickBanEvents)
             {
                 await Task.Run(() => client.SaveReplayBuffer());
-
             }
         }
 
-        public async Task ImageExposeEvent(string html)
+        public async Task ImageExposeEvent(string html, Player player, string spawnType)
         {
-            string sceneName = ConfigStore.GetStoredKeyString(CommonConst.Registry_OBS_ImageSpawn_SceneName) ?? string.Empty;
-            string overlayName = ConfigStore.GetStoredKeyString(CommonConst.Registry_OBS_ImageSpawn_BrowserName) ?? string.Empty;
-            if (GetSocketConnectedState())
+            if( !IsConnected()) return;
+
+            ChapterEvent($"{spawnType} - {player.DisplayName}");
+
+            string sceneName = ImageSpawnSceneName;
+            string overlayName = ImageSpawnBrowserSourceName;
+            logger.Info($"ImageExposeEvent( {sceneName}, {overlayName}, html)");
+            await DisplayBrowserSourceOverlay(sceneName, overlayName, html, 5000);
+        }
+
+        public async Task VTKRecording(Player player, string html)
+        {
+            if( !IsConnected()) return;
+
+            string chapter = $"VTK - {player.DisplayName}";
+            ChapterEvent(chapter);
+
+            string sceneName = KickBanSceneName;
+            string overlayName = KickBanBrowserSourceName;
+            try
             {
-                logger.Info($"ImageExposeEvent( {sceneName}, {overlayName}, html)");
+                _filename = $"{player.UserId}-{player.DisplayName}_{DateTime.Now:yyyyMMdd_HHmmss}";
+                _eventType = "VoteToKick";
+                _eventName = _filename;
                 await DisplayBrowserSourceOverlay(sceneName, overlayName, html, 5000);
+                await SaveReplayBuffer();
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex);
             }
         }
 
-        public async Task VTKRecording(string filename, string html)
+        public async Task SessionRecording(bool start, WorldInstanceInfo sessionInfo)
         {
-            string sceneName = ConfigStore.GetStoredKeyString(CommonConst.Registry_OBS_Kick_Ban_Scene_Name) ?? string.Empty;
-            string overlayName = ConfigStore.GetStoredKeyString(CommonConst.Registry_OBS_Kick_Ban_Browser_Name) ?? string.Empty;
-            if (GetSocketConnectedState())
+            if( !IsConnected()) return;
+            StringBuilder sb = new StringBuilder();
+            sb.Append($"{sessionInfo.WorldName}");
+            if(!string.IsNullOrEmpty(sessionInfo.GroupName))
             {
-                try
+                sb.Append($"-{sessionInfo.GroupName}");
+            }
+            else
+            {
+                sb.Append($"-{sessionInfo.UserName}");
+            }
+            string session = sb.ToString();
+            string chapterName = start ? $"Start - {session}" : $"Stop - {session}";
+            ChapterEvent(chapterName);
+
+            try
+            {
+                if( client.GetRecordStatus().IsRecording && !start)
                 {
-                    _filename = filename;
-                    _eventType = "VoteToKick";
-                    _eventName = filename;
-                    await DisplayBrowserSourceOverlay(sceneName, overlayName, html, 5000);
-                    await SaveReplayBuffer();
+                    _stopwatch.Stop();
+                    client.StopRecord();
                 }
-                catch (Exception ex)
+                else if (!client.GetRecordStatus().IsRecording && start)
                 {
-                    logger.Error(ex);
+                    _stopwatch.Start();
+                    client.StartRecord();
                 }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex);
             }
         }
 
-        public async Task SessionRecording(bool start)
+        private void ChapterEvent(string eventName)
         {
-            if (GetSocketConnectedState())
+            if (!IsConnected()) return;
+            SessionChapterEvent chapterEvent = new SessionChapterEvent
             {
-                try
-                {
-                    if( client.GetRecordStatus().IsRecording && !start)
-                    {
-                        client.StopRecord();
-                    }
-                    else if (!client.GetRecordStatus().IsRecording && start)
-                    {
-                        client.StartRecord();
-                    }
-                }
-                catch (Exception ex)
-                {
-                    logger.Error(ex);
-                }
-            }
+                // Subtract 10 seconds to account for the replay buffer delay
+                EventTime = _stopwatch.Elapsed - TimeSpan.FromSeconds(10), 
+                EventName = eventName
+            };
+            SessionEvent.Add(chapterEvent);
+            logger.Info($"ChapterEvent: {chapterEvent}");
         }
 
         private void SaveCurrentScene()
         {
-            previousScene = client.GetCurrentProgramScene();
+            if(!IsConnected()) return;
+
+            PreviousScene = client.GetCurrentProgramScene();
         }
 
         private void RestorePreviousScene()
         {
-            if (!string.IsNullOrEmpty(previousScene))
+            if(!IsConnected()) return;
+            if (!string.IsNullOrEmpty(PreviousScene))
             {
-                client.SetCurrentProgramScene(previousScene);
+                client.SetCurrentProgramScene(PreviousScene);
             }
         }
         private async Task DisplayBrowserSourceOverlay(string sceneName, string overlayName, string html, int durationMS)
@@ -208,7 +417,7 @@ namespace Tailgrab.Clients.OBS
                         Filepath = newPath
                     };
 
-                    replayBufferEvents.Add(replayEvent);
+                    _replayBufferEvents.Add(replayEvent);
 
                     return true;
                 }
@@ -220,13 +429,72 @@ namespace Tailgrab.Clients.OBS
             return false;
         }
 
+        public void AddMessage(string message)
+        {
+            if (!IsConnected()) return;
+
+            while (_messages.Count > MaxLines)
+                _messages.Dequeue();
+            _messages.Enqueue(message);
+
+            UpdateMessageHtml(); 
+        }
+        
+        public string BuildMessageHtml()
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine("<!DOCTYPE html>");
+            sb.AppendLine("<html><head><meta charset=\"utf-8\">");
+            sb.AppendLine("<style>");
+            sb.AppendLine("  body { font-family: monospace; font-size: 12px; color: #d4d4d4; margin: 0; padding: 10px; }");
+            sb.AppendLine("  .log {");
+            sb.AppendLine("    height: 20em;");
+            sb.AppendLine("    overflow-y: auto;");
+            sb.AppendLine("    -webkit-mask-image: linear-gradient(to bottom, transparent 0, black 3em);");
+            sb.AppendLine("    mask-image: linear-gradient(to bottom, transparent 0, black 3em);");
+            sb.AppendLine("  }");
+            sb.AppendLine("  .log::-webkit-scrollbar {");
+            sb.AppendLine("    display: none;                  /* Chrome/Safari */");
+            sb.AppendLine("  }");
+            sb.AppendLine("  .line { white-space: pre-wrap; word-break: break-all; line-height: 1.4; }");
+            sb.AppendLine("</style></head><body>");
+            sb.AppendLine("<div class=\"log\" id=\"log\">");
+
+            foreach (var msg in _messages)
+                sb.AppendLine($"<div class=\"line\">{System.Net.WebUtility.HtmlEncode(msg)}</div>");
+
+            sb.AppendLine("</div>");
+            sb.AppendLine("<script>document.getElementById('log').scrollTop = 99999;</script>");
+            sb.AppendLine("</body></html>");
+            return sb.ToString();
+        }
+
+        public void UpdateMessageHtml()
+        {
+            string sceneName = "VRChat";
+            string overlayName = "MessageOverlay";
+            string html = BuildMessageHtml();
+
+            var sourceSettings = new JObject
+                    {
+                        { "url", $"data:text/html,{Uri.EscapeDataString(html)}" },
+                        { "width", 400 },
+                        { "height", 400 },
+                        { "local_file", false }
+                    };
+            int inputId = client.GetSceneItemId(sceneName, overlayName, 0);
+            client.SetInputSettings(overlayName, sourceSettings, true);
+            client.PressInputPropertiesButton(overlayName, "refreshnocache");
+
+        }
+
         #region Event Handlers
         private void OnSocketConnected(object? sender, System.EventArgs e)
         {
             logger.Info("OBS websocket connected.");
             try
             {
-                if (GetSocketConnectedState())
+                if (IsConnected())
                 {
                     client.StartReplayBuffer();
                     client.ToggleVirtualCam();
@@ -271,8 +539,137 @@ namespace Tailgrab.Clients.OBS
                 RestorePreviousScene();
             }
         }
+
+        private void OnOutputStateChanged(object? sender, RecordStateChangedEventArgs e)
+        {
+            if( e.OutputState.State == OutputState.OBS_WEBSOCKET_OUTPUT_STARTED)
+            {
+                logger.Info($"Recording started at: {DateTime.Now}");
+            }
+            else if (e.OutputState.State == OutputState.OBS_WEBSOCKET_OUTPUT_STOPPED)
+            {
+                logger.Info($"Recording stopped at: {DateTime.Now}");
+                logger.Info($"Output path: {e.OutputState.OutputPath}");
+                string sourcePath = e.OutputState.OutputPath;
+                string xmlPath = Path.ChangeExtension(sourcePath, ".xml");
+                string mkvPath = Path.ChangeExtension(sourcePath, ".mkv");
+                string mp4Path = Path.ChangeExtension(sourcePath, "-converted.mp4");
+                WriteChaptersXml(xmlPath);
+                AddChaptersToMkv(sourcePath, mkvPath, xmlPath);
+                string metadataText = BuildMetadata(SessionEvent);
+                AddChaptersToMp4(sourcePath, mp4Path, metadataText);
+
+                SessionEvent.Clear();
+
+            }
+        }
+        #endregion
+
+        #region mkvmerge Integration
+        public void WriteChaptersXml(string outputPath)
+        {
+            logger.Info($"Writing chapters XML to: {outputPath}");
+            var chapters = new XElement("Chapters");
+            var edition = new XElement("EditionEntry");
+
+            foreach (SessionChapterEvent evt in SessionEvent.OrderBy(e => e.EventTime))
+            {
+                logger.Info($"Adding chapter: {evt}");
+                edition.Add(new XElement("ChapterAtom",
+                    new XElement("ChapterTimeStart", evt.EventTime.ToString(@"hh\:mm\:ss\.fff")),
+                    new XElement("ChapterDisplay",
+                        new XElement("ChapterString", evt.EventName),
+                        new XElement("ChapterLanguage", "eng")
+                    )
+                ));
+            }
+
+            chapters.Add(edition);
+
+            var doc = new XDocument(
+                new XDeclaration("1.0", "UTF-8", null),
+                chapters
+            );
+
+            doc.Save(outputPath);
+        }
+
+        public void AddChaptersToMkv(string inputMkv, string outputMkv, string chaptersXmlPath)
+        {
+            string path = @"C:\Program Files\mkvtoolnix\mkvmerge.exe";
+            if (!File.Exists(path))
+                return;
+
+            logger.Info($"Adding chapters to MKV: {inputMkv} -> {outputMkv} using {chaptersXmlPath}");
+            var psi = new ProcessStartInfo
+            {
+                FileName = path,
+                Arguments = $"-o \"{outputMkv}\" --chapters \"{chaptersXmlPath}\" \"{inputMkv}\"",
+                UseShellExecute = false,
+                RedirectStandardError = true,
+                RedirectStandardOutput = true
+            };
+            using var proc = Process.Start(psi)!;
+            string err = proc.StandardError.ReadToEnd();
+            proc.WaitForExit();
+            if (proc.ExitCode != 0)
+                throw new Exception($"mkvmerge failed: {err}");
+        }
+        #endregion
+
+        #region FFMpeg Integration
+        public string BuildMetadata(List<SessionChapterEvent> chapters)
+        {
+            var sb = new StringBuilder(";FFMETADATA1\n");
+
+            for (int i = 0; i < chapters.Count; i++)
+            {
+                long startMs = (long)chapters[i].EventTime.TotalMilliseconds;
+                long endMs = i + 1 < chapters.Count
+                    ? (long)chapters[i + 1].EventTime.TotalMilliseconds - 1
+                    : (long)chapters[i].EventTime.TotalMilliseconds + (long)TimeSpan.FromSeconds(10).TotalMilliseconds;
+
+                sb.AppendLine("[CHAPTER]");
+                sb.AppendLine("TIMEBASE=1/1000");
+                sb.AppendLine($"START={startMs}");
+                sb.AppendLine($"END={endMs}");
+                sb.AppendLine($"title={chapters[i].EventName}");
+                sb.AppendLine();
+            }
+
+            return sb.ToString();
+        }
+
+        public void AddChaptersToMp4(string inputMp4, string outputMp4, string metadataText)
+        {
+            var path = @"D:\dev\ffmpeg\bin\ffmpeg.exe";
+            if(!File.Exists(path))
+                return;
+
+            string metaPath = Path.GetTempFileName();
+            File.WriteAllText(metaPath, metadataText);
+
+            var psi = new ProcessStartInfo
+            {
+                FileName = path,
+                Arguments = $"-y -i \"{inputMp4}\" -i \"{metaPath}\" -map_metadata 1 -map_chapters 1 -c copy \"{outputMp4}\"",
+                UseShellExecute = false,
+                RedirectStandardError = true,
+                RedirectStandardOutput = true
+            };
+
+            using var proc = Process.Start(psi)!;
+            string err = proc.StandardError.ReadToEnd();
+            proc.WaitForExit();
+
+            File.Delete(metaPath);
+
+            if (proc.ExitCode != 0)
+                throw new Exception($"FFmpeg failed: {err}");
+        }
         #endregion
     }
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
 
     public class ReplayBufferEvent
     {
@@ -280,5 +677,16 @@ namespace Tailgrab.Clients.OBS
         public string EventType { get; set; } = string.Empty;
         public string EventName { get; set; } = string.Empty;
         public string Filepath { get; set; } = string.Empty;
+    }
+
+    public class SessionChapterEvent
+    {
+        public TimeSpan EventTime { get; set; } = TimeSpan.Zero;
+        public string EventName { get; set; } = string.Empty;
+
+        public override string ToString()
+        {
+            return $"{EventTime:hh\\:mm\\:ss\\.fff} - {EventName}";
+        }
     }
 }

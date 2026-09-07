@@ -12,6 +12,7 @@ using System.Windows.Media;
 using System.Windows.Threading;
 using Tailgrab.Clients.Github;
 using Tailgrab.Clients.Ollama;
+using Tailgrab.Clients.OBS;
 using Tailgrab.Clients.Prismic;
 using Tailgrab.Clients.VRChat;
 using Tailgrab.Common;
@@ -703,28 +704,27 @@ namespace Tailgrab.PlayerManagement
             if (!string.IsNullOrEmpty(xsOverlayLevel) && AlertTypeOptions.Any(o => o.Key == xsOverlayLevel))
                 XSOverlayNotifications.SelectedValue = xsOverlayLevel;
 
-            UseOBSAutomation.IsChecked = ConfigStore.GetStoredKeyBool(CommonConst.Registry_OBS_Enable, false);
-            var obsWebsocketUrl = ConfigStore.GetStoredKeyString(CommonConst.Registry_OBS_WSURI) ?? CommonConst.Default_OBS_WSURI;
-            var obsWebsocketPassword = ConfigStore.LoadSecret(CommonConst.Registry_OBS_Password);
-            if (!string.IsNullOrEmpty(obsWebsocketUrl)) OBSWebSocketURI.Text = obsWebsocketUrl;
-            if (!string.IsNullOrEmpty(obsWebsocketPassword)) OBSWebSocketPassword.ToolTip = "Stored (hidden)";
+            // OBS Integration settings
+            OBSClient? obsClient = _serviceRegistry.GetOBSClient();
+            if( obsClient != null )
+            {
+                UseOBSAutomation.IsChecked = obsClient.EnableOBSIntegration;
+                OBSWebSocketURI.Text = obsClient.OBSWebsocketURI;
+                var obsWebsocketPassword = obsClient.OBSPassword;
+                if (!string.IsNullOrEmpty(obsWebsocketPassword)) OBSWebSocketPassword.ToolTip = "Stored (hidden)";
 
-            StartReplayBuffer.IsChecked = ConfigStore.GetStoredKeyBool(CommonConst.Registry_OBS_StartReplayBuffer, false);
-            StartVirtualCamera.IsChecked = ConfigStore.GetStoredKeyBool(CommonConst.Registry_OBS_StartVirtualCamera, false);
-            StartRecordOnWorldJoin.IsChecked = ConfigStore.GetStoredKeyBool(CommonConst.Registry_OBS_StartRecordOnWorldJoin, false);
+                StartReplayBuffer.IsChecked = obsClient.StartReplayBuffer;
+                StartVirtualCamera.IsChecked = obsClient.StartVirtualCamera;
+                StartRecordOnWorldJoin.IsChecked = obsClient.RecordOnWorldJoin;
 
-            ReplayBufferRecordOnKickBan.IsChecked = ConfigStore.GetStoredKeyBool(CommonConst.Registry_OBS_SaveReplayBufferOnKickBan, false);
-            var kickBanSceneName = ConfigStore.GetStoredKeyString(CommonConst.Registry_OBS_Kick_Ban_Scene_Name);
-            var kickBanSceneSourceName = ConfigStore.GetStoredKeyString(CommonConst.Registry_OBS_Kick_Ban_Browser_Name);
-            if (!string.IsNullOrEmpty(kickBanSceneName)) KickBanSceneName.Text = kickBanSceneName;
-            if (!string.IsNullOrEmpty(kickBanSceneSourceName)) KickBanBrowserSourceName.Text = kickBanSceneSourceName;
+                ReplayBufferRecordOnKickBan.IsChecked = obsClient.KickBanEvents;
+                KickBanSceneName.Text = obsClient.KickBanSceneName;
+                KickBanBrowserSourceName.Text = obsClient.KickBanBrowserSourceName;
 
-            ShowUserCustomImages.IsChecked = ConfigStore.GetStoredKeyBool(CommonConst.Registry_OBS_UserImageSpawnEvents, true);
-            var imageSpawnSceneName = ConfigStore.GetStoredKeyString(CommonConst.Registry_OBS_ImageSpawn_SceneName);
-            var imageSpawnSceneSourceName = ConfigStore.GetStoredKeyString(CommonConst.Registry_OBS_ImageSpawn_BrowserName);
-            if (!string.IsNullOrEmpty(imageSpawnSceneName)) CustomSpawnSceneName.Text = imageSpawnSceneName;
-            if (!string.IsNullOrEmpty(imageSpawnSceneSourceName)) CustomSpawnBrowserSourceName.Text = imageSpawnSceneSourceName;
-
+                ShowUserCustomImages.IsChecked = obsClient.ImageSpawnEvents;
+                CustomSpawnSceneName.Text = obsClient.ImageSpawnSceneName;
+                CustomSpawnBrowserSourceName.Text = obsClient.ImageSpawnBrowserSourceName;
+            }
 
             ModeratedAvatarCaching.IsChecked = ConfigStore.GetStoredKeyBool(CommonConst.Registry_Moderated_Avatar_Caching, true);
             DiscoveredAvatarCaching.IsChecked = ConfigStore.GetStoredKeyBool(CommonConst.Registry_Discovered_Avatar_Caching, true);
@@ -840,20 +840,29 @@ namespace Tailgrab.PlayerManagement
                 ConfigStore.PutStoredKeyString(CommonConst.Registry_Github_Gist_ID, GithubGistUrl.Text.Trim() ?? string.Empty);
                 ConfigStore.PutStoredKeyBool(CommonConst.Registry_Github_Use_Automation, UseGistAutomation.IsChecked == true);
 
-                ConfigStore.PutStoredKeyBool(CommonConst.Registry_OBS_Enable, UseOBSAutomation.IsChecked == true);
-                ConfigStore.PutStoredKeyString(CommonConst.Registry_OBS_WSURI, OBSWebSocketURI.Text.Trim() ?? string.Empty);
-                ConfigStore.SaveSecret(CommonConst.Registry_OBS_Password, OBSWebSocketPassword.Text.Trim() ?? string.Empty);
+                // OBS Client Integration Settings
+                OBSClient? obsClient = _serviceRegistry.GetOBSClient();
+                if( obsClient != null)
+                {
+                    obsClient.EnableOBSIntegration = UseOBSAutomation.IsChecked == true;
+                    obsClient.OBSWebsocketURI = OBSWebSocketURI.Text.Trim() ?? string.Empty;
+                    if (!string.IsNullOrEmpty(OBSWebSocketPassword.Text))
+                    {
+                        obsClient.OBSPassword = OBSWebSocketPassword.Text.Trim() ?? string.Empty;
+                    }
 
-                ConfigStore.PutStoredKeyBool(CommonConst.Registry_OBS_StartReplayBuffer, StartReplayBuffer.IsChecked == true);
-                ConfigStore.PutStoredKeyBool(CommonConst.Registry_OBS_StartVirtualCamera, StartVirtualCamera.IsChecked == true);
-                ConfigStore.PutStoredKeyBool(CommonConst.Registry_OBS_StartRecordOnWorldJoin, StartRecordOnWorldJoin.IsChecked == true);
+                    obsClient.StartReplayBuffer = StartReplayBuffer.IsChecked == true;
+                    obsClient.StartVirtualCamera = StartVirtualCamera.IsChecked == true;
+                    obsClient.RecordOnWorldJoin = StartRecordOnWorldJoin.IsChecked == true;
 
-                ConfigStore.PutStoredKeyBool(CommonConst.Registry_OBS_SaveReplayBufferOnKickBan, ReplayBufferRecordOnKickBan.IsChecked == true);
-                ConfigStore.PutStoredKeyString(CommonConst.Registry_OBS_Kick_Ban_Scene_Name, KickBanSceneName.Text.Trim() ?? string.Empty);
-                ConfigStore.PutStoredKeyString(CommonConst.Registry_OBS_Kick_Ban_Browser_Name, KickBanBrowserSourceName.Text.Trim() ?? string.Empty);
-                ConfigStore.PutStoredKeyBool(CommonConst.Registry_OBS_UserImageSpawnEvents, ShowUserCustomImages.IsChecked == true);
-                ConfigStore.PutStoredKeyString(CommonConst.Registry_OBS_ImageSpawn_SceneName, CustomSpawnSceneName.Text.Trim() ?? string.Empty);
-                ConfigStore.PutStoredKeyString(CommonConst.Registry_OBS_ImageSpawn_BrowserName, CustomSpawnBrowserSourceName.Text.Trim() ?? string.Empty);
+                    obsClient.KickBanEvents = ReplayBufferRecordOnKickBan.IsChecked == true;
+                    obsClient.KickBanSceneName = KickBanSceneName.Text.Trim() ?? string.Empty;
+                    obsClient.KickBanBrowserSourceName = KickBanBrowserSourceName.Text.Trim() ?? string.Empty;
+
+                    obsClient.ImageSpawnEvents = ShowUserCustomImages.IsChecked == true;
+                    obsClient.ImageSpawnSceneName = CustomSpawnSceneName.Text.Trim() ?? string.Empty;
+                    obsClient.ImageSpawnBrowserSourceName = CustomSpawnBrowserSourceName.Text.Trim() ?? string.Empty;
+                }
 
                 ConfigStore.PutStoredKeyBool(CommonConst.Registry_Discovered_Avatar_Caching, DiscoveredAvatarCaching.IsChecked == true);
                 ConfigStore.PutStoredKeyBool(CommonConst.Registry_Moderated_Avatar_Caching, ModeratedAvatarCaching.IsChecked == true);
@@ -1005,12 +1014,7 @@ namespace Tailgrab.PlayerManagement
 
                 if( ConfigStore.GetStoredKeyBool(CommonConst.Registry_Github_Use_Automation, false) && !string.IsNullOrEmpty(ConfigStore.GetStoredKeyString(CommonConst.Registry_Github_Gist_PAT)) && !string.IsNullOrEmpty(ConfigStore.GetStoredKeyString(CommonConst.Registry_Github_Gist_ID)))
                 {
-                    await GithubClient.UpdateGist(
-                        ConfigStore.LoadSecret(CommonConst.Registry_Github_Gist_PAT), 
-                        ConfigStore.GetStoredKeyString(CommonConst.Registry_Github_Gist_ID), 
-                        "Avatars.csv", 
-                        result);
-                    logger.Info("Exported Avatar GIST data to GitHub Gist");
+                    UpdateGist();
                 }
 
                 System.Windows.Clipboard.SetText(result);
@@ -1033,12 +1037,7 @@ namespace Tailgrab.PlayerManagement
                 string result = await _serviceRegistry.GetGroupManager().GetGroupExport();
                 if (ConfigStore.GetStoredKeyBool(CommonConst.Registry_Github_Use_Automation, false) && !string.IsNullOrEmpty(ConfigStore.GetStoredKeyString(CommonConst.Registry_Github_Gist_PAT)) && !string.IsNullOrEmpty(ConfigStore.GetStoredKeyString(CommonConst.Registry_Github_Gist_ID)))
                 {
-                    await GithubClient.UpdateGist(
-                        ConfigStore.LoadSecret(CommonConst.Registry_Github_Gist_PAT),
-                        ConfigStore.GetStoredKeyString(CommonConst.Registry_Github_Gist_ID),
-                        "Groups.csv",
-                        result);
-                    logger.Info("Exported Group GIST data to GitHub Gist");
+                    UpdateGist();
                 }
 
                 System.Windows.Clipboard.SetText(result);
@@ -1051,6 +1050,26 @@ namespace Tailgrab.PlayerManagement
             {
                 logger.Error(ex, "Failed to export group GIST data");
                 System.Windows.MessageBox.Show($"Failed to export group data: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private async void UpdateGist()
+        {
+            try
+            {
+                List<GistFileUpdate> gistFiles = new List<GistFileUpdate>();
+                gistFiles.Add(new GistFileUpdate { Name = "Avatars.csv", content = await _serviceRegistry.GetAvatarManager().GetAvatarExport() });
+                gistFiles.Add(new GistFileUpdate { Name = "Groups.csv", content = await _serviceRegistry.GetGroupManager().GetGroupExport() });
+                await GithubClient.UpdateGist(
+                        ConfigStore.LoadSecret(CommonConst.Registry_Github_Gist_PAT),
+                        ConfigStore.GetStoredKeyString(CommonConst.Registry_Github_Gist_ID),
+                        gistFiles);
+                logger.Info("Exported GIST data to GitHub Gist");
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to export GIST data");
+                System.Windows.MessageBox.Show($"Failed to export GIST data: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
         #endregion
@@ -5385,7 +5404,7 @@ namespace Tailgrab.PlayerManagement
             {
                 if (sender is System.Windows.Controls.Button button && button.Tag is UserGroupViewModel vm)
                 {
-                    if (vm.AlertType == AlertTypeEnum.None)
+                    if (vm.AlertType == vm.DatabaseAlertType)
                     {
                         System.Windows.MessageBox.Show("Please select an Alert Type before adding.", "Alert Type Required", MessageBoxButton.OK, MessageBoxImage.Warning);
                         return;
@@ -5629,7 +5648,7 @@ namespace Tailgrab.PlayerManagement
                 // Show the overlay
                 UserAvatarOverlay.Visibility = Visibility.Visible;
 
-                AvatarsLookupResponse? avatarsLookupResponse = await _serviceRegistry.GetAvatarManager().GetAvatarsLookupResponse(displayName);
+                List<AvatarEntry>? avatarsLookupResponse = await _serviceRegistry.GetAvatarManager().GetPrismicAvatarsByAuthor(displayName);
 
                 // Fetch avatars asynchronously (already async, no need for Task.Run)
                 List<UserAvatarViewModel> avatars = await _serviceRegistry.GetAvatarManager().LoadPrismicUserAvatarAsync(displayName, avatarsLookupResponse);
@@ -5655,7 +5674,7 @@ namespace Tailgrab.PlayerManagement
             {
                 if (sender is System.Windows.Controls.Button button && button.Tag is UserAvatarViewModel vm)
                 {
-                    if (vm.AlertType == AlertTypeEnum.None)
+                    if (vm.AlertType == vm.DatabaseAlertType)
                     {
                         System.Windows.MessageBox.Show("Please select an Alert Type before adding.", "Alert Type Required", MessageBoxButton.OK, MessageBoxImage.Warning);
                         return;

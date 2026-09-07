@@ -82,7 +82,7 @@ namespace Tailgrab.PlayerManagement
                         ollamaClient.EnqueuePriorityItem(processItem);
                     }
 
-                    PlayerManager.UserInventorySpawnPublic(player.DisplayName, itemUrl, inventoryType);
+                    PlayerManager.UserInventorySpawnPublic(itemUrl, player, inventoryType);
                 }
             }
 

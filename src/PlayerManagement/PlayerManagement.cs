@@ -2,11 +2,13 @@ using ConcurrentPriorityQueue.Core;
 using Microsoft.EntityFrameworkCore;
 using NLog;
 using System.ComponentModel;
+using System.Net.Mime;
 using System.Numerics;
 using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Windows;
+using System.Windows.Resources;
 using Tailgrab.Clients.OBS;
 using Tailgrab.Clients.XSOverlay;
 using Tailgrab.Common;
@@ -141,7 +143,7 @@ namespace Tailgrab.PlayerManagement
                 OBSClient? obsClient = serviceRegistry.GetOBSClient();
                 if (obsClient != null)
                 {
-                    await obsClient.SessionRecording(true);
+                    await obsClient.SessionRecording(true, worldInfo );
                 }
             }
 
@@ -156,7 +158,7 @@ namespace Tailgrab.PlayerManagement
                 OBSClient? obsClient = serviceRegistry.GetOBSClient();
                 if (obsClient != null)
                 {
-                    await obsClient.SessionRecording(false);
+                    await obsClient.SessionRecording(false, CurrentSession);
                 }
             }
         }
@@ -192,6 +194,13 @@ namespace Tailgrab.PlayerManagement
                     worldInfo.UserName = userData.DisplayName ?? string.Empty;
                 }
             }
+
+            OBSClient? obsClient = serviceRegistry.GetOBSClient();
+            if (obsClient != null)
+            {
+                obsClient.AddMessage($"Joining {worldInfo.ToStatusString()}");
+            }
+
 
             return worldInfo;
         }
@@ -248,6 +257,13 @@ namespace Tailgrab.PlayerManagement
             userIdByDisplayName[displayName] = player.UserId;
 
             OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Added, player);
+
+            OBSClient? obsClient = serviceRegistry.GetOBSClient();
+            if (obsClient != null)
+            {
+                obsClient.AddMessage($"{displayName} joined instance.");
+            }
+
         }
 
         public void PlayerLeft(string displayName, AbstractLineHandler handler)
@@ -294,6 +310,12 @@ namespace Tailgrab.PlayerManagement
                 if (handler.LogOutput)
                 {
                     PrintPlayerInfo(player);
+                }
+
+                OBSClient? obsClient = serviceRegistry.GetOBSClient();
+                if (obsClient != null)
+                {
+                    obsClient.AddMessage($"{displayName} left instance.");
                 }
             }
         }
@@ -356,15 +378,14 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
-        public static Player? UserInventorySpawnPublic(string displayName, string imageUri, string contentType)
+        public static Player? UserInventorySpawnPublic(string imageUri, Player player, string contentType)
         {
-            Player? player = GetPlayerByDisplayName(displayName);
             bool recordImageEvent = ConfigStore.GetStoredKeyBool(CommonConst.Registry_OBS_UserImageSpawnEvents, false);
             if (recordImageEvent)
             {
                 if (player != null)
                 {
-                    logger.Info($"UserInventorySpawnPublic( {displayName}, {imageUri}, {contentType}");
+                    logger.Info($"UserInventorySpawnPublic( {imageUri}, {player.DisplayName}, {contentType}");
 
                     string html = Utility.GetHTMLResource("HtmlTemplates", "Image_Template.html");
 
@@ -383,7 +404,8 @@ namespace Tailgrab.PlayerManagement
                     OBSClient? obsClient = serviceRegistry.GetOBSClient();
                     if (obsClient != null)
                     {
-                        Task.Run(() => obsClient.ImageExposeEvent(text)).GetAwaiter().GetResult();
+                        obsClient.AddMessage($"{player.DisplayName} spawned {contentType}");
+                        Task.Run(() => obsClient.ImageExposeEvent(text, player, contentType)).GetAwaiter().GetResult();
                     }
                 }
             }
@@ -413,8 +435,9 @@ namespace Tailgrab.PlayerManagement
                 OBSClient? obsClient = serviceRegistry.GetOBSClient();
                 if (obsClient != null)
                 {
-                    string filename = $"{player.UserId}-{displayName}_{DateTime.Now:yyyyMMdd_HHmmss}";
-                    Task.Run(() => obsClient.VTKRecording(filename, text)).GetAwaiter().GetResult();
+                    obsClient.AddMessage($"{player.DisplayName} has a Vote to Kick");
+                    string filename = $"{player.UserId}-{player.DisplayName}_{DateTime.Now:yyyyMMdd_HHmmss}";
+                    Task.Run(() => obsClient.VTKRecording(player, text)).GetAwaiter().GetResult();
                 }
             }
 

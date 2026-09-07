@@ -134,9 +134,6 @@ public class FileTailer
         // Check for updates before showing the main window
         _ = Task.Run(async () => await CheckForUpdatesAsync());
 
-
-        //PrismicBinaryReader.GetPrismicDataAsync("930d08f34c61e4282992cdb3afbafca0");
-
         BuildAppWindow(_serviceRegistry);
 
         // When the window closes, allow Main to complete. The watcher task will be abandoned; if desired add cancellation.

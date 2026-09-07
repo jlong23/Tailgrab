@@ -107,7 +107,7 @@ namespace Tailgrab.PlayerManagement
                         ollamaClient.EnqueuePriorityItem(processItem);
                     }
 
-                    PlayerManager.UserInventorySpawnPublic(player.DisplayName, printInfo.Files.Image, "Print");
+                    PlayerManager.UserInventorySpawnPublic(printInfo.Files.Image, player, "Print");
                 }
             }
         }
