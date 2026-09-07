@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Microsoft.EntityFrameworkCore.Metadata.Conventions;
+using NLog;
+using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -11,11 +13,12 @@ namespace Tailgrab.Clients.Github
 {
     public class GithubClient
     {
-        public static async Task<bool> UpdateGist(string? personalAccessToken, string? gistId, string fileNameToUpdate, string newContent)
+        protected static Logger logger = LogManager.GetCurrentClassLogger();
+        public static async Task<bool> UpdateGist(string? personalAccessToken, string? gistId, List<GistFileUpdate> filesToUpdate)
         {
             if( personalAccessToken == null || gistId == null)
             {
-                Console.WriteLine("Personal Access Token or Gist ID is null.");
+                logger.Warn("Personal Access Token or Gist ID is null.");
                 return false;
             }
 
@@ -31,17 +34,13 @@ namespace Tailgrab.Clients.Github
 
                 // Prepare the JSON payload
                 // Structure: { "files": { "filename.ext": { "content": "new content" } } }
-                var updateData = new
+                var filesDict = new Dictionary<string, object>();
+                foreach (var file in filesToUpdate)
                 {
-                    files = new Dictionary<string, object>
-                    {
-                        {
-                            fileNameToUpdate,
-                            new { content = newContent }
-                        }
-                    }
-                };
+                    filesDict[file.Name] = new { content = file.content };
+                }
 
+                var updateData = new { files = filesDict };
                 var json = JsonSerializer.Serialize(updateData);
                 var contentPayload = new StringContent(json, Encoding.UTF8, "application/json");
 
@@ -57,8 +56,8 @@ namespace Tailgrab.Clients.Github
                 }
 
                 var errorBody = await response.Content.ReadAsStringAsync();
-                Console.WriteLine($"Failed to update Gist. Status: {response.StatusCode}");
-                Console.WriteLine($"Error: {errorBody}");
+                logger.Error($"Failed to update Gist. Status: {response.StatusCode}");
+                logger.Error($"Error: {errorBody}");
                 return false;
             }
         }
@@ -84,8 +83,8 @@ namespace Tailgrab.Clients.Github
                     }
                 }
                 var errorBody = await response.Content.ReadAsStringAsync();
-                Console.WriteLine($"Failed to retrieve Gist. Status: {response.StatusCode}");
-                Console.WriteLine($"Error: {errorBody}");
+                logger.Error($"Failed to retrieve Gist. Status: {response.StatusCode}");
+                logger.Error($"Error: {errorBody}");
                 return null;
             }
         }
@@ -97,5 +96,11 @@ namespace Tailgrab.Clients.Github
             // Optional: Specify API version
             client.DefaultRequestHeaders.Add("X-GitHub-Api-Version", "2022-11-28");
         }
+    }
+
+    public class GistFileUpdate
+    {
+        public string Name { get; set; }
+        public string content { get; set; }
     }
 }
