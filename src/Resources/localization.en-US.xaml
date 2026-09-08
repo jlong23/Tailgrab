@@ -209,6 +209,17 @@
     <sys:String x:Key="UI.Tab.Secrets.Group.OBS.StartVirtualCamera.tooltip">When enabled, Tailgrab will start the virtual camera.</sys:String>
     <sys:String x:Key="UI.Tab.Secrets.Group.OBS.StartRecordOnWorldJoin">Start Record on World Join:</sys:String>
     <sys:String x:Key="UI.Tab.Secrets.Group.OBS.StartRecordOnWorldJoin.tooltip">When enabled, Tailgrab will ensure that session recording is active when joining a world.</sys:String>
+
+    <sys:String x:Key="UI.Tab.Secrets.Group.OBS.CreateMP4ChapterRecording">Create MP4 Chapters:</sys:String>
+    <sys:String x:Key="UI.Tab.Secrets.Group.OBS.CreateMP4ChapterRecording.tooltip">When enabled, Tailgrab will create duplicate the session recording with moderation events as chapters with the extension *-converted.mp4 after exiting the VRChat client application.</sys:String>
+    <sys:String x:Key="UI.Tab.Secrets.Group.OBS.FFMPegPath">ffmpeg.exe Path:</sys:String>
+    <sys:String x:Key="UI.Tab.Secrets.Group.OBS.FFMPegPath.tooltip">Specifies the path to the ffmpeg executable needed to embed the chapters into the MP4 file. See the ffmpeg project</sys:String>
+
+    <sys:String x:Key="UI.Tab.Secrets.Group.OBS.CreateMKVChapterRecording">Create MKV Chapters:</sys:String>
+    <sys:String x:Key="UI.Tab.Secrets.Group.OBS.CreateMKVChapterRecording.tooltip">When enabled, Tailgrab will create duplicate the session recording with moderation events as chapters with the extension *.mkv.</sys:String>
+    <sys:String x:Key="UI.Tab.Secrets.Group.OBS.MkvMergePath">mkvmerge.exe Path:</sys:String>
+    <sys:String x:Key="UI.Tab.Secrets.Group.OBS.MkvMergePath.tooltip">Specifies the path to the mkvmerge executable needed to embed the chapters into the MKV file.  See mkvtoolnix project.</sys:String>
+
     <sys:String x:Key="UI.Tab.Secrets.Group.OBS.ReplayBufferRecordOnKickBan">Replay Buffer Record on Kick/Ban:</sys:String>
     <sys:String x:Key="UI.Tab.Secrets.Group.OBS.ReplayBufferRecordOnKickBan.tooltip">When enabled, Tailgrab will save the replay buffer when a player is kicked or banned with the filename renamed to the user event.</sys:String>
     <sys:String x:Key="UI.Tab.Secrets.Group.OBS.KickBanSceneName">Kick/Ban Scene Name:</sys:String>

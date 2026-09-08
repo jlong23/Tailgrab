@@ -1732,6 +1732,8 @@ Title="Tailgrab Player Panel"
                                                 <RowDefinition Height="Auto" />
                                                 <RowDefinition Height="Auto" />
                                                 <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="Auto" />
                                             </Grid.RowDefinitions>
 
                                             <Label Grid.Row="0" Grid.Column="0" 
@@ -1793,60 +1795,101 @@ Title="Tailgrab Player Panel"
                                                       IsEnabled="{Binding IsChecked, ElementName=UseOBSAutomation}"/>
 
                                             <Label Grid.Row="4" Grid.Column="0" 
+                                                   Content="{DynamicResource UI.Tab.Secrets.Group.OBS.CreateMP4ChapterRecording}" 
+                                                   VerticalAlignment="Center" HorizontalAlignment="Right" 
+                                                   IsEnabled="{Binding IsChecked, ElementName=StartRecordOnWorldJoin}"/>
+                                            <CheckBox Grid.Row="4" Grid.Column="1" 
+                                                      Name="CreateMP4ChapterRecording" 
+                                                      VerticalAlignment="Center" Margin="6,2" 
+                                                      ToolTip="{DynamicResource UI.Tab.Secrets.Group.OBS.CreateMP4ChapterRecording.tooltip}" 
+                                                      IsEnabled="{Binding IsChecked, ElementName=StartRecordOnWorldJoin}"/>
+
+                                            <Label Grid.Row="4" Grid.Column="2" 
+                                                   Content="{DynamicResource UI.Tab.Secrets.Group.OBS.FFMPegPath}" 
+                                                   VerticalAlignment="Center" HorizontalAlignment="Right" 
+                                                   IsEnabled="{Binding IsChecked, ElementName=CreateMP4ChapterRecording}"/>
+                                            <TextBox Grid.Row="4" Grid.Column="3" 
+                                                     Name="FFMpegPath" 
+                                                     Width="300" VerticalAlignment="Center" Margin="6,2" 
+                                                     ToolTip="{DynamicResource UI.Tab.Secrets.Group.OBS.FFMPegPath.tooltip}" 
+                                                     IsEnabled="{Binding IsChecked, ElementName=CreateMP4ChapterRecording}"/>
+
+                                            <Label Grid.Row="5" Grid.Column="0" 
+                                                   Content="{DynamicResource UI.Tab.Secrets.Group.OBS.CreateMKVChapterRecording}" 
+                                                   VerticalAlignment="Center" HorizontalAlignment="Right" 
+                                                   IsEnabled="{Binding IsChecked, ElementName=StartRecordOnWorldJoin}"/>
+                                            <CheckBox Grid.Row="5" Grid.Column="1" 
+                                                      Name="CreateMKVChapterRecording" 
+                                                      VerticalAlignment="Center" Margin="6,2" 
+                                                      ToolTip="{DynamicResource UI.Tab.Secrets.Group.OBS.CreateMKVChapterRecording.tooltip}" 
+                                                      IsEnabled="{Binding IsChecked, ElementName=StartRecordOnWorldJoin}"/>
+
+                                            <Label Grid.Row="5" Grid.Column="2" 
+                                                   Content="{DynamicResource UI.Tab.Secrets.Group.OBS.MkvMergePath}" 
+                                                   VerticalAlignment="Center" HorizontalAlignment="Right" 
+                                                   IsEnabled="{Binding IsChecked, ElementName=CreateMKVChapterRecording}"/>
+                                            <TextBox Grid.Row="5" Grid.Column="3" 
+                                                     Name="MkvMergePath" 
+                                                     Width="300" VerticalAlignment="Center" Margin="6,2" 
+                                                     ToolTip="{DynamicResource UI.Tab.Secrets.Group.OBS.MkvMergePath.tooltip}" 
+                                                     IsEnabled="{Binding IsChecked, ElementName=CreateMKVChapterRecording}"/>
+
+
+                                            <Label Grid.Row="6" Grid.Column="0" 
                                                    Content="{DynamicResource UI.Tab.Secrets.Group.OBS.ReplayBufferRecordOnKickBan}" 
                                                    VerticalAlignment="Center" HorizontalAlignment="Right" 
                                                    IsEnabled="{Binding IsChecked, ElementName=UseOBSAutomation}"/>
-                                            <CheckBox Grid.Row="4" Grid.Column="1" 
+                                            <CheckBox Grid.Row="6" Grid.Column="1" 
                                                       Name="ReplayBufferRecordOnKickBan" 
                                                       VerticalAlignment="Center" Margin="6,2" 
                                                       ToolTip="{DynamicResource UI.Tab.Secrets.Group.OBS.ReplayBufferRecordOnKickBan.tooltip}" 
                                                       IsEnabled="{Binding IsChecked, ElementName=UseOBSAutomation}"/>
 
-                                            <Label Grid.Row="5" Grid.Column="0" 
+                                            <Label Grid.Row="7" Grid.Column="0" 
                                                    Content="{DynamicResource UI.Tab.Secrets.Group.OBS.KickBanSceneName}" 
                                                    VerticalAlignment="Center" HorizontalAlignment="Right" 
                                                    IsEnabled="{Binding IsChecked, ElementName=UseOBSAutomation}"/>
-                                            <TextBox Grid.Row="5" Grid.Column="1" 
+                                            <TextBox Grid.Row="7" Grid.Column="1" 
                                                      Name="KickBanSceneName" 
                                                      Width="300" VerticalAlignment="Center" Margin="6,2" 
                                                      ToolTip="{DynamicResource UI.Tab.Secrets.Group.OBS.KickBanSceneName.tooltip}" 
                                                      IsEnabled="{Binding IsChecked, ElementName=UseOBSAutomation}"/>
 
-                                            <Label Grid.Row="5" Grid.Column="2" 
+                                            <Label Grid.Row="7" Grid.Column="2" 
                                                    Content="{DynamicResource UI.Tab.Secrets.Group.OBS.KickBanBrowserSourceName}" 
                                                    VerticalAlignment="Center" HorizontalAlignment="Right" 
                                                    IsEnabled="{Binding IsChecked, ElementName=UseOBSAutomation}"/>
-                                            <TextBox Grid.Row="5" Grid.Column="3" 
+                                            <TextBox Grid.Row="7" Grid.Column="3" 
                                                      Name="KickBanBrowserSourceName" 
                                                      Width="300" VerticalAlignment="Center" Margin="6,2" 
                                                      ToolTip="{DynamicResource UI.Tab.Secrets.Group.OBS.KickBanBrowserSourceName.tooltip}" 
                                                      IsEnabled="{Binding IsChecked, ElementName=UseOBSAutomation}"/>
 
-                                            <Label Grid.Row="6" Grid.Column="0" 
+                                            <Label Grid.Row="8" Grid.Column="0" 
                                                    Content="{DynamicResource UI.Tab.Secrets.Group.OBS.ShowUserCustomImages}" 
                                                    VerticalAlignment="Center" HorizontalAlignment="Right" 
                                                    IsEnabled="{Binding IsChecked, ElementName=UseOBSAutomation}"/>
-                                            <CheckBox Grid.Row="6" Grid.Column="1" 
+                                            <CheckBox Grid.Row="8" Grid.Column="1" 
                                                       Name="ShowUserCustomImages" 
                                                       VerticalAlignment="Center" Margin="6,2" 
                                                       ToolTip="{DynamicResource UI.Tab.Secrets.Group.OBS.ShowUserCustomImages.tooltip}" 
                                                       IsEnabled="{Binding IsChecked, ElementName=UseOBSAutomation}"/>
 
-                                            <Label Grid.Row="7" Grid.Column="0" 
+                                            <Label Grid.Row="9" Grid.Column="0" 
                                                    Content="{DynamicResource UI.Tab.Secrets.Group.OBS.CustomSpawnSceneName}" 
                                                    VerticalAlignment="Center" HorizontalAlignment="Right" 
                                                    IsEnabled="{Binding IsChecked, ElementName=UseOBSAutomation}"/>
-                                            <TextBox Grid.Row="7" Grid.Column="1" 
+                                            <TextBox Grid.Row="9" Grid.Column="1" 
                                                      Name="CustomSpawnSceneName" 
                                                      Width="300" VerticalAlignment="Center" Margin="6,2" 
                                                      ToolTip="{DynamicResource UI.Tab.Secrets.Group.OBS.CustomSpawnSceneName.tooltip}" 
                                                      IsEnabled="{Binding IsChecked, ElementName=UseOBSAutomation}"/>
 
-                                            <Label Grid.Row="7" Grid.Column="2" 
+                                            <Label Grid.Row="9" Grid.Column="2" 
                                                    Content="{DynamicResource UI.Tab.Secrets.Group.OBS.CustomSpawnBrowserSourceName}" 
                                                    VerticalAlignment="Center" HorizontalAlignment="Right" 
                                                    IsEnabled="{Binding IsChecked, ElementName=UseOBSAutomation}"/>
-                                            <TextBox Grid.Row="7" Grid.Column="3" 
+                                            <TextBox Grid.Row="9" Grid.Column="3" 
                                                      Name="CustomSpawnBrowserSourceName" 
                                                      Width="300" VerticalAlignment="Center" Margin="6,2" 
                                                      ToolTip="{DynamicResource UI.Tab.Secrets.Group.OBS.CustomSpawnBrowserSourceName.tooltip}" 

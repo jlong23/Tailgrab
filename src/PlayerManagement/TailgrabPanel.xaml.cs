@@ -715,7 +715,21 @@ namespace Tailgrab.PlayerManagement
 
                 StartReplayBuffer.IsChecked = obsClient.StartReplayBuffer;
                 StartVirtualCamera.IsChecked = obsClient.StartVirtualCamera;
+                
                 StartRecordOnWorldJoin.IsChecked = obsClient.RecordOnWorldJoin;
+
+                CreateMP4ChapterRecording.IsChecked = obsClient.CreateMP4Chapters;
+                FFMpegPath.Text = obsClient.FFMpegPath;
+                if( string.IsNullOrEmpty( obsClient.FFMpegPath ) ) {
+                    FFMpegPath.Text = FindFfmpeg();
+                }   
+
+                CreateMKVChapterRecording.IsChecked = obsClient.CreateMKVChapters;
+                MkvMergePath.Text = obsClient.MKVMergePath;
+                if(string.IsNullOrEmpty(obsClient.MKVMergePath))
+                {
+                    MkvMergePath.Text = FindMkvMerge();
+                }
 
                 ReplayBufferRecordOnKickBan.IsChecked = obsClient.KickBanEvents;
                 KickBanSceneName.Text = obsClient.KickBanSceneName;
@@ -792,6 +806,36 @@ namespace Tailgrab.PlayerManagement
             //serviceRegistry.GetTTSManager().EnqueueSpeech("Tail Grab is up and running");            
         }
 
+        private string? FindMkvMerge()
+        {
+            // Check common install location
+            string candidate = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+                "MKVToolNix", "mkvmerge.exe");
+            if (System.IO.File.Exists(candidate)) return candidate;
+
+            // Check PATH
+            var pathDirs = Environment.GetEnvironmentVariable("PATH")!
+                .Split(Path.PathSeparator);
+            return pathDirs.Select(d => Path.Combine(d, "mkvmerge.exe"))
+                           .FirstOrDefault(System.IO.File.Exists);
+        }
+
+        private string? FindFfmpeg()
+        {
+            // Check common install location
+            string candidate = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+                "FFmpeg", "bin", "ffmpeg.exe");
+            if (System.IO.File.Exists(candidate)) return candidate;
+
+            // Check PATH
+            var pathDirs = Environment.GetEnvironmentVariable("PATH")!
+                .Split(Path.PathSeparator);
+            return pathDirs.Select(d => Path.Combine(d, "ffmpeg.exe"))
+                           .FirstOrDefault(System.IO.File.Exists);
+        }
+
 
         private void UpdateAlertComboBoxValues()
         {
@@ -823,6 +867,7 @@ namespace Tailgrab.PlayerManagement
             ProfileCrasherColor.SelectedValue = GetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Color_Alert_Key) ?? "Red";
         }
 
+        public bool IsSessionChaptersEnabled => UseOBSAutomation.IsChecked == true && StartRecordOnWorldJoin.IsChecked == true  ;
         private void SaveConfig_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -853,7 +898,13 @@ namespace Tailgrab.PlayerManagement
 
                     obsClient.StartReplayBuffer = StartReplayBuffer.IsChecked == true;
                     obsClient.StartVirtualCamera = StartVirtualCamera.IsChecked == true;
+
                     obsClient.RecordOnWorldJoin = StartRecordOnWorldJoin.IsChecked == true;
+
+                    obsClient.CreateMP4Chapters = CreateMP4ChapterRecording.IsChecked == true;
+                    obsClient.FFMpegPath = FFMpegPath.Text.Trim() ?? string.Empty;
+                    obsClient.CreateMKVChapters = CreateMKVChapterRecording.IsChecked == true;
+                    obsClient.MKVMergePath = MkvMergePath.Text.Trim() ?? string.Empty;
 
                     obsClient.KickBanEvents = ReplayBufferRecordOnKickBan.IsChecked == true;
                     obsClient.KickBanSceneName = KickBanSceneName.Text.Trim() ?? string.Empty;

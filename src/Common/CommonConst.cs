@@ -53,6 +53,12 @@ namespace Tailgrab.Common
         public const string Registry_OBS_ImageSpawn_SceneName = "OBS_IMAGE_SPAWN_SCENE_NAME";
         public const string Registry_OBS_ImageSpawn_BrowserName = "OBS_IMAGE_SPAWN_BROWSER_NAME";
 
+        public const string Registry_OBS_CreateChaptersMp4 = "OBS_CREATE_CHAPTERS_MP4";
+        public const string Registry_OBS_CreateChaptersMkv = "OBS_CREATE_CHAPTERS_MKV";
+
+        public const string Registry_OBS_FFMpegPath = "OBS_FFMPEG_PATH";
+        public const string Registry_OBS_MKVMergePath = "OBS_MKV_MERGE_PATH";
+
         // Gist related registry keys
         public const string Registry_Group_Checksum = "GIST_GROUP_LIST_CHECKSUM";
         public const string Registry_Group_Gist = "GIST_GROUP_LIST_URL";

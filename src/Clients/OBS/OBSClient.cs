@@ -62,12 +62,12 @@ namespace Tailgrab.Clients.OBS
             return client != null && client.IsConnected;
         }
 
-        #region Hide the Registry Configuration for OBSClient 
         private List<ReplayBufferEvent> _replayBufferEvents = new List<ReplayBufferEvent>();
         public List<ReplayBufferEvent> ReplayBufferEvents { get => _replayBufferEvents; }
 
         protected List<SessionChapterEvent> SessionEvent = new List<SessionChapterEvent>();
 
+        #region Hide the Registry Configuration for OBSClient 
         public bool EnableOBSIntegration
         {
             get
@@ -114,6 +114,54 @@ namespace Tailgrab.Clients.OBS
             set
             {
                 ConfigStore.PutStoredKeyBool(CommonConst.Registry_OBS_StartRecordOnWorldJoin, value);
+            }
+        }
+
+        public bool CreateMP4Chapters
+        {
+            get
+            {
+                return ConfigStore.GetStoredKeyBool(CommonConst.Registry_OBS_CreateChaptersMp4, false);
+            }
+            set
+            {
+                ConfigStore.PutStoredKeyBool(CommonConst.Registry_OBS_CreateChaptersMp4, value);
+            }
+        }
+
+        public bool CreateMKVChapters
+        {
+            get
+            {
+                return ConfigStore.GetStoredKeyBool(CommonConst.Registry_OBS_CreateChaptersMkv, false);
+            }
+            set
+            {
+                ConfigStore.PutStoredKeyBool(CommonConst.Registry_OBS_CreateChaptersMkv, value);
+            }
+        }
+
+        public string MKVMergePath
+        {
+            get
+            {
+                return ConfigStore.GetStoredKeyString(CommonConst.Registry_OBS_MKVMergePath) ?? string.Empty;
+            }
+            set
+            {
+                ConfigStore.PutStoredKeyString(CommonConst.Registry_OBS_MKVMergePath, value);
+            }
+        }
+
+        public string FFMpegPath
+        {
+            get
+            {
+                return ConfigStore.GetStoredKeyString(CommonConst.Registry_OBS_FFMpegPath) ?? string.Empty;
+            }
+            set
+            {
+                ConfigStore.PutStoredKeyString(CommonConst.Registry_OBS_FFMpegPath, value);
             }
         }
 
@@ -279,7 +327,7 @@ namespace Tailgrab.Clients.OBS
 
         public async Task VTKRecording(Player player, string html)
         {
-            if( !IsConnected()) return;
+            if(!IsConnected()) return;
 
             string chapter = $"VTK - {player.DisplayName}";
             ChapterEvent(chapter);
@@ -452,6 +500,7 @@ namespace Tailgrab.Clients.OBS
             return false;
         }
 
+        #region Message Log Management
         public void AddMessage(string message)
         {
             if (!IsConnected()) return;
@@ -462,8 +511,8 @@ namespace Tailgrab.Clients.OBS
 
             UpdateMessageHtml(); 
         }
-        
-        public string BuildMessageHtml()
+
+        public string BuildMessageLogHtml()
         {
             var sb = new StringBuilder();
             sb.AppendLine("<!DOCTYPE html>");
@@ -496,7 +545,7 @@ namespace Tailgrab.Clients.OBS
         {
             string sceneName = "VRChat";
             string overlayName = "MessageOverlay";
-            string html = BuildMessageHtml();
+            string html = BuildMessageLogHtml();
 
             var sourceSettings = new JObject
                     {
@@ -510,6 +559,8 @@ namespace Tailgrab.Clients.OBS
             client.PressInputPropertiesButton(overlayName, "refreshnocache");
 
         }
+        #endregion
+
 
         #region Event Handlers
         private void OnSocketConnected(object? sender, System.EventArgs e)
@@ -577,10 +628,18 @@ namespace Tailgrab.Clients.OBS
                 string xmlPath = Path.ChangeExtension(sourcePath, ".xml");
                 string mkvPath = Path.ChangeExtension(sourcePath, ".mkv");
                 string mp4Path = Path.ChangeExtension(sourcePath, "-converted.mp4");
-                WriteChaptersXml(xmlPath);
-                AddChaptersToMkv(sourcePath, mkvPath, xmlPath);
-                string metadataText = BuildMetadata(SessionEvent);
-                AddChaptersToMp4(sourcePath, mp4Path, metadataText);
+                if(CreateMKVChapters)
+                {
+                    logger.Info($"Creating MKV chapters for: {mkvPath}");
+                    WriteChaptersXml(xmlPath);
+                    AddChaptersToMkv(sourcePath, mkvPath, xmlPath);
+                }
+
+                if (CreateMP4Chapters)
+                {
+                    logger.Info($"Creating MP4 chapters for: {mp4Path}");
+                    AddChaptersToMp4(sourcePath, mp4Path, BuildMetadata(SessionEvent));
+                }
 
                 SessionEvent.Clear();
 
@@ -619,10 +678,13 @@ namespace Tailgrab.Clients.OBS
 
         public void AddChaptersToMkv(string inputMkv, string outputMkv, string chaptersXmlPath)
         {
-            string path = @"C:\Program Files\mkvtoolnix\mkvmerge.exe";
+            string path = MKVMergePath; //@"C:\Program Files\mkvtoolnix\mkvmerge.exe";
             if (!File.Exists(path))
+            {
+                logger.Warn($"mkvmerge not found at {path}. Skipping chapter addition for MKV.");
                 return;
-
+            }
+                
             logger.Info($"Adding chapters to MKV: {inputMkv} -> {outputMkv} using {chaptersXmlPath}");
             var psi = new ProcessStartInfo
             {
@@ -665,9 +727,12 @@ namespace Tailgrab.Clients.OBS
 
         public void AddChaptersToMp4(string inputMp4, string outputMp4, string metadataText)
         {
-            var path = @"D:\dev\ffmpeg\bin\ffmpeg.exe";
+            var path = FFMpegPath; //@"D:\dev\ffmpeg\bin\ffmpeg.exe";
             if(!File.Exists(path))
+            {
+                logger.Warn($"FFmpeg not found at {path}. Skipping chapter addition for MP4.");
                 return;
+            }
 
             string metaPath = Path.GetTempFileName();
             File.WriteAllText(metaPath, metadataText);
