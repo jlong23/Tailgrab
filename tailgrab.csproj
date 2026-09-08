@@ -140,6 +140,7 @@
 
   <ItemGroup>
     <EmbeddedResource Include="HtmlTemplates\Image_Template.html" />
+    <EmbeddedResource Include="HtmlTemplates\BanKickWarn_Template .html" />
     <EmbeddedResource Include="HtmlTemplates\VTK_Template.html" />
   </ItemGroup>
 

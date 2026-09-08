@@ -300,6 +300,29 @@ namespace Tailgrab.Clients.OBS
             }
         }
 
+        public async Task BanKickWarnRecording(Player player, string html, string action)
+        {
+            if (!IsConnected()) return;
+
+            string chapter = $"MOD {action} - {player.DisplayName}";
+            ChapterEvent(chapter);
+
+            string sceneName = KickBanSceneName;
+            string overlayName = KickBanBrowserSourceName;
+            try
+            {
+                _filename = $"{player.UserId}-{player.DisplayName}_{action}_{DateTime.Now:yyyyMMdd_HHmmss}";
+                _eventType = "BanKickWarn";
+                _eventName = _filename;
+                await DisplayBrowserSourceOverlay(sceneName, overlayName, html, 5000);
+                await SaveReplayBuffer();
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex);
+            }
+        }
+
         public async Task SessionRecording(bool start, WorldInstanceInfo sessionInfo)
         {
             if( !IsConnected()) return;

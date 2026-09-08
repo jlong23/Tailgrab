@@ -444,6 +444,34 @@ namespace Tailgrab.PlayerManagement
             return player;
         }
 
+        public static Player? BanKickWarnEventGroup(string displayName, string eventDescription, string action)
+        {
+            Player? player = AddPlayerEventByDisplayName(displayName, PlayerEvent.EventType.Moderation, eventDescription);
+            if (player != null)
+            {
+                player.AddAlertMessage(AlertClassEnum.Profile, AlertTypeEnum.Nuisance, $"{action}");
+                
+                string html = Utility.GetHTMLResource("HtmlTemplates", "BanKickWarn_Template.html");
+                // Build formatted string from the viewmodel alone
+                var sb = new System.Text.StringBuilder();
+                sb.AppendLine("<dl>");
+                sb.AppendLine(player.ToHTML(true));
+                sb.AppendLine("</dl>");
+                var content = sb.ToString();
+                string text = html.Replace("{content}", content);
+                text = text.Replace("{thumbnailUrl}", player.ProfileImage);
+                text = text.Replace("{action}", action);
+                text = text.Replace("{displayName}", player.DisplayName);
+                OBSClient? obsClient = serviceRegistry.GetOBSClient();
+                if (obsClient != null)
+                {
+                    obsClient.AddMessage($"{player.DisplayName} has been {action}");
+                    Task.Run(() => obsClient.BanKickWarnRecording(player, text, action)).GetAwaiter().GetResult();
+                }
+            }
+            return player;
+        }
+
         public static Player? AddPlayerEventByDisplayName(string displayName, PlayerEvent.EventType eventType, string eventDescription)
         {
 

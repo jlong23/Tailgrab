@@ -31,13 +31,8 @@ public class WarnKickHandler : AbstractLineHandler
             {
                 logger.Info($"{COLOR_PREFIX}User Moderation : {userName} to {action}{COLOR_RESET.GetAnsiEscape()}");
             }
-            
-            Player? player = PlayerManager.AddPlayerEventByDisplayName(userName, PlayerEvent.EventType.Moderation, $"User has been {action}.");
-            if (player != null)
-            {
-                player.AddAlertMessage(AlertClassEnum.Profile, AlertTypeEnum.Nuisance, action);
-            }
 
+            Player? player = PlayerManager.BanKickWarnEventGroup(userName, $"User has been {action}", action);
             Dictionary<string, string> actionData = new Dictionary<string, string>
             {
                 { "timestamp", timestamp },
