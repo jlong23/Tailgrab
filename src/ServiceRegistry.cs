@@ -12,6 +12,7 @@ using Tailgrab.Models;
 using Tailgrab.PlayerManagement;
 using tailgrab.src.PlayerManagement;
 using Tailgrab.Clients.OBS;
+using Tailgrab.Clients.Office;
 
 namespace Tailgrab
 {
@@ -34,6 +35,7 @@ namespace Tailgrab
         TTSManager? ttsManager = null;
         ServiceCollection services = new ServiceCollection();
         private VRCDBClient _VRCDBClient = new VRCDBClient();
+        OfficeClient? officeClient = null;
 
         private OBSClient? obsClient = null;
 
@@ -123,6 +125,8 @@ namespace Tailgrab
                 logger.Info("Starting OBS Client...");
                 GetOBSClient();
                 
+                logger.Info("Starting Office Client...");
+                officeClient = new OfficeClient(this);
 
                 logger.Info("All services started.");
             }
@@ -278,6 +282,15 @@ namespace Tailgrab
             }
 
             return obsClient;
+        }
+
+        public OfficeClient GetOfficeClient()
+        {
+            if (officeClient == null)
+            {
+                throw new InvalidOperationException("Office Client has not been initialized. Call StartAllServices() first.");
+            }
+            return officeClient;
         }
 
         public async Task ProcessAvatarGist()

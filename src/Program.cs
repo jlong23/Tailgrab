@@ -64,7 +64,7 @@ public class FileTailer
         string configFilePath = Path.Combine(CommonConst.APPLICATION_LOCAL_DATA_PATH, "NLog.config");
         LogManager.Setup().LoadConfigurationFromFile(configFilePath);
 
-        //PrismicBinaryReader.GetPrismicObjAsync("C:\\Users\\jlong\\Nextcloud\\The Distinguished Furs Group\\pasavtrdb.txt").GetAwaiter().GetResult();
+        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
         // Basic command line parsing:
         // -l <FilePath>    : use explicit log folder/file path
@@ -995,7 +995,6 @@ public class FileTailer
         {
             logger.Error(ex, "Failed to load window size from registry.");
         }
-
 
         app.Run(panel);
     }
