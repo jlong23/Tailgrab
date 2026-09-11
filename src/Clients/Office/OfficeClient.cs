@@ -1,19 +1,25 @@
-﻿using System;
+﻿using OfficeOpenXml;
+using System;
 using System.Collections.Generic;
 using System.IO;
-using OfficeOpenXml;
 using Tailgrab.Clients.Prismic;
+using Tailgrab.PlayerManagement;
 
 namespace Tailgrab.Clients.Office
 {
     public class OfficeClient
     {
-        public static byte[] CreateExcelFile(string sheetName, AvatarsLookupResponse response)
+        private readonly ServiceRegistry _serviceRegistry;
+
+        public OfficeClient(ServiceRegistry serviceRegistry) 
+        { 
+            _serviceRegistry = serviceRegistry;
+            ExcelPackage.License.SetNonCommercialOrganization("Tailgrab");
+        }
+
+        public byte[] ExportAvatarsToExcel(List<UserAvatarViewModel> avatars, string sheetName)
         {
-
             // Ensure we reference the EPPlus types from the global namespace to avoid collision with this namespace
-            OfficeOpenXml.ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
-
             using (ExcelPackage package = new ExcelPackage())
             {
                 ExcelWorksheet worksheet = package.Workbook.Worksheets.Add(sheetName);
@@ -25,22 +31,30 @@ namespace Tailgrab.Clients.Office
                 // Bold the header
                 worksheet.Cells[1, 1, 1, headers.Length].Style.Font.Bold = true;
 
+                worksheet.Column(1).Width = 200;
+
                 // ── Data rows ──
                 int row = 2;
-                foreach (AvatarsLookupListResponse r in response.Results)
+                foreach (UserAvatarViewModel vm in avatars)
                 {
-                    worksheet.Cells[row, 1].Value = r.Data.Name;
-                    worksheet.Cells[row, 2].Value = r.Data.Author;
-                    worksheet.Cells[row, 3].Value = r.Data.AvatarId;
-                    worksheet.Cells[row, 4].Value = r.Data.Description;
-                    worksheet.Cells[row, 5].Value = r.Data.Platform;
-                    worksheet.Cells[row, 6].Value = r.Data.Impostor;
-                    worksheet.Cells[row, 7].Value = r.Data.PCRating;
-                    worksheet.Cells[row, 8].Value = r.Data.QuestRating;
-                    worksheet.Cells[row, 9].Value = r.Data.IOSRating;
-                    worksheet.Cells[row, 10].Value = r.Data.ContentWarnings;
-                    worksheet.Cells[row, 11].Value = r.Data.StyleFilter;
-                    worksheet.Cells[row, 12].Value = r.Data.Marketplace;
+                    AvatarEntry r = vm.AvatarEntry;
+                    worksheet.Row(row).Height = 100;
+                    worksheet.Cells[row, 1].Formula = "IMAGE(\"" + vm.ThumbnailUrl + "\", 1)";
+                    worksheet.Cells[row, 2].Value = r?.Name;
+                    worksheet.Cells[row, 3].Value = r?.Author;
+                    worksheet.Cells[row, 4].Value = r?.AvatarId;
+                    worksheet.Cells[row, 5].Value = r?.Description;
+                    worksheet.Cells[row, 6].Value = r?.Platform;
+                    worksheet.Cells[row, 7].Value = r?.Impostor;
+                    worksheet.Cells[row, 8].Value = r?.PCRating;
+                    worksheet.Cells[row, 9].Value = r?.QuestRating;
+                    worksheet.Cells[row, 10].Value = r?.IOSRating;
+                    worksheet.Cells[row, 11].Value = r?.ContentWarnings;
+                    worksheet.Cells[row, 12].Value = r?.StyleFilter;
+                    worksheet.Cells[row, 13].Value = r?.Marketplace;
+                    worksheet.Cells[row, 14].Value = vm.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss");
+                    worksheet.Cells[row, 15].Value = vm.UpdatedAt?.ToString("yyyy-MM-dd HH:mm:ss");
+                    worksheet.Cells[row, 16].Value = vm.ThumbnailUrl;
                     row++;
                 }
 
