@@ -73,8 +73,10 @@ namespace Tailgrab.PlayerManagement
             get => _selectedActive;
             set
             {
-                if (_selectedActive != value)
+                if (_selectedActive != value && value != null)
                 {
+                    PlayerManager.ClearSelectedUser();
+                    PlayerManager.SelectedUser(value.UserId);
                     _selectedActive = value;
                     OnPropertyChanged(nameof(SelectedActive));
                 }
@@ -802,8 +804,6 @@ namespace Tailgrab.PlayerManagement
             this.Loaded += Window_Loaded;
             this.SizeChanged += Window_SizeChanged;
             this.LocationChanged += Window_LocationChanged;
-
-            //serviceRegistry.GetTTSManager().EnqueueSpeech("Tail Grab is up and running");            
         }
 
         private string? FindMkvMerge()
@@ -1711,6 +1711,11 @@ namespace Tailgrab.PlayerManagement
             if (vm != null)
             {
                 vm.UpdateFrom(p);
+                if( vm.IsSelected)
+                {
+                    _selectedActive = vm;
+                    ActiveListView.ScrollIntoView(vm);
+                }
             }
             else
             {
@@ -5658,6 +5663,7 @@ namespace Tailgrab.PlayerManagement
         {
             try
             {
+                AvatarSetAlertType = AlertTypeEnum.None;
                 // Set user information
                 UserAvatarOverlayUserId.Text = userId;
                 UserAvatarOverlayDisplayName.Text = displayName;
@@ -5670,6 +5676,12 @@ namespace Tailgrab.PlayerManagement
 
                 // Fetch avatars asynchronously (already async, no need for Task.Run)
                 List<UserAvatarViewModel> avatars = await _serviceRegistry.GetAvatarManager().LoadUserAvatarAsync(userId);
+
+                foreach (var avatar in avatars)
+                {
+                    if (AvatarSetAlertType < avatar.AlertType)
+                        AvatarSetAlertType = avatar.AlertType;
+                }
 
                 // Update UI (already on UI thread)
                 UserAvatarDataGrid.ItemsSource = avatars;
@@ -5689,6 +5701,7 @@ namespace Tailgrab.PlayerManagement
         {
             try
             {
+                AvatarSetAlertType = AlertTypeEnum.None;
                 // Set user information
                 UserAvatarOverlayUserId.Text = userId;
                 UserAvatarOverlayDisplayName.Text = displayName;
@@ -5699,10 +5712,16 @@ namespace Tailgrab.PlayerManagement
                 // Show the overlay
                 UserAvatarOverlay.Visibility = Visibility.Visible;
 
-                List<AvatarEntry>? avatarsLookupResponse = await _serviceRegistry.GetAvatarManager().GetPrismicAvatarsByAuthor(displayName);
+                List<AvatarEntry>? avatarsLookupResponse = await _serviceRegistry.GetAvatarManager().GetPrismicAvatarsByAuthor(displayName.Trim());
 
                 // Fetch avatars asynchronously (already async, no need for Task.Run)
                 List<UserAvatarViewModel> avatars = await _serviceRegistry.GetAvatarManager().LoadPrismicUserAvatarAsync(displayName, avatarsLookupResponse);
+
+                foreach(var avatar in avatars)
+                {
+                    if (AvatarSetAlertType < avatar.AlertType)
+                        AvatarSetAlertType = avatar.AlertType;
+                }
 
                 // Update UI (already on UI thread)
                 UserAvatarDataGrid.ItemsSource = avatars;
@@ -5718,6 +5737,19 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
+        private AlertTypeEnum _avatarSetAlertType;
+        public AlertTypeEnum AvatarSetAlertType
+        {
+            get => _avatarSetAlertType;
+            set
+            {
+                if (_avatarSetAlertType != value)
+                {
+                    _avatarSetAlertType = value;
+                    OnPropertyChanged(nameof(AvatarSetAlertType));
+                }
+            }
+        }
 
         private async void UserAvatarAdd_Click(object sender, RoutedEventArgs e)
         {
@@ -5827,6 +5859,45 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
+        private void UserAvatarOverlayUpdateAll_Click(object sender, RoutedEventArgs e)
+        {
+            if (UserAvatarDataGrid.ItemsSource is List<UserAvatarViewModel> avatars)
+            {
+                foreach (var avatar in avatars)
+                {
+                    avatar.AlertType = AvatarSetAlertType;
+                    avatar.DatabaseAlertType = AvatarSetAlertType;
+                    avatar.UpdateAlertColors();
+                }
+            }
+        }
+
+        private void UserAvatarExportList_Click(object sender, RoutedEventArgs e)
+        {
+            if (UserAvatarDataGrid.ItemsSource is List<UserAvatarViewModel> avatars)
+            {
+                try
+                {
+                    string displayName = UserAvatarOverlayDisplayName.Text;
+                    //List<AvatarEntry>? avatarsLookupResponse = Task.Run(() => _serviceRegistry.GetAvatarManager().GetPrismicAvatarsByAuthor(displayName)).Result;
+                    //// Fetch avatars asynchronously (already async, no need for Task.Run)
+                    //List<UserAvatarViewModel> avatarsVM = Task.Run(() => _serviceRegistry.GetAvatarManager().LoadPrismicUserAvatarAsync(displayName, avatarsLookupResponse)).Result;
+
+                    byte[] excelData = _serviceRegistry.GetOfficeClient().ExportAvatarsToExcel(avatars, $"{displayName} Avatars");
+
+                    string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
+                    string filePath = System.IO.Path.Combine(desktopPath, $"{displayName} Avatars.xlsx");
+                    System.IO.File.WriteAllBytes(filePath, excelData);
+
+                    System.Windows.MessageBox.Show($"Avatars exported successfully to {filePath}", "Export Successful", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                catch (Exception ex)
+                {
+                    logger.Error(ex, "Error exporting avatars to Excel");
+                    System.Windows.MessageBox.Show($"Failed to export avatars: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
 
         private void UserAvatarOverlayClose_Click(object sender, RoutedEventArgs e)
         {
@@ -6624,6 +6695,8 @@ namespace Tailgrab.PlayerManagement
         public string ProfileUrl { get; set; }
         public TrustClassEnum UserTrustClass { get; set; }
 
+        public bool IsSelected { get; set; } = false;
+
         public AgeVerificationEnum AgeVerified { get; set; }
 
         public System.Windows.Media.Geometry UserTrustIconGeometry
@@ -6693,7 +6766,7 @@ namespace Tailgrab.PlayerManagement
             ProfileUrl = p.ProfileImage;
             UserTrustClass = p.UserTrustClass;
             AgeVerified = p.AgeVerified;
-
+            IsSelected = p.IsSelected;
 
             PopulateCollectionsFromPlayer(p); ;
         }
@@ -6724,6 +6797,7 @@ namespace Tailgrab.PlayerManagement
             if (ProfileUrl != p.ProfileImage) { ProfileUrl = p.ProfileImage; changed = true; }
             if (UserTrustClass != p.UserTrustClass) { UserTrustClass = p.UserTrustClass; changed = true; }
             if (AgeVerified != p.AgeVerified) { AgeVerified = p.AgeVerified; changed = true; }
+            if (IsSelected != p.IsSelected) { IsSelected = p.IsSelected; changed = true; }
 
             if (changed) OnPropertyChanged(string.Empty);
 
@@ -6752,6 +6826,7 @@ namespace Tailgrab.PlayerManagement
             sb.AppendLine($"ProfileUrl: {ProfileUrl}");
             sb.AppendLine($"UserTrustClass: {UserTrustClass}");
             sb.AppendLine($"AgeVerified: {AgeVerified}");
+            sb.AppendLine($"IsSelected: {IsSelected}"); 
             return sb.ToString();
         }
 

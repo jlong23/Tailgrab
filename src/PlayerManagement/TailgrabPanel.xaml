@@ -95,6 +95,7 @@ Title="Tailgrab Player Panel"
             <Setter Property="Background" Value="{Binding DataContext.NormalBackground, RelativeSource={RelativeSource AncestorType=Window}}"/>
             <Setter Property="Foreground" Value="{Binding DataContext.NormalForeground, RelativeSource={RelativeSource AncestorType=Window}}"/>
             <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="IsSelected" Value="{Binding IsSelected}"/>
             <Style.Triggers>
                 <DataTrigger Binding="{Binding HighlightClass}" Value="Normal">
                     <Setter Property="Background" Value="{Binding DataContext.NormalBackground, RelativeSource={RelativeSource AncestorType=Window}}" />
@@ -3005,16 +3006,43 @@ Title="Tailgrab Player Panel"
                     </ScrollViewer>
 
                     <!-- Action Buttons -->
-                    <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button Content="{DynamicResource UI.Overlay.UserAvatar.Action.SaveAll}" 
+                    <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Stretch">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,0,6,0">
+                            <RadioButton Content="{DynamicResource Text.AlertTypeEnum.None}" 
+                                                             IsChecked="{Binding AvatarSetAlertType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter={x:Static common:AlertTypeEnum.None}, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                                                             Margin="0,2,12,2"/>
+                            <RadioButton Content="{DynamicResource Text.AlertTypeEnum.Watch}" 
+                                                             IsChecked="{Binding AvatarSetAlertType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter={x:Static common:AlertTypeEnum.Watch}, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                                                             Margin="0,2,12,2"/>
+                            <RadioButton Content="{DynamicResource Text.AlertTypeEnum.Nuisance}" 
+                                                             IsChecked="{Binding AvatarSetAlertType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter={x:Static common:AlertTypeEnum.Nuisance}, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                                                             Margin="0,2,12,2"/>
+                            <RadioButton Content="{DynamicResource Text.AlertTypeEnum.Crasher}" 
+                                                             IsChecked="{Binding AvatarSetAlertType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter={x:Static common:AlertTypeEnum.Crasher}, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                                                             Margin="0,2,12,2"/>
+                            <Button Content="Update All" 
+                                Click="UserAvatarOverlayUpdateAll_Click" 
+                                Tag="UserAvatarDataGrid"
+                                Padding="4,2" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,6,0"/>
+
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,6,0">
+                            <Button Content="Export Avatar List To Excel" 
+                                Click="UserAvatarExportList_Click" 
+                                Tag="UserAvatarDataGrid"
+                                Padding="4,2" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,6,0">
+                            <Button Content="{DynamicResource UI.Overlay.UserAvatar.Action.SaveAll}" 
                                 Click="UserAvatarOverlaySaveChanges_Click" 
                                 Tag="UserAvatarDataGrid"
                                 Padding="4,2" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                        <Button Name="UserAvatarOverlayCloseButton" 
+                            <Button Name="UserAvatarOverlayCloseButton" 
                                 Content="{DynamicResource UI.Overlay.UserAvatar.Action.Close}" 
                                 Width="100" 
                                 Click="UserAvatarOverlayClose_Click"
                                 Padding="4,2" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        </StackPanel>
                     </StackPanel>
                 </Grid>
             </Border>

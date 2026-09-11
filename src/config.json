@@ -85,33 +85,20 @@
           "soundFile": "retard"
         },
         {
-          "actionTypeValue": "OSCAction",
-          "parameterName": "/avatar/parameters/VF67_Go/Mayu/Feral",
-          "oscValueType": "Bool",
-          "Value": "True"
-        },
-        {
           "actionTypeValue": "KeyPressAction",
           "WindowTitle": "obs64",
           "keys": "{F8}"
-        },
-        {
-          "actionTypeValue": "OSCAction",
-          "parameterName": "/avatar/parameters/VF67_Mayu/Tail/WagSpeed",
-          "oscValueType": "Float",
-          "Value": "0.8"
-        },
-        {
-          "actionTypeValue": "DelayAction",
-          "Milliseconds": 3000
-        },
-        {
-          "actionTypeValue": "OSCAction",
-          "parameterName": "/avatar/parameters/VF67_Mayu/Tail/WagSpeed",
-          "oscValueType": "Float",
-          "Value": "0.1"
         }
       ]
+    },
+    {
+      "handlerTypeValue": "UserSelected",
+      "enabled": true,
+      "patternTypeValue": "Default",
+      "pattern": "([\\d]{4}.[\\d]{2}.[\\d]{2}\\W[\\d]{2}:[\\d]{2}:[\\d]{2})\\W(Log[\\W]{8}|Warning[\\W]{4})-\\W\\WVP QuickMenuSelectedUser AboutToNavigate\\(\\) QuickMenuSelectedUser\\?id=([\\S\\W]+)",
+      "logOutput": true,
+      "logOutputColor": "Default",
+      "actions": []
     },
     {
       "handlerTypeValue": "WarnKick",

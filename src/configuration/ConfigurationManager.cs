@@ -225,6 +225,10 @@ namespace Tailgrab.Configuration
                         handler = new StickerHandler(StickerHandler.LOG_PATTERN, _serviceRegistry);
                         break;
 
+                    case LineHandlerType.UserSelected:
+                        handler = new QuickMenuSelectedUser(QuickMenuSelectedUser.LOG_PATTERN, _serviceRegistry);
+                        break;
+
                     case LineHandlerType.VTK:
                         handler = new VTKHandler(VTKHandler.LOG_PATTERN, _serviceRegistry);
                         break;
@@ -350,6 +354,7 @@ namespace Tailgrab.Configuration
         Sticker,
         VTK,
         WarnKick,
+        UserSelected,
         WorldChange,
         Quit
     }
@@ -371,6 +376,7 @@ namespace Tailgrab.Configuration
                 LineHandlerType.Sticker => "Sticker Handler",
                 LineHandlerType.VTK => "VTK Handler",
                 LineHandlerType.WarnKick => "Warn Kick Handler",
+                LineHandlerType.UserSelected => "User Selected Handler",
                 LineHandlerType.WorldChange => "World Change Handler",
                 LineHandlerType.Quit => "Quit Handler",
                 _ => "Unknown Handler",

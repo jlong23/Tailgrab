@@ -413,6 +413,32 @@ namespace Tailgrab.PlayerManagement
             return player;
         }
 
+        public static Player? SelectedUser(string userId)
+        {
+            ClearSelectedUser();
+            // Set new selection
+            Player? player = GetPlayerByUserId(userId);
+            if (player != null)
+            {
+                player.IsSelected = true;
+                PlayerManager.OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Updated, player);
+            }
+
+            return player;
+        }
+
+        public static void ClearSelectedUser()
+        {
+            foreach (Player item in playersByUserId.Values)
+            {
+                if (item.IsSelected)
+                {
+                    item.IsSelected = false;
+                    PlayerManager.OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Updated, item);
+                }
+            }
+        }
+
         public static Player? VoteToKickEventPublic(string displayName, string eventDescription)
         {
             Player? player = AddPlayerEventByDisplayName(displayName, PlayerEvent.EventType.Moderation, eventDescription);
@@ -838,6 +864,8 @@ namespace Tailgrab.PlayerManagement
         public TrustClassEnum UserTrustClass { get; set; }
 
         public AgeVerificationEnum AgeVerified { get; set; }
+
+        public bool IsSelected { get; set; } = false;
 
         public string AlertMessage
         {
