@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel;
 using System.Windows.Media;
+using Tailgrab.Clients.Prismic;
 using Tailgrab.Common;
 using WpfBrush = System.Windows.Media.Brush;
 using WpfBrushes = System.Windows.Media.Brushes;
@@ -30,6 +31,8 @@ namespace Tailgrab.PlayerManagement
         public AlertDisplayItem? PCPerformance { get; set; }
         public AlertDisplayItem? QuestPerformance { get; set; }
         public AlertDisplayItem? IOSPerformance { get; set; }
+
+        public AvatarEntry? AvatarEntry { get; set; } = null;
 
 
         private AlertTypeEnum _databaseAlertType = AlertTypeEnum.None;

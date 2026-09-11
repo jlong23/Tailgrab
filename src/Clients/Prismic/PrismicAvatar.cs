@@ -17,24 +17,6 @@ using VRChat.API.Model;
 
 namespace Tailgrab.Clients.Prismic
 {
-    public class AvatarsLookupResponse
-    {
-        [JsonPropertyName("author")]
-        public string Author { get; set; }
-        [JsonPropertyName("count")]
-        public int Count { get; set; }
-        [JsonPropertyName("results")]
-        public List<AvatarsLookupListResponse> Results { get; set; }
-    }
-
-    public class AvatarsLookupListResponse
-    {
-        [JsonPropertyName("data")]
-        public AvatarEntry Data { get; set; }
-        [JsonPropertyName("name_md5")]
-        public string NameMd5 { get; set; }
-    }
-
     public class AvatarEntry    
     {
         [JsonPropertyName("avatarId")]

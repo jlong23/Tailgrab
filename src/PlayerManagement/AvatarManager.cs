@@ -1263,7 +1263,9 @@ namespace Tailgrab.PlayerManagement
 
             try
             {
-                HttpResponseMessage response = await client.GetAsync($"http://warren01.rabbitearsvideoproduction.net:5000/api/prismic/avatar?author={author}");
+                string uri = $"http://warren01.rabbitearsvideoproduction.net:5000/api/prismic/avatar?author={Uri.EscapeDataString(author)}";
+                logger.Info($"Fetching Prismic avatars for author: {author} from {uri}");
+                HttpResponseMessage response = await client.GetAsync(uri);
                 response.EnsureSuccessStatusCode();
 
                 string jsonResponse = await response.Content.ReadAsStringAsync();
@@ -1327,6 +1329,7 @@ namespace Tailgrab.PlayerManagement
                             PCPerformance = AvatarPerformanceEnumMapper.MapEnumToAlertDisplayItem(avatarItem.PCRating ?? string.Empty),
                             QuestPerformance = AvatarPerformanceEnumMapper.MapEnumToAlertDisplayItem(avatarItem.QuestRating ?? string.Empty),
                             IOSPerformance = AvatarPerformanceEnumMapper.MapEnumToAlertDisplayItem(avatarItem.IOSRating ?? string.Empty),
+                            AvatarEntry = avatarItem
                         };
 
                         AvatarInfo? existingAvatar = dbContext.AvatarInfos.Find(avatarItem.AvatarId);
