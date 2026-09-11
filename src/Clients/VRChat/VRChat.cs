@@ -569,7 +569,9 @@ namespace Tailgrab.Clients.VRChat
                     return TGGroupMemberStatus.Unknown;
                 }
 
-                GroupLimitedMember membership = _vrchat.Groups.GetGroupMember(groupId, userId);
+                // Older version of the VRChat Library gave GroupLimitedMember
+                // GroupLimitedMember membership = _vrchat.Groups.GetGroupMember(groupId, userId);
+                GroupMember membership = _vrchat.Groups.GetGroupMember(groupId, userId);
                 logger.Info($"Checking group {groupId} member status for user {userId}");
 
                 if( membership != null && membership.MembershipStatus != null)
