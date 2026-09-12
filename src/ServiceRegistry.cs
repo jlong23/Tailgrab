@@ -35,17 +35,19 @@ namespace Tailgrab
         TTSManager? ttsManager = null;
         ServiceCollection services = new ServiceCollection();
         private VRCDBClient _VRCDBClient = new VRCDBClient();
-        OfficeClient? officeClient = null;
+        OfficeClient? officeClient;
 
-        private OBSClient? obsClient = null;
+        private OBSClient? obsClient;
 
         public VRCDBClient GetVRCDBClient()
         {
             return _VRCDBClient;
         }
 
-        public ServiceRegistry()
+        public ServiceRegistry(OBSClient obsClient, OfficeClient officeClient)
         {
+            this.obsClient = obsClient;
+            this.officeClient = officeClient;
         }
 
         public async Task StartAllServices()
@@ -124,9 +126,8 @@ namespace Tailgrab
 
                 logger.Info("Starting OBS Client...");
                 GetOBSClient();
-                
-                logger.Info("Starting Office Client...");
-                officeClient = new OfficeClient(this);
+
+                logger.Info("Office Client initialized via dependency injection.");
 
                 logger.Info("All services started.");
             }
@@ -267,21 +268,23 @@ namespace Tailgrab
         public OBSClient? GetOBSClient()
         {
             bool enableOBS = ConfigStore.GetStoredKeyBool(CommonConst.Registry_OBS_Enable, false);
-            if (enableOBS && obsClient == null)
+            if (enableOBS && obsClient != null)
             {
                 try
                 {
-                    obsClient = new OBSClient();
-                    Task.Run(() => obsClient.Initialize().ConfigureAwait(true)).GetAwaiter().GetResult();
+                    if (!obsClient.IsConnected())
+                    {
+                        Task.Run(() => obsClient.Initialize().ConfigureAwait(true)).GetAwaiter().GetResult();
+                    }
                 }
                 catch (Exception ex)
                 {
                     logger.Error(ex, "Failed to initialize OBS Client. Please ensure OBS is running and the WebSocket server is enabled.");
-                    obsClient = null;
+                    return null;
                 }
             }
 
-            return obsClient;
+            return enableOBS ? obsClient : null;
         }
 
         public OfficeClient GetOfficeClient()

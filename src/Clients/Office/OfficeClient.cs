@@ -9,12 +9,19 @@ namespace Tailgrab.Clients.Office
 {
     public class OfficeClient
     {
-        private readonly ServiceRegistry _serviceRegistry;
+        private ServiceRegistry? _serviceRegistry;
 
-        public OfficeClient(ServiceRegistry serviceRegistry) 
+        public OfficeClient() 
         { 
-            _serviceRegistry = serviceRegistry;
             ExcelPackage.License.SetNonCommercialOrganization("Tailgrab");
+        }
+
+        /// <summary>
+        /// Initializes the service registry reference (called after construction).
+        /// </summary>
+        public void Initialize(ServiceRegistry serviceRegistry)
+        {
+            _serviceRegistry = serviceRegistry;
         }
 
         public byte[] ExportAvatarsToExcel(List<UserAvatarViewModel> avatars, string sheetName)

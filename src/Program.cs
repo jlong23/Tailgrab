@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Win32;
 using NLog;
 using System.Globalization;
@@ -12,6 +13,7 @@ using System.Windows.Media;
 using Tailgrab.Clients.Prismic;
 using Tailgrab.Common;
 using Tailgrab.Configuration;
+using Tailgrab.DependencyInjection;
 using Tailgrab.LineHandler;
 using Tailgrab.Models;
 using Tailgrab.PlayerManagement;
@@ -46,11 +48,25 @@ public class FileTailer
     static FileSystemWatcher AmpWatcher = new FileSystemWatcher();
     static Logger logger = LogManager.GetCurrentClassLogger();
     static ServiceRegistry? _serviceRegistry;
+    static IServiceProvider? _serviceProvider;
 
     // At the class level, add a dictionary to track active tail tasks
     static Dictionary<string, FileTailStatus> ActiveTailTasks = new Dictionary<string, FileTailStatus>();
 
     public static IReadOnlyDictionary<string, FileTailStatus> GetActiveTailTasks() => ActiveTailTasks;
+
+    /// <summary>
+    /// Gets the service provider for dependency resolution.
+    /// </summary>
+    public static ServiceRegistry GetServiceRegistry()
+    {
+        if (_serviceRegistry == null)
+        {
+            throw new InvalidOperationException("ServiceRegistry has not been initialized. Ensure BuildDependencies() is called in Main().");
+        }
+        return _serviceRegistry;
+    }
+
 
     /// <summary>
     /// Watch the VRChat log directory by default and process logs.
@@ -59,14 +75,14 @@ public class FileTailer
     [STAThread]
     public static void Main(string[] args)
     {
-        //Early in your program do something like this:
+        // Initialize logging and prerequisites (before DI)
         NLog.GlobalDiagnosticsContext.Set("StartTime", DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss"));
         string configFilePath = Path.Combine(CommonConst.APPLICATION_LOCAL_DATA_PATH, "NLog.config");
         LogManager.Setup().LoadConfigurationFromFile(configFilePath);
 
         Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
-        // Basic command line parsing:
+        // Parse command-line arguments
         // -l <FilePath>    : use explicit log folder/file path
         // -clear           : remove application registry settings and exit
         // -backup          : create a backup of the database and exit
@@ -99,8 +115,18 @@ public class FileTailer
             return;
         }
 
-        _serviceRegistry = new ServiceRegistry();
+        // Build dependency injection container
+        _serviceProvider = DiContainer.BuildServiceProvider();
+        _serviceRegistry = _serviceProvider.GetRequiredService<ServiceRegistry>();
         _serviceRegistry.StartAllServices().GetAwaiter().GetResult();
+
+        // Initialize OfficeClient with ServiceRegistry reference (breaks circular dependency)
+        var officeClient = _serviceProvider.GetRequiredService<Tailgrab.Clients.Office.OfficeClient>();
+        officeClient.Initialize(_serviceRegistry);
+
+        // Initialize MCP Server after ServiceRegistry is ready
+        //var mcpServer = _serviceProvider.GetRequiredService<Tailgrab.MCP.McpServer>();
+        //mcpServer.Initialize(_serviceRegistry);
 
         UpgradeApplication(_serviceRegistry);
 
@@ -119,8 +145,12 @@ public class FileTailer
             return;
         }
 
-        
+
         _serviceRegistry.GetConfigurationManager().LoadLineHandlersFromConfig(HandlerList);
+
+        // Start the MCP Server on a background thread for local network access
+        logger.Info($"Starting MCP Server on port {mcpServer.Port}");
+        _ = mcpServer.StartAsync();
 
         // Start the watcher task on a background thread so it doesn't block the STA UI thread
         logger.Info($"Starting file watcher and showing UI for: '{filePath}'");
@@ -138,6 +168,7 @@ public class FileTailer
 
         // When the window closes, allow Main to complete. The watcher task will be abandoned; if desired add cancellation.
     }
+
 
     /// <summary>
     /// Threaded tailing of a file, reading new lines as they are added.

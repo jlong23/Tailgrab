@@ -1,5 +1,4 @@
-﻿using BuildSoft.OscCore;
-using Newtonsoft.Json.Linq;
+﻿using Newtonsoft.Json.Linq;
 using NLog;
 using OBSWebsocketDotNet;
 using OBSWebsocketDotNet.Communication;
@@ -7,14 +6,10 @@ using OBSWebsocketDotNet.Types; // Added to resolve ObsDisconnectionInfo
 using OBSWebsocketDotNet.Types.Events; // Add this
 using System.Diagnostics;
 using System.IO;
-using System.Net.Mime;
-using System.Security.Permissions;
-using System.Security.Policy;
 using System.Text;
 using System.Xml.Linq;
 using Tailgrab.Common;
 using Tailgrab.PlayerManagement;
-using static System.Windows.Forms.AxHost;
 
 namespace Tailgrab.Clients.OBS
 {
