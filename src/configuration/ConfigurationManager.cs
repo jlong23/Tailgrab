@@ -26,7 +26,7 @@ namespace Tailgrab.Configuration
             _serviceRegistry = serviceRegistry;
         }
 
-        public string GetConfigFilePath()
+        public static string GetConfigFilePath()
         {
             return Path.Combine(CommonConst.APPLICATION_LOCAL_DATA_PATH, "config.json");
         }
@@ -53,7 +53,7 @@ namespace Tailgrab.Configuration
             }
         }
 
-        public (bool success, string? errorMessage) SaveConfig(List<LineHandlerConfig> handlers)
+        public static (bool success, string? errorMessage) SaveConfig(List<LineHandlerConfig> handlers)
         {
             try
             {
@@ -115,6 +115,9 @@ namespace Tailgrab.Configuration
                 options.Converters.Add(new JsonStringEnumConverter());
 
                 TailgrabConfig? config = JsonSerializer.Deserialize<TailgrabConfig>(jsonString, options);
+
+                ValidateConfiguration(config);
+
                 if (config?.LineHandlers != null)
                 {
                     logger.Info($"Configuration loaded successfully from '{path}'");
@@ -130,6 +133,69 @@ namespace Tailgrab.Configuration
                 logger.Error(ex, $"Failed to read or parse configuration file '{path}'.");
                 System.Windows.MessageBox.Show($"Error loading configuration file: {ex.Message}; Correct config.json and restart application", "Configuration Load Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
                 return new List<LineHandlerConfig>();
+            }
+        }
+
+        private static void ValidateConfiguration(TailgrabConfig? config)
+        {
+            bool _isDirty = false;
+            // Validate and ensure exactly one instance of each LineHandlerType
+            if (config?.LineHandlers != null)
+            {
+                var typeCounts = new Dictionary<LineHandlerType, int>();
+                var validHandlers = new List<LineHandlerConfig>();
+
+                // Count occurrences of each type
+                foreach (LineHandlerConfig handlerConfig in config.LineHandlers)
+                {
+                    if (typeCounts.ContainsKey(handlerConfig.HandlerTypeValue))
+                    {
+                        typeCounts[handlerConfig.HandlerTypeValue]++;
+                        logger.Warn($"Duplicate LineHandlerType '{handlerConfig.HandlerTypeValue}' found in configuration. Keeping first occurrence.");
+                        _isDirty = true;
+                    }
+                    else
+                    {
+                        typeCounts[handlerConfig.HandlerTypeValue] = 1;
+                        validHandlers.Add(handlerConfig);
+                    }
+                }
+
+                // Add missing handler types with defaults
+                foreach (LineHandlerType handlerType in Enum.GetValues(typeof(LineHandlerType)))
+                {
+                    if (!typeCounts.ContainsKey(handlerType))
+                    {
+                        logger.Warn($"LineHandlerType '{handlerType}' not found in configuration. Adding default handler.");
+
+                        LineHandlerConfig handler = new LineHandlerConfig()
+                        {
+                            Enabled = true,
+                            HandlerTypeValue = handlerType,
+                            PatternTypeValue = PatternType.Default,
+                            Pattern = null,
+                            LogOutput = true,
+                            LogOutputColor = "0m",
+                            Actions = new List<ActionBase>()
+                        };
+
+                        // Disable Logging handler by default to prevent excessive console output
+                        if ( handlerType == LineHandlerType.Logging)
+                        {
+                            handler.Enabled = false;
+                        }
+
+                        validHandlers.Add(handler);
+                        _isDirty = true;
+                    }
+                }
+
+                config.LineHandlers = validHandlers;
+
+                if( _isDirty ) 
+                {
+                    SaveConfig(config.LineHandlers);
+                }
             }
         }
 
@@ -182,66 +248,7 @@ namespace Tailgrab.Configuration
 
                 //
                 // Build the appropriate line handler based on the type
-                AbstractLineHandler? handler = null;
-                switch (configItem.HandlerTypeValue)
-                {
-                    case LineHandlerType.AvatarChange:
-                        handler = new AvatarChangeHandler(AvatarChangeHandler.LOG_PATTERN, _serviceRegistry);
-                        break;
-
-                    case LineHandlerType.AvatarUnpack:
-                        handler = new AvatarUnpackHandler(AvatarUnpackHandler.LOG_PATTERN, _serviceRegistry);
-                        break;
-
-                    case LineHandlerType.Emoji:
-                        handler = new EmojiHandler(EmojiHandler.LOG_PATTERN, _serviceRegistry);
-                        break;
-
-                    case LineHandlerType.Logging:
-                        handler = new LoggingLineHandler("", _serviceRegistry);
-                        break;
-
-                    case LineHandlerType.OnPlayerJoin:
-                        handler = new OnPlayerJoinHandler(OnPlayerJoinHandler.LOG_PATTERN, _serviceRegistry);
-                        break;
-
-                    case LineHandlerType.OnPlayerNetwork:
-                        handler = new OnPlayerNetworkHandler(OnPlayerNetworkHandler.LOG_PATTERN, _serviceRegistry);
-                        break;
-
-                    case LineHandlerType.PenNetwork:
-                        handler = new PenNetworkHandler(PenNetworkHandler.LOG_PATTERN, _serviceRegistry);
-                        break;
-
-                    case LineHandlerType.Print:
-                        handler = new PrintHandler(PrintHandler.LOG_PATTERN, _serviceRegistry);
-                        break;
-
-                    case LineHandlerType.Quit:
-                        handler = new QuitHandler(QuitHandler.LOG_PATTERN, _serviceRegistry);
-                        break;
-
-                    case LineHandlerType.Sticker:
-                        handler = new StickerHandler(StickerHandler.LOG_PATTERN, _serviceRegistry);
-                        break;
-
-                    case LineHandlerType.UserSelected:
-                        handler = new QuickMenuSelectedUser(QuickMenuSelectedUser.LOG_PATTERN, _serviceRegistry);
-                        break;
-
-                    case LineHandlerType.VTK:
-                        handler = new VTKHandler(VTKHandler.LOG_PATTERN, _serviceRegistry);
-                        break;
-
-                    case LineHandlerType.WarnKick:
-                        handler = new WarnKickHandler(WarnKickHandler.LOG_PATTERN, _serviceRegistry);
-                        break;
-
-                    case LineHandlerType.WorldChange:
-                        handler = new WorldChangeHandler(WorldChangeHandler.LOG_PATTERN, _serviceRegistry);
-                        break;
-                }
-
+                AbstractLineHandler? handler = CreateLineHandlerFromType(configItem.HandlerTypeValue);
                 if (handler != null)
                 {
                     if (pattern != null)
@@ -257,6 +264,59 @@ namespace Tailgrab.Configuration
 
             return handlers;
         }
+
+        private AbstractLineHandler? CreateLineHandlerFromType(LineHandlerType handlerType)
+        {
+            AbstractLineHandler? handler = null;
+            switch (handlerType)
+            {
+                case LineHandlerType.AvatarChange:
+                    handler = new AvatarChangeHandler(AvatarChangeHandler.LOG_PATTERN, _serviceRegistry);
+                    break;
+                case LineHandlerType.AvatarUnpack:
+                    handler = new AvatarUnpackHandler(AvatarUnpackHandler.LOG_PATTERN, _serviceRegistry);
+                    break;
+                case LineHandlerType.Emoji:
+                    handler = new EmojiHandler(EmojiHandler.LOG_PATTERN, _serviceRegistry);
+                    break;
+                case LineHandlerType.Logging:
+                    handler = new LoggingLineHandler("", _serviceRegistry);
+                    break;
+                case LineHandlerType.OnPlayerJoin:
+                    handler = new OnPlayerJoinHandler(OnPlayerJoinHandler.LOG_PATTERN, _serviceRegistry);
+                    break;
+                case LineHandlerType.OnPlayerNetwork:
+                    handler = new OnPlayerNetworkHandler(OnPlayerNetworkHandler.LOG_PATTERN, _serviceRegistry);
+                    break;
+                case LineHandlerType.PenNetwork:
+                    handler = new PenNetworkHandler(PenNetworkHandler.LOG_PATTERN, _serviceRegistry);
+                    break;
+                case LineHandlerType.Print:
+                    handler = new PrintHandler(PrintHandler.LOG_PATTERN, _serviceRegistry);
+                    break;
+                case LineHandlerType.Quit:
+                    handler = new QuitHandler(QuitHandler.LOG_PATTERN, _serviceRegistry);
+                    break;
+                case LineHandlerType.Sticker:
+                    handler = new StickerHandler(StickerHandler.LOG_PATTERN, _serviceRegistry);
+                    break;
+                case LineHandlerType.UserSelected:
+                    handler = new QuickMenuSelectedUser(QuickMenuSelectedUser.LOG_PATTERN, _serviceRegistry);
+                    break;
+                case LineHandlerType.VTK:
+                    handler = new VTKHandler(VTKHandler.LOG_PATTERN, _serviceRegistry);
+                    break;
+                case LineHandlerType.WarnKick:
+                    handler = new WarnKickHandler(WarnKickHandler.LOG_PATTERN, _serviceRegistry);
+                    break;
+                case LineHandlerType.WorldChange:
+                    handler = new WorldChangeHandler(WorldChangeHandler.LOG_PATTERN, _serviceRegistry);
+                    break;
+            }
+
+            return handler;
+        }
+
 
         private List<IAction> ParseActionsFromConfig(List<ActionBase> actionConfigs)
         {

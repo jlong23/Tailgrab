@@ -122,7 +122,7 @@ namespace Tailgrab.PlayerManagement
             try
             {
                 var handlersList = Handlers.ToList();
-                var (success, errorMessage) = _configurationManager.SaveConfig(handlersList);
+                var (success, errorMessage) = ConfigurationManager.SaveConfig(handlersList);
 
                 if (!success)
                 {
