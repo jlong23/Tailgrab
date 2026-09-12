@@ -9,6 +9,7 @@ using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using Tailgrab.Clients.Github;
 using Tailgrab.Clients.Ollama;
@@ -1497,6 +1498,126 @@ namespace Tailgrab.PlayerManagement
         {
             Success = success;
             Message = message;
+        }
+    }
+
+    public class AvatarEntry
+    {
+        [JsonPropertyName("avatarId")]
+        public required string AvatarId { get; set; }
+        [JsonPropertyName("name")]
+        public required string Name { get; set; }
+        [JsonPropertyName("author")]
+        public required string Author { get; set; }
+        [JsonPropertyName("description")]
+        public required string Description { get; set; }
+
+        [JsonIgnore]
+        public bool Quest { get; set; }
+
+        [JsonIgnore]
+        public bool Ios { get; set; }
+
+        [JsonPropertyName("flags")]
+        public required int[] Flags { get; set; } // [Platform, Impostor, PC Rating, Quest Rating, IOS Rating, Content Warnings, Style Filter, Marketplace]
+
+        [JsonIgnore]
+        // Platform: 1 - PC, 2 - Quest, 4 - IOS
+        public string Platform => Flags.Length > 0 ? GetPlatformString(Flags[0]) : "Unknown";
+
+        [JsonIgnore]
+        // Impostor: 1 - PC, 2 - Quest, 4 - IOS
+        public string Impostor => Flags.Length > 1 ? GetImpostorString(Flags[1]) : "Unknown";
+
+        [JsonIgnore]
+        // PC Rating: 0 - Unknown, 1 - Excellent, 2 - Good, 3 - Medium, 4 - Poor, 5 - Very Poor
+        public string PCRating => Flags.Length > 2 ? GetRatingString(Flags[2]) : "Unknown";
+
+        [JsonIgnore]
+        // Quest Rating: 0 - Unknown, 1 - Excellent, 2 - Good, 3 - Medium, 4 - Poor, 5 - Very Poor
+        public string QuestRating => Flags.Length > 3 ? GetRatingString(Flags[3]) : "Unknown";
+
+        [JsonIgnore]
+        // IOS Rating: 0 - Unknown, 1 - Excellent, 2 - Good, 3 - Medium, 4 - Poor, 5 - Very Poor
+        public string IOSRating => Flags.Length > 4 ? GetRatingString(Flags[4]) : "Unknown";
+
+        [JsonIgnore]
+        // Content Warnings: 1 - Sexually suggestive, 2 - Adult Language, 4 - Graphic Violence, 8 - Excessive Gore, 16 - Extreme Horror
+        public string ContentWarnings => Flags.Length > 5 ? GetContentWarningsString(Flags[5]) : "None";
+
+        [JsonIgnore]
+        // Style Filter: 1 - Pop Culture, 2 - Furry, 4 - Sci-Fi, 8 - Anime, 16 - Cartoon, 32 - Objects, 64 - Human, 128 - Realistic, 256 - Animal, 512 - Fantasy, 1024 - Fashion
+        public string StyleFilter => Flags.Length > 6 ? GetStyleFilterString(Flags[6]) : "None";
+
+        [JsonIgnore]
+        // Marketplace: 0 - Not in Marketplace, 1 - In Marketplace
+        public string Marketplace => Flags.Length > 7 ? (Flags[7] == 1 ? "In Marketplace" : "Not in Marketplace") : "Unknown";
+
+        private static string GetPlatformString(int value)
+        {
+            var platforms = new List<string>();
+            if ((value & 1) != 0) platforms.Add("PC");
+            if ((value & 2) != 0) platforms.Add("Quest");
+            if ((value & 4) != 0) platforms.Add("IOS");
+            return platforms.Count > 0 ? string.Join(", ", platforms) : "Unknown";
+        }
+
+        private static string GetImpostorString(int value)
+        {
+            var impostors = new List<string>();
+            if ((value & 1) != 0) impostors.Add("PC");
+            if ((value & 2) != 0) impostors.Add("Quest");
+            if ((value & 4) != 0) impostors.Add("IOS");
+            return impostors.Count > 0 ? string.Join(", ", impostors) : "Unknown";
+        }
+
+        private static string GetRatingString(int value)
+        {
+            return value switch
+            {
+                0 => "Unknown",
+                1 => "Excellent",
+                2 => "Good",
+                3 => "Medium",
+                4 => "Poor",
+                5 => "Very Poor",
+                _ => "Unknown"
+            };
+        }
+
+        private static string GetContentWarningsString(int value)
+        {
+            var warnings = new List<string>();
+            if ((value & 1) != 0) warnings.Add("Sexually suggestive");
+            if ((value & 2) != 0) warnings.Add("Adult Language");
+            if ((value & 4) != 0) warnings.Add("Graphic Violence");
+            if ((value & 8) != 0) warnings.Add("Excessive Gore");
+            if ((value & 16) != 0) warnings.Add("Extreme Horror");
+            return warnings.Count > 0 ? string.Join(", ", warnings) : "None";
+        }
+
+        private static string GetStyleFilterString(int value)
+        {
+            var styles = new List<string>();
+            if ((value & 1) != 0) styles.Add("Pop Culture");
+            if ((value & 2) != 0) styles.Add("Furry");
+            if ((value & 4) != 0) styles.Add("Sci-Fi");
+            if ((value & 8) != 0) styles.Add("Anime");
+            if ((value & 16) != 0) styles.Add("Cartoon");
+            if ((value & 32) != 0) styles.Add("Objects");
+            if ((value & 64) != 0) styles.Add("Human");
+            if ((value & 128) != 0) styles.Add("Realistic");
+            if ((value & 256) != 0) styles.Add("Animal");
+            if ((value & 512) != 0) styles.Add("Fantasy");
+            if ((value & 1024) != 0) styles.Add("Fashion");
+            return styles.Count > 0 ? string.Join(", ", styles) : "None";
+        }
+
+        public override string ToString()
+        {
+            string avKey = "avtr:" + Checksum.CreateMD5(Name + ":" + Author);
+
+            return $"AvatarId: {AvatarId}, Name: {Name}, Author: {Author}, Description: {Description}, Quest: {Quest}, IOS: {Ios}, Platform: {Platform}, Impostor: {Impostor}, PC Rating: {PCRating}, Quest Rating: {QuestRating}, IOS Rating: {IOSRating}, Content Warnings: {ContentWarnings}, Style Filter: {StyleFilter}, Marketplace: {Marketplace}, avKey: {avKey}";
         }
     }
 
