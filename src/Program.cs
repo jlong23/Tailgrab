@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Win32;
 using NLog;
@@ -10,9 +9,7 @@ using System.Text;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Media;
-using Tailgrab.Clients.Prismic;
 using Tailgrab.Common;
-using Tailgrab.Configuration;
 using Tailgrab.DependencyInjection;
 using Tailgrab.LineHandler;
 using Tailgrab.Models;
@@ -125,8 +122,8 @@ public class FileTailer
         officeClient.Initialize(_serviceRegistry);
 
         // Initialize MCP Server after ServiceRegistry is ready
-        //var mcpServer = _serviceProvider.GetRequiredService<Tailgrab.MCP.McpServer>();
-        //mcpServer.Initialize(_serviceRegistry);
+        var mcpServer = _serviceProvider.GetRequiredService<Tailgrab.MCP.McpServer>();
+        mcpServer.Initialize(_serviceRegistry);
 
         UpgradeApplication(_serviceRegistry);
 

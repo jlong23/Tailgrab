@@ -32,10 +32,10 @@ public static class DiContainer
         });
 
         //// Register MCP Server with access to the service provider
-        //services.AddSingleton<McpServer>(provider =>
-        //{
-        //    return new McpServer(provider);
-        //});
+        services.AddSingleton<McpServer>(provider =>
+        {
+            return new McpServer(provider);
+        });
 
         return services.BuildServiceProvider();
     }
