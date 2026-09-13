@@ -13,7 +13,6 @@ using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using Tailgrab.Clients.Github;
 using Tailgrab.Clients.Ollama;
-using Tailgrab.Clients.Prismic;
 using Tailgrab.Clients.VRCDB;
 using Tailgrab.Clients.XSOverlay;
 using Tailgrab.Common;

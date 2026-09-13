@@ -1,6 +1,5 @@
 ﻿using System.ComponentModel;
 using System.Windows.Media;
-using Tailgrab.Clients.Prismic;
 using Tailgrab.Common;
 using WpfBrush = System.Windows.Media.Brush;
 using WpfBrushes = System.Windows.Media.Brushes;

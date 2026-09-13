@@ -13,7 +13,6 @@ using System.Windows.Threading;
 using Tailgrab.Clients.Github;
 using Tailgrab.Clients.Ollama;
 using Tailgrab.Clients.OBS;
-using Tailgrab.Clients.Prismic;
 using Tailgrab.Clients.VRChat;
 using Tailgrab.Common;
 using Tailgrab.Configuration;
