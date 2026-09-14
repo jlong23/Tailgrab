@@ -12,7 +12,7 @@ namespace Tailgrab.MCP.Tools
     internal class InstanceDetails : McpToolBase
     {
         public override string Name => "instance_details";
-        public override string Description => "Returns a detailed summary of the current instance, including player information and instance metadata.";
+        public override string Description => "Returns a summary of the current VRChat instance and instance metadata.";
         public override object InputSchema => new
         {
             type = "object",
@@ -34,21 +34,6 @@ namespace Tailgrab.MCP.Tools
             IEnumerable<Player> playerIter = PlayerManager.GetAllPlayers();
             WorldInstanceInfo worldInfo = PlayerManager.CurrentSession;
             int playerCount = playerIter.Count(p => p.InstanceEndTime == null);
-            var playersInInstance = playerIter
-                .Where(p => p.InstanceEndTime == null)
-                .Select(p => new
-                {
-                    displayName = p.DisplayName,
-                    userId = p.UserId,
-                    avatarName = p.AvatarName,
-                    avatarId = p.AvatarId,
-                    durationSeconds = (DateTime.Now - p.InstanceStartTime).TotalSeconds,
-                    isVerified = p.AgeVerified != AgeVerificationEnum.UNVERIFIED,
-                    isFriend = p.IsFriend,
-                })
-                .ToList();
-
-
             var info = new
             {
                 timestamp = DateTime.UtcNow,
@@ -68,8 +53,7 @@ namespace Tailgrab.MCP.Tools
                     region = worldInfo?.Region ?? "unknown",
                     isAgeGated = worldInfo?.AgeGated ?? false,
                     instanceStartTime = worldInfo?.StartDateTime ?? DateTime.MinValue,
-                    instanceDurationSeconds = (worldInfo != null) ? (DateTime.Now - worldInfo.StartDateTime).TotalSeconds : 0,
-                    players = playersInInstance
+                    instanceDurationSeconds = (worldInfo != null) ? (DateTime.Now - worldInfo.StartDateTime).TotalSeconds : 0
                 }
             };
 
