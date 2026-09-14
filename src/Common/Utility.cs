@@ -15,7 +15,7 @@ namespace Tailgrab.Common
     public static class Utility
     {
         private static readonly Assembly _asm = Assembly.GetExecutingAssembly();
-        private static readonly string _prefix = _asm.GetName().Name;
+        private static readonly string _prefix = _asm.GetName().Name ?? string.Empty;
 
         public static string GetHTMLResource(string folder, string fileName)
         {
