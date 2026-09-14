@@ -1,3 +1,6 @@
+using Tailgrab.Common;
+using Tailgrab.PlayerManagement;
+
 namespace Tailgrab.MCP.Tools;
 
 /// <summary>
@@ -56,4 +59,67 @@ public abstract class McpToolBase : IMcpTool
     }
 
     public abstract Task<McpToolResult> ExecuteAsync(Dictionary<string, object> arguments, CancellationToken cancellationToken = default);
+
+    protected McpToolResult FormatPlayerCurrentInfo(Player? p)
+    {
+        if (p == null)
+            return McpToolResult.FromError("Player not found");
+
+        List<PlayerPrint> printData = p.PrintData?.Values?.ToList() ?? new List<PlayerPrint>();
+        var printHistory = printData.Select(p => new
+        {
+            printId = p.PrintId,
+            displayName = p.AuthorName,
+            authorId = p.OwnerId,
+            evaluation = p.AIEvaluation,
+            printUri = p.PrintUrl
+        }).ToList();
+
+        List<PlayerInventory> inventoryData = p.Inventory?.ToList() ?? new List<PlayerInventory>();
+        var emojiStickerHistory = inventoryData.Select(i => new
+        {
+            inventoryId = i.InventoryId,
+            inventoryType = i.InventoryType,
+            evaluation = i.AIEvaluation,
+            imageUri = i.ItemUrl
+        }).ToList();
+
+        List<PlayerEvent> eventData = p.Events?.ToList() ?? new List<PlayerEvent>();
+        var eventHistory = eventData.OrderBy(e => e.EventTime).Select(e => new
+        {
+            eventType = e.Type.ToString(),
+            eventTime = e.EventTime,
+            eventDescription = e.EventDescription
+        }).ToList();
+
+        DateTime joinDate = DateTime.Parse(p.DateJoined.ToString() ?? new DateTime().ToString());
+        TimeSpan elapsed = DateTime.Now - joinDate;
+
+        var info = new
+        {
+            timestamp = DateTime.UtcNow,
+            application = "Tailgrab",
+            version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "unknown",
+            environment = new
+            {
+                displayName = p.DisplayName,
+                userId = p.UserId,
+                currentAvatarName = p.AvatarName ?? "",
+                currentAvatarId = p.AvatarId ?? "",
+                durationSeconds = (DateTime.Now - p.InstanceStartTime).TotalSeconds,
+                accountAgeInDays = elapsed.TotalDays,
+                isVerified = p.AgeVerified != AgeVerificationEnum.UNVERIFIED,
+                isFriend = p.IsFriend,
+                isWatched = p.IsWatched,
+                thumbnailUrl = p.ProfileImage ?? "",
+                bio = p.UserBio ?? "",
+                evaluation = p.AIEval ?? "",
+                printHistory = printHistory,
+                emojiStickerHistory = emojiStickerHistory,
+                eventHistory = eventHistory
+            }
+        };
+
+        return McpToolResult.FromSuccess(info);
+    }
 }

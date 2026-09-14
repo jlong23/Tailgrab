@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using NLog;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -11,6 +12,7 @@ namespace Tailgrab.MCP.Tools
 {
     internal class UserDetails : McpToolBase
     {
+        protected static readonly Logger logger = LogManager.GetCurrentClassLogger();
         public override string Name => "user_details";
         public override string Description => "Returns a detailed metadata about a VRChat user, including group memebership and whether they are on the watch list.";
         public override object InputSchema => new
@@ -43,7 +45,10 @@ namespace Tailgrab.MCP.Tools
                 User u = _serviceRegistry.GetVRChatAPIClient().GetProfile(userId);
 
                 if (u == null)
+                {
+                    logger.Warn("User not found: {0}", userId);
                     return McpToolResult.FromError("User not found");
+                }
 
                 DateTime joinDate = DateTime.Parse(u.DateJoined.ToString() ?? new DateTime().ToString());
                 TimeSpan elapsed = DateTime.Now - joinDate;
@@ -77,10 +82,15 @@ namespace Tailgrab.MCP.Tools
                     }
                 };
 
+                logger.Info("UserDetails tool executed successfully for userId: {0}", userId);
+                logger.Info(info.ToString() ?? "Empty String");   
+
+
                 return McpToolResult.FromSuccess(info);
             }
             catch (Exception ex)
             {
+                logger.Error(ex, "An error occurred while executing the UserDetails tool.");
                 return McpToolResult.FromError($"An error occurred while executing the tool: {ex.Message}");
             }
         }
@@ -95,13 +105,16 @@ namespace Tailgrab.MCP.Tools
             {
                 GroupInfo? groupInfo = dbContext.GroupInfos.Find(membership.GroupId);
 
-                UserGroupEntry entry = new UserGroupEntry
+                if (groupInfo != null)
                 {
-                    GroupId = membership.GroupId,
-                    GroupName = membership.Name,
-                    GroupWatch = groupInfo?.AlertType > AlertTypeEnum.None ? groupInfo.AlertType.ToString() : "None",
-                };
-                groupEntries.Add(entry);
+                    UserGroupEntry entry = new UserGroupEntry
+                    {
+                        GroupId = membership.GroupId,
+                        GroupName = membership.Name,
+                        GroupWatch = groupInfo?.AlertType > AlertTypeEnum.None ? groupInfo.AlertType.ToString() : "None",
+                    };
+                    groupEntries.Add(entry);
+                }
             }
             return groupEntries;
         }        
