@@ -1000,6 +1000,8 @@ public class FileTailer
 
         var panel = new TailgrabPanel(serviceRegistryInstance);
 
+        panel.PlayerSelected += serviceRegistryInstance.GetPlayerManager().TailgrabPanel_PlayerSelected;
+
         try
         {
             string LayoutRegistryPath = "Software\\DeviousFox\\Tailgrab\\Layout";
