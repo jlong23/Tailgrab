@@ -22,8 +22,6 @@ namespace Tailgrab.Clients.OBS
 
         protected Stopwatch _stopwatch = new Stopwatch();
 
-        private readonly Queue<string> _messages = new Queue<string>();
-
         public int MaxLines { get; set; } = 20;
 
         protected string _filename = string.Empty;
@@ -496,15 +494,29 @@ namespace Tailgrab.Clients.OBS
         }
 
         #region Message Log Management
-        public void AddMessage(string message)
+        private readonly Queue<OBSLoggingMessage> _messages = new Queue<OBSLoggingMessage>();
+
+        public void AddMessage(string message, string color = "white")
         {
             if (!IsConnected()) return;
 
             while (_messages.Count > MaxLines)
                 _messages.Dequeue();
-            _messages.Enqueue(message);
+
+            OBSLoggingMessage logMessage = new OBSLoggingMessage
+            {
+                Message = message,
+                Color = color
+            };
+            _messages.Enqueue(logMessage);
 
             UpdateMessageHtml(); 
+        }
+
+        public void ClearMessages()
+        {
+            _messages.Clear();
+            UpdateMessageHtml();
         }
 
         public string BuildMessageLogHtml()
@@ -527,8 +539,8 @@ namespace Tailgrab.Clients.OBS
             sb.AppendLine("</style></head><body>");
             sb.AppendLine("<div class=\"log\" id=\"log\">");
 
-            foreach (var msg in _messages)
-                sb.AppendLine($"<div class=\"line\">{System.Net.WebUtility.HtmlEncode(msg)}</div>");
+            foreach (OBSLoggingMessage msg in _messages)
+                sb.AppendLine($"<div class=\"line\" style=\"color: {msg.Color};\">{System.Net.WebUtility.HtmlEncode(msg.Message)}</div>");
 
             sb.AppendLine("</div>");
             sb.AppendLine("<script>document.getElementById('log').scrollTop = 99999;</script>");
@@ -567,6 +579,7 @@ namespace Tailgrab.Clients.OBS
                 {
                     client.StartReplayBuffer();
                     client.ToggleVirtualCam();
+                    ClearMessages();
                     SaveCurrentScene();
                 }
             }
@@ -802,5 +815,11 @@ namespace Tailgrab.Clients.OBS
         {
             return $"{EventTime:hh\\:mm\\:ss\\.fff} - {EventName}";
         }
+    }
+
+    internal class  OBSLoggingMessage
+    {
+        public string Message { get; set; } = string.Empty;
+        public string Color { get; set; } = "white";
     }
 }

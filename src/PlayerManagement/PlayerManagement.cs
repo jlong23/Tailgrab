@@ -198,7 +198,8 @@ namespace Tailgrab.PlayerManagement
             OBSClient? obsClient = serviceRegistry.GetOBSClient();
             if (obsClient != null)
             {
-                obsClient.AddMessage($"Joining {worldInfo.ToStatusString()}");
+                obsClient.ClearMessages();
+                obsClient.AddMessage($"Joining {worldInfo.ToStatusString()}", "yellow");
             }
 
 
@@ -261,7 +262,7 @@ namespace Tailgrab.PlayerManagement
             OBSClient? obsClient = serviceRegistry.GetOBSClient();
             if (obsClient != null)
             {
-                obsClient.AddMessage($"{displayName} joined instance.");
+                obsClient.AddMessage($"{displayName} joined instance.", "green");
             }
 
         }
@@ -315,7 +316,7 @@ namespace Tailgrab.PlayerManagement
                 OBSClient? obsClient = serviceRegistry.GetOBSClient();
                 if (obsClient != null)
                 {
-                    obsClient.AddMessage($"{displayName} left instance.");
+                    obsClient.AddMessage($"{displayName} left instance.", "orange");
                 }
             }
         }
@@ -404,7 +405,7 @@ namespace Tailgrab.PlayerManagement
                     OBSClient? obsClient = serviceRegistry.GetOBSClient();
                     if (obsClient != null)
                     {
-                        obsClient.AddMessage($"{player.DisplayName} spawned {contentType}");
+                        obsClient.AddMessage($"{player.DisplayName} spawned {contentType}", "yellow");
                         Task.Run(() => obsClient.ImageExposeEvent(text, player, contentType)).GetAwaiter().GetResult();
                     }
                 }
@@ -446,22 +447,22 @@ namespace Tailgrab.PlayerManagement
             {
                 player.AddAlertMessage(AlertClassEnum.Profile, AlertTypeEnum.Nuisance, $"VTK");
 
-                string html = Utility.GetHTMLResource("HtmlTemplates", "VTK_Template.html");
-
-                // Build formatted string from the viewmodel alone
-                var sb = new System.Text.StringBuilder();
-                sb.AppendLine("<dl>");
-                sb.AppendLine(player.ToHTML(true));
-                sb.AppendLine("</dl>");
-                var content = sb.ToString();
-
-                string text = html.Replace("{content}", content);
-                text = text.Replace("{thumbnailUrl}", player.ProfileImage);
-
                 OBSClient? obsClient = serviceRegistry.GetOBSClient();
                 if (obsClient != null)
                 {
-                    obsClient.AddMessage($"{player.DisplayName} has a Vote to Kick");
+                    string html = Utility.GetHTMLResource("HtmlTemplates", "VTK_Template.html");
+
+                    // Build formatted string from the viewmodel alone
+                    var sb = new System.Text.StringBuilder();
+                    sb.AppendLine("<dl>");
+                    sb.AppendLine(player.ToHTML(true));
+                    sb.AppendLine("</dl>");
+                    var content = sb.ToString();
+
+                    string text = html.Replace("{content}", content);
+                    text = text.Replace("{thumbnailUrl}", player.ProfileImage);
+
+                    obsClient.AddMessage($"{player.DisplayName} has a Vote to Kick", "red");
                     string filename = $"{player.UserId}-{player.DisplayName}_{DateTime.Now:yyyyMMdd_HHmmss}";
                     Task.Run(() => obsClient.VTKRecording(player, text)).GetAwaiter().GetResult();
                 }
@@ -476,22 +477,23 @@ namespace Tailgrab.PlayerManagement
             if (player != null)
             {
                 player.AddAlertMessage(AlertClassEnum.Profile, AlertTypeEnum.Nuisance, $"{action}");
-                
-                string html = Utility.GetHTMLResource("HtmlTemplates", "BanKickWarn_Template.html");
-                // Build formatted string from the viewmodel alone
-                var sb = new System.Text.StringBuilder();
-                sb.AppendLine("<dl>");
-                sb.AppendLine(player.ToHTML(true));
-                sb.AppendLine("</dl>");
-                var content = sb.ToString();
-                string text = html.Replace("{content}", content);
-                text = text.Replace("{thumbnailUrl}", player.ProfileImage);
-                text = text.Replace("{action}", action);
-                text = text.Replace("{displayName}", player.DisplayName);
+
                 OBSClient? obsClient = serviceRegistry.GetOBSClient();
                 if (obsClient != null)
                 {
-                    obsClient.AddMessage($"{player.DisplayName} has been {action}");
+                    string html = Utility.GetHTMLResource("HtmlTemplates", "BanKickWarn_Template.html");
+                    // Build formatted string from the viewmodel alone
+                    var sb = new System.Text.StringBuilder();
+                    sb.AppendLine("<dl>");
+                    sb.AppendLine(player.ToHTML(true));
+                    sb.AppendLine("</dl>");
+                    var content = sb.ToString();
+                    string text = html.Replace("{content}", content);
+                    text = text.Replace("{thumbnailUrl}", player.ProfileImage);
+                    text = text.Replace("{action}", action);
+                    text = text.Replace("{displayName}", player.DisplayName);
+                
+                    obsClient.AddMessage($"{player.DisplayName} has been {action}", "red");
                     Task.Run(() => obsClient.BanKickWarnRecording(player, text, action)).GetAwaiter().GetResult();
                 }
             }
