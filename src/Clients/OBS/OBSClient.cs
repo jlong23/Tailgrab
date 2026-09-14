@@ -643,6 +643,21 @@ namespace Tailgrab.Clients.OBS
         #endregion
 
         #region mkvmerge Integration
+        internal string? FindMkvMerge()
+        {
+            // Check common install location
+            string candidate = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+                "MKVToolNix", "mkvmerge.exe");
+            if (System.IO.File.Exists(candidate)) return candidate;
+
+            // Check PATH
+            var pathDirs = Environment.GetEnvironmentVariable("PATH")!
+                .Split(Path.PathSeparator);
+            return pathDirs.Select(d => Path.Combine(d, "mkvmerge.exe"))
+                           .FirstOrDefault(System.IO.File.Exists);
+        }
+
         public void WriteChaptersXml(string outputPath)
         {
             logger.Info($"Writing chapters XML to: {outputPath}");
@@ -698,6 +713,22 @@ namespace Tailgrab.Clients.OBS
         #endregion
 
         #region FFMpeg Integration
+        internal string? FindFfmpeg()
+        {
+            // Check common install location
+            string candidate = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+                "FFmpeg", "bin", "ffmpeg.exe");
+            if (System.IO.File.Exists(candidate)) return candidate;
+
+            // Check PATH
+            var pathDirs = Environment.GetEnvironmentVariable("PATH")!
+                .Split(Path.PathSeparator);
+            return pathDirs.Select(d => Path.Combine(d, "ffmpeg.exe"))
+                           .FirstOrDefault(System.IO.File.Exists);
+        }
+
+
         public string BuildMetadata(List<SessionChapterEvent> chapters)
         {
             var sb = new StringBuilder(";FFMETADATA1\n");

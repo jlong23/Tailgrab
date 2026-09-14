@@ -3,6 +3,7 @@ using NLog;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
+using System.Numerics;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows;
@@ -11,8 +12,8 @@ using System.Windows.Data;
 using System.Windows.Media;
 using System.Windows.Threading;
 using Tailgrab.Clients.Github;
-using Tailgrab.Clients.Ollama;
 using Tailgrab.Clients.OBS;
+using Tailgrab.Clients.Ollama;
 using Tailgrab.Clients.VRChat;
 using Tailgrab.Common;
 using Tailgrab.Configuration;
@@ -65,6 +66,7 @@ namespace Tailgrab.PlayerManagement
         public ICollectionView EmojiView { get; }
         public ICollectionView OpenLogsView { get; }
 
+        public event EventHandler<PlayerSelectedEventArgs>? PlayerSelected;
 
         private PlayerViewModel? _selectedActive;
         public PlayerViewModel? SelectedActive
@@ -78,6 +80,8 @@ namespace Tailgrab.PlayerManagement
                     PlayerManager.SelectedUser(value.UserId);
                     _selectedActive = value;
                     OnPropertyChanged(nameof(SelectedActive));
+                    Player p = PlayerManager.GetPlayerByUserId(value.UserId);
+                    PlayerSelected?.Invoke(null, new PlayerSelectedEventArgs(PlayerSelectedEventArgs.ChangeType.Selected, p));
                 }
             }
         }
@@ -722,14 +726,14 @@ namespace Tailgrab.PlayerManagement
                 CreateMP4ChapterRecording.IsChecked = obsClient.CreateMP4Chapters;
                 FFMpegPath.Text = obsClient.FFMpegPath;
                 if( string.IsNullOrEmpty( obsClient.FFMpegPath ) ) {
-                    FFMpegPath.Text = FindFfmpeg();
+                    FFMpegPath.Text = obsClient.FindFfmpeg();
                 }   
 
                 CreateMKVChapterRecording.IsChecked = obsClient.CreateMKVChapters;
                 MkvMergePath.Text = obsClient.MKVMergePath;
                 if(string.IsNullOrEmpty(obsClient.MKVMergePath))
                 {
-                    MkvMergePath.Text = FindMkvMerge();
+                    MkvMergePath.Text = obsClient.FindMkvMerge();
                 }
 
                 ReplayBufferRecordOnKickBan.IsChecked = obsClient.KickBanEvents;
@@ -804,37 +808,6 @@ namespace Tailgrab.PlayerManagement
             this.SizeChanged += Window_SizeChanged;
             this.LocationChanged += Window_LocationChanged;
         }
-
-        private string? FindMkvMerge()
-        {
-            // Check common install location
-            string candidate = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
-                "MKVToolNix", "mkvmerge.exe");
-            if (System.IO.File.Exists(candidate)) return candidate;
-
-            // Check PATH
-            var pathDirs = Environment.GetEnvironmentVariable("PATH")!
-                .Split(Path.PathSeparator);
-            return pathDirs.Select(d => Path.Combine(d, "mkvmerge.exe"))
-                           .FirstOrDefault(System.IO.File.Exists);
-        }
-
-        private string? FindFfmpeg()
-        {
-            // Check common install location
-            string candidate = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
-                "FFmpeg", "bin", "ffmpeg.exe");
-            if (System.IO.File.Exists(candidate)) return candidate;
-
-            // Check PATH
-            var pathDirs = Environment.GetEnvironmentVariable("PATH")!
-                .Split(Path.PathSeparator);
-            return pathDirs.Select(d => Path.Combine(d, "ffmpeg.exe"))
-                           .FirstOrDefault(System.IO.File.Exists);
-        }
-
 
         private void UpdateAlertComboBoxValues()
         {

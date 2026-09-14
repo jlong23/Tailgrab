@@ -583,6 +583,23 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
+        #region Player Selection Event Handling
+        public Player? SelectedPlayer { get; set; } = null;
+
+        public void TailgrabPanel_PlayerSelected(object? sender, PlayerSelectedEventArgs e)
+        {
+            switch (e.Type)
+            {
+                case PlayerSelectedEventArgs.ChangeType.Selected:
+                    SelectedPlayer = e.Player;
+                    break;
+                case PlayerSelectedEventArgs.ChangeType.Cleared:
+                    SelectedPlayer = null;
+                    break;
+            }
+        }
+        #endregion
+
         #region Alert Color Management
         public static string GetAlertColor(AlertClassEnum alertClass, AlertTypeEnum alertType)
         {
@@ -1182,6 +1199,18 @@ namespace Tailgrab.PlayerManagement
             Added,
             Updated,
             Removed,
+            Cleared
+        }
+
+        public ChangeType Type { get; } = type;
+        public Player Player { get; } = player;
+    }
+
+    public class PlayerSelectedEventArgs(PlayerSelectedEventArgs.ChangeType type, Player player) : EventArgs
+    {
+        public enum ChangeType
+        {
+            Selected,
             Cleared
         }
 
