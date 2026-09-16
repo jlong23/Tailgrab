@@ -6,7 +6,7 @@ namespace Tailgrab.MCP.Tools
     internal class InstanceUserDetails : McpToolBase
     {
         public override string Name => "instance_user_details";
-        public override string Description => "Returns a detailed metadata about a user in the instance or recently in the instance. Use the UserId to guarantee a successful return.";
+        public override string Description => "Retrieves VRChat current instance information about a User. Use a UserId to guarantee a successful retrieval.";
         public override object InputSchema => new
         {
             type = "object",

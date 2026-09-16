@@ -14,7 +14,7 @@ namespace Tailgrab.MCP.Tools
     {
         protected static readonly Logger logger = LogManager.GetCurrentClassLogger();
         public override string Name => "user_details";
-        public override string Description => "Returns a detailed metadata about a VRChat user, including group memebership and whether they are on the watch list.";
+        public override string Description => "Retrieves detailed information for VRChat user, including watched group membership.";
         public override object InputSchema => new
         {
             type = "object",
