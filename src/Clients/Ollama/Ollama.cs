@@ -163,7 +163,7 @@ namespace Tailgrab.Clients.Ollama
             return $"DisplayName: {profile.DisplayName}\n" +
                    $"StatusDesc: {user.StatusDescription}\n" +
                    $"Pronouns: {profile.Pronouns}\n" +
-                   $"UserTrust : {TrustClassEnumMapper.MapTagsToString(user.Tags, profile.AgeVerified, profile.AgeVerificationStatus.ToString())}\n" +
+                   $"UserTrust : {TrustClassEnumMapper.MapTagsToString(user.Tags, profile.AgeVerified, profile.AgeVerificationStatus?.ToString() ?? string.Empty)}\n" +
                    $"UserAgeVerified: {profile.AgeVerified}\n" +
                    $"ProfileBio: {profile.Bio}\n";
         }
@@ -319,6 +319,11 @@ namespace Tailgrab.Clients.Ollama
                 if (imageEvaluation == null)
                 {
                     string? ollamaModel = ConfigStore.GetStoredKeyString(CommonConst.Registry_Ollama_API_Model) ?? CommonConst.Default_Ollama_API_Model;
+                    if( ollamaApi == null)
+                    {
+                        logger.Warn("Ollama API client is not initialized");
+                        return;
+                    }
                     ollamaApi.SelectedModel = ollamaModel;
 
                     string? ollamaPrompt = ConfigStore.GetStoredKeyString(CommonConst.Registry_Ollama_API_Image_Prompt);

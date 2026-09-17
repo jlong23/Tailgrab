@@ -43,7 +43,10 @@ namespace Tailgrab.Clients.Office
                 int row = 2;
                 foreach (UserAvatarViewModel vm in avatars)
                 {
-                    AvatarEntry r = vm.AvatarEntry;
+                    AvatarEntry? r = vm.AvatarEntry;
+                    if(r == null)
+                        continue;
+
                     worksheet.Row(row).Height = 100;
                     worksheet.Cells[row, 1].Formula = "IMAGE(\"" + vm.ThumbnailUrl + "\", 1)";
                     worksheet.Cells[row, 2].Value = r?.Name;

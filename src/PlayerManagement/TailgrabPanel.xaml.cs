@@ -81,8 +81,11 @@ namespace Tailgrab.PlayerManagement
                     PlayerManager.SelectedUser(value.UserId);
                     _selectedActive = value;
                     OnPropertyChanged(nameof(SelectedActive));
-                    Player p = PlayerManager.GetPlayerByUserId(value.UserId);
-                    PlayerSelected?.Invoke(null, new PlayerSelectedEventArgs(PlayerSelectedEventArgs.ChangeType.Selected, p));
+                    Player? p = PlayerManager.GetPlayerByUserId(value.UserId);
+                    if ( PlayerSelected != null && p != null)
+                    {
+                        PlayerSelected?.Invoke(null, new PlayerSelectedEventArgs(PlayerSelectedEventArgs.ChangeType.Selected, p));
+                    }
                 }
             }
         }
@@ -6060,7 +6063,7 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
-        private void HandlersDataGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
+        private void HandlersDataGrid_CellEditEnding(object? sender, DataGridCellEditEndingEventArgs e)
         {
             if (e.EditingElement is System.Windows.Controls.CheckBox checkBox && e.Row.Item is LineHandlerConfig handler)
             {

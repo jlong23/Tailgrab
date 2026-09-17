@@ -37,6 +37,9 @@ namespace Tailgrab.Clients.Github
                 var filesDict = new Dictionary<string, object>();
                 foreach (var file in filesToUpdate)
                 {
+                    if( file.Name == null || file.content == null)
+                        continue;
+
                     filesDict[file.Name] = new { content = file.content };
                 }
 
@@ -100,7 +103,7 @@ namespace Tailgrab.Clients.Github
 
     public class GistFileUpdate
     {
-        public string Name { get; set; }
-        public string content { get; set; }
+        public string? Name { get; set; }
+        public string? content { get; set; }
     }
 }
