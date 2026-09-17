@@ -12,19 +12,19 @@ namespace Tailgrab.MCP.Tools
             type = "object",
             properties = new
             {
-                userName = new
+                user_name = new
                 {
                     type = "string",
                     description = "The UTF-8 encoded display name of the user"
                 },
-                userId = new
+                user_id = new
                 {
                     type = "string",
                     description = "The userId of the user"
                 }
 
             },
-            required = new[] { "userName" }
+            required = new[] { "user_name" }
         };
         private readonly ServiceRegistry _serviceRegistry;
 
@@ -39,8 +39,8 @@ namespace Tailgrab.MCP.Tools
 
             try
             {
-                string userId = arguments.ContainsKey("userId") ? arguments["userId"].ToString() ?? "" : "";
-                string userName = arguments.ContainsKey("userName") ? arguments["userName"].ToString() ?? "" : "";
+                string userId = arguments.ContainsKey("user_id") ? arguments["user_id"].ToString() ?? "" : "";
+                string userName = arguments.ContainsKey("user_name") ? arguments["user_name"].ToString() ?? "" : "";
                 Player? p = null;
 
                 if(!string.IsNullOrEmpty(userId))

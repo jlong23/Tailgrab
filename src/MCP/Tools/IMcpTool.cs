@@ -102,24 +102,29 @@ public abstract class McpToolBase : IMcpTool
             version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "unknown",
             environment = new
             {
-                displayName = p.DisplayName,
-                userId = p.UserId,
-                currentAvatarName = p.AvatarName ?? "",
-                currentAvatarId = p.AvatarId ?? "",
-                durationSeconds = (DateTime.Now - p.InstanceStartTime).TotalSeconds,
-                accountAgeInDays = elapsed.TotalDays,
-                isVerified = p.AgeVerified != AgeVerificationEnum.UNVERIFIED,
-                isFriend = p.IsFriend,
-                isWatched = p.IsWatched,
-                thumbnailUrl = p.ProfileImage ?? "",
+                display_name = p.DisplayName,
+                user_id = p.UserId,
+                current_avatar_name = p.AvatarName ?? "",
+                current_avatar_id = p.AvatarId ?? "",
+                duration_seconds = (DateTime.Now - p.InstanceStartTime).TotalSeconds,
+                account_age_in_days = elapsed.TotalDays,
+                verified = ConvertBooleanToYesNo(p.AgeVerified != AgeVerificationEnum.UNVERIFIED),
+                friend = ConvertBooleanToYesNo(p.IsFriend),
+                watched = ConvertBooleanToYesNo(p.IsWatched),
+                thumbnail_url = p.ProfileImage ?? "",
                 bio = p.UserBio ?? "",
                 evaluation = p.AIEval ?? "",
-                printHistory = printHistory,
-                emojiStickerHistory = emojiStickerHistory,
-                eventHistory = eventHistory
+                print_history = printHistory,
+                emoji_sticker_history = emojiStickerHistory,
+                event_history = eventHistory
             }
         };
 
         return McpToolResult.FromSuccess(info);
+    }
+
+    protected string ConvertBooleanToYesNo(bool? value)
+    {
+        return value == true ? "yes" : "no";
     }
 }

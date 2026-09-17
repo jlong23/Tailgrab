@@ -50,10 +50,10 @@ namespace Tailgrab.MCP.Tools
                 .Take(pageSize)
                 .Select(p => new
                 {
-                    userName = p.DisplayName,
-                    userId = p.UserId,
-                    isFriend = p.IsFriend,
-                    isWatched = p.IsWatched
+                    user_name = p.DisplayName,
+                    user_id = p.UserId,
+                    friend = ConvertBooleanToYesNo(p.IsFriend),
+                    watched = ConvertBooleanToYesNo(p.IsWatched)
                 })
                 .ToList();
 

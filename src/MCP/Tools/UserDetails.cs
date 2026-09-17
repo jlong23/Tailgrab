@@ -57,9 +57,9 @@ namespace Tailgrab.MCP.Tools
                 List<UserGroupEntry> userGroups = GetUserGroups(userId);
                 var groupInfo = userGroups.Select(g => new
                 {
-                    groupId = g.GroupId,
-                    groupName = g.GroupName,
-                    groupWatch = g.GroupWatch
+                    group_id = g.GroupId,
+                    group_name = g.GroupName,
+                    group_watch = g.GroupWatch
                 }).ToList();
                 
                 var info = new
@@ -69,16 +69,16 @@ namespace Tailgrab.MCP.Tools
                     version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "unknown",
                     environment = new
                     {
-                        displayName = u.DisplayName,
-                        userId = u.Id,
-                        accountAgeInDays = elapsed.TotalDays,
-                        isVerified = u.AgeVerified,
-                        isFriend = u.IsFriend,
-                        iconUrl = publicProfile.IconUrl ?? "",
-                        bannerUrl = publicProfile.BannerUrl ?? "",
+                        display_name = u.DisplayName,
+                        user_id = u.Id,
+                        account_age_in_days = elapsed.TotalDays,
+                        verified = ConvertBooleanToYesNo(u.AgeVerified),
+                        friend = ConvertBooleanToYesNo( u.IsFriend ),
+                        icon_url = publicProfile.IconUrl ?? "",
+                        banner_url = publicProfile.BannerUrl ?? "",
                         bio = publicProfile.Bio ?? "",
-                        groupMembershipCount = userGroups.Count,
-                        groupMembership = groupInfo
+                        group_membership_count = userGroups.Count,
+                        group_membership = groupInfo
                     }
                 };
 
@@ -111,7 +111,7 @@ namespace Tailgrab.MCP.Tools
                     {
                         GroupId = membership.GroupId,
                         GroupName = membership.Name,
-                        GroupWatch = groupInfo?.AlertType > AlertTypeEnum.None ? groupInfo.AlertType.ToString() : "None",
+                        GroupWatch = ConvertBooleanToYesNo(groupInfo?.AlertType > AlertTypeEnum.None),
                     };
                     groupEntries.Add(entry);
                 }

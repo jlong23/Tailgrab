@@ -41,7 +41,7 @@ namespace Tailgrab.MCP.Tools
                 {
                     id = a.AvatarId,
                     name = a.AvatarName,
-                    alertLevel = a.AlertType
+                    alert_level = a.AlertType.ToString()
                 })
                 .ToList();
 
@@ -52,9 +52,9 @@ namespace Tailgrab.MCP.Tools
                 version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "unknown",
                 environment = new
                 {
-                    totalAvatars = totalCount,
-                    maxLastUpdateDateTime = maxLastUpdate,
-                    recentlyUpdatedAvatars = recentAvatars
+                    total_avatars = totalCount,
+                    max_last_update_date_time = maxLastUpdate,
+                    recently_updated_avatars = recentAvatars
                 }
             };
 

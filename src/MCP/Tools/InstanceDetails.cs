@@ -41,19 +41,19 @@ namespace Tailgrab.MCP.Tools
                 version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "unknown",
                 environment = new
                 {
-                    playersInInstance = playerCount,
-                    worldName = worldInfo?.WorldName ?? "unknown",
-                    worldId = worldInfo?.WorldId ?? "unknown",
-                    groupName = worldInfo?.GroupName ?? "unknown",
-                    groupId = worldInfo?.GroupId ?? "unknown",
-                    groupAccessType = worldInfo?.GroupAccessType ?? "unknown",
-                    userName = worldInfo?.UserName ?? "unknown",
-                    userId = worldInfo?.UserId ?? "unknown",
-                    privateUserAccessType = worldInfo?.PrivateAccessType ?? "unknown",
+                    player_count_in_instance = playerCount,
+                    world_name = worldInfo?.WorldName ?? "unknown",
+                    world_id = worldInfo?.WorldId ?? "unknown",
+                    group_name = worldInfo?.GroupName ?? "unknown",
+                    group_id = worldInfo?.GroupId ?? "unknown",
+                    group_access_type = worldInfo?.GroupAccessType ?? "unknown",
+                    user_name = worldInfo?.UserName ?? "unknown",
+                    user_id = worldInfo?.UserId ?? "unknown",
+                    private_user_access_type = worldInfo?.PrivateAccessType ?? "unknown",
                     region = worldInfo?.Region ?? "unknown",
-                    isAgeGated = worldInfo?.AgeGated ?? false,
-                    instanceStartTime = worldInfo?.StartDateTime ?? DateTime.MinValue,
-                    instanceDurationSeconds = (worldInfo != null) ? (DateTime.Now - worldInfo.StartDateTime).TotalSeconds : 0
+                    age_gated = ConvertBooleanToYesNo(worldInfo?.AgeGated),
+                    instance_start_time = worldInfo?.StartDateTime ?? DateTime.MinValue,
+                    instance_duration_seconds = (worldInfo != null) ? (DateTime.Now - worldInfo.StartDateTime).TotalSeconds : 0
                 }
             };
 

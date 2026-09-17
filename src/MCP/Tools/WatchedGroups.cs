@@ -41,7 +41,7 @@ namespace Tailgrab.MCP.Tools
                 {
                     id = g.GroupId,
                     name = g.GroupName,
-                    alertLevel = g.AlertType
+                    alert_level = g.AlertType.ToString()
                 })
                 .ToList();
 
@@ -52,9 +52,9 @@ namespace Tailgrab.MCP.Tools
                 version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "unknown",
                 environment = new
                 {
-                    totalGroups = totalCount,
-                    maxLastUpdateDateTime = maxLastUpdate,
-                    recentlyUpdatedGroups = recentGroups
+                    total_groups = totalCount,
+                    max_last_update_date_time = maxLastUpdate,
+                    recently_updated_groups = recentGroups
                 }
             };
 
