@@ -7,7 +7,7 @@
   "targets": {
     ".NETCoreApp,Version=v8.0": {},
     ".NETCoreApp,Version=v8.0/win-x64": {
-      "VRChat.API/2.20.9": {
+      "VRChat.API/2.21.0": {
         "dependencies": {
           "JsonSubTypes": "2.0.1",
           "Newtonsoft.Json": "13.0.3",
@@ -67,7 +67,7 @@
     }
   },
   "libraries": {
-    "VRChat.API/2.20.9": {
+    "VRChat.API/2.21.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

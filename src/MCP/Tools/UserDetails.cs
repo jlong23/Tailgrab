@@ -43,6 +43,7 @@ namespace Tailgrab.MCP.Tools
             {
                 string userId = arguments.ContainsKey("userId") ? arguments["userId"].ToString() ?? "" : "";
                 User u = _serviceRegistry.GetVRChatAPIClient().GetProfile(userId);
+                PublicProfile publicProfile = _serviceRegistry.GetVRChatAPIClient().GetProfilePublic(userId);
 
                 if (u == null)
                 {
@@ -73,10 +74,9 @@ namespace Tailgrab.MCP.Tools
                         accountAgeInDays = elapsed.TotalDays,
                         isVerified = u.AgeVerified,
                         isFriend = u.IsFriend,
-                        iconUrl = u.IconUrl ?? "",
-                        thumbnailUrl = u.ProfilePicOverrideThumbnail ?? "",
-                        avatarThumbnail = u.CurrentAvatarImageUrl ?? "",
-                        bio = u.Bio ?? "",
+                        iconUrl = publicProfile.IconUrl ?? "",
+                        bannerUrl = publicProfile.BannerUrl ?? "",
+                        bio = publicProfile.Bio ?? "",
                         groupMembershipCount = userGroups.Count,
                         groupMembership = groupInfo
                     }

@@ -539,39 +539,39 @@ namespace Tailgrab.PlayerManagement
         }
 
 
-        public Player? UpdatePlayerUserFromVRCProfile(User profile, string profileHash)
+        public Player? UpdatePlayerUserFromVRCProfile(User user, string profileHash)
         {
-            if (profile != null && profile.Id != null)
+            if (user != null && user.Id != null)
             {
                 TailgrabDBContext dbContext = serviceRegistry.GetDBContext();
-                Player? player = GetPlayerByUserId(profile.Id);
+                Player? player = GetPlayerByUserId(user.Id);
                 if (player != null)
                 {
-                    player.DateJoined = profile.DateJoined;
-                    logger.Debug($"Updated UserInfo for user {profile.DisplayName} (ID: {profile.Id}) with DateJoined: {profile.DateJoined} and ProfileHash: {profileHash}; {player.ProfileElapsedTime}");
+                    player.DateJoined = user.DateJoined;
+                    logger.Debug($"Updated UserInfo for userInfo {user.DisplayName} (ID: {user.Id}) with DateJoined: {user.DateJoined} and ProfileHash: {profileHash}; {player.ProfileElapsedTime}");
                 }
 
                 // Update or create UserInfo record with elapsed time
-                UserInfo? user = dbContext.UserInfos.Find(profile.Id);
-                if (user != null)
+                UserInfo? userInfo = dbContext.UserInfos.Find(user.Id);
+                if (userInfo != null)
                 {
-                    user.DateJoined = profile.DateJoined;
-                    user.UpdatedAt = DateTime.UtcNow;
-                    user.LastProfileChecksum = profileHash;
-                    dbContext.UserInfos.Update(user);
+                    userInfo.DateJoined = user.DateJoined;
+                    userInfo.UpdatedAt = DateTime.UtcNow;
+                    userInfo.LastProfileChecksum = profileHash;
+                    dbContext.UserInfos.Update(userInfo);
                 }
                 else
                 {
-                    user = new UserInfo
+                    userInfo = new UserInfo
                     {
-                        DisplayName = profile.DisplayName,
-                        UserId = profile.Id,
+                        DisplayName = user.DisplayName,
+                        UserId = user.Id,
                         CreatedAt = DateTime.UtcNow,
                         UpdatedAt = DateTime.UtcNow,
-                        DateJoined = profile.DateJoined,
+                        DateJoined = user.DateJoined,
                         LastProfileChecksum = profileHash
                     };
-                    dbContext.Add(user);
+                    dbContext.Add(userInfo);
                 }
                 dbContext.SaveChanges();
 
@@ -580,7 +580,7 @@ namespace Tailgrab.PlayerManagement
             }
             else
             {
-                logger.Warn($"Attempted to update player user info from VRC profile, but profile was null");
+                logger.Warn($"Attempted to update player userInfo info from VRC user, but user was null");
                 return null;
             }
         }

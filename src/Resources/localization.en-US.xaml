@@ -250,7 +250,9 @@
     <sys:String x:Key="UI.Tab.AIConfig.Tab">AI Config</sys:String>
     <sys:String x:Key="UI.Tab.AIConfig.Group.OllamaCredentials.Title">Ollama Cloud Credentials</sys:String>
     <sys:String x:Key="UI.Tab.AIConfig.Group.OllamaCredentials.OllamaEndpoint">Ollama Endpoint:</sys:String>
+    <sys:String x:Key="UI.Tab.AIConfig.Group.OllamaCredentials.OllamaEndpoint.tooltip">The URL endpoint for your Ollama Cloud or Local instance. https://ollama.com or http://localhost:11434</sys:String>
     <sys:String x:Key="UI.Tab.AIConfig.Group.OllamaCredentials.OllamaAPIKey">Ollama API Key:</sys:String>
+    <sys:String x:Key="UI.Tab.AIConfig.Group.OllamaCredentials.OllamaAPIKey.tooltip">The API key for your Ollama Cloud or Local instance.</sys:String>
     <sys:String x:Key="UI.Tab.AIConfig.Group.OllamaCredentials.Action.ResetOllama">Reset Ollama</sys:String>
     <sys:String x:Key="UI.Tab.AIConfig.Group.AIEvaluation.Title">AI Evaluation Parameters</sys:String>
     <sys:String x:Key="UI.Tab.AIConfig.Group.AIEvaluation.ModelName">Ollama Model Name:</sys:String>
@@ -260,6 +262,11 @@
     <sys:String x:Key="UI.Tab.AIConfig.Group.AIEvaluation.ImagePrompt">Image AI Prompt:</sys:String>
     <sys:String x:Key="UI.Tab.AIConfig.Group.AIEvaluation.TestKnownImages">Tested with known image set:</sys:String>
     <sys:String x:Key="UI.Tab.AIConfig.Group.AIEvaluation.Action.TestKnownImages">Test AI Image Prompt</sys:String>
+    <sys:String x:Key="UI.Tab.AIConfig.Group.MCP.Title">Local AI Model Context Protocol Service</sys:String>
+    <sys:String x:Key="UI.Tab.AIConfig.Group.MCP.StartServer.tooltip">Start the MCP server on launch. Exposes Tailgrab Information about the current instance to your local LLM.</sys:String>
+    <sys:String x:Key="UI.Tab.AIConfig.Group.MCP.StartServer">Start MCP Server:</sys:String>
+    <sys:String x:Key="UI.Tab.AIConfig.Group.MCP.PortNumber.tooltip">The port number on which the MCP server will listen.</sys:String>
+    <sys:String x:Key="UI.Tab.AIConfig.Group.MCP.PortNumber">Port Number:</sys:String>
     <sys:String x:Key="UI.Tab.AIConfig.Action.SaveConfig">Save AI Config</sys:String>
 
 

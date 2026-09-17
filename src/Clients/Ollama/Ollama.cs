@@ -95,7 +95,7 @@ namespace Tailgrab.Clients.Ollama
         #region Profile Evaluation
         public void CheckUserProfile(string userId)
         {
-            logger.Debug($"Checking user profile with AI : {userId}");
+            logger.Debug($"Checking user user with AI : {userId}");
 
             try
             {
@@ -124,7 +124,7 @@ namespace Tailgrab.Clients.Ollama
             }
             catch (Exception ex)
             {
-                logger.Error(ex, $"Error fetching user profile for userId: {userId}");
+                logger.Error(ex, $"Error fetching user user for userId: {userId}");
 
             }
         }
@@ -143,26 +143,27 @@ namespace Tailgrab.Clients.Ollama
 
         private void UpdateQueuedProcessWithPlayer(QueuedProcess item)
         {
-            User profile = _serviceRegistry.GetVRChatAPIClient().GetProfile(item.UserId);
-            string? accountThumbnailUrl = !string.IsNullOrEmpty(profile.ProfilePicOverrideThumbnail) ? profile.ProfilePicOverrideThumbnail : profile.CurrentAvatarThumbnailImageUrl;
-            if (profile != null)
+            User user = _serviceRegistry.GetVRChatAPIClient().GetProfile(item.UserId);
+            PublicProfile publicProfile = _serviceRegistry.GetVRChatAPIClient().GetProfilePublic(item.UserId);
+            string? accountThumbnailUrl = !string.IsNullOrEmpty(user.IconUrl) ? user.IconUrl : user.BannerUrl;
+            if (user != null)
             {
-                string fullProfile = FormatProfileText(profile);
-                item.IsFriend = profile.IsFriend;
+                string fullProfile = FormatProfileText(publicProfile, user);
+                item.IsFriend = user.IsFriend;
                 item.UserBio = fullProfile;
                 item.ProfileUrl = accountThumbnailUrl;
-                item.UserTrustClass = TrustClassEnumMapper.MapTagsToEnum(profile.Tags);
-                if (profile.AgeVerified)
-                    item.AgeVerification = AgeVerificationEnumMapper.MapAgeVerificationStatusToEnum(profile.AgeVerificationStatus);
+                item.UserTrustClass = TrustClassEnumMapper.MapTagsToEnum(user.Tags);
+                if (user.AgeVerified)
+                    item.AgeVerification = AgeVerificationEnumMapper.MapAgeVerificationStatusToEnum(user.AgeVerificationStatus);
             }
         }
 
-        private static string FormatProfileText(User profile)
+        private static string FormatProfileText(PublicProfile profile, User user)
         {
             return $"DisplayName: {profile.DisplayName}\n" +
-                   $"StatusDesc: {profile.StatusDescription}\n" +
+                   $"StatusDesc: {user.StatusDescription}\n" +
                    $"Pronouns: {profile.Pronouns}\n" +
-                   $"UserTrust : {TrustClassEnumMapper.MapTagsToString(profile.Tags, profile.AgeVerified, profile.AgeVerificationStatus.ToString())}\n" +
+                   $"UserTrust : {TrustClassEnumMapper.MapTagsToString(user.Tags, profile.AgeVerified, profile.AgeVerificationStatus.ToString())}\n" +
                    $"UserAgeVerified: {profile.AgeVerified}\n" +
                    $"ProfileBio: {profile.Bio}\n";
         }
@@ -178,8 +179,8 @@ namespace Tailgrab.Clients.Ollama
                 TailgrabDBContext dBContext = serviceRegistry.GetDBContext();
                 List<LimitedUserGroups> userGroups = serviceRegistry.GetVRChatAPIClient().GetProfileGroups(item.UserId);
 
-                User profile = serviceRegistry.GetVRChatAPIClient().GetProfile(item.UserId);
-                serviceRegistry.GetPlayerManager().UpdatePlayerUserFromVRCProfile(profile, item.MD5Hash);
+                User user = serviceRegistry.GetVRChatAPIClient().GetProfile(item.UserId);
+                serviceRegistry.GetPlayerManager().UpdatePlayerUserFromVRCProfile(user, item.MD5Hash);
 
                 if (ollamaApi != null)
                 {
@@ -239,11 +240,11 @@ namespace Tailgrab.Clients.Ollama
                     }
                 }
 
-                PlayerManager.OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Updated, profile.DisplayName);
+                PlayerManager.OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Updated, user.DisplayName);
             }
             catch (Exception ex)
             {
-                logger.Error(ex, $"Error fetching user profile for userId: {item.UserId}");
+                logger.Error(ex, $"Error fetching user user for userId: {item.UserId}");
             }
 
             return true;
@@ -288,7 +289,7 @@ namespace Tailgrab.Clients.Ollama
                 }
 
                 PlayerManager.AddPlayerEventByUserId(player.UserId ?? string.Empty,
-                PlayerEvent.EventType.ProfileWatch, $"User profile was flagged by the AI : {AIEvalutionEnumMapper.MapEnumToDescription(evaluationEnum)}");
+                PlayerEvent.EventType.ProfileWatch, $"User user was flagged by the AI : {AIEvalutionEnumMapper.MapEnumToDescription(evaluationEnum)}");
             }
 
             PlayerManager.OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Updated, player);
@@ -513,7 +514,7 @@ namespace Tailgrab.Clients.Ollama
         }
 
         /// <summary>
-        /// Test method for profile prompt evaluation
+        /// Test method for user prompt evaluation
         /// </summary>
         /// <param name="userId">VRChat User ID to test</param>
         /// <param name="prompt">AI prompt to use for evaluation</param>
@@ -538,7 +539,8 @@ namespace Tailgrab.Clients.Ollama
                     return profileEvaluation;
                 }
 
-                User profile = vrcClient.GetProfile(userId);
+                User user = vrcClient.GetProfile(userId);
+                PublicProfile profile = vrcClient.GetProfilePublic(userId);
                 QueuedProcess item = new()
                 {
                     UserId = userId,
@@ -546,7 +548,7 @@ namespace Tailgrab.Clients.Ollama
                 };
 
                 string fullProfile = $"DisplayName: {profile.DisplayName}\nStatusDesc: {profile.StatusDescription}\nPronowns: {profile.Pronouns}\nProfileBio: {profile.Bio}\n";
-                item.IsFriend = profile.IsFriend;
+                item.IsFriend = user.IsFriend;
                 item.UserBio = fullProfile;
 
                 logger.Debug($"Processing AI Evaluation Queued item for userId: {item.UserId}");
@@ -560,11 +562,11 @@ namespace Tailgrab.Clients.Ollama
             }
             catch (Exception ex)
             {
-                logger.Error(ex, "Failed to test profile prompt");
-                profileEvaluation.Evaluation = System.Text.Encoding.UTF8.GetBytes($"Error testing profile prompt: {ex.Message}");
+                logger.Error(ex, "Failed to test user prompt");
+                profileEvaluation.Evaluation = System.Text.Encoding.UTF8.GetBytes($"Error testing user prompt: {ex.Message}");
             }
 
-            profileEvaluation.Evaluation = System.Text.Encoding.UTF8.GetBytes("Error: User profile is empty or invalid.");
+            profileEvaluation.Evaluation = System.Text.Encoding.UTF8.GetBytes("Error: User user is empty or invalid.");
             return profileEvaluation;
         }
 

@@ -352,6 +352,24 @@ namespace Tailgrab.Clients.VRChat
             return profile;
         }
 
+        public PublicProfile GetProfilePublic(string userId)
+        {
+            PublicProfile profile = new();
+            try
+            {
+                if (_vrchat != null)
+                {
+                    profile = _vrchat.Users.GetPublicProfile(userId);
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error($"Error fetching User Profile: {ex.Message}");
+            }
+
+            return profile;
+        }
+
         public List<LimitedUserGroups> GetProfileGroups(string userId)
         {
             List<LimitedUserGroups> groups = [];

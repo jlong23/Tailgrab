@@ -1,4 +1,5 @@
 using BuildSoft.VRChat.Osc;
+using Microsoft.Extensions.DependencyInjection;
 using NLog;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -699,6 +700,20 @@ namespace Tailgrab.PlayerManagement
             if (!string.IsNullOrEmpty(ollamaProfilePrompt)) VrOllamaPromptBox.Text = ollamaProfilePrompt;
             if (!string.IsNullOrEmpty(ollamaImagePrompt)) VrOllamaImagePromptBox.Text = ollamaImagePrompt;
 
+            // MCP Server Settings
+            var mcpServerEnabled = ConfigStore.GetStoredKeyBool(CommonConst.Registry_AI_MCP_Server_Enabled, false);
+            var mcpServerPort = ConfigStore.GetStoredKeyString(CommonConst.Registry_AI_MCP_Server_Port);
+            if(mcpServerEnabled) StartMCPService.IsChecked = true;
+            if (!string.IsNullOrEmpty(mcpServerPort))
+            {
+                MCPServerPort.Text = mcpServerPort;
+            }
+            else
+            {
+                MCPServerPort.Text = CommonConst.Default_AI_MCP_Server_Port;
+            }
+
+            // GitHub Gist Automation Settings
             UseGistAutomation.IsChecked = ConfigStore.GetStoredKeyBool(CommonConst.Registry_Github_Use_Automation, false);
             if (!string.IsNullOrEmpty(GithubGistPAT)) GithubPersonalAccessToken.ToolTip = "Stored (hidden)";
             if (!string.IsNullOrEmpty(GithubGistPAT)) GithubPersonalAccessToken.Text = string.Empty;
@@ -853,7 +868,10 @@ namespace Tailgrab.PlayerManagement
 
                 ConfigStore.PutStoredKeyString(CommonConst.Registry_Avatar_Gist, avatarGistUrl.Text.Trim() ?? string.Empty);
                 ConfigStore.PutStoredKeyString(CommonConst.Registry_Group_Gist, groupGistUrl.Text.Trim() ?? string.Empty);
-                ConfigStore.SaveSecret(CommonConst.Registry_Github_Gist_PAT, GithubPersonalAccessToken.Text.Trim() ?? string.Empty);
+                if( !string.IsNullOrEmpty(GithubPersonalAccessToken.Text))
+                {
+                    ConfigStore.SaveSecret(CommonConst.Registry_Github_Gist_PAT, GithubPersonalAccessToken.Text.Trim() ?? string.Empty);
+                }
                 ConfigStore.PutStoredKeyString(CommonConst.Registry_Github_Gist_ID, GithubGistUrl.Text.Trim() ?? string.Empty);
                 ConfigStore.PutStoredKeyBool(CommonConst.Registry_Github_Use_Automation, UseGistAutomation.IsChecked == true);
 
@@ -1108,6 +1126,9 @@ namespace Tailgrab.PlayerManagement
                 ConfigStore.PutStoredKeyString(CommonConst.Registry_Ollama_API_Prompt, VrOllamaPromptBox.Text ?? CommonConst.Default_Ollama_API_Prompt);
                 ConfigStore.PutStoredKeyString(CommonConst.Registry_Ollama_API_Image_Prompt, VrOllamaImagePromptBox.Text ?? CommonConst.Default_Ollama_API_Image_Prompt);
                 ConfigStore.PutStoredKeyString(CommonConst.Registry_Ollama_API_Model, (string)VrOllamaModelBox.SelectedValue ?? CommonConst.Default_Ollama_API_Model);
+
+                ConfigStore.PutStoredKeyBool(CommonConst.Registry_AI_MCP_Server_Enabled, StartMCPService.IsChecked == true);
+                ConfigStore.PutStoredKeyString(CommonConst.Registry_AI_MCP_Server_Port, MCPServerPort.Text ?? CommonConst.Default_AI_MCP_Server_Port);  
 
                 // Load available models from Ollama after saving credentials
                 await LoadOllamaModelsAsync();
@@ -4853,7 +4874,7 @@ namespace Tailgrab.PlayerManagement
                 BanMgmtUserState.Text = user.State.ToString() ;
 
 
-                string? accountThumbnailUrl = !string.IsNullOrEmpty(user.ProfilePicOverrideThumbnail) ? user.ProfilePicOverrideThumbnail : user.CurrentAvatarThumbnailImageUrl;
+                string? accountThumbnailUrl = !string.IsNullOrEmpty(user.IconUrl) ? user.IconUrl : user.BannerUrl;
 
                 // Load profile image if available
                 if (!string.IsNullOrEmpty(accountThumbnailUrl))

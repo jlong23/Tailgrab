@@ -7,6 +7,7 @@ using System.IO;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Tailgrab.Common;
 using Tailgrab.MCP.Tools;
 
 namespace Tailgrab.MCP;
@@ -24,7 +25,34 @@ public class McpServer
     private CancellationTokenSource? _cancellationTokenSource;
     private Dictionary<string, Type>? _toolRegistry;
 
-    public int Port { get; } = 7575;
+
+    public bool EnableMCPServer
+    {
+        get
+        {
+            return ConfigStore.GetStoredKeyBool(CommonConst.Registry_AI_MCP_Server_Enabled, false);
+        }
+
+        set
+        {
+            ConfigStore.PutStoredKeyBool(CommonConst.Registry_AI_MCP_Server_Enabled, value);
+        }
+    }
+
+    public int Port
+    {
+        get
+        {
+            string? portString = ConfigStore.GetStoredKeyString(CommonConst.Registry_AI_MCP_Server_Port) ?? CommonConst.Default_AI_MCP_Server_Port;
+            return Int32.Parse(portString);
+        }
+
+        set
+        {
+            ConfigStore.PutStoredKeyString(CommonConst.Registry_AI_MCP_Server_Port, value.ToString());
+        }
+    }
+
     public bool IsRunning { get; private set; } = false;
 
     public McpServer(IServiceProvider serviceProvider)
@@ -46,7 +74,14 @@ public class McpServer
     /// </summary>
     public Task StartAsync(CancellationToken cancellationToken = default)
     {
-        return Task.Run(async () => await RunAsync(cancellationToken), cancellationToken);
+        if( EnableMCPServer )
+        {
+            return Task.Run(async () => await RunAsync(cancellationToken), cancellationToken);
+        }
+        else
+        {
+            return Task.Delay(1000);
+        }
     }
 
     private async Task RunAsync(CancellationToken cancellationToken)

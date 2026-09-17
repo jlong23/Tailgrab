@@ -8,9 +8,9 @@ using System.Diagnostics.CodeAnalysis;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;  
+using Tailgrab.Clients.Github;
 using Tailgrab.Clients.Ollama;
 using Tailgrab.Clients.XSOverlay;
-using Tailgrab.Clients.Github;
 using Tailgrab.Common;
 using Tailgrab.Configuration;
 using Tailgrab.Models;
@@ -44,7 +44,7 @@ namespace Tailgrab.PlayerManagement
         #region User Group Membership Evaluation
         public void CheckUserGroups(string userId)
         {
-            logger.Debug($"Checking user profile with AI : {userId}");
+            logger.Debug($"Checking user user with AI : {userId}");
 
             try
             {
@@ -93,27 +93,28 @@ namespace Tailgrab.PlayerManagement
                 return;
             }
 
-            User profile = serviceRegistry.GetVRChatAPIClient().GetProfile(item.UserId);
-            string? accountThumbnailUrl = !string.IsNullOrEmpty(profile.ProfilePicOverrideThumbnail) ? profile.ProfilePicOverrideThumbnail : profile.CurrentAvatarThumbnailImageUrl;
-            if (profile != null)
+            User user = serviceRegistry.GetVRChatAPIClient().GetProfile(item.UserId);
+            PublicProfile profile = serviceRegistry.GetVRChatAPIClient().GetProfilePublic(item.UserId);
+            string? accountThumbnailUrl = !string.IsNullOrEmpty(user.IconUrl) ? user.IconUrl : user.BannerUrl;
+            if (user != null)
             {
-                string fullProfile = FormatProfileText(profile);
-                item.IsFriend = profile.IsFriend;
+                string fullProfile = FormatProfileText(user, profile);
+                item.IsFriend = user.IsFriend;
                 item.UserBio = fullProfile;
                 item.ProfileUrl = accountThumbnailUrl;
-                item.UserTrustClass = TrustClassEnumMapper.MapTagsToEnum(profile.Tags);
-                if (profile.AgeVerified)
-                    item.AgeVerification = AgeVerificationEnumMapper.MapAgeVerificationStatusToEnum(profile.AgeVerificationStatus);
+                item.UserTrustClass = TrustClassEnumMapper.MapTagsToEnum(user.Tags);
+                if (user.AgeVerified)
+                    item.AgeVerification = AgeVerificationEnumMapper.MapAgeVerificationStatusToEnum(user.AgeVerificationStatus);
             }
         }
 
-        public static string FormatProfileText(User profile)
+        public static string FormatProfileText(User user, PublicProfile profile)
         {
-            return $"DisplayName: {profile.DisplayName}\n" +
-                   $"StatusDesc: {profile.StatusDescription}\n" +
-                   $"Pronouns: {profile.Pronouns}\n" +
-                   $"UserTrust : {TrustClassEnumMapper.MapTagsToString(profile.Tags, profile.AgeVerified, profile.AgeVerificationStatus.ToString())}\n" +
-                   $"UserAgeVerified: {profile.AgeVerified}\n" +
+            return $"DisplayName: {user.DisplayName}\n" +
+                   $"StatusDesc: {user.StatusDescription}\n" +
+                   $"Pronouns: {user.Pronouns}\n" +
+                   $"UserTrust : {TrustClassEnumMapper.MapTagsToString(user.Tags, user.AgeVerified, user.AgeVerificationStatus.ToString())}\n" +
+                   $"UserAgeVerified: {user.AgeVerified}\n" +
                    $"ProfileBio: {profile.Bio}\n";
         }
 
@@ -165,7 +166,7 @@ namespace Tailgrab.PlayerManagement
             }
             catch (Exception ex)
             {
-                logger.Error(ex, $"Error fetching user profile for userId: {item.UserId}");
+                logger.Error(ex, $"Error fetching user user for userId: {item.UserId}");
             }
 
             return true;

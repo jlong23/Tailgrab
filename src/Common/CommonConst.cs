@@ -116,6 +116,10 @@ namespace Tailgrab.Common
         public const string Registry_Moderated_Avatar_Caching = "MODERATED_AVATAR_CACHING";
         public const string Registry_Discovered_Group_Caching = "DISCOVERED_GROUP_CACHING";
 
+        public const string Registry_AI_MCP_Server_Enabled = "AI_MCP_SERVER_ENABLED";
+        public const string Registry_AI_MCP_Server_Port = "AI_MCP_SERVER_PORT";
+        public const string Default_AI_MCP_Server_Port = "7575";
+
 
         public const string AI_EVALUATION_SEXUAL = "Explicit Sexual";
         public const string AI_EVALUATION_HATE = "Harassment & Bullying";
