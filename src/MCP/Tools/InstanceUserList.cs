@@ -17,13 +17,13 @@ namespace Tailgrab.MCP.Tools
             type = "object",
             properties = new
             {            
-                pageNumber = new
+                page_number = new
                 {
                     type = "integer",
                     description = "The page number of the user list to retrieve, 1 indexed"
                 }
             },
-            required = new[] { "pageNumber" }
+            required = new[] { "page_number" }
 
         };
         private readonly ServiceRegistry _serviceRegistry;
@@ -42,6 +42,8 @@ namespace Tailgrab.MCP.Tools
             logger.Info($"Page Number: {arguments["pageNumber"]}");
             int pageNumber = Convert.ToInt32(arguments["pageNumber"].ToString());
             int pageSize = 15;
+            int totalPlayersInInstance = playerIter.Count(p => p.InstanceEndTime == null);
+            bool hasMorePages = totalPlayersInInstance > pageNumber * pageSize;
             var playersInInstance = playerIter
                 .Where(p => p.InstanceEndTime == null)
                 .Skip((pageNumber - 1) * pageSize)
@@ -63,9 +65,10 @@ namespace Tailgrab.MCP.Tools
                 version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "unknown",
                 environment = new
                 {
-                    pageNumber = pageNumber,
-                    pageSize = pageSize,
-                    playersInInstance = playerIter.Count(p => p.InstanceEndTime == null),
+                    page_number = pageNumber,
+                    page_size = pageSize,
+                    total_count = totalPlayersInInstance,
+                    has_more = hasMorePages,
                     players = playersInInstance
                 }
             };
