@@ -41,6 +41,8 @@ namespace Tailgrab.MCP.Tools
                 version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "unknown",
                 environment = new
                 {
+                    ttlMs = 5000,
+                    cacheScope = "private",
                     player_count_in_instance = playerCount,
                     world_name = worldInfo?.WorldName ?? "unknown",
                     world_id = worldInfo?.WorldId ?? "unknown",

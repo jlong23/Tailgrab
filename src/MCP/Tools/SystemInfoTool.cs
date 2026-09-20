@@ -29,6 +29,8 @@ namespace Tailgrab.MCP.Tools
                 version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "unknown",
                 environment = new
                 {
+                    ttlMs = 5000,
+                    cacheScope = "private",
                     os_version = Environment.OSVersion.VersionString,
                     processor_count = Environment.ProcessorCount,
                     total_memory = GC.GetTotalMemory(false) / (1024 * 1024) + " MB"

@@ -68,28 +68,28 @@ public abstract class McpToolBase : IMcpTool
         List<PlayerPrint> printData = p.PrintData?.Values?.ToList() ?? new List<PlayerPrint>();
         var printHistory = printData.Select(p => new
         {
-            printId = p.PrintId,
-            displayName = p.AuthorName,
-            authorId = p.OwnerId,
+            print_id = p.PrintId,
+            display_name = p.AuthorName,
+            author_id = p.OwnerId,
             evaluation = p.AIEvaluation,
-            printUri = p.PrintUrl
+            print_uri = p.PrintUrl
         }).ToList();
 
         List<PlayerInventory> inventoryData = p.Inventory?.ToList() ?? new List<PlayerInventory>();
         var emojiStickerHistory = inventoryData.Select(i => new
         {
-            inventoryId = i.InventoryId,
-            inventoryType = i.InventoryType,
+            inventory_id = i.InventoryId,
+            inventory_type = i.InventoryType,
             evaluation = i.AIEvaluation,
-            imageUri = i.ItemUrl
+            image_uri = i.ItemUrl
         }).ToList();
 
         List<PlayerEvent> eventData = p.Events?.ToList() ?? new List<PlayerEvent>();
         var eventHistory = eventData.OrderBy(e => e.EventTime).Select(e => new
         {
-            eventType = e.Type.ToString(),
-            eventTime = e.EventTime,
-            eventDescription = e.EventDescription
+            event_type = e.Type.ToString(),
+            event_time = e.EventTime,
+            event_description = e.EventDescription
         }).ToList();
 
         DateTime joinDate = DateTime.Parse(p.DateJoined.ToString() ?? new DateTime().ToString());
@@ -102,6 +102,8 @@ public abstract class McpToolBase : IMcpTool
             version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "unknown",
             environment = new
             {
+                ttlMs = 5000,
+                cacheScope = "private",
                 display_name = p.DisplayName,
                 user_id = p.UserId,
                 current_avatar_name = p.AvatarName ?? "",

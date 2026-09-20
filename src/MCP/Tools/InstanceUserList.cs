@@ -39,8 +39,8 @@ namespace Tailgrab.MCP.Tools
 
             PlayerManager playerMgr = _serviceRegistry.GetPlayerManager();
             IEnumerable<Player> playerIter = PlayerManager.GetAllPlayers();
-            logger.Info($"Page Number: {arguments["pageNumber"]}");
-            int pageNumber = Convert.ToInt32(arguments["pageNumber"].ToString());
+            logger.Info($"Page Number: {arguments["page_number"]}");
+            int pageNumber = Convert.ToInt32(arguments["page_number"].ToString());
             int pageSize = 15;
             int totalPlayersInInstance = playerIter.Count(p => p.InstanceEndTime == null);
             bool hasMorePages = totalPlayersInInstance > pageNumber * pageSize;
@@ -65,6 +65,8 @@ namespace Tailgrab.MCP.Tools
                 version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "unknown",
                 environment = new
                 {
+                    ttlMs = 5000,
+                    cacheScope = "private",
                     page_number = pageNumber,
                     page_size = pageSize,
                     total_count = totalPlayersInInstance,

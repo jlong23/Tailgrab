@@ -69,6 +69,8 @@ namespace Tailgrab.MCP.Tools
                     version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "unknown",
                     environment = new
                     {
+                        ttlMs = 5000,
+                        cacheScope = "private",
                         display_name = u.DisplayName,
                         user_id = u.Id,
                         account_age_in_days = elapsed.TotalDays,
