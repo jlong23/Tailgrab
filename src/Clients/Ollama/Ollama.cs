@@ -416,8 +416,13 @@ namespace Tailgrab.Clients.Ollama
                     return profileEvaluation;
                 }
 
-                User user = vrcClient.GetProfile(userId);
-                PublicProfile profile = vrcClient.GetProfilePublic(userId);
+                VRChatUserProfileEntry? vrcProfile = serviceRegistry.GetVRChatAPIClient().GetCachedUserProfile(userId);
+                if (vrcProfile == null)
+                {
+                    profileEvaluation.Evaluation = System.Text.Encoding.UTF8.GetBytes($"Error: Could not create get User profile not found for userId: {userId}. Skipping evaluation.");
+                    return profileEvaluation;
+                }
+
                 QueuedProcess item = new()
                 {
                     UserId = userId,
@@ -426,11 +431,10 @@ namespace Tailgrab.Clients.Ollama
                     Model = model
                 };
 
-                string fullProfile = $"DisplayName: {profile.DisplayName}\nStatusDesc: {profile.StatusDescription}\nPronowns: {profile.Pronouns}\nProfileBio: {profile.Bio}\n";
-                item.IsFriend = user.IsFriend;
-                item.UserBio = fullProfile;
+                item.IsFriend = vrcProfile.IsFriend;
+                item.UserBio = vrcProfile.ProfileTextFormated;
 
-                logger.Debug($"Processing AI Evaluation Queued item for userId: {item.UserId}");
+                logger.Debug($"Processing AI Evaluation Queued item for userId: {userId}");
                 // Process the dequeued item
                 if (!string.IsNullOrEmpty(item.MD5Hash))
                 {
