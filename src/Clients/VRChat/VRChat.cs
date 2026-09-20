@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 using NLog;
 using OtpNet;
 using System.IO;
@@ -11,6 +12,7 @@ using Tailgrab.Clients.Ollama;
 using Tailgrab.Common;
 using VRChat.API.Client;
 using VRChat.API.Model;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Tailgrab.Clients.VRChat
 {
@@ -334,6 +336,79 @@ namespace Tailgrab.Clients.VRChat
         #endregion
 
         #region Profile Management
+
+        internal Dictionary<string, VRChatUserProfileEntry> _userProfileCache = new();
+
+        internal int CacheUserTimeoutSeconds { get; set; } = 900; // Default cache timeout of 15 minutes
+
+        internal VRChatUserProfileEntry? GetCachedUserProfile(string userId)
+        {
+            if (_userProfileCache.TryGetValue(userId, out var cachedProfile))
+            {
+                // Refresh the cache if the entry is older than the timeout
+                if ((DateTime.UtcNow - cachedProfile.LastFetched).TotalSeconds > CacheUserTimeoutSeconds)
+                {
+                    logger.Info($"Cached profile for user {userId} has expired, removing from cache.");
+                    _userProfileCache.Remove(userId);
+                }
+                else
+                {
+                    logger.Info($"Returning cached profile for user {userId}.");
+                    return cachedProfile;
+                }
+
+                if (_vrchat == null)
+                {
+                    logger.Error("VRChat client not initialized, cannot fetch user profile.");
+                    return null;
+                }
+
+                User user = _vrchat.Users.GetUser(userId);
+                if (user != null)
+                {
+                    PublicProfile profile = _vrchat.Users.GetPublicProfile(userId);
+                    List<LimitedUserGroups> userGroups = _vrchat.Users.GetUserGroups(userId);
+
+                    var newProfileEntry = new VRChatUserProfileEntry
+                    {
+                        UserId = userId,
+                        DisplayName = user.DisplayName,
+                        Bio = profile.Bio,
+                        StatusDescription = profile.StatusDescription,
+                        Pronouns = profile.Pronouns,
+                        ProfileIconUrl = profile.IconUrl,
+                        ProfileBannerUrl = profile.BannerUrl,
+                        JoinDate = user.DateJoined,
+                        IsFriend = user.IsFriend,
+                        IsFriendRequesting = user.FriendRequestStatus != null,
+                        AgeVerified = profile.AgeVerified,
+                        AgeVerificationStatus = profile.AgeVerificationStatus,
+                        Tags = user.Tags,
+                        GroupMemberships = userGroups,
+                        LastFetched = DateTime.UtcNow
+                    };
+
+                    logger.Info($"Caching and Returning profile for user {userId}.");
+                    _userProfileCache[userId] = newProfileEntry;
+                    return newProfileEntry;
+                }
+            }
+
+            return null;
+        }
+
+        internal void ClearUserProfileCache()
+        {
+            foreach ( VRChatUserProfileEntry entry in _userProfileCache.Values)
+            {
+                if ((DateTime.UtcNow - entry.LastFetched).TotalSeconds > CacheUserTimeoutSeconds)
+                {
+                    logger.Info($"Cached profile for user {entry.UserId} has expired, removing from cache.");
+                    _userProfileCache.Remove(entry.UserId);
+                }
+            }
+        }
+
         public User GetProfile(string userId)
         {
             User profile = new ();
@@ -1217,6 +1292,40 @@ namespace Tailgrab.Clients.VRChat
             public Exception? Exception { get; set; }
             public bool HasException => Exception != null;
 
+        }
+        #endregion
+
+        #region Cached Data Structures
+        public class VRChatUserProfileEntry
+        {
+            public string UserId { get; set; } = string.Empty;
+            public string DisplayName { get; set; } = string.Empty;
+            public string Bio { get; set; } = string.Empty;
+            public string StatusDescription { get; set; } = string.Empty;
+            public string Pronouns { get; set; } = string.Empty;
+            public string ProfileIconUrl { get; set; } = string.Empty;
+            public string ProfileBannerUrl { get; set; } = string.Empty;
+            public DateOnly JoinDate { get; set; }
+            public bool IsFriend { get; set; } = false;
+            public bool IsFriendRequesting { get; set; } = false;
+            public bool AgeVerified { get; set; } = false;
+            public AgeVerificationStatus? AgeVerificationStatus { get; set; }
+            public List<LimitedUserGroups> GroupMemberships { get; set; } = new List<LimitedUserGroups>();
+            public List<string> Tags { get; set; } = new List<string>();
+            public DateTime LastFetched { get; set; } = DateTime.UtcNow;
+
+            public string ProfileTextFormated
+            {
+                get
+                {
+                    return $"DisplayName: {DisplayName}\n" +
+                           $"StatusDesc: {StatusDescription}\n" +
+                           $"Pronouns: {Pronouns}\n" +
+                           $"UserTrust : {TrustClassEnumMapper.MapTagsToString(Tags, AgeVerified, AgeVerificationStatus?.ToString() ?? string.Empty)}\n" +
+                           $"UserAgeVerified: {AgeVerified}\n" +
+                           $"ProfileBio: {Bio}\n";
+                }
+            }
         }
         #endregion
     }

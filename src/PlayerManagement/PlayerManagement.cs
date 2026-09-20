@@ -1,16 +1,7 @@
-using ConcurrentPriorityQueue.Core;
-using Microsoft.EntityFrameworkCore;
 using NLog;
 using System.ComponentModel;
-using System.Net.Mime;
-using System.Numerics;
-using System.Reflection.Metadata;
-using System.Runtime.CompilerServices;
 using System.Text;
-using System.Windows;
-using System.Windows.Resources;
 using Tailgrab.Clients.OBS;
-using Tailgrab.Clients.XSOverlay;
 using Tailgrab.Common;
 using Tailgrab.LineHandler;
 using Tailgrab.Models;
@@ -538,7 +529,10 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
-
+        /** 
+         * Depricated: Use UpdatePlayerUserFromVRCProfile(VRChatUserProfileEntry vrcProfile, string profileHash) instead 
+         */
+        [Obsolete("Use UpdatePlayerUserFromVRCProfile(VRChatUserProfileEntry vrcProfile, string profileHash) instead")]
         public Player? UpdatePlayerUserFromVRCProfile(User user, string profileHash)
         {
             if (user != null && user.Id != null)
@@ -569,6 +563,52 @@ namespace Tailgrab.PlayerManagement
                         CreatedAt = DateTime.UtcNow,
                         UpdatedAt = DateTime.UtcNow,
                         DateJoined = user.DateJoined,
+                        LastProfileChecksum = profileHash
+                    };
+                    dbContext.Add(userInfo);
+                }
+                dbContext.SaveChanges();
+
+
+                return player;
+            }
+            else
+            {
+                logger.Warn($"Attempted to update player userInfo info from VRC user, but user was null");
+                return null;
+            }
+        }
+
+        public Player? UpdatePlayerUserFromVRCProfile(VRChatUserProfileEntry vrcProfile, string profileHash)
+        {
+            if (vrcProfile != null && vrcProfile.UserId != null)
+            {
+                TailgrabDBContext dbContext = serviceRegistry.GetDBContext();
+                Player? player = GetPlayerByUserId(vrcProfile.UserId);
+                if (player != null)
+                {
+                    player.DateJoined = vrcProfile.JoinDate;
+                    logger.Debug($"Updated UserInfo for userInfo {vrcProfile.DisplayName} (ID: {vrcProfile.UserId}) with DateJoined: {vrcProfile.JoinDate} and ProfileHash: {profileHash}; {player.ProfileElapsedTime}");
+                }
+
+                // Update or create UserInfo record with elapsed time
+                UserInfo? userInfo = dbContext.UserInfos.Find(vrcProfile.UserId);
+                if (userInfo != null)
+                {
+                    userInfo.DateJoined = vrcProfile.JoinDate;
+                    userInfo.UpdatedAt = DateTime.UtcNow;
+                    userInfo.LastProfileChecksum = profileHash;
+                    dbContext.UserInfos.Update(userInfo);
+                }
+                else
+                {
+                    userInfo = new UserInfo
+                    {
+                        DisplayName = vrcProfile.DisplayName,
+                        UserId = vrcProfile.UserId,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow,
+                        DateJoined = vrcProfile.JoinDate,
                         LastProfileChecksum = profileHash
                     };
                     dbContext.Add(userInfo);
