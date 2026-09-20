@@ -1,5 +1,6 @@
 ﻿using ConcurrentPriorityQueue.Core;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.AI;
 using Microsoft.Win32;
 using NLog;
 using SQLitePCL;
@@ -32,6 +33,8 @@ namespace Tailgrab.PlayerManagement
         private static ConcurrentPriorityQueue<IHavePriority<int>, int> priorityQueue = new();
         private static Dictionary<String, DateTime> recentlyProcessedAvatars = [];
 
+        private static Dictionary<string, Avatar> avatarUnpackCache = new();
+
         [SetsRequiredMembers]
         public AvatarManager(ServiceRegistry registry)
         {
@@ -48,12 +51,20 @@ namespace Tailgrab.PlayerManagement
         #region Avatar Management
         public void ProcessAvatarUnpack(string authorName, string avatarName)
         {
-            logger.Debug($"Enqueue Avatar Unpack Lookup : {avatarName} by {authorName}");
+            string cacheKey = $"{avatarName} by {authorName}";
+            logger.Debug($"Enqueue Avatar Unpack Lookup : {cacheKey}");
 
             try
             {
-                AvatarUnpackProcess process = new(5, avatarName, authorName);
+                if (avatarUnpackCache.ContainsKey(cacheKey))
+                {
+                    logger.Debug($"Avatar Unpack Cache Hit : {cacheKey}");
+                    Avatar avatar = avatarUnpackCache[cacheKey];
+                    UpdateMatchingAvatars(avatar);
+                    return;
+                }
 
+                AvatarUnpackProcess process = new(5, avatarName, authorName);
                 if (!IsAvatarUnpackInQueue(process.AvatarName, process.AuthorName))
                 {
                     avatarEvaluationQueue.Enqueue(process);
@@ -111,6 +122,8 @@ namespace Tailgrab.PlayerManagement
                 return null;
             }
 
+            string cacheKey = $"{avatarName} by {authorName}";
+
             // Check if the authorName is in the instance
             Player? player = PlayerManager.GetPlayerByDisplayName(authorName);
             string? authorId = string.Empty;
@@ -140,21 +153,32 @@ namespace Tailgrab.PlayerManagement
 
             if (avatar != null)
             {
+                avatarUnpackCache[cacheKey] = avatar;
                 logger.Info($"Unpack avatar: {avatar.Name} by author: {avatar.AuthorName} (ID: {avatar.Id})");
-                List<Player> userPlayers = PlayerManager.FindPlayersByAvatar(avatar.Name);
-                foreach (Player matched in userPlayers)
-                {
-                    if (matched.AvatarId != avatar.Id)
-                    {
-                        matched.AvatarId = avatar.Id;
-                        logger.Info($"Player {matched.DisplayName} using public avatar: {avatar.Name} by author: {avatar.AuthorName} (ID: {avatar.Id})");
-                        matched.AddEvent(new PlayerEvent(PlayerEvent.EventType.AvatarLookup, $"Player is using public avatar: {avatar.Name} by author: {avatar.AuthorName} (ID: {avatar.Id})"));
-                        PlayerManager.OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Updated, matched);
-                    }
-                }
+                UpdateMatchingAvatars(avatar);
             }
 
             return null;
+        }
+
+        /*
+         * Updates all players that are currently using the specified avatar to use the new avatar ID.
+         * This is useful when an avatar has been updated or changed, and we want to ensure that all 
+         * players using that avatar are updated accordingly.
+         */
+        public static void UpdateMatchingAvatars(Avatar avatar)
+        {
+            List<Player> matchingPlayers = PlayerManager.FindPlayersByAvatar(avatar.Name);
+            foreach (Player player in matchingPlayers)
+            {
+                if (player.AvatarId != avatar.Id)
+                {
+                    player.AvatarId = avatar.Id;
+                    logger.Info($"Updated Player {player.DisplayName} to use Avatar ID: {avatar.Id} for Avatar Name: {avatar.Name}");
+                    player.AddEvent(new PlayerEvent(PlayerEvent.EventType.AvatarLookup, $"Updated to use Avatar ID: {avatar.Id} for Avatar Name: {avatar.Name}"));
+                    PlayerManager.OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Updated, player);
+                }
+            }
         }
 
         public static async Task<Avatar?> FindModeratedAvatarByAuthorIdAndName(string authorId, string name)
