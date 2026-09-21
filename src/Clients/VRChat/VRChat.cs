@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using NLog;
 using OtpNet;
 using System.IO;
@@ -12,7 +11,6 @@ using Tailgrab.Clients.Ollama;
 using Tailgrab.Common;
 using VRChat.API.Client;
 using VRChat.API.Model;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Tailgrab.Clients.VRChat
 {
@@ -343,7 +341,8 @@ namespace Tailgrab.Clients.VRChat
 
         internal VRChatUserProfileEntry? GetCachedUserProfile(string userId)
         {
-            if (_userProfileCache.TryGetValue(userId, out var cachedProfile))
+            bool valueInCache = _userProfileCache.TryGetValue(userId, out var cachedProfile);
+            if (valueInCache && cachedProfile != null)
             {
                 // Refresh the cache if the entry is older than the timeout
                 if ((DateTime.UtcNow - cachedProfile.LastFetched).TotalSeconds > CacheUserTimeoutSeconds)
@@ -356,42 +355,42 @@ namespace Tailgrab.Clients.VRChat
                     logger.Info($"Returning cached profile for user {userId}.");
                     return cachedProfile;
                 }
+            }
 
-                if (_vrchat == null)
+            if (_vrchat == null)
+            {
+                logger.Error("VRChat client not initialized, cannot fetch user profile.");
+                return null;
+            }
+
+            User user = _vrchat.Users.GetUser(userId);
+            if (user != null)
+            {
+                PublicProfile profile = _vrchat.Users.GetPublicProfile(userId);
+                List<LimitedUserGroups> userGroups = _vrchat.Users.GetUserGroups(userId);
+
+                var newProfileEntry = new VRChatUserProfileEntry
                 {
-                    logger.Error("VRChat client not initialized, cannot fetch user profile.");
-                    return null;
-                }
+                    UserId = userId,
+                    DisplayName = user.DisplayName,
+                    Bio = profile.Bio,
+                    StatusDescription = profile.StatusDescription,
+                    Pronouns = profile.Pronouns,
+                    ProfileIconUrl = profile.IconUrl,
+                    ProfileBannerUrl = profile.BannerUrl,
+                    JoinDate = user.DateJoined,
+                    IsFriend = user.IsFriend,
+                    IsFriendRequesting = user.FriendRequestStatus != null,
+                    AgeVerified = profile.AgeVerified,
+                    AgeVerificationStatus = profile.AgeVerificationStatus,
+                    Tags = user.Tags,
+                    GroupMemberships = userGroups,
+                    LastFetched = DateTime.UtcNow
+                };
 
-                User user = _vrchat.Users.GetUser(userId);
-                if (user != null)
-                {
-                    PublicProfile profile = _vrchat.Users.GetPublicProfile(userId);
-                    List<LimitedUserGroups> userGroups = _vrchat.Users.GetUserGroups(userId);
-
-                    var newProfileEntry = new VRChatUserProfileEntry
-                    {
-                        UserId = userId,
-                        DisplayName = user.DisplayName,
-                        Bio = profile.Bio,
-                        StatusDescription = profile.StatusDescription,
-                        Pronouns = profile.Pronouns,
-                        ProfileIconUrl = profile.IconUrl,
-                        ProfileBannerUrl = profile.BannerUrl,
-                        JoinDate = user.DateJoined,
-                        IsFriend = user.IsFriend,
-                        IsFriendRequesting = user.FriendRequestStatus != null,
-                        AgeVerified = profile.AgeVerified,
-                        AgeVerificationStatus = profile.AgeVerificationStatus,
-                        Tags = user.Tags,
-                        GroupMemberships = userGroups,
-                        LastFetched = DateTime.UtcNow
-                    };
-
-                    logger.Info($"Caching and Returning profile for user {userId}.");
-                    _userProfileCache[userId] = newProfileEntry;
-                    return newProfileEntry;
-                }
+                logger.Info($"Caching and Returning profile for user {userId}.");
+                _userProfileCache[userId] = newProfileEntry;
+                return newProfileEntry;
             }
 
             return null;
