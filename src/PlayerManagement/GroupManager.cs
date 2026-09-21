@@ -93,31 +93,18 @@ namespace Tailgrab.PlayerManagement
                 return;
             }
 
-            User user = serviceRegistry.GetVRChatAPIClient().GetProfile(item.UserId);
-            PublicProfile profile = serviceRegistry.GetVRChatAPIClient().GetProfilePublic(item.UserId);
-            string? accountThumbnailUrl = !string.IsNullOrEmpty(user.IconUrl) ? user.IconUrl : user.BannerUrl;
-            if (user != null)
+            VRChatUserProfileEntry? userProfile = serviceRegistry.GetVRChatAPIClient().GetCachedUserProfile(item.UserId);
+            string? accountThumbnailUrl = !string.IsNullOrEmpty(userProfile?.ProfileIconUrl) ? userProfile.ProfileIconUrl : userProfile?.ProfileBannerUrl;
+            if (userProfile != null)
             {
-                string fullProfile = FormatProfileText(user, profile);
-                item.IsFriend = user.IsFriend;
-                item.UserBio = fullProfile;
+                item.IsFriend = userProfile.IsFriend;
+                item.UserBio = userProfile.ProfileTextFormated;
                 item.ProfileUrl = accountThumbnailUrl;
-                item.UserTrustClass = TrustClassEnumMapper.MapTagsToEnum(user.Tags);
-                if (user.AgeVerified)
-                    item.AgeVerification = AgeVerificationEnumMapper.MapAgeVerificationStatusToEnum(user.AgeVerificationStatus);
+                item.UserTrustClass = TrustClassEnumMapper.MapTagsToEnum(userProfile.Tags);
+                if (userProfile.AgeVerified)
+                    item.AgeVerification = AgeVerificationEnumMapper.MapAgeVerificationStatusToEnum(userProfile.AgeVerificationStatus);
             }
         }
-
-        public static string FormatProfileText(User user, PublicProfile profile)
-        {
-            return $"DisplayName: {user.DisplayName}\n" +
-                   $"StatusDesc: {user.StatusDescription}\n" +
-                   $"Pronouns: {user.Pronouns}\n" +
-                   $"UserTrust : {TrustClassEnumMapper.MapTagsToString(user.Tags, user.AgeVerified, user.AgeVerificationStatus.ToString())}\n" +
-                   $"UserAgeVerified: {user.AgeVerified}\n" +
-                   $"ProfileBio: {profile.Bio}\n";
-        }
-
 
         public static async Task GroupCheckTask(ConcurrentPriorityQueue<IHavePriority<int>, int> priorityQueue, ServiceRegistry serviceRegistry)
         {
@@ -156,13 +143,18 @@ namespace Tailgrab.PlayerManagement
             try
             {
                 TailgrabDBContext dBContext = serviceRegistry.GetDBContext();
-                List<LimitedUserGroups> userGroups = serviceRegistry.GetVRChatAPIClient().GetProfileGroups(item.UserId);
 
-                User profile = serviceRegistry.GetVRChatAPIClient().GetProfile(item.UserId);
-                await GetUserGroupInformation(serviceRegistry, dBContext, userGroups, item);
+                VRChatUserProfileEntry? userProfile = serviceRegistry.GetVRChatAPIClient().GetCachedUserProfile(item.UserId);
+                if( userProfile == null)
+                {
+                    logger.Warn($"User profile for userId: {item.UserId} not found in cache.");
+                    return false;
+                }
+
+                await GetUserGroupInformation(serviceRegistry, dBContext, userProfile.GroupMemberships, item);
                 await GetUserModerations(item);
                 UpdatePlayerWithEvaluation(item);
-                PlayerManager.OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Updated, profile.DisplayName);
+                PlayerManager.OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Updated, userProfile.DisplayName);
             }
             catch (Exception ex)
             {
@@ -309,9 +301,16 @@ namespace Tailgrab.PlayerManagement
             try
             {
                 Tailgrab.Clients.VRChat.VRChatClient vrcClient = serviceRegistry.GetVRChatAPIClient();
+                VRChatUserProfileEntry? userProfile = await Task.Run(() => vrcClient.GetCachedUserProfile(userId));
 
                 // Fetch groups from API on background thread
-                List<LimitedUserGroups> usersLimitedGroups = await Task.Run(() => vrcClient.GetProfileGroups(userId));
+                if(userProfile == null)
+                {
+                    logger.Warn($"User profile for userId: {userId} not found in cache.");
+                    return groupViewModels;
+                }
+
+                List<LimitedUserGroups> usersLimitedGroups = userProfile.GroupMemberships ?? new List<LimitedUserGroups>();
                 logger.Info($"Fetched {usersLimitedGroups?.Count ?? 0} groups for user {userId}");
 
                 if (usersLimitedGroups == null || usersLimitedGroups.Count == 0)

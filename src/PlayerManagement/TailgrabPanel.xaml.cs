@@ -1,5 +1,6 @@
 using BuildSoft.VRChat.Osc;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.VisualBasic.ApplicationServices;
 using NLog;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -3831,9 +3832,9 @@ namespace Tailgrab.PlayerManagement
                     BanMgmtAvatarState.Text = result.Value.ReleaseStatus.ToString();
 
 
-                    VRChat.API.Model.User? user = await Task.Run(() => vrcClient.GetProfile(result.Value.AuthorId));
+                    VRChatUserProfileEntry? userProfile = await Task.Run(() => vrcClient.GetCachedUserProfile(result.Value.AuthorId));
 
-                    BanMgmtAvatarOwner.Text = user.DisplayName ?? "Unknown";
+                    BanMgmtAvatarOwner.Text = userProfile?.DisplayName ?? "Unknown";
                     BanMgmtAvatarOwnerId.Text = result.Value.AuthorId ?? string.Empty;
                     BanMgmtAvatarDesc.Text = result.Value.Description ?? string.Empty;
 
@@ -3932,9 +3933,9 @@ namespace Tailgrab.PlayerManagement
                     string discriminator = group.Discriminator ?? string.Empty;
                     BanMgmtGroupShortCode.Text = string.IsNullOrEmpty(shortCode) ? string.Empty : $"{shortCode}.{discriminator}";
 
-                    VRChat.API.Model.User? user = await Task.Run(() => vrcClient.GetProfile(group.OwnerId));
+                    VRChatUserProfileEntry? userProfile = _serviceRegistry.GetVRChatAPIClient().GetCachedUserProfile(group.OwnerId);
 
-                    BanMgmtGroupOwner.Text = user.DisplayName ?? string.Empty;
+                    BanMgmtGroupOwner.Text = userProfile?.DisplayName ?? string.Empty;
                     BanMgmtGroupOwnerId.Text = group.OwnerId ?? string.Empty;
                     BanMgmtGroupDesc.Text = group.Description ?? string.Empty;
                     BanMgmtGroupRules.Text = group.Rules ?? string.Empty;
@@ -4827,7 +4828,7 @@ namespace Tailgrab.PlayerManagement
         #region Ban Management handlers
         private ObservableCollection<GroupBanItem> _banMgmtGroupList = [];
         private string _currentBanMgmtUserId = string.Empty;
-        private User? _currentBanMgmtUser = null;
+        private VRChatUserProfileEntry? _currentBanMgmtUser = null;
 
         private async void BanMgmtLoadUser_Click(object sender, RoutedEventArgs e)
         {
@@ -4853,9 +4854,8 @@ namespace Tailgrab.PlayerManagement
                 BanMgmtUserStatusText.Foreground = System.Windows.Media.Brushes.Yellow;
 
                 // Call GetProfile
-                var user = _serviceRegistry.GetVRChatAPIClient().GetProfile(userId);
-
-                if (user == null || string.IsNullOrEmpty(user.Id))
+                VRChatUserProfileEntry? profileEntry = _serviceRegistry.GetVRChatAPIClient().GetCachedUserProfile(userId);
+                if (profileEntry == null || string.IsNullOrEmpty(profileEntry.UserId))
                 {
                     BanMgmtUserStatusText.Text = "User not found";
                     BanMgmtUserStatusText.Foreground = System.Windows.Media.Brushes.Red;
@@ -4863,21 +4863,21 @@ namespace Tailgrab.PlayerManagement
                     return;
                 }
 
-                _currentBanMgmtUser = user;
+                _currentBanMgmtUser = profileEntry;
                 _currentBanMgmtUserId = userId;
 
-                logger.Info($"Fetched user profile for ban management: {user.DisplayName})");
+                logger.Info($"Fetched user profile for ban management: {profileEntry.DisplayName})");
 
                 // Populate user info
-                BanMgmtUserName.Text = user.DisplayName ?? "Unknown";
-                BanMgmtUserStatusDesc.Text = user.StatusDescription ?? user.Status.ToString();
-                BanMgmtUserPronouns.Text = string.IsNullOrEmpty(user.Pronouns) ? "Not specified" : user.Pronouns;
-                BanMgmtUserJoinDate.Text = user.DateJoined.ToString("yyyy-MM-dd");
-                BanMgmtUserAgeVerified.Text = user.AgeVerified ? "Yes" : "No";
-                BanMgmtUserState.Text = user.State.ToString() ;
+                BanMgmtUserName.Text = profileEntry.DisplayName ?? "Unknown";
+                BanMgmtUserStatusDesc.Text = profileEntry.StatusDescription ?? profileEntry.StatusDescription;
+                BanMgmtUserPronouns.Text = string.IsNullOrEmpty(profileEntry.Pronouns) ? "Not specified" : profileEntry.Pronouns;
+                BanMgmtUserJoinDate.Text = profileEntry.JoinDate.ToString("yyyy-MM-dd");
+                BanMgmtUserAgeVerified.Text = profileEntry.AgeVerified ? "Yes" : "No";
+                BanMgmtUserState.Text = string.Empty;
 
 
-                string? accountThumbnailUrl = !string.IsNullOrEmpty(user.IconUrl) ? user.IconUrl : user.BannerUrl;
+                string? accountThumbnailUrl = !string.IsNullOrEmpty(profileEntry.ProfileIconUrl) ? profileEntry.ProfileIconUrl : profileEntry.ProfileBannerUrl;
 
                 // Load profile image if available
                 if (!string.IsNullOrEmpty(accountThumbnailUrl))
@@ -4910,7 +4910,7 @@ namespace Tailgrab.PlayerManagement
                 // Load groups from database
                 await LoadBanManagementGroupsAsync();
 
-                logger.Info($"Loaded user profile for ban management: {user.DisplayName} ({userId})");
+                logger.Info($"Loaded user profile for ban management: {profileEntry.DisplayName} ({userId})");
             }
             catch (Exception ex)
             {
