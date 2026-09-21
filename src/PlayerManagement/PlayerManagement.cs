@@ -391,7 +391,6 @@ namespace Tailgrab.PlayerManagement
                     string text = html.Replace("{content}", content);
                     text = text.Replace("{thumbnailUrl}", imageUri);
                     text = text.Replace("{contentType}", contentType);
-                    logger.Info(text);
 
                     OBSClient? obsClient = serviceRegistry.GetOBSClient();
                     if (obsClient != null)
@@ -454,6 +453,38 @@ namespace Tailgrab.PlayerManagement
                     text = text.Replace("{thumbnailUrl}", player.ProfileImage);
 
                     obsClient.AddMessage($"{player.DisplayName} has a Vote to Kick", "red");
+                    string filename = $"{player.UserId}-{player.DisplayName}_{DateTime.Now:yyyyMMdd_HHmmss}";
+                    Task.Run(() => obsClient.VTKRecording(player, text)).GetAwaiter().GetResult();
+                }
+            }
+
+            return player;
+        }
+
+        public static Player? VoteToKickEventGroup(string displayName, string initiatedBy, string eventDescription)
+        {
+            Player? player = AddPlayerEventByDisplayName(displayName, PlayerEvent.EventType.Moderation, eventDescription);
+            if (player != null)
+            {
+                player.AddAlertMessage(AlertClassEnum.Profile, AlertTypeEnum.Nuisance, $"VTK");
+
+                OBSClient? obsClient = serviceRegistry.GetOBSClient();
+                if (obsClient != null)
+                {
+                    string html = Utility.GetHTMLResource("HtmlTemplates", "VTK_Template.html");
+
+                    // Build formatted string from the viewmodel alone
+                    var sb = new System.Text.StringBuilder();
+                    sb.AppendLine("<dl>");
+                    sb.AppendLine(player.ToHTML(true));
+                    sb.AppendLine($" Initiated By: {initiatedBy}");
+                    sb.AppendLine("</dl>");
+                    var content = sb.ToString();
+
+                    string text = html.Replace("{content}", content);
+                    text = text.Replace("{thumbnailUrl}", player.ProfileImage);
+
+                    obsClient.AddMessage($"{player.DisplayName} has a Vote to Kick initiated by {initiatedBy}", "red");
                     string filename = $"{player.UserId}-{player.DisplayName}_{DateTime.Now:yyyyMMdd_HHmmss}";
                     Task.Run(() => obsClient.VTKRecording(player, text)).GetAwaiter().GetResult();
                 }

@@ -304,7 +304,13 @@ namespace Tailgrab.Configuration
                     handler = new QuickMenuSelectedUser(QuickMenuSelectedUser.LOG_PATTERN, _serviceRegistry);
                     break;
                 case LineHandlerType.VTK:
-                    handler = new VTKHandler(VTKHandler.LOG_PATTERN, _serviceRegistry);
+                    handler = new VTKInitiatedHandler(VTKInitiatedHandler.LOG_PATTERN, _serviceRegistry);
+                    break;
+                case LineHandlerType.VTKRequested:
+                    handler = new VTKRequestedHandler(VTKRequestedHandler.LOG_PATTERN, _serviceRegistry);
+                    break;
+                case LineHandlerType.VTKGroupMod:
+                    handler = new VTKGroupModHandler(VTKGroupModHandler.LOG_PATTERN, _serviceRegistry);
                     break;
                 case LineHandlerType.WarnKick:
                     handler = new WarnKickHandler(WarnKickHandler.LOG_PATTERN, _serviceRegistry);
@@ -413,6 +419,8 @@ namespace Tailgrab.Configuration
         Print,
         Sticker,
         VTK,
+        VTKRequested,
+        VTKGroupMod,
         WarnKick,
         UserSelected,
         WorldChange,
@@ -434,7 +442,9 @@ namespace Tailgrab.Configuration
                 LineHandlerType.PenNetwork => "Pen Network Handler",
                 LineHandlerType.Print => "Print Handler",
                 LineHandlerType.Sticker => "Sticker Handler",
-                LineHandlerType.VTK => "VTK Handler",
+                LineHandlerType.VTK => "VTK Initiated Handler",
+                LineHandlerType.VTKRequested => "VTK Requested Handler",
+                LineHandlerType.VTKGroupMod => "VTK Group Moderation Handler",
                 LineHandlerType.WarnKick => "Warn Kick Handler",
                 LineHandlerType.UserSelected => "User Selected Handler",
                 LineHandlerType.WorldChange => "World Change Handler",

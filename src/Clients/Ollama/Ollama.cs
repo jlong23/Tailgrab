@@ -143,6 +143,14 @@ namespace Tailgrab.Clients.Ollama
             priorityQueue.Enqueue(item);
         }
 
+        public void EnqueueImageEvaluationRequest(ImageReference item)
+        {
+            item.Prompt = ImagePrompt;
+            item.Model = Model;
+
+            priorityQueue.Enqueue(item);
+        }
+
         public void ClearQueue()
         {
             while (true)

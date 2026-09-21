@@ -1,7 +1,8 @@
-﻿using Tailgrab.Common;
-using Tailgrab.Clients.VRChat;
-using VRChat.API.Model;
+﻿using Tailgrab.Clients.VRChat;
+using Tailgrab.Common;
 using Tailgrab.Models;
+using VRChat.API.Model;
+using static Tailgrab.Clients.VRChat.VRChatClient;
 
 namespace Tailgrab.MCP.Tools
 {
@@ -49,8 +50,7 @@ namespace Tailgrab.MCP.Tools
                 TailgrabDBContext dBContext = _serviceRegistry.GetDBContext();
                 GroupInfo? groupInfo = dBContext.GroupInfos.Find(groupId);
 
-                User u = _serviceRegistry.GetVRChatAPIClient().GetProfile(g.OwnerId);
-
+                VRChatUserProfileEntry? userProfile = _serviceRegistry.GetVRChatAPIClient().GetCachedUserProfile(g.OwnerId);
                 var info = new
                 {
                     timestamp = DateTime.UtcNow,
@@ -61,7 +61,7 @@ namespace Tailgrab.MCP.Tools
                         name = g.Name,
                         groupId = g.Id,
                         ownerId = g.OwnerId,
-                        ownerName = u.DisplayName,
+                        ownerName = userProfile?.DisplayName ?? "unknown",
                         groupAgeInDays = elapsed.TotalDays,
                         isVerified = g.IsVerified,
                         isWatched = groupInfo?.AlertType > AlertTypeEnum.None,

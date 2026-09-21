@@ -7,6 +7,7 @@ using Tailgrab.Common;
 using Tailgrab.Models;
 using Tailgrab.PlayerManagement;
 using VRChat.API.Model;
+using static Tailgrab.Clients.VRChat.VRChatClient;
 
 namespace Tailgrab.MCP.Tools
 {
@@ -42,19 +43,18 @@ namespace Tailgrab.MCP.Tools
             try
             {
                 string userId = arguments.ContainsKey("userId") ? arguments["userId"].ToString() ?? "" : "";
-                User u = _serviceRegistry.GetVRChatAPIClient().GetProfile(userId);
-                PublicProfile publicProfile = _serviceRegistry.GetVRChatAPIClient().GetProfilePublic(userId);
+                VRChatUserProfileEntry? userProfile = _serviceRegistry.GetVRChatAPIClient().GetCachedUserProfile(userId);
 
-                if (u == null)
+                if (userProfile == null)
                 {
                     logger.Warn("User not found: {0}", userId);
                     return McpToolResult.FromError("User not found");
                 }
 
-                DateTime joinDate = DateTime.Parse(u.DateJoined.ToString() ?? new DateTime().ToString());
+                DateTime joinDate = DateTime.Parse(userProfile.JoinDate.ToString() ?? new DateTime().ToString());
                 TimeSpan elapsed = DateTime.Now - joinDate;
 
-                List<UserGroupEntry> userGroups = GetUserGroups(userId);
+                List<UserGroupEntry> userGroups = GetUserGroups(userProfile.GroupMemberships);
                 var groupInfo = userGroups.Select(g => new
                 {
                     group_id = g.GroupId,
@@ -71,14 +71,14 @@ namespace Tailgrab.MCP.Tools
                     {
                         ttlMs = 5000,
                         cacheScope = "private",
-                        display_name = u.DisplayName,
-                        user_id = u.Id,
+                        display_name = userProfile.DisplayName,
+                        user_id = userProfile.UserId,
                         account_age_in_days = elapsed.TotalDays,
-                        verified = ConvertBooleanToYesNo(u.AgeVerified),
-                        friend = ConvertBooleanToYesNo( u.IsFriend ),
-                        icon_url = publicProfile.IconUrl ?? "",
-                        banner_url = publicProfile.BannerUrl ?? "",
-                        bio = publicProfile.Bio ?? "",
+                        verified = ConvertBooleanToYesNo(userProfile.AgeVerified),
+                        friend = ConvertBooleanToYesNo( userProfile.IsFriend ),
+                        icon_url = userProfile.ProfileIconUrl ?? "",
+                        banner_url = userProfile.ProfileBannerUrl ?? "",
+                        bio = userProfile.Bio ?? "",
                         group_membership_count = userGroups.Count,
                         group_membership = groupInfo
                     }
@@ -97,12 +97,11 @@ namespace Tailgrab.MCP.Tools
             }
         }
 
-        private List<UserGroupEntry> GetUserGroups(string userId)
+        private List<UserGroupEntry> GetUserGroups(List<LimitedUserGroups> userMemberships)
         {
             List<UserGroupEntry> groupEntries = new List<UserGroupEntry>();
             TailgrabDBContext dbContext = _serviceRegistry.GetDBContext();
 
-            List<LimitedUserGroups> userMemberships = _serviceRegistry.GetVRChatAPIClient().GetProfileGroups(userId);
             foreach (var membership in userMemberships)
             {
                 GroupInfo? groupInfo = dbContext.GroupInfos.Find(membership.GroupId);

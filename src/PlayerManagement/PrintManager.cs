@@ -93,7 +93,7 @@ namespace Tailgrab.PlayerManagement
 
                         ImageReference processItem = new ImageReference
                         {
-                            Priority = 25,
+                            Priority = CommonConst.IMAGE_EVALUATION_PRIORITY_PRINT,
                             InventoryId = printId,
                             UserId = printInfo.OwnerId,
                             Base64Data = base64Images,
@@ -103,8 +103,7 @@ namespace Tailgrab.PlayerManagement
                             PrintInfo = printInfo
                         };
 
-                        // @TODO: Finish Ollama Inventory & Print Queue processing.
-                        ollamaClient.EnqueuePriorityItem(processItem);
+                        ollamaClient.EnqueueImageEvaluationRequest(processItem);
                     }
 
                     PlayerManager.UserInventorySpawnPublic(printInfo.Files.Image, player, "Print");

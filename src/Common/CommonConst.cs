@@ -144,6 +144,10 @@ namespace Tailgrab.Common
         public const int ZINDEX_LEVEL_REPORT_OVERLAY = 1010;
         public const int ZINDEX_LEVEL_MESSAGE_OVERLAY = 1050;
 
+        public const int IMAGE_EVALUATION_PRIORITY_STICKER = 20;
+        public const int IMAGE_EVALUATION_PRIORITY_PRINT = 25;
+
+
         public static AlertTypeEnum AlertTypeEnumFromString(string alertType)
         {
             return alertType switch
