@@ -9,7 +9,7 @@ namespace Tailgrab.MCP.Tools
     internal class GroupDetails : McpToolBase
     {
         public override string Name => "group_details";
-        public override string Description => "Returns a detailed metadata about a VRChat group.";
+        public override string Description => "Returns a detailed information (Name, Description, Rules, Age of Group, Owner Name, Is Verified, Is Watched, Icon URL, Banner URL) about a VRChat group.";
         public override object InputSchema => new
         {
             type = "object",

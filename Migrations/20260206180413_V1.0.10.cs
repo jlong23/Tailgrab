@@ -2,7 +2,7 @@
 
 #nullable disable
 
-namespace tailgrab.Migrations
+namespace Tailgrab.Migrations
 {
     /// <inheritdoc />
     public partial class V1010 : Migration

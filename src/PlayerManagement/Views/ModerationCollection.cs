@@ -3,27 +3,28 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using Tailgrab.Common;
 
-namespace Tailgrab.PlayerManagement
+namespace Tailgrab.PlayerManagement.Views
 {
-    // Virtualizing collection for Groups similar to AvatarVirtualizingCollection
-    public class GroupVirtualizingCollection : System.Collections.IList, System.Collections.IEnumerable, System.Collections.Specialized.INotifyCollectionChanged
+    public class ModerationVirtualizingCollection : System.Collections.IList, System.Collections.IEnumerable, System.Collections.Specialized.INotifyCollectionChanged
     {
         private readonly ServiceRegistry _services;
         private readonly int _pageSize = 100;
-        private readonly Dictionary<int, List<GroupInfoViewModel>> _pages = [];
+        private readonly Dictionary<int, List<ModerationInfoViewModel>> _pages = new Dictionary<int, List<ModerationInfoViewModel>>();
         private int _count = -1;
-        private string? _filterText;
+        private string? _userIdFilter;
+        private string? _contentIdFilter;
 
-        public GroupVirtualizingCollection(ServiceRegistry services)
+        public ModerationVirtualizingCollection(ServiceRegistry services)
         {
             _services = services;
         }
 
-        public void SetFilter(string? filterText)
+        public void SetFilter(string? userIdFilter, string? contentIdFilter)
         {
-            if (_filterText != filterText)
+            if (_userIdFilter != userIdFilter || _contentIdFilter != contentIdFilter)
             {
-                _filterText = filterText;
+                _userIdFilter = userIdFilter;
+                _contentIdFilter = contentIdFilter;
                 Refresh();
             }
         }
@@ -41,18 +42,16 @@ namespace Tailgrab.PlayerManagement
             try
             {
                 var db = _services.GetDBContext();
-                var query = db.GroupInfos.AsQueryable();
+                var query = db.ModerationInfos.AsQueryable();
 
-                if (!string.IsNullOrWhiteSpace(_filterText))
+                if (!string.IsNullOrWhiteSpace(_userIdFilter))
                 {
-                    if (_filterText.StartsWith("grp_", StringComparison.OrdinalIgnoreCase))
-                    {
-                        query = query.Where(g => g.GroupId == _filterText);
-                    }
-                    else
-                    {
-                        query = query.Where(g => EF.Functions.Like(g.GroupName, $"%{_filterText}%"));
-                    }
+                    query = query.Where(m => EF.Functions.Like(m.UserId, $"%{_userIdFilter}%"));
+                }
+
+                if (!string.IsNullOrWhiteSpace(_contentIdFilter))
+                {
+                    query = query.Where(m => EF.Functions.Like(m.ContentId, $"%{_contentIdFilter}%"));
                 }
 
                 _count = query.Count();
@@ -63,7 +62,7 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
-        private GroupInfoViewModel? LoadAtIndex(int index)
+        private ModerationInfoViewModel? LoadAtIndex(int index)
         {
             if (index < 0) return null;
             EnsureCount();
@@ -75,22 +74,20 @@ namespace Tailgrab.PlayerManagement
                 {
                     var db = _services.GetDBContext();
                     var skip = page * _pageSize;
-                    var query = db.GroupInfos.AsQueryable();
+                    var query = db.ModerationInfos.AsQueryable();
 
-                    if (!string.IsNullOrWhiteSpace(_filterText))
+                    if (!string.IsNullOrWhiteSpace(_userIdFilter))
                     {
-                        if (_filterText.StartsWith("grp_", StringComparison.OrdinalIgnoreCase))
-                        {
-                            query = query.Where(g => g.GroupId == _filterText);
-                        }
-                        else
-                        {
-                            query = query.Where(g => EF.Functions.Like(g.GroupName, $"%{_filterText}%"));
-                        }
+                        query = query.Where(m => EF.Functions.Like(m.UserId, $"%{_userIdFilter}%"));
                     }
 
-                    var items = query.OrderBy(a => a.GroupName).Skip(skip).Take(_pageSize).ToList();
-                    list = [.. items.Select(a => new GroupInfoViewModel(a))];
+                    if (!string.IsNullOrWhiteSpace(_contentIdFilter))
+                    {
+                        query = query.Where(m => EF.Functions.Like(m.ContentId, $"%{_contentIdFilter}%"));
+                    }
+
+                    var items = query.OrderByDescending(m => m.EventDateTime).Skip(skip).Take(_pageSize).ToList();
+                    list = items.Select(m => new ModerationInfoViewModel(m)).ToList();
                     _pages[page] = list;
                     var keep = new HashSet<int> { page, page - 1, page + 1 };
                     var keys = _pages.Keys.ToList();
@@ -101,7 +98,7 @@ namespace Tailgrab.PlayerManagement
                 }
                 catch
                 {
-                    list = [];
+                    list = new List<ModerationInfoViewModel>();
                 }
             }
             var idxInPage = index % _pageSize;
@@ -109,13 +106,12 @@ namespace Tailgrab.PlayerManagement
             return null;
         }
 
-        // IList implementation (read-only)
         public int Add(object? value) => throw new NotSupportedException();
         public void Clear() => throw new NotSupportedException();
         public bool Contains(object? value)
         {
             EnsureCount();
-            if (value is GroupInfoViewModel vm) return this.Cast<GroupInfoViewModel>().Any(x => x.GroupId == vm.GroupId);
+            if (value is ModerationInfoViewModel vm) return this.Cast<ModerationInfoViewModel>().Any(x => x.Id == vm.Id);
             return false;
         }
         public int IndexOf(object? value) => -1;
@@ -152,31 +148,36 @@ namespace Tailgrab.PlayerManagement
         public event NotifyCollectionChangedEventHandler? CollectionChanged;
     }
 
-    public class GroupInfoViewModel : INotifyPropertyChanged
+    public class ModerationInfoViewModel : INotifyPropertyChanged
     {
-        public string GroupId { get; set; }
-        public string GroupName { get; set; }
-        private AlertTypeEnum _AlertType;
-        public AlertTypeEnum AlertType
-        {
-            get => _AlertType;
-            set
-            {
-                if (_AlertType != value)
-                {
-                    _AlertType = value;
-                    OnPropertyChanged(nameof(AlertType));
-                }
-            }
-        }
-        public DateTime? UpdatedAt { get; set; }
+        public string Id { get; set; }
+        public string ContentType { get; set; }
+        public string UserId { get; set; }
+        public string ContentId { get; set; }
+        public string ContentName { get; set; }
+        public string Thumbnail { get; set; }
+        public DateTime EventDateTime { get; set; }
+        public DateTime? CloseDate { get; set; }
+        public DateTime? DeletedDate { get; set; }
+        public bool IsClosed { get; set; }
+        public bool IsDeleted { get; set; }
 
-        public GroupInfoViewModel(Tailgrab.Models.GroupInfo a)
+        public string Report {  get; set; }
+
+        public ModerationInfoViewModel(Tailgrab.Models.ModerationInfo m)
         {
-            GroupId = a.GroupId;
-            GroupName = a.GroupName;
-            AlertType = a.AlertType;
-            UpdatedAt = a.UpdatedAt;
+            Id = m.Id ?? "Unknown";
+            ContentType = m.ContentType ?? "Unknown";
+            UserId = m.UserId ?? "Unknown";
+            ContentId = m.ContentId ?? "Unknown";
+            ContentName = m.ContentName ?? "Unknown";
+            Thumbnail = m.Thumbnail ?? string.Empty;
+            EventDateTime = m.EventDateTime;
+            CloseDate = m.ClosedDate;
+            DeletedDate = m.DeletedDate;
+            IsClosed = m.IsClosed;
+            IsDeleted = m.IsDeleted;
+            Report = m.Report != null ? System.Text.Encoding.UTF8.GetString(m.Report) : string.Empty;   
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;

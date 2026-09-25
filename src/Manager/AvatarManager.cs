@@ -1,9 +1,7 @@
 ﻿using ConcurrentPriorityQueue.Core;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.AI;
 using Microsoft.Win32;
 using NLog;
-using SQLitePCL;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -18,11 +16,13 @@ using Tailgrab.Clients.VRCDB;
 using Tailgrab.Clients.XSOverlay;
 using Tailgrab.Common;
 using Tailgrab.Models;
+using Tailgrab.PlayerManagement;
+using Tailgrab.PlayerManagement.Views;
 using VRChat.API.Client;
 using VRChat.API.Model;
 using static Tailgrab.Clients.VRChat.VRChatClient;
 
-namespace Tailgrab.PlayerManagement
+namespace Tailgrab.Manager
 {
     public class AvatarManager
     {

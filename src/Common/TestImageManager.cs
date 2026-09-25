@@ -2,7 +2,7 @@
 using System.IO;
 using Tailgrab.Common;
 
-namespace tailgrab.Common
+namespace Tailgrab.Common
 {
     public class TestImageManager
     {

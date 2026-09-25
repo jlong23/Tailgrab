@@ -1,7 +1,4 @@
 ﻿using NLog;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using Tailgrab.PlayerManagement;
 
 namespace Tailgrab.MCP.Tools
@@ -11,7 +8,7 @@ namespace Tailgrab.MCP.Tools
         protected static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         public override string Name => "instance_user_list";
-        public override string Description => "Retrieves a paginated list of users in the current VRChat instance. Retrieves UserName, UserId, If they are a friend, If the user is watched.";
+        public override string Description => "Retrieves a paginated list of users in the current VRChat instance (UserName, UserId, Friend Status, and Watch Status). Note: If a query requires a full count or a complete list of all users, multiple calls must be made to iterate through all available pages until the entire dataset is retrieved.";
         public override object InputSchema => new
         {
             type = "object",

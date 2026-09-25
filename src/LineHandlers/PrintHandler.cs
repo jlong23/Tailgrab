@@ -2,6 +2,7 @@ namespace Tailgrab.LineHandler;
 
 using System.Text.RegularExpressions;
 using Tailgrab.Common;
+using VRChat.API.Model;
 
 public class PrintHandler : AbstractLineHandler
 {
@@ -23,17 +24,23 @@ public class PrintHandler : AbstractLineHandler
         if (m.Success)
         {
             string timestamp = m.Groups[VRC_DATETIME].Value;
-            string fileURL = m.Groups[VRC_FILEURL].Value;
-            _serviceRegistry.GetPrintManager().AddPrintSpawn(fileURL);    //.AddPrintData(fileURL);
+            string fileUrl = m.Groups[VRC_FILEURL].Value;
+            Print? printInfo = UserPrintSpawn(fileUrl);
             if (LogOutput)
             {
-                logger.Info($"{COLOR_PREFIX}Print : {fileURL}{COLOR_RESET.GetAnsiEscape()}");
+                logger.Info($"{COLOR_PREFIX}Print : {fileUrl}{COLOR_RESET.GetAnsiEscape()}");
             }
 
             Dictionary<string, string> actionData = new Dictionary<string, string>
             {
                 { "timestamp", timestamp },
-                { "fileURL", fileURL }
+                { "fileUrl", fileUrl },
+                { "ownerId", printInfo?.OwnerId ?? string.Empty },
+                { "authorName", printInfo?.AuthorName ?? string.Empty },
+                { "worldId", printInfo?.WorldId ?? string.Empty },
+                { "worldName", printInfo?.WorldName ?? string.Empty },
+                { "createdAt", printInfo?.CreatedAt.ToString() ?? string.Empty },
+                { "files", printInfo != null ? string.Join(", ", printInfo.Files) : string.Empty  }
             };
 
             ExecuteActions(actionData);
@@ -41,4 +48,10 @@ public class PrintHandler : AbstractLineHandler
         }
         return false;
     }
+
+    private Print? UserPrintSpawn(string fileUrl)
+    {
+        return Task.Run(() => _serviceRegistry.GetPrintManager().AddPrintSpawn(fileUrl)).Result;
+    }
+
 }

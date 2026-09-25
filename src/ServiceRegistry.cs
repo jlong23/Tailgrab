@@ -8,9 +8,9 @@ using Tailgrab.Clients.VRChat;
 using Tailgrab.Clients.XSOverlay;
 using Tailgrab.Common;
 using Tailgrab.Configuration;
+using Tailgrab.Manager;
 using Tailgrab.Models;
 using Tailgrab.PlayerManagement;
-using tailgrab.src.PlayerManagement;
 using Tailgrab.Clients.OBS;
 using Tailgrab.Clients.Office;
 

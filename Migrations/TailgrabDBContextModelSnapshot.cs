@@ -7,7 +7,7 @@ using Tailgrab.Models;
 
 #nullable disable
 
-namespace tailgrab.Migrations
+namespace Tailgrab.Migrations
 {
     [DbContext(typeof(TailgrabDBContext))]
     partial class TailgrabDBContextModelSnapshot : ModelSnapshot

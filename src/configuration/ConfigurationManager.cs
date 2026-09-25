@@ -279,6 +279,9 @@ namespace Tailgrab.Configuration
                 case LineHandlerType.Emoji:
                     handler = new EmojiHandler(EmojiHandler.LOG_PATTERN, _serviceRegistry);
                     break;
+                case LineHandlerType.LiftUpError:
+                    handler = new LIFTUPHandler(LIFTUPHandler.LOG_PATTERN, _serviceRegistry);
+                    break;
                 case LineHandlerType.Logging:
                     handler = new LoggingLineHandler("", _serviceRegistry);
                     break;
@@ -412,6 +415,7 @@ namespace Tailgrab.Configuration
         AvatarChange,
         AvatarUnpack,
         Emoji,
+        LiftUpError,
         Logging,
         OnPlayerJoin,
         OnPlayerNetwork,

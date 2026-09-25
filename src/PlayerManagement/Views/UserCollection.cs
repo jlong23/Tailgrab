@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Collections.Specialized;
 using System.ComponentModel;
 
-namespace Tailgrab.PlayerManagement
+namespace Tailgrab.PlayerManagement.Views
 {
     // Virtualizing collection for Users
     public class UserVirtualizingCollection : System.Collections.IList, System.Collections.IEnumerable, System.Collections.Specialized.INotifyCollectionChanged

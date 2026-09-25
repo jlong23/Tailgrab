@@ -9,6 +9,7 @@ using System.Text;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Media;
+using Tailgrab.Manager;
 using Tailgrab.Common;
 using Tailgrab.DependencyInjection;
 using Tailgrab.LineHandler;

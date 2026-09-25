@@ -17,5 +17,10 @@ namespace Tailgrab.Clients.Ollama
         public Print? PrintInfo { get; set; }
         public string Prompt { get; set; } = string.Empty;
         public string Model { get; set; } = string.Empty;
+
+        public override string ToString()
+        {
+            return $"ImageReference(Priority={Priority}, Md5Hash={Md5Hash}, InventoryId={InventoryId}, UserId={UserId}, retries={retries}, ItemName={ItemName}, ItemContentUrl={ItemContentUrl}, ItemType={ItemType}, PrintInfo={PrintInfo}, Prompt={Prompt}, Model={Model})";
+        }
     }
 }

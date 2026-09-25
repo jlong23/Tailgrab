@@ -1,9 +1,9 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
-namespace Tailgrab.PlayerManagement
+namespace Tailgrab.PlayerManagement.Views
 {
-    public class GroupBanItem : INotifyPropertyChanged
+    public class GroupBanViewModel : INotifyPropertyChanged
     {
         private string _groupId = string.Empty;
         private string _groupName = string.Empty;

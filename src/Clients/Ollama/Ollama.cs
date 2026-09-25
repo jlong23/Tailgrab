@@ -7,7 +7,6 @@ using System.Net.Http;
 using Tailgrab.Common;
 using Tailgrab.Models;
 using Tailgrab.PlayerManagement;
-using VRChat.API.Model;
 using static Tailgrab.Clients.VRChat.VRChatClient;
 
 namespace Tailgrab.Clients.Ollama
@@ -605,6 +604,8 @@ namespace Tailgrab.Clients.Ollama
                         return;
                     }
 
+                    logger.Debug( $"Processing AI Image Evaluation Queued item for AssetId: {imageReference.ToString()}");
+
                     GenerateRequest request = new()
                     {
                         Model = imageReference.Model,
@@ -724,6 +725,7 @@ namespace Tailgrab.Clients.Ollama
 
             return null;
         }
+
         private static void UpdatePlayerView(ServiceRegistry serviceRegistry, ImageReference imageReference, ImageEvaluation? imageEvaluation)
         {
             if (imageReference.ItemType == "Print" && imageReference.PrintInfo != null)

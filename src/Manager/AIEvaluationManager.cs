@@ -1,10 +1,7 @@
 ﻿using NLog;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using Tailgrab.Common;
 
-namespace Tailgrab.PlayerManagement
+namespace Tailgrab.Manager
 {
     public class AIEvaluationManager
     {

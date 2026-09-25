@@ -1,12 +1,8 @@
 using BuildSoft.VRChat.Osc;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.VisualBasic.ApplicationServices;
 using NLog;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
-using System.Numerics;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
@@ -19,7 +15,9 @@ using Tailgrab.Clients.Ollama;
 using Tailgrab.Clients.VRChat;
 using Tailgrab.Common;
 using Tailgrab.Configuration;
+using Tailgrab.Manager;
 using Tailgrab.Models;
+using Tailgrab.PlayerManagement.Views;
 using VRChat.API.Model;
 using static Tailgrab.Clients.VRChat.VRChatClient;
 
@@ -1281,7 +1279,7 @@ namespace Tailgrab.PlayerManagement
                     TestImageAIEvalItems.Clear();
 
                     // Get test images from the test-images folder
-                    List<string> testImages = tailgrab.Common.TestImageManager.GetAvailableImages();
+                    List<string> testImages = Tailgrab.Common.TestImageManager.GetAvailableImages();
 
                     // Stub implementation - create placeholder items
                     foreach (string imageName in testImages)
@@ -4826,7 +4824,7 @@ namespace Tailgrab.PlayerManagement
         }
 
         #region Ban Management handlers
-        private ObservableCollection<GroupBanItem> _banMgmtGroupList = [];
+        private ObservableCollection<GroupBanViewModel> _banMgmtGroupList = [];
         private string _currentBanMgmtUserId = string.Empty;
         private VRChatUserProfileEntry? _currentBanMgmtUser = null;
 
@@ -4874,7 +4872,7 @@ namespace Tailgrab.PlayerManagement
                 BanMgmtUserPronouns.Text = string.IsNullOrEmpty(profileEntry.Pronouns) ? "Not specified" : profileEntry.Pronouns;
                 BanMgmtUserJoinDate.Text = profileEntry.JoinDate.ToString("yyyy-MM-dd");
                 BanMgmtUserAgeVerified.Text = profileEntry.AgeVerified ? "Yes" : "No";
-                BanMgmtUserState.Text = string.Empty;
+                BanMgmtUserState.Text = profileEntry.TrustClassString;
 
 
                 string? accountThumbnailUrl = !string.IsNullOrEmpty(profileEntry.ProfileIconUrl) ? profileEntry.ProfileIconUrl : profileEntry.ProfileBannerUrl;
@@ -4994,7 +4992,7 @@ namespace Tailgrab.PlayerManagement
 
                     foreach (var group in groups)
                     {
-                        var item = new GroupBanItem
+                        var item = new GroupBanViewModel
                         {
                             GroupId = group.GroupId,
                             GroupName = group.GroupName,
@@ -5078,7 +5076,7 @@ namespace Tailgrab.PlayerManagement
                 }
 
                 // Add to database
-                var newGroup = new tailgrab.src.Models.GroupManagement
+                var newGroup = new Tailgrab.src.Models.GroupManagement
                 {
                     GroupId = groupId,
                     GroupName = group?.Name ?? "Unknown",
@@ -5090,7 +5088,7 @@ namespace Tailgrab.PlayerManagement
                 dBContext.SaveChanges();
 
                 // Add to the UI list
-                var item = new GroupBanItem
+                var item = new GroupBanViewModel
                 {
                     GroupId = groupId,
                     GroupName = group?.Name ?? "Unknown",
@@ -5135,7 +5133,7 @@ namespace Tailgrab.PlayerManagement
             try
             {
                 TailgrabDBContext dBContext = _serviceRegistry.GetDBContext();
-                if (sender is System.Windows.Controls.Button button && button.Tag is GroupBanItem item)
+                if (sender is System.Windows.Controls.Button button && button.Tag is GroupBanViewModel item)
                 {
                     var result = System.Windows.MessageBox.Show(
                         $"Are you sure you want to remove group '{item.GroupName}' from the list?\n\nThis will remove it from the database.",
@@ -5175,7 +5173,7 @@ namespace Tailgrab.PlayerManagement
         {
             try
             {
-                if (sender is System.Windows.Controls.Button button && button.Tag is GroupBanItem item)
+                if (sender is System.Windows.Controls.Button button && button.Tag is GroupBanViewModel item)
                 {
                     if (string.IsNullOrWhiteSpace(item.GroupId) || string.IsNullOrWhiteSpace(_currentBanMgmtUserId))
                     {
@@ -5229,7 +5227,7 @@ namespace Tailgrab.PlayerManagement
         {
             try
             {
-                if (sender is System.Windows.Controls.Button button && button.Tag is GroupBanItem item)
+                if (sender is System.Windows.Controls.Button button && button.Tag is GroupBanViewModel item)
                 {
                     if (string.IsNullOrWhiteSpace(item.GroupId) || string.IsNullOrWhiteSpace(_currentBanMgmtUserId))
                     {
@@ -5875,10 +5873,6 @@ namespace Tailgrab.PlayerManagement
                 try
                 {
                     string displayName = UserAvatarOverlayDisplayName.Text;
-                    //List<AvatarEntry>? avatarsLookupResponse = Task.Run(() => _serviceRegistry.GetAvatarManager().GetPrismicAvatarsByAuthor(displayName)).Result;
-                    //// Fetch avatars asynchronously (already async, no need for Task.Run)
-                    //List<UserAvatarViewModel> avatarsVM = Task.Run(() => _serviceRegistry.GetAvatarManager().LoadPrismicUserAvatarAsync(displayName, avatarsLookupResponse)).Result;
-
                     byte[] excelData = _serviceRegistry.GetOfficeClient().ExportAvatarsToExcel(avatars, $"{displayName} Avatars");
 
                     string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);

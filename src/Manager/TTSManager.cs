@@ -4,7 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Speech.Synthesis;
 using Tailgrab;
 
-namespace tailgrab.src.PlayerManagement
+namespace Tailgrab.Manager
 {
     public class TTSManager
     {

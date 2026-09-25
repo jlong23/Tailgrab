@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using Tailgrab.Common;
 
-namespace tailgrab.src.Models
+namespace Tailgrab.src.Models
 {
     public partial class GroupManagement
     {

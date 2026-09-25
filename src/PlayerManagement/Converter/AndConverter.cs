@@ -4,7 +4,7 @@ using System.Globalization;
 using System.Text;
 using System.Windows.Data;
 
-namespace Tailgrab.PlayerManagement
+namespace Tailgrab.PlayerManagement.Converter
 {
     public class AndConverter : IMultiValueConverter
     {

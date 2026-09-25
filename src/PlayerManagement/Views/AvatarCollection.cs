@@ -3,28 +3,29 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using Tailgrab.Common;
 
-namespace Tailgrab.PlayerManagement
+namespace Tailgrab.PlayerManagement.Views
 {
-    public class ModerationVirtualizingCollection : System.Collections.IList, System.Collections.IEnumerable, System.Collections.Specialized.INotifyCollectionChanged
+    // Lightweight virtualizing collection for Avatar DB. It only fetches items on demand
+    // and holds a small cache to limit memory usage. It queries the EF DB context for
+    // counts and pages of avatars ordered by AvatarName.
+    public class AvatarVirtualizingCollection : System.Collections.IList, System.Collections.IEnumerable, System.Collections.Specialized.INotifyCollectionChanged
     {
         private readonly ServiceRegistry _services;
         private readonly int _pageSize = 100;
-        private readonly Dictionary<int, List<ModerationInfoViewModel>> _pages = new Dictionary<int, List<ModerationInfoViewModel>>();
+        private readonly Dictionary<int, List<AvatarInfoViewModel>> _pages = new Dictionary<int, List<AvatarInfoViewModel>>();
         private int _count = -1;
-        private string? _userIdFilter;
-        private string? _contentIdFilter;
+        private string? _filterText;
 
-        public ModerationVirtualizingCollection(ServiceRegistry services)
+        public AvatarVirtualizingCollection(ServiceRegistry services)
         {
             _services = services;
         }
 
-        public void SetFilter(string? userIdFilter, string? contentIdFilter)
+        public void SetFilter(string? filterText)
         {
-            if (_userIdFilter != userIdFilter || _contentIdFilter != contentIdFilter)
+            if (_filterText != filterText)
             {
-                _userIdFilter = userIdFilter;
-                _contentIdFilter = contentIdFilter;
+                _filterText = filterText;
                 Refresh();
             }
         }
@@ -42,16 +43,18 @@ namespace Tailgrab.PlayerManagement
             try
             {
                 var db = _services.GetDBContext();
-                var query = db.ModerationInfos.AsQueryable();
+                var query = db.AvatarInfos.AsQueryable();
 
-                if (!string.IsNullOrWhiteSpace(_userIdFilter))
+                if (!string.IsNullOrWhiteSpace(_filterText))
                 {
-                    query = query.Where(m => EF.Functions.Like(m.UserId, $"%{_userIdFilter}%"));
-                }
-
-                if (!string.IsNullOrWhiteSpace(_contentIdFilter))
-                {
-                    query = query.Where(m => EF.Functions.Like(m.ContentId, $"%{_contentIdFilter}%"));
+                    if (_filterText.StartsWith("avtr_", StringComparison.OrdinalIgnoreCase))
+                    {
+                        query = query.Where(a => a.AvatarId == _filterText);
+                    }
+                    else
+                    {
+                        query = query.Where(a => EF.Functions.Like(a.AvatarName, $"%{_filterText}%"));
+                    }
                 }
 
                 _count = query.Count();
@@ -62,7 +65,7 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
-        private ModerationInfoViewModel? LoadAtIndex(int index)
+        private AvatarInfoViewModel? LoadAtIndex(int index)
         {
             if (index < 0) return null;
             EnsureCount();
@@ -70,25 +73,29 @@ namespace Tailgrab.PlayerManagement
             var page = index / _pageSize;
             if (!_pages.TryGetValue(page, out var list))
             {
+                // load this page
                 try
                 {
                     var db = _services.GetDBContext();
                     var skip = page * _pageSize;
-                    var query = db.ModerationInfos.AsQueryable();
+                    var query = db.AvatarInfos.AsQueryable();
 
-                    if (!string.IsNullOrWhiteSpace(_userIdFilter))
+                    if (!string.IsNullOrWhiteSpace(_filterText))
                     {
-                        query = query.Where(m => EF.Functions.Like(m.UserId, $"%{_userIdFilter}%"));
+                        if (_filterText.StartsWith("avtr_", StringComparison.OrdinalIgnoreCase))
+                        {
+                            query = query.Where(a => a.AvatarId == _filterText);
+                        }
+                        else
+                        {
+                            query = query.Where(a => EF.Functions.Like(a.AvatarName, $"%{_filterText}%"));
+                        }
                     }
 
-                    if (!string.IsNullOrWhiteSpace(_contentIdFilter))
-                    {
-                        query = query.Where(m => EF.Functions.Like(m.ContentId, $"%{_contentIdFilter}%"));
-                    }
-
-                    var items = query.OrderByDescending(m => m.EventDateTime).Skip(skip).Take(_pageSize).ToList();
-                    list = items.Select(m => new ModerationInfoViewModel(m)).ToList();
+                    var items = query.OrderBy(a => a.AvatarName).Skip(skip).Take(_pageSize).ToList();
+                    list = items.Select(a => new AvatarInfoViewModel(a)).ToList();
                     _pages[page] = list;
+                    // Keep only a couple pages in memory (current, prev, next)
                     var keep = new HashSet<int> { page, page - 1, page + 1 };
                     var keys = _pages.Keys.ToList();
                     foreach (var k in keys)
@@ -98,7 +105,7 @@ namespace Tailgrab.PlayerManagement
                 }
                 catch
                 {
-                    list = new List<ModerationInfoViewModel>();
+                    list = new List<AvatarInfoViewModel>();
                 }
             }
             var idxInPage = index % _pageSize;
@@ -106,12 +113,13 @@ namespace Tailgrab.PlayerManagement
             return null;
         }
 
+        // IList implementation (read-only for UI)
         public int Add(object? value) => throw new NotSupportedException();
         public void Clear() => throw new NotSupportedException();
         public bool Contains(object? value)
         {
             EnsureCount();
-            if (value is ModerationInfoViewModel vm) return this.Cast<ModerationInfoViewModel>().Any(x => x.Id == vm.Id);
+            if (value is AvatarInfoViewModel vm) return this.Cast<AvatarInfoViewModel>().Any(x => x.AvatarId == vm.AvatarId);
             return false;
         }
         public int IndexOf(object? value) => -1;
@@ -145,39 +153,39 @@ namespace Tailgrab.PlayerManagement
             for (int i = 0; i < _count; i++) yield return LoadAtIndex(i)!;
         }
 
+        // Collection changed event for WPF to react to resets
         public event NotifyCollectionChangedEventHandler? CollectionChanged;
     }
 
-    public class ModerationInfoViewModel : INotifyPropertyChanged
+    public class AvatarInfoViewModel : INotifyPropertyChanged
     {
-        public string Id { get; set; }
-        public string ContentType { get; set; }
-        public string UserId { get; set; }
-        public string ContentId { get; set; }
-        public string ContentName { get; set; }
-        public string Thumbnail { get; set; }
-        public DateTime EventDateTime { get; set; }
-        public DateTime? CloseDate { get; set; }
-        public DateTime? DeletedDate { get; set; }
-        public bool IsClosed { get; set; }
-        public bool IsDeleted { get; set; }
+        private AlertTypeEnum _alertType;
 
-        public string Report {  get; set; }
+        public string AvatarId { get; set; }
+        public string AvatarName { get; set; }
+        public string UserName { get; set; }
+        public DateTime? UpdatedAt { get; set; }
 
-        public ModerationInfoViewModel(Tailgrab.Models.ModerationInfo m)
+        public AlertTypeEnum AlertType
         {
-            Id = m.Id ?? "Unknown";
-            ContentType = m.ContentType ?? "Unknown";
-            UserId = m.UserId ?? "Unknown";
-            ContentId = m.ContentId ?? "Unknown";
-            ContentName = m.ContentName ?? "Unknown";
-            Thumbnail = m.Thumbnail ?? string.Empty;
-            EventDateTime = m.EventDateTime;
-            CloseDate = m.ClosedDate;
-            DeletedDate = m.DeletedDate;
-            IsClosed = m.IsClosed;
-            IsDeleted = m.IsDeleted;
-            Report = m.Report != null ? System.Text.Encoding.UTF8.GetString(m.Report) : string.Empty;   
+            get => _alertType;
+            set
+            {
+                if (_alertType != value)
+                {
+                    _alertType = value;
+                    OnPropertyChanged(nameof(AlertType));
+                }
+            }
+        }
+
+        public AvatarInfoViewModel(Tailgrab.Models.AvatarInfo a)
+        {
+            AvatarId = a.AvatarId;
+            AvatarName = a.AvatarName;
+            UpdatedAt = a.UpdatedAt;
+            AlertType = a.AlertType;
+            UserName = a.UserName ?? "Unknown";
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;

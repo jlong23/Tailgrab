@@ -14,7 +14,7 @@ using System.Reflection.Metadata;
 using System.Text.Json;
 using System.Windows.Documents;
 using System.Windows.Media.Animation;
-using tailgrab.src.Models;
+using Tailgrab.src.Models;
 using Tailgrab.Common;
 using static System.Net.Mime.MediaTypeNames;
 

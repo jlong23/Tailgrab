@@ -2,6 +2,7 @@
 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 xmlns:local="clr-namespace:Tailgrab.PlayerManagement"
+xmlns:convert="clr-namespace:Tailgrab.PlayerManagement.Converter"
 xmlns:common="clr-namespace:Tailgrab.Common"
 xmlns:d="http://microsoft.com"
 Title="Tailgrab Player Panel"
@@ -20,10 +21,10 @@ Title="Tailgrab Player Panel"
                 <ResourceDictionary Source="/src/Resources/localization.en-US.xaml"/>
             </ResourceDictionary.MergedDictionaries>
 
-            <local:MinutesToHoursMinutesConverter x:Key="MinutesToHoursMinutesConverter"/>
-            <local:SoundNotNoneConverter x:Key="SoundNotNoneConverter"/>
-            <local:StringNotNullOrEmptyConverter x:Key="StringNotNullOrEmptyConverter"/>
-            <local:EnumToBooleanConverter x:Key="EnumToBooleanConverter"/>
+            <convert:MinutesToHoursMinutesConverter x:Key="MinutesToHoursMinutesConverter"/>
+            <convert:SoundNotNoneConverter x:Key="SoundNotNoneConverter"/>
+            <convert:StringNotNullOrEmptyConverter x:Key="StringNotNullOrEmptyConverter"/>
+            <convert:EnumToBooleanConverter x:Key="EnumToBooleanConverter"/>
 
             <!-- Dark theme TabItem style with template -->
         <Style TargetType="{x:Type TabItem}">
@@ -377,7 +378,7 @@ Title="Tailgrab Player Panel"
                                             <Style TargetType="Image">
                                                 <Setter Property="Visibility" Value="Collapsed"/>
                                                 <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding SelectedActive.ProfileUrl, Converter={x:Static local:StringNotNullOrEmptyConverter.Instance}}" Value="True">
+                                                    <DataTrigger Binding="{Binding SelectedActive.ProfileUrl, Converter={x:Static convert:StringNotNullOrEmptyConverter.Instance}}" Value="True">
                                                         <Setter Property="Visibility" Value="Visible"/>
                                                     </DataTrigger>
                                                 </Style.Triggers>
@@ -640,7 +641,7 @@ Title="Tailgrab Player Panel"
                                             <Style TargetType="Image">
                                                 <Setter Property="Visibility" Value="Collapsed"/>
                                                 <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding SelectedPast.ProfileUrl, Converter={x:Static local:StringNotNullOrEmptyConverter.Instance}}" Value="True">
+                                                    <DataTrigger Binding="{Binding SelectedPast.ProfileUrl, Converter={x:Static convert:StringNotNullOrEmptyConverter.Instance}}" Value="True">
                                                         <Setter Property="Visibility" Value="Visible"/>
                                                     </DataTrigger>
                                                 </Style.Triggers>
@@ -2619,20 +2620,21 @@ Title="Tailgrab Player Panel"
                                         <Label Grid.Row="0" Grid.Column="1" Content="{DynamicResource UI.Tab.BanManagement.Group.UserName}" FontWeight="Bold" Margin="0,0,8,0" HorizontalAlignment="Right"/>
                                         <TextBlock Grid.Row="0" Grid.Column="2" Name="BanMgmtUserName" VerticalAlignment="Center"/>
 
-                                        <Label Grid.Row="1" Grid.Column="1" Content="{DynamicResource UI.Tab.BanManagement.Group.UserStatus}" FontWeight="Bold" Margin="0,0,8,0" HorizontalAlignment="Right"/>
-                                        <TextBlock Grid.Row="1" Grid.Column="2" Name="BanMgmtUserStatusDesc" VerticalAlignment="Center"/>
+                                        <Label Grid.Row="1" Grid.Column="1" Content="{DynamicResource UI.Tab.BanManagement.Group.Trust}" FontWeight="Bold" Margin="0,0,8,0" HorizontalAlignment="Right"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="2" Name="BanMgmtUserState" VerticalAlignment="Center"/>
 
-                                        <Label Grid.Row="2" Grid.Column="1" Content="{DynamicResource UI.Tab.BanManagement.Group.UserPronouns}" FontWeight="Bold" Margin="0,0,8,0" HorizontalAlignment="Right"/>
-                                        <TextBlock Grid.Row="2" Grid.Column="2" Name="BanMgmtUserPronouns" VerticalAlignment="Center"/>
+                                        <Label Grid.Row="2" Grid.Column="1" Content="{DynamicResource UI.Tab.BanManagement.Group.UserAgeVerified}" FontWeight="Bold" Margin="0,0,8,0" HorizontalAlignment="Right"/>
+                                        <TextBlock Grid.Row="2" Grid.Column="2" Name="BanMgmtUserAgeVerified" VerticalAlignment="Center"/>
 
                                         <Label Grid.Row="0" Grid.Column="3" Content="{DynamicResource UI.Tab.BanManagement.Group.UserJoinDate}" FontWeight="Bold" Margin="0,0,8,0" HorizontalAlignment="Right"/>
                                         <TextBlock Grid.Row="0" Grid.Column="4" Name="BanMgmtUserJoinDate" VerticalAlignment="Center"/>
 
-                                        <Label Grid.Row="1" Grid.Column="3" Content="{DynamicResource UI.Tab.BanManagement.Group.UserAgeVerified}" FontWeight="Bold" Margin="0,0,8,0" HorizontalAlignment="Right"/>
-                                        <TextBlock Grid.Row="1" Grid.Column="4" Name="BanMgmtUserAgeVerified" VerticalAlignment="Center"/>
+                                        <Label Grid.Row="1" Grid.Column="3" Content="{DynamicResource UI.Tab.BanManagement.Group.UserPronouns}" FontWeight="Bold" Margin="0,0,8,0" HorizontalAlignment="Right"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="4" Name="BanMgmtUserPronouns" VerticalAlignment="Center"/>
 
-                                        <Label Grid.Row="2" Grid.Column="3" Content="{DynamicResource UI.Tab.BanManagement.Group.State}" FontWeight="Bold" Margin="0,0,8,0" HorizontalAlignment="Right"/>
-                                        <TextBlock Grid.Row="2" Grid.Column="4" Name="BanMgmtUserState" VerticalAlignment="Center"/>
+                                        <Label Grid.Row="2" Grid.Column="3" Content="{DynamicResource UI.Tab.BanManagement.Group.UserStatus}" FontWeight="Bold" Margin="0,0,8,0" HorizontalAlignment="Right"/>
+                                        <TextBlock Grid.Row="2" Grid.Column="4" Name="BanMgmtUserStatusDesc" VerticalAlignment="Center"/>
+
                                     </Grid>
                                 </GroupBox>
 
@@ -3078,7 +3080,8 @@ Title="Tailgrab Player Panel"
                             <Button Content="Export Avatar List To Excel" 
                                 Click="UserAvatarExportList_Click" 
                                 Tag="UserAvatarDataGrid"
-                                Padding="4,2" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                Padding="4,2" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,6,0"
+                                IsEnabled="False"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,6,0">
                             <Button Content="{DynamicResource UI.Overlay.UserAvatar.Action.SaveAll}" 

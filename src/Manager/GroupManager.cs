@@ -1,9 +1,6 @@
 ﻿using ConcurrentPriorityQueue.Core;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Win32;
 using NLog;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Http;
 using System.Security.Cryptography;
@@ -12,13 +9,14 @@ using Tailgrab.Clients.Github;
 using Tailgrab.Clients.Ollama;
 using Tailgrab.Clients.XSOverlay;
 using Tailgrab.Common;
-using Tailgrab.Configuration;
 using Tailgrab.Models;
+using Tailgrab.PlayerManagement;
+using Tailgrab.PlayerManagement.Views;
 using VRChat.API.Client;
 using VRChat.API.Model;
 using static Tailgrab.Clients.VRChat.VRChatClient;
 
-namespace Tailgrab.PlayerManagement
+namespace Tailgrab.Manager
 {
     public class GroupManager
     {

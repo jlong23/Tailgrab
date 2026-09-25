@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace tailgrab.Migrations
+namespace Tailgrab.Migrations
 {
     /// <inheritdoc />
     public partial class V110 : Migration

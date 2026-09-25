@@ -37,7 +37,7 @@ namespace Tailgrab.Clients.VRChat
             {
                 LogManager.GetCurrentClassLogger().Warn($"Failed to load version from BuildVersion.txt: {ex.Message}");
             }
-            return "1.1.3"; // Fallback version
+            return "1.1.6"; // Fallback version
         }
 
         private IVRChat? _vrchat;
@@ -168,7 +168,6 @@ namespace Tailgrab.Clients.VRChat
         }
 
         #endregion
-
 
         #region Avatar
         public List<AvatarModeration> GetAvatarModerations()
@@ -1312,6 +1311,14 @@ namespace Tailgrab.Clients.VRChat
             public List<LimitedUserGroups> GroupMemberships { get; set; } = new List<LimitedUserGroups>();
             public List<string> Tags { get; set; } = new List<string>();
             public DateTime LastFetched { get; set; } = DateTime.UtcNow;
+
+            public string TrustClassString
+            {
+                get
+                {
+                    return TrustClassEnumMapper.MapTagsToString(Tags, AgeVerified, AgeVerificationStatus?.ToString() ?? string.Empty);
+                }
+            }
 
             public string ProfileTextFormated
             {

@@ -3,20 +3,18 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using Tailgrab.Common;
 
-namespace Tailgrab.PlayerManagement
+namespace Tailgrab.PlayerManagement.Views
 {
-    // Lightweight virtualizing collection for Avatar DB. It only fetches items on demand
-    // and holds a small cache to limit memory usage. It queries the EF DB context for
-    // counts and pages of avatars ordered by AvatarName.
-    public class AvatarVirtualizingCollection : System.Collections.IList, System.Collections.IEnumerable, System.Collections.Specialized.INotifyCollectionChanged
+    // Virtualizing collection for Groups similar to AvatarVirtualizingCollection
+    public class GroupVirtualizingCollection : System.Collections.IList, System.Collections.IEnumerable, System.Collections.Specialized.INotifyCollectionChanged
     {
         private readonly ServiceRegistry _services;
         private readonly int _pageSize = 100;
-        private readonly Dictionary<int, List<AvatarInfoViewModel>> _pages = new Dictionary<int, List<AvatarInfoViewModel>>();
+        private readonly Dictionary<int, List<GroupInfoViewModel>> _pages = [];
         private int _count = -1;
         private string? _filterText;
 
-        public AvatarVirtualizingCollection(ServiceRegistry services)
+        public GroupVirtualizingCollection(ServiceRegistry services)
         {
             _services = services;
         }
@@ -43,17 +41,17 @@ namespace Tailgrab.PlayerManagement
             try
             {
                 var db = _services.GetDBContext();
-                var query = db.AvatarInfos.AsQueryable();
+                var query = db.GroupInfos.AsQueryable();
 
                 if (!string.IsNullOrWhiteSpace(_filterText))
                 {
-                    if (_filterText.StartsWith("avtr_", StringComparison.OrdinalIgnoreCase))
+                    if (_filterText.StartsWith("grp_", StringComparison.OrdinalIgnoreCase))
                     {
-                        query = query.Where(a => a.AvatarId == _filterText);
+                        query = query.Where(g => g.GroupId == _filterText);
                     }
                     else
                     {
-                        query = query.Where(a => EF.Functions.Like(a.AvatarName, $"%{_filterText}%"));
+                        query = query.Where(g => EF.Functions.Like(g.GroupName, $"%{_filterText}%"));
                     }
                 }
 
@@ -65,7 +63,7 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
-        private AvatarInfoViewModel? LoadAtIndex(int index)
+        private GroupInfoViewModel? LoadAtIndex(int index)
         {
             if (index < 0) return null;
             EnsureCount();
@@ -73,29 +71,27 @@ namespace Tailgrab.PlayerManagement
             var page = index / _pageSize;
             if (!_pages.TryGetValue(page, out var list))
             {
-                // load this page
                 try
                 {
                     var db = _services.GetDBContext();
                     var skip = page * _pageSize;
-                    var query = db.AvatarInfos.AsQueryable();
+                    var query = db.GroupInfos.AsQueryable();
 
                     if (!string.IsNullOrWhiteSpace(_filterText))
                     {
-                        if (_filterText.StartsWith("avtr_", StringComparison.OrdinalIgnoreCase))
+                        if (_filterText.StartsWith("grp_", StringComparison.OrdinalIgnoreCase))
                         {
-                            query = query.Where(a => a.AvatarId == _filterText);
+                            query = query.Where(g => g.GroupId == _filterText);
                         }
                         else
                         {
-                            query = query.Where(a => EF.Functions.Like(a.AvatarName, $"%{_filterText}%"));
+                            query = query.Where(g => EF.Functions.Like(g.GroupName, $"%{_filterText}%"));
                         }
                     }
 
-                    var items = query.OrderBy(a => a.AvatarName).Skip(skip).Take(_pageSize).ToList();
-                    list = items.Select(a => new AvatarInfoViewModel(a)).ToList();
+                    var items = query.OrderBy(a => a.GroupName).Skip(skip).Take(_pageSize).ToList();
+                    list = [.. items.Select(a => new GroupInfoViewModel(a))];
                     _pages[page] = list;
-                    // Keep only a couple pages in memory (current, prev, next)
                     var keep = new HashSet<int> { page, page - 1, page + 1 };
                     var keys = _pages.Keys.ToList();
                     foreach (var k in keys)
@@ -105,7 +101,7 @@ namespace Tailgrab.PlayerManagement
                 }
                 catch
                 {
-                    list = new List<AvatarInfoViewModel>();
+                    list = [];
                 }
             }
             var idxInPage = index % _pageSize;
@@ -113,13 +109,13 @@ namespace Tailgrab.PlayerManagement
             return null;
         }
 
-        // IList implementation (read-only for UI)
+        // IList implementation (read-only)
         public int Add(object? value) => throw new NotSupportedException();
         public void Clear() => throw new NotSupportedException();
         public bool Contains(object? value)
         {
             EnsureCount();
-            if (value is AvatarInfoViewModel vm) return this.Cast<AvatarInfoViewModel>().Any(x => x.AvatarId == vm.AvatarId);
+            if (value is GroupInfoViewModel vm) return this.Cast<GroupInfoViewModel>().Any(x => x.GroupId == vm.GroupId);
             return false;
         }
         public int IndexOf(object? value) => -1;
@@ -153,39 +149,34 @@ namespace Tailgrab.PlayerManagement
             for (int i = 0; i < _count; i++) yield return LoadAtIndex(i)!;
         }
 
-        // Collection changed event for WPF to react to resets
         public event NotifyCollectionChangedEventHandler? CollectionChanged;
     }
 
-    public class AvatarInfoViewModel : INotifyPropertyChanged
+    public class GroupInfoViewModel : INotifyPropertyChanged
     {
-        private AlertTypeEnum _alertType;
-
-        public string AvatarId { get; set; }
-        public string AvatarName { get; set; }
-        public string UserName { get; set; }
-        public DateTime? UpdatedAt { get; set; }
-
+        public string GroupId { get; set; }
+        public string GroupName { get; set; }
+        private AlertTypeEnum _AlertType;
         public AlertTypeEnum AlertType
         {
-            get => _alertType;
+            get => _AlertType;
             set
             {
-                if (_alertType != value)
+                if (_AlertType != value)
                 {
-                    _alertType = value;
+                    _AlertType = value;
                     OnPropertyChanged(nameof(AlertType));
                 }
             }
         }
+        public DateTime? UpdatedAt { get; set; }
 
-        public AvatarInfoViewModel(Tailgrab.Models.AvatarInfo a)
+        public GroupInfoViewModel(Tailgrab.Models.GroupInfo a)
         {
-            AvatarId = a.AvatarId;
-            AvatarName = a.AvatarName;
-            UpdatedAt = a.UpdatedAt;
+            GroupId = a.GroupId;
+            GroupName = a.GroupName;
             AlertType = a.AlertType;
-            UserName = a.UserName ?? "Unknown";
+            UpdatedAt = a.UpdatedAt;
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;

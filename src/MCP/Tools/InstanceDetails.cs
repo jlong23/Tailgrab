@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Tailgrab;
-using Tailgrab.Common;
-using Tailgrab.MCP.Tools;
-using Tailgrab.Models;
-using Tailgrab.PlayerManagement;
+﻿using Tailgrab.PlayerManagement;
 
 namespace Tailgrab.MCP.Tools
 {

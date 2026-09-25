@@ -15,7 +15,7 @@ namespace Tailgrab.MCP.Tools
     {
         protected static readonly Logger logger = LogManager.GetCurrentClassLogger();
         public override string Name => "user_details";
-        public override string Description => "Retrieves detailed information for VRChat user, including watched group membership.";
+        public override string Description => "Retrieves detailed information for VRChat user (Display Name, User ID, Account Age, Verified, Friend, Icon URL, Banner URL, Bio, Total Group joined Count, Watched Group Memberships), including watched group membership.";
         public override object InputSchema => new
         {
             type = "object",
@@ -79,7 +79,8 @@ namespace Tailgrab.MCP.Tools
                         icon_url = userProfile.ProfileIconUrl ?? "",
                         banner_url = userProfile.ProfileBannerUrl ?? "",
                         bio = userProfile.Bio ?? "",
-                        group_membership_count = userGroups.Count,
+                        group_membership_count = userProfile.GroupMemberships.Count,
+                        watched_group_membership_count = userGroups.Count,
                         group_membership = groupInfo
                     }
                 };

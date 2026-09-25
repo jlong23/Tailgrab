@@ -1,11 +1,12 @@
 ﻿using System.ComponentModel;
 using System.Windows.Media;
+using Tailgrab.Manager;
 using Tailgrab.Common;
 using WpfBrush = System.Windows.Media.Brush;
 using WpfBrushes = System.Windows.Media.Brushes;
 using WpfColor = System.Windows.Media.Color;
 
-namespace Tailgrab.PlayerManagement
+namespace Tailgrab.PlayerManagement.Views
 {
     public class UserAvatarViewModel : INotifyPropertyChanged
     {

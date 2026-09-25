@@ -34,7 +34,7 @@ public class OnPlayerJoinHandler : AbstractLineHandler
             }
             else if (action.Equals("Left"))
             {
-                _serviceRegistry.GetPlayerManager().PlayerLeft(userName, this);
+                _serviceRegistry.GetPlayerManager().PlayerLeft(userId, userName, this);
             }
 
             Dictionary<string, string> actionData = new Dictionary<string, string>

@@ -8,7 +8,7 @@ using Tailgrab.Models;
 
 #nullable disable
 
-namespace tailgrab.Migrations
+namespace Tailgrab.Migrations
 {
     [DbContext(typeof(TailgrabDBContext))]
     [Migration("20260206180413_V1.0.10")]

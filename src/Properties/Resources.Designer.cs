@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace tailgrab.src.Properties {
+namespace Tailgrab.src.Properties {
     using System;
     
     

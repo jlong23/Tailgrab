@@ -8,7 +8,7 @@ using static Tailgrab.Clients.VRChat.VRChatClient;
 using Microsoft.EntityFrameworkCore; // Add this
 
 
-namespace Tailgrab.PlayerManagement
+namespace Tailgrab.Manager
 {
     public class ModerationManager
     {

@@ -2,6 +2,7 @@ using NLog;
 using System.ComponentModel;
 using System.Text;
 using Tailgrab.Clients.OBS;
+using Tailgrab.Clients.XSOverlay;
 using Tailgrab.Common;
 using Tailgrab.LineHandler;
 using Tailgrab.Models;
@@ -12,7 +13,6 @@ namespace Tailgrab.PlayerManagement
 {
     public class PlayerManager
     {
-
         private static ServiceRegistry serviceRegistry;
         public PlayerManager(ServiceRegistry registry)
         {   
@@ -29,6 +29,9 @@ namespace Tailgrab.PlayerManagement
         private static Dictionary<string, string> avatarByDisplayName = [];
         private static Dictionary<string, PlayerAvatar> playerAvatarByName = [];
         public static WorldInstanceInfo CurrentSession = new WorldInstanceInfo(string.Empty, string.Empty);
+
+        private string LastPlayerLeaveEventDisplayName = string.Empty;
+        private string LastPlayerLeaveEventUserId = string.Empty;
 
         public static readonly AnsiColor COLOR_PREFIX_LEAVE = AnsiColor.Yellow;
         public static readonly AnsiColor COLOR_PREFIX_JOIN = AnsiColor.Green;
@@ -258,8 +261,11 @@ namespace Tailgrab.PlayerManagement
 
         }
 
-        public void PlayerLeft(string displayName, AbstractLineHandler handler)
+        public void PlayerLeft(string userId, string displayName, AbstractLineHandler handler)
         {
+            LastPlayerLeaveEventDisplayName = displayName;
+            LastPlayerLeaveEventUserId  =  userId;
+
             Player? player = GetPlayerByDisplayName(displayName);
             if (player != null)
             {
@@ -310,6 +316,56 @@ namespace Tailgrab.PlayerManagement
                     obsClient.AddMessage($"{displayName} left instance.", "orange");
                 }
             }
+        }
+
+        public VRChatUserProfileEntry? LiftUpErrorHandler(AbstractLineHandler handler)
+        {
+            if( string.IsNullOrEmpty( LastPlayerLeaveEventUserId) || string.IsNullOrEmpty(LastPlayerLeaveEventDisplayName))
+            {
+                logger.Warn("LiftUpErrorHandler: Last player leave event data is missing. Cannot retrieve user profile.");
+                return null;
+            }
+
+            VRChatUserProfileEntry? userProfile = serviceRegistry.GetVRChatAPIClient().GetCachedUserProfile(LastPlayerLeaveEventUserId);
+            if (userProfile != null)
+            {
+                DateTime eventDate = DateTime.Now;
+                logger.Warn($"LiftUpErrorHandler: Found Client User {userProfile.DisplayName} ({userProfile.UserId})");
+
+                Player player = new Player(userProfile.UserId, userProfile.DisplayName, CurrentSession);
+                player.DateJoined = userProfile.JoinDate;
+                player.InstanceStartTime = eventDate;
+                player.InstanceEndTime = eventDate;
+                player.Events.Add(new PlayerEvent(PlayerEvent.EventType.Leave, $"User has LIFTUP Error: {LastPlayerLeaveEventDisplayName}"));
+
+                serviceRegistry.GetGroupManager().CheckUserGroups(LastPlayerLeaveEventUserId);
+                serviceRegistry.GetOllamaAPIClient().CheckUserProfile(LastPlayerLeaveEventUserId);
+                playersByUserId[LastPlayerLeaveEventUserId] = player;
+                userIdByDisplayName[LastPlayerLeaveEventDisplayName] = player.UserId;
+                OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Added, player);
+
+                OBSClient? obsClient = serviceRegistry.GetOBSClient();
+                if (obsClient != null)
+                {
+                    obsClient.AddMessage($"{userProfile.DisplayName} LIFTUP ERROR.", "red");
+                }
+
+                OverlayManager overlay = serviceRegistry.GetXSOverlay();
+                Image? groupAlert = null;
+                Task.Run(() => overlay.SendNotification(
+                    AlertTypeEnum.Crasher,
+                    "<b>LIFTUP ERROR Alert</b>",
+                    $"<b>{player.DisplayName}</b> a VRChat Client LIFTUP Error.",
+                    groupAlert));
+
+                SoundManager.PlayAlertSound(CommonConst.Group_Alert_Key, AlertTypeEnum.Crasher);
+
+                return userProfile;
+            }
+
+            logger.Warn("LiftUpErrorHandler: Could not retrieve user profile VRC.");
+            return null;
+
         }
 
         public static Player? AssignPlayerNetworkId(string displayName, int networkId)

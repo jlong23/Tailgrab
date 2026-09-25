@@ -321,7 +321,7 @@
     <sys:String x:Key="UI.Tab.BanManagement.Group.UserPronouns">Pronouns:</sys:String>
     <sys:String x:Key="UI.Tab.BanManagement.Group.UserJoinDate">Join Date:</sys:String>
     <sys:String x:Key="UI.Tab.BanManagement.Group.UserAgeVerified">Age Verified:</sys:String>
-    <sys:String x:Key="UI.Tab.BanManagement.Group.State">State:</sys:String>
+    <sys:String x:Key="UI.Tab.BanManagement.Group.Trust">Trust Class:</sys:String>
     <sys:String x:Key="UI.Tab.BanManagement.Group.GroupBanStatus">Group Ban Status</sys:String>
     <sys:String x:Key="UI.Tab.BanManagement.Group.GroupId">Group ID</sys:String>
     <sys:String x:Key="UI.Tab.BanManagement.Group.GroupName">Group Name</sys:String>

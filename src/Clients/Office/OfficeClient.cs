@@ -1,8 +1,6 @@
 ﻿using OfficeOpenXml;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using Tailgrab.PlayerManagement;
+using Tailgrab.Manager;
+using Tailgrab.PlayerManagement.Views;
 
 namespace Tailgrab.Clients.Office
 {

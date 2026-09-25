@@ -2,7 +2,7 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Data;
 
-namespace Tailgrab.PlayerManagement
+namespace Tailgrab.PlayerManagement.Converter
 {
     public class EnumToBooleanConverter : IValueConverter
     {
