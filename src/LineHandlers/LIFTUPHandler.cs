@@ -25,11 +25,16 @@ public class LIFTUPHandler : AbstractLineHandler
 
             VRChatUserProfileEntry?  userProfileEntry  = _serviceRegistry.GetPlayerManager().LiftUpErrorHandler(this);
 
+            if(userProfileEntry == null)
+            {
+                logger.Warn($"LIFTUPHandler: Could not find user profile entry for the player that left.");
+            }
+
             Dictionary<string, string> actionData = new Dictionary<string, string>
             {
                 { "timestamp", timestamp },
-                { "userName", userProfileEntry?.DisplayName },
-                { "userId", userProfileEntry?.UserId }
+                { "userName", userProfileEntry?.DisplayName ?? "Unknown" },
+                { "userId", userProfileEntry?.UserId ?? "Unknown" }
             };
             ExecuteActions(actionData);
 

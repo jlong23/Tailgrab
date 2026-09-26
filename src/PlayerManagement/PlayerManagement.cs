@@ -326,28 +326,90 @@ namespace Tailgrab.PlayerManagement
                 return null;
             }
 
-            VRChatUserProfileEntry? userProfile = serviceRegistry.GetVRChatAPIClient().GetCachedUserProfile(LastPlayerLeaveEventUserId);
-            if (userProfile != null)
+            string userId = LastPlayerLeaveEventUserId;
+            string displayName = LastPlayerLeaveEventDisplayName;
+
+            Player? player;
+            if (!playersByUserId.TryGetValue(userId, out Player? value))
             {
-                DateTime eventDate = DateTime.Now;
-                logger.Warn($"LiftUpErrorHandler: Found Client User {userProfile.DisplayName} ({userProfile.UserId})");
+                player = new Player(userId, displayName, CurrentSession);
+                if (handler.LogOutput)
+                {
+                    logger.Info($"{COLOR_PREFIX_JOIN.GetAnsiEscape()}LIFTUP Joined: {displayName} (ID: {userId}){COLOR_RESET.GetAnsiEscape()}");
+                }
+            }
+            else
+            {
+                // If existing, treat as update (display name may have changed etc.)
+                player = value;
+                if (player.DisplayName != displayName)
+                {
+                    // remove old display-name mapping if present
+                    if (!string.IsNullOrEmpty(player.DisplayName))
+                    {
+                        userIdByDisplayName.Remove(player.DisplayName);
+                    }
+                    player.DisplayName = displayName;
+                }
+            }
 
-                Player player = new Player(userProfile.UserId, userProfile.DisplayName, CurrentSession);
-                player.DateJoined = userProfile.JoinDate;
-                player.InstanceStartTime = eventDate;
-                player.InstanceEndTime = eventDate;
-                player.Events.Add(new PlayerEvent(PlayerEvent.EventType.Leave, $"User has LIFTUP Error: {LastPlayerLeaveEventDisplayName}"));
+            serviceRegistry.GetGroupManager().CheckUserGroups(userId);
+            serviceRegistry.GetOllamaAPIClient().CheckUserProfile(userId);
+            playersByUserId[userId] = player;
+            userIdByDisplayName[displayName] = player.UserId;
 
-                serviceRegistry.GetGroupManager().CheckUserGroups(LastPlayerLeaveEventUserId);
-                serviceRegistry.GetOllamaAPIClient().CheckUserProfile(LastPlayerLeaveEventUserId);
-                playersByUserId[LastPlayerLeaveEventUserId] = player;
-                userIdByDisplayName[LastPlayerLeaveEventDisplayName] = player.UserId;
-                OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Added, player);
+            OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Added, player);
+
+            if (player != null)
+            {
+                player.InstanceEndTime = DateTime.Now;
+                TimeSpan timeDifference = (TimeSpan)(player.InstanceEndTime - player.InstanceStartTime);
+                logger.Debug($"{displayName} session time: {timeDifference.TotalMinutes} minutes");
+                TailgrabDBContext dBContext = serviceRegistry.GetDBContext();
+
+                // Update or create UserInfo record with elapsed time
+                UserInfo? user = dBContext.UserInfos.Find(player.UserId);
+                if (user == null)
+                {
+                    user = new UserInfo
+                    {
+                        DisplayName = player.DisplayName,
+                        UserId = player.UserId,
+                        CreatedAt = DateTime.Now,
+                        UpdatedAt = DateTime.Now,
+                        ElapsedMinutes = timeDifference.TotalMinutes
+                    };
+                    dBContext.Add(user);
+                    dBContext.SaveChanges();
+                }
+                else
+                {
+                    user.DisplayName = player.DisplayName;
+                    user.UpdatedAt = DateTime.Now;
+                    user.ElapsedMinutes += timeDifference.TotalMinutes;
+                    dBContext.Update(user);
+                    dBContext.SaveChanges();
+                }
+
+                player.AddAlertMessage(AlertClassEnum.Moderation, AlertTypeEnum.Crasher, $"User has LIFTUP Error: {LastPlayerLeaveEventDisplayName}");
+
+                // Raise event with updated player before removing from internal dictionaries
+                OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Removed, player);
+
+                userIdByDisplayName.Remove(displayName);
+                avatarByDisplayName.Remove(displayName);
+                userIdByNetworkId.Remove(player.NetworkId);
+                playersByUserId.Remove(player.UserId);
+                if (handler.LogOutput)
+                {
+                    PrintPlayerInfo(player);
+                }
+
 
                 OBSClient? obsClient = serviceRegistry.GetOBSClient();
                 if (obsClient != null)
                 {
-                    obsClient.AddMessage($"{userProfile.DisplayName} LIFTUP ERROR.", "red");
+                    obsClient.AddMessage($"{displayName} LIFTUP ERROR.", "red");
                 }
 
                 OverlayManager overlay = serviceRegistry.GetXSOverlay();
@@ -360,12 +422,12 @@ namespace Tailgrab.PlayerManagement
 
                 SoundManager.PlayAlertSound(CommonConst.Group_Alert_Key, AlertTypeEnum.Crasher);
 
+                VRChatUserProfileEntry? userProfile = serviceRegistry.GetVRChatAPIClient().GetCachedUserProfile(userId);
                 return userProfile;
             }
 
             logger.Warn("LiftUpErrorHandler: Could not retrieve user profile VRC.");
             return null;
-
         }
 
         public static Player? AssignPlayerNetworkId(string displayName, int networkId)
