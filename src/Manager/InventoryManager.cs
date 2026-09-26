@@ -3,9 +3,10 @@ using System.Diagnostics.CodeAnalysis;
 using Tailgrab.Clients.Ollama;
 using Tailgrab.Common;
 using Tailgrab.Models;
+using Tailgrab.PlayerManagement;
 using static Tailgrab.Clients.VRChat.VRChatClient;
 
-namespace Tailgrab.PlayerManagement
+namespace Tailgrab.Manager
 {
     public class InventoryManager
     {

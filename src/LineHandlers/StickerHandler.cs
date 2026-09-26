@@ -2,7 +2,7 @@ namespace Tailgrab.LineHandler;
 
 using System.Text.RegularExpressions;
 using Tailgrab.Common;
-using Tailgrab.PlayerManagement;
+using Tailgrab.Manager;
 
 public class StickerHandler : AbstractLineHandler
 {

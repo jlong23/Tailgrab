@@ -6,7 +6,7 @@ using NLog;
 using Tailgrab.Common;
 using Tailgrab.Configuration;
 
-namespace Tailgrab.PlayerManagement
+namespace Tailgrab.PlayerManagement.Views
 {
     public class LineHandlerEditorViewModel : INotifyPropertyChanged
     {
