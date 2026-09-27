@@ -2137,14 +2137,15 @@ namespace Tailgrab.PlayerManagement
                     // Get the player from PlayerManager
                     Player? player = PlayerManager.GetPlayerByUserId(userId);
 
-                    if (player != null && !string.IsNullOrEmpty(player.AIEval))
+                    if (player != null)
                     {
-                        OverlayProfileReportDescriptionTextBox.Text = player.AIEval;
+                        string baseReport = player.ToReportString();
+                        OverlayProfileReportDescriptionTextBox.Text = baseReport;
                         logger.Debug($"Loaded AI evaluation for user: {userId}");
                     }
                     else
                     {
-                        OverlayProfileReportDescriptionTextBox.Text = "No AI evaluation available for this user.";
+                        OverlayProfileReportDescriptionTextBox.Text = "No Player in recent session.";
                         logger.Debug($"No AI evaluation found for user: {userId}");
                     }
                 }

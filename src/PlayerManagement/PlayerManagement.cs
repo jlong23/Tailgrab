@@ -678,56 +678,6 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
-        /** 
-         * Depricated: Use UpdatePlayerUserFromVRCProfile(VRChatUserProfileEntry vrcProfile, string profileHash) instead 
-         */
-        [Obsolete("Use UpdatePlayerUserFromVRCProfile(VRChatUserProfileEntry vrcProfile, string profileHash) instead")]
-        public Player? UpdatePlayerUserFromVRCProfile(User user, string profileHash)
-        {
-            if (user != null && user.Id != null)
-            {
-                TailgrabDBContext dbContext = serviceRegistry.GetDBContext();
-                Player? player = GetPlayerByUserId(user.Id);
-                if (player != null)
-                {
-                    player.DateJoined = user.DateJoined;
-                    logger.Debug($"Updated UserInfo for userInfo {user.DisplayName} (ID: {user.Id}) with DateJoined: {user.DateJoined} and ProfileHash: {profileHash}; {player.ProfileElapsedTime}");
-                }
-
-                // Update or create UserInfo record with elapsed time
-                UserInfo? userInfo = dbContext.UserInfos.Find(user.Id);
-                if (userInfo != null)
-                {
-                    userInfo.DateJoined = user.DateJoined;
-                    userInfo.UpdatedAt = DateTime.UtcNow;
-                    userInfo.LastProfileChecksum = profileHash;
-                    dbContext.UserInfos.Update(userInfo);
-                }
-                else
-                {
-                    userInfo = new UserInfo
-                    {
-                        DisplayName = user.DisplayName,
-                        UserId = user.Id,
-                        CreatedAt = DateTime.UtcNow,
-                        UpdatedAt = DateTime.UtcNow,
-                        DateJoined = user.DateJoined,
-                        LastProfileChecksum = profileHash
-                    };
-                    dbContext.Add(userInfo);
-                }
-                dbContext.SaveChanges();
-
-
-                return player;
-            }
-            else
-            {
-                logger.Warn($"Attempted to update player userInfo info from VRC user, but user was null");
-                return null;
-            }
-        }
-
         public Player? UpdatePlayerUserFromVRCProfile(VRChatUserProfileEntry vrcProfile, string profileHash)
         {
             if (vrcProfile != null && vrcProfile.UserId != null)
@@ -1131,7 +1081,6 @@ namespace Tailgrab.PlayerManagement
                     return result;
                 });
 
-                // @TODO: Change the AlertClass and AlertTypes to Icons
                 var groupedAlerts = _AlertMessage.GroupBy(a => a.AlertClass);
                 foreach (var group in groupedAlerts)
                 {
@@ -1416,6 +1365,33 @@ namespace Tailgrab.PlayerManagement
             }
 
             return sb.ToString();
+        }
+
+        public string ToReportString()
+        {
+            StringBuilder sb = new();
+            sb.AppendLine($"DisplayName: {DisplayName}");
+            sb.AppendLine($"UserId: {UserId}");
+            string _avatarName = !string.IsNullOrWhiteSpace(AvatarId) ? $"{AvatarName} ({AvatarId})" : AvatarName;
+            sb.AppendLine($"Last Avatar Name: {(string.IsNullOrEmpty(_avatarName) ? string.Empty : _avatarName)}");
+            if (!string.IsNullOrEmpty(LastStickerUrl))
+            {
+                sb.AppendLine($"Last Sticker: {(string.IsNullOrEmpty(LastStickerUrl) ? string.Empty : LastStickerUrl)}");
+            }
+            sb.AppendLine($"InstanceStart: {InstanceStartTime:u}");
+            sb.AppendLine($"InstanceEnd: {(InstanceEndTime.HasValue ? InstanceEndTime.Value.ToString("u") : string.Empty)}");
+            sb.AppendLine($"WorldId: {Session.WorldId}");
+            sb.AppendLine($"InstanceId: {Session.ToInstanceId()}");
+            sb.AppendLine($"Instance Details: {Session.ToStatusString()}");
+            sb.AppendLine($"Alerts: {AlertMessages.Count} - {AlertMessage}");
+            sb.AppendLine($"\r\n");
+            if( AIEval != null && AIEval.Length > 0)
+            {
+                sb.AppendLine($"{AIEval}");
+            }
+
+            return sb.ToString();
+
         }
     }
 
