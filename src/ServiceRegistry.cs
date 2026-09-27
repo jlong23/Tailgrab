@@ -13,6 +13,7 @@ using Tailgrab.Models;
 using Tailgrab.PlayerManagement;
 using Tailgrab.Clients.OBS;
 using Tailgrab.Clients.Office;
+using Tailgrab.MCP;
 
 namespace Tailgrab
 {
@@ -36,6 +37,7 @@ namespace Tailgrab
         ServiceCollection services = new ServiceCollection();
         private VRCDBClient _VRCDBClient = new VRCDBClient();
         OfficeClient? officeClient;
+        McpSubscriptionManager? _subscriptionManager = null;
 
         private OBSClient? obsClient;
 
@@ -324,6 +326,15 @@ namespace Tailgrab
             logger.Info("Processing Group GIST list on demand...");
             await groupManager.ProcessGroupGistList( gistUrl, ignoreChecksum );
             logger.Info("Group GIST list processing completed.");
+        }
+
+        public McpSubscriptionManager GetSubscriptionManager()
+        {
+            if (_subscriptionManager == null)
+            {
+                _subscriptionManager = new McpSubscriptionManager();
+            }
+            return _subscriptionManager;
         }
     }
 }

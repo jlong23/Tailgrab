@@ -775,7 +775,43 @@ namespace Tailgrab.PlayerManagement
         }
 
         #region Player Selection Event Handling
-        public Player? SelectedPlayer { get; set; } = null;
+        private Player? _selectedPlayer = null;
+        public Player? SelectedPlayer 
+        { 
+            get => _selectedPlayer;
+            set
+            {
+                if (_selectedPlayer != value)
+                {
+                    _selectedPlayer = value;
+                    OnSelectedPlayerChanged();
+                }
+            }
+        }
+
+        private void OnSelectedPlayerChanged()
+        {
+            try
+            {
+                var notificationData = new
+                {
+                    selectedPlayer = _selectedPlayer != null ? new
+                    {
+                        displayName = _selectedPlayer.DisplayName,
+                        userId = _selectedPlayer.UserId,
+                        isFriend = _selectedPlayer.IsFriend,
+                        isWatched = _selectedPlayer.IsWatched
+                    } : null,
+                    timestamp = DateTime.UtcNow
+                };
+
+                serviceRegistry.GetSubscriptionManager().PublishNotification("selected_player_changed", notificationData);
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error publishing selected player change notification");
+            }
+        }
 
         public void TailgrabPanel_PlayerSelected(object? sender, PlayerSelectedEventArgs e)
         {
