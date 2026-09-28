@@ -1002,7 +1002,6 @@ namespace Tailgrab.Clients.VRChat
         #endregion
 
         #region Non Public JSON Serializable Types
-
         public enum TGGroupMemberStatus
         {
             Unknown,
