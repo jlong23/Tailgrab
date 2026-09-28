@@ -29,7 +29,7 @@ public class EmojiHandler : AbstractLineHandler
             string timestamp = m.Groups[VRC_DATETIME].Value;
             string userId = m.Groups[VRC_USERID].Value;
             string inventoryId = m.Groups[VRC_INVENTORYID].Value;
-            VRChatInventoryItem? item = GetInventorySpawn(userId, inventoryId);
+            InventoryItem? item = GetInventorySpawn(userId, inventoryId);
             if (item != null && ( item.ItemTypeLabel == "Emoji" || item.ItemTypeLabel == "Sticker"))
             {
                 if (LogOutput)
@@ -46,7 +46,7 @@ public class EmojiHandler : AbstractLineHandler
                     { "userName", player?.DisplayName ?? string.Empty },
                     { "inventoryId", inventoryId },
                     { "itemName", item.Name },
-                    { "itemType", item.ItemType },
+                    { "itemType", item.ItemType.ToString() },
                     { "itemTypeLabel", item.ItemTypeLabel },
                     { "itemDescription", item.Description },
                     { "itemImageUrl", item.ImageUrl }
@@ -60,7 +60,7 @@ public class EmojiHandler : AbstractLineHandler
         return false;
     }
 
-    private VRChatInventoryItem? GetInventorySpawn(string userId, string inventoryId)
+    private InventoryItem? GetInventorySpawn(string userId, string inventoryId)
     {
         return Task.Run(() => _serviceRegistry.GetInventoryManager().AddInventorySpawn(userId, inventoryId)).Result;
     }

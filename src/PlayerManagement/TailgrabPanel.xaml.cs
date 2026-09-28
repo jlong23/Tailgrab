@@ -2119,6 +2119,12 @@ namespace Tailgrab.PlayerManagement
 
         private void ShowProfileReportOverlay(string userId)
         {
+            if (string.IsNullOrEmpty(userId))
+            {
+                OverlayProfileReportDescriptionTextBox.Text = string.Empty;
+                return;
+            }
+
             // Populate the overlay fields
             OverlayProfileReportUserIdTextBox.Text = userId.Trim();
 
@@ -2126,34 +2132,27 @@ namespace Tailgrab.PlayerManagement
             OverlayProfileReportReasonComboBox.ItemsSource = ProfileReportReasonsOptions;
             OverlayProfileReportReasonComboBox.SelectedIndex = 0;
 
-            if (string.IsNullOrEmpty(userId))
+            try
             {
-                OverlayProfileReportDescriptionTextBox.Text = string.Empty;
-            }
-            else
-            {
-                try
-                {
-                    // Get the player from PlayerManager
-                    Player? player = PlayerManager.GetPlayerByUserId(userId);
+                // Get the player from PlayerManager
+                Player? player = PlayerManager.GetPlayerByUserId(userId);
 
-                    if (player != null)
-                    {
-                        string baseReport = player.ToReportString();
-                        OverlayProfileReportDescriptionTextBox.Text = baseReport;
-                        logger.Debug($"Loaded AI evaluation for user: {userId}");
-                    }
-                    else
-                    {
-                        OverlayProfileReportDescriptionTextBox.Text = "No Player in recent session.";
-                        logger.Debug($"No AI evaluation found for user: {userId}");
-                    }
-                }
-                catch (Exception ex)
+                if (player != null)
                 {
-                    logger.Error(ex, $"Error loading AI evaluation for user: {userId}");
-                    OverlayProfileReportDescriptionTextBox.Text = $"Error loading AI evaluation: {ex.Message}";
+                    string baseReport = player.ToReportString();
+                    OverlayProfileReportDescriptionTextBox.Text = baseReport;
+                    logger.Debug($"Loaded AI evaluation for user: {userId}");
                 }
+                else
+                {
+                    OverlayProfileReportDescriptionTextBox.Text = "No Player in recent session.";
+                    logger.Debug($"No AI evaluation found for user: {userId}");
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, $"Error loading AI evaluation for user: {userId}");
+                OverlayProfileReportDescriptionTextBox.Text = $"Error loading AI evaluation: {ex.Message}";
             }
 
             // Clear any validation errors
@@ -2743,24 +2742,23 @@ namespace Tailgrab.PlayerManagement
         private async Task<bool> SubmitPrintReport(string userId, string printId, string category, string reportReason, string reportDescription)
         {
             bool success = true;
-            ModerationReportPayload rpt = new()
-            {
-                Type = category,
-                Category = category,
-                Reason = reportReason,
-                ContentId = printId,
-                Description = reportDescription
-            };
-
-            ModerationReportDetails rptDtls = new()
+            SubmitModerationReportRequestDetails rptDtls = new()
             {
                 InstanceType = "Group Public",
                 InstanceAgeGated = false,
                 HolderId = userId
             };
-            rpt.Details = [rptDtls];
+            SubmitModerationReportRequest rpt = new()
+            {
+                Type = category,
+                Category = category,
+                Reason = reportReason,
+                ContentId = printId,
+                Description = reportDescription,
+                Details = rptDtls
+            };
 
-            ModerationReportResponse? report = await _serviceRegistry.GetVRChatAPIClient().SubmitModerationReportAsync(rpt);
+            ModerationReport? report = await _serviceRegistry.GetVRChatAPIClient().SubmitModerationReportAsync(rpt);
             if (report != null)
             {
                 logger.Info($"Print Report submitted - UserId: {userId}, Category: {category}, ReportReason: {reportReason}, Description: {reportDescription}");
@@ -3192,24 +3190,23 @@ namespace Tailgrab.PlayerManagement
 
         private async Task<bool> SubmitInventoryReport(string userId, string inventoryId, string category, string reportReason, string reportDescription)
         {
-            ModerationReportPayload rpt = new()
-            {
-                Type = category.ToLower(),
-                Category = category.ToLower(),
-                Reason = reportReason,
-                ContentId = inventoryId,
-                Description = reportDescription
-            };
-
-            ModerationReportDetails rptDtls = new()
+            SubmitModerationReportRequestDetails rptDtls = new()
             {
                 InstanceType = "Group Public",
                 InstanceAgeGated = false,
                 HolderId = userId
             };
-            rpt.Details = [rptDtls];
+            SubmitModerationReportRequest rpt = new()
+            {
+                Type = category.ToLower(),
+                Category = category.ToLower(),
+                Reason = reportReason,
+                ContentId = inventoryId,
+                Description = reportDescription,
+                Details = rptDtls
+            };
 
-            ModerationReportResponse? report = await _serviceRegistry.GetVRChatAPIClient().SubmitModerationReportAsync(rpt);
+            ModerationReport? report = await _serviceRegistry.GetVRChatAPIClient().SubmitModerationReportAsync(rpt);
             bool success = report != null;
             if (report != null)
             {
@@ -3236,7 +3233,7 @@ namespace Tailgrab.PlayerManagement
 
             try
             {
-                VRChatInventoryItem? inventoryItem = await _serviceRegistry.GetVRChatAPIClient().GetUserInventoryItem(userId, inventoryId);
+                InventoryItem? inventoryItem = await _serviceRegistry.GetVRChatAPIClient().GetUserInventoryItem(userId, inventoryId);
                 if (inventoryItem != null)
                 {
                     if (inventoryItem.ItemTypeLabel.Equals("Emoji", StringComparison.OrdinalIgnoreCase))

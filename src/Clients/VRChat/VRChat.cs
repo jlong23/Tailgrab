@@ -169,7 +169,54 @@ namespace Tailgrab.Clients.VRChat
 
         #endregion
 
-        #region Avatar
+        #region World Management
+        public World? GetWorldById(string worldId)
+        {
+            World? world = null;
+            try
+            {
+                if (_vrchat != null)
+                {
+                    world = _vrchat.Worlds.GetWorld(worldId);
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error($"Error in GetWorldById for world '{worldId}': {ex.Message}");
+            }
+
+            return world;
+        }
+
+        public async Task<World?> GetWorldInfo(string worldId)
+        {
+            try
+            {
+                if (_vrchat == null)
+                {
+                    logger.Error("VRChat client not initialized");
+                    return null;
+                }
+
+                World world = _vrchat.Worlds.GetWorld(worldId);
+                if (world == null)
+                {
+                    logger.Warn($"World with ID {worldId} not found.");
+                    return null;
+                }
+
+
+                return world;
+            }
+            catch (Exception ex)
+            {
+                logger.Error($"Error getting world info for {worldId}: {ex.Message}");
+                return null;
+            }
+        }
+        #endregion
+
+        #region Avatar Management
         public List<AvatarModeration> GetAvatarModerations()
         {
             List<AvatarModeration> moderations = [];
@@ -197,22 +244,16 @@ namespace Tailgrab.Clients.VRChat
                     return false;
                 }
 
-                // Create HTTP client with cookies
-                using HttpClient httpClient = CreateHttpClientWithCookies();
-
-                AvatarModerationItem rpt = new()
+                CreateAvatarModerationRequest request = new CreateAvatarModerationRequest
                 {
                     TargetAvatarId = avatarId,
-                    AvatarModerationType = "block"
+                    AvatarModerationType = AvatarModerationType.Block
                 };
 
-                HttpResponseMessage response = await httpClient.PostAsJsonAsync($"{URI_VRC_BASE_API}/api/1/auth/user/avatarmoderations?targetAvatarId={avatarId}&avatarModerationType=block", rpt);
-                string responseContent = await response.Content.ReadAsStringAsync();
-                logger.Debug($"Response from Block avatar {avatarId} globally: {responseContent}");
-                logger.Info($"Submitted Block avatar {avatarId} globally.");
-                response.EnsureSuccessStatusCode();
+                AvatarModerationCreated created = await _vrchat.Authentication.CreateGlobalAvatarModerationAsync(request);
 
-                return response.IsSuccessStatusCode;
+                logger.Info($"Submitted Block avatar {avatarId} globally.");
+                return created != null;
             }
             catch (Exception ex)
             {
@@ -232,16 +273,9 @@ namespace Tailgrab.Clients.VRChat
                     return false;
                 }
 
-                // Create HTTP client with cookies
-                using HttpClient httpClient = CreateHttpClientWithCookies();
+                OkStatus2 status = _vrchat.Authentication.DeleteGlobalAvatarModeration(avatarId, AvatarModerationType.Block);
 
-                HttpResponseMessage response = await httpClient.DeleteAsync($"{URI_VRC_BASE_API}/api/1/auth/user/avatarmoderations?targetAvatarId={avatarId}&avatarModerationType=block");
-                string responseContent = await response.Content.ReadAsStringAsync();
-                logger.Debug($"Response from Block avatar {avatarId} globally: {responseContent}");
-                logger.Info($"Submitted Un-Block avatar {avatarId} globally.");
-                response.EnsureSuccessStatusCode();
-
-                return response.IsSuccessStatusCode;
+                return status != null && status.OK is string;
             }
             catch (Exception ex)
             {
@@ -271,29 +305,6 @@ namespace Tailgrab.Clients.VRChat
             }
             return false;
         }
-        #endregion
-
-        #region World Management
-        public World? GetWorldById(string worldId)
-        {
-            World? world = null;
-            try
-            {
-                if (_vrchat != null)
-                {
-                    world = _vrchat.Worlds.GetWorld(worldId);
-                }
-            }
-            catch (Exception ex)
-            {
-                logger.Error($"Error in GetWorldById for world '{worldId}': {ex.Message}");
-            }
-
-            return world;
-        }
-        #endregion
-
-        #region Avatar Management
         public Result<Avatar?> GetAvatarById(string avatarId)
         {
             Avatar? avatar = null;
@@ -373,7 +384,7 @@ namespace Tailgrab.Clients.VRChat
                     UserId = userId,
                     DisplayName = user.DisplayName,
                     Bio = profile.Bio,
-                    StatusDescription = profile.StatusDescription,
+                    StatusDescription = string.IsNullOrEmpty(user.StatusDescription) ? string.Empty : user.StatusDescription,
                     Pronouns = profile.Pronouns,
                     ProfileIconUrl = profile.IconUrl,
                     ProfileBannerUrl = profile.BannerUrl,
@@ -460,10 +471,11 @@ namespace Tailgrab.Clients.VRChat
 
             return groups;
         }
+        #endregion
 
-        public async Task<VRChatInventoryItem?> GetUserInventoryItem(string userId, string itemId)
+        #region Inventory Management
+        public async Task<InventoryItem?> GetUserInventoryItem(string userId, string itemId)
         {
-            VRChatInventoryItem? item = null;
             try
             {
                 if (_vrchat == null)
@@ -472,28 +484,15 @@ namespace Tailgrab.Clients.VRChat
                     return null;
                 }
 
-                string url = $"{URI_VRC_BASE_API}/api/1/user/{userId}/inventory/{itemId}";
-
-                // Create HTTP client with cookies
-                using HttpClient httpClient = CreateHttpClientWithCookies();
-
-                var response = await httpClient.GetAsync(url);
-                response.EnsureSuccessStatusCode();
-
-                var json = await response.Content.ReadAsStringAsync();
-                item = JsonConvert.DeserializeObject<VRChatInventoryItem>(json);
-
-                if (item != null)
-                {
-                    logger.Info($"Fetched inventory item: {item.Name} ({item.ItemType}) for user {userId}");
-                }
+                InventoryItem item = _vrchat.Inventory.GetUserInventoryItem(userId, itemId);
+                return item;
             }
             catch (Exception ex)
             {
                 logger.Error($"Error fetching inventory item {itemId} for user {userId}: {ex.Message}");
             }
 
-            return item;
+            return null;
         }
         #endregion
 
@@ -612,13 +611,13 @@ namespace Tailgrab.Clients.VRChat
         #region Print Management
         public Print? GetPrintInfo(string fileURL)
         {
-            Print? printInfo = null;
             try
             {
                 if (_vrchat != null)
                 {
-                    printInfo = _vrchat.Prints.GetPrint(fileURL);
+                    Print printInfo = _vrchat.Prints.GetPrint(fileURL);
                     logger.Info($"Fetched print info: {printInfo?.Id} by {printInfo?.AuthorName}");
+                    return printInfo;
                 }
             }
             catch (Exception ex)
@@ -626,7 +625,7 @@ namespace Tailgrab.Clients.VRChat
                 logger.Error($"Error fetching avatar: {ex.Message}");
             }
 
-            return printInfo;
+            return null;
         }
         #endregion
 
@@ -695,19 +694,15 @@ namespace Tailgrab.Clients.VRChat
                     return false;
                 }
 
-                UserIdPayload request = new UserIdPayload { UserId = userId };
-                // Create HTTP client with cookies
-                using HttpClient httpClient = CreateHttpClientWithCookies();
+                BanGroupMemberRequest request = new BanGroupMemberRequest
+                {
+                    UserId = userId
+                };
 
-                // Submit the moderation report
-                HttpResponseMessage response = await httpClient.PostAsJsonAsync($"{URI_VRC_BASE_API}/api/1/groups/{groupId}/bans", request);
-                string responseContent = await response.Content.ReadAsStringAsync();
-                logger.Debug($"Response from submitting moderation report for content: {responseContent}");
+                GroupMember member = _vrchat.Groups.BanGroupMember(groupId, request);
                 logger.Info($"Banning user {userId} from group {groupId}");
-                response.EnsureSuccessStatusCode();
 
-                return response.IsSuccessStatusCode;
-
+                return member != null && member.MembershipStatus == GroupMemberStatus.Banned;
             }
             catch (Exception ex)
             {
@@ -756,18 +751,9 @@ namespace Tailgrab.Clients.VRChat
                     return false;
                 }   
 
-                // Create HTTP client with cookies
-                using HttpClient httpClient = CreateHttpClientWithCookies();
+                SuccessFlag success = _vrchat.Authentication.DeleteModerationReport(rptId);
 
-                // Submit the moderation report
-                HttpResponseMessage response = await httpClient.DeleteAsync($"{URI_VRC_BASE_API}/api/1/moderationReports/{rptId}");
-                string responseContent = await response.Content.ReadAsStringAsync();
-                logger.Debug($"Response from submitting moderation report for content {rptId}: {responseContent}");
-                logger.Info($"Submitted moderation report for content {rptId}\n{responseContent}");
-
-                response.EnsureSuccessStatusCode();
-                var settings = new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore };
-                return true;
+                return success != null && success.Success;
 
             }
             catch (Exception ex)
@@ -777,8 +763,7 @@ namespace Tailgrab.Clients.VRChat
             }
         }
 
-
-        internal async Task<ModerationReportResponse?> SubmitModerationReportAsync(ModerationReportPayload rpt)
+        internal async Task<ModerationReport?> SubmitModerationReportAsync(SubmitModerationReportRequest report)
         {
             try
             {
@@ -788,30 +773,19 @@ namespace Tailgrab.Clients.VRChat
                     return null;
                 }
 
-                // Create HTTP client with cookies
-                using HttpClient httpClient = CreateHttpClientWithCookies();
+                ModerationReport reported = await _vrchat.Authentication.SubmitModerationReportAsync(report);
 
-                // Submit the moderation report
-                HttpResponseMessage response = await httpClient.PostAsJsonAsync($"{URI_VRC_BASE_API}/api/1/moderationReports", rpt);
-                string responseContent = await response.Content.ReadAsStringAsync();
-                logger.Debug($"Response from submitting moderation report for content {rpt.ContentId}: {responseContent}");
-                logger.Info($"Submitted moderation report for content {rpt.ContentId} with reason: {rpt.Reason}\n{responseContent}");
-
-                response.EnsureSuccessStatusCode();
-                var settings = new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore };
-                ModerationReportResponse? reportResponse = JsonConvert.DeserializeObject<ModerationReportResponse>(responseContent, settings);
-
-                return reportResponse;
+                return reported;
 
             }
             catch (Exception ex)
             {
-                logger.Error(ex, $"Error Reporting image from URI: {rpt}");
+                logger.Error(ex, $"Error Reporting image from URI: {report}");
                 return null;
             }
         }
 
-        internal async Task<ModerationReportListResponse?> ListModerationReportAsync(int offset, bool isClosed)
+        internal async Task<PaginatedModerationReportList?> ListModerationReportAsync(int offset, bool isClosed)
         {
             try
             {
@@ -821,20 +795,8 @@ namespace Tailgrab.Clients.VRChat
                     return null;
                 }
 
-                // Create HTTP client with cookies
-                using HttpClient httpClient = CreateHttpClientWithCookies();
-
-                // Get the moderation reports
-                string closedRpt = string.Empty;
-                if( isClosed )
-                {
-                    closedRpt = "&status=closed";
-                }
-                HttpResponseMessage response = await httpClient.GetAsync($"{URI_VRC_BASE_API}/api/1/moderationReports?offset={offset}{closedRpt}");
-                string responseContent = await response.Content.ReadAsStringAsync();
-                logger.Debug($"Response from listing moderation reports: {responseContent}");
-                var settings = new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore };
-                ModerationReportListResponse? reportList = JsonConvert.DeserializeObject<ModerationReportListResponse>(responseContent, settings);
+                PaginatedModerationReportList reportList = 
+                    await _vrchat.Authentication.GetModerationReportsAsync( offset: offset, status: isClosed ? "closed" : "open");
 
                 return reportList;
 
@@ -844,6 +806,35 @@ namespace Tailgrab.Clients.VRChat
                 logger.Error(ex, $"Error Listing moderation reports with offset: {offset}");
                 return null;
             }
+        }
+
+        internal async Task<bool> PersonalModeration(string userId, PlayerModerationType type )
+        {
+            bool result = false;
+            if (_vrchat == null)
+            {
+                logger.Error("VRChat client not initialized");
+                return result;
+            }
+
+            try
+            {
+                ModerateUserRequest request = new ModerateUserRequest
+                {
+                    Moderated = userId,
+                    Type = type
+                };
+
+                PlayerModeration moderation = _vrchat.Moderations.ModerateUser( request );
+                result = moderation != null && moderation.SourceUserId == userId;
+
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, $"Error Personal Moderation for user: {userId}");
+            }
+
+            return result;
         }
         #endregion
 
@@ -874,35 +865,6 @@ namespace Tailgrab.Clients.VRChat
             catch (Exception ex)
             {
                 logger.Error($"Error checking if user {displayName} is in the same instance: {ex.Message}");
-                return null;
-            }
-        }
-        #endregion
-
-        #region World Management
-        public async Task<World?> GetWorldInfo(string worldId)
-        {
-            try
-            {
-                if (_vrchat == null)
-                {
-                    logger.Error("VRChat client not initialized");
-                    return null;
-                }
-                
-                World world = _vrchat.Worlds.GetWorld(worldId);
-                if (world == null)
-                {
-                    logger.Warn($"World with ID {worldId} not found.");
-                    return null;
-                }
-
-                
-                return world;
-            }
-            catch (Exception ex)
-            {
-                logger.Error($"Error getting world info for {worldId}: {ex.Message}");
                 return null;
             }
         }
@@ -1040,241 +1002,6 @@ namespace Tailgrab.Clients.VRChat
         #endregion
 
         #region Non Public JSON Serializable Types
-        public class AvatarModerationItem
-        {
-            [JsonProperty("avatarModerationType")]
-            public string AvatarModerationType { get; set; } = "block";
-
-            [JsonProperty("targetAvatarId")]
-            public string TargetAvatarId { get; set; } = string.Empty;
-        }
-
-        public class VRChatInventoryItem
-        {
-            [JsonProperty("id")]
-            public string Id { get; set; } = string.Empty;
-
-            [JsonProperty("name")]
-            public string Name { get; set; } = string.Empty;
-
-            [JsonProperty("description")]
-            public string Description { get; set; } = string.Empty;
-
-            [JsonProperty("itemType")]
-            public string ItemType { get; set; } = string.Empty;
-
-            [JsonProperty("itemTypeLabel")]
-            public string ItemTypeLabel { get; set; } = string.Empty;
-
-            [JsonProperty("imageUrl")]
-            public string ImageUrl { get; set; } = string.Empty;
-
-            [JsonProperty("holderId")]
-            public string HolderId { get; set; } = string.Empty;
-
-            [JsonProperty("ancestor")]
-            public string Ancestor { get; set; } = string.Empty;
-
-            [JsonProperty("ancestorHolderId")]
-            public string AncestorHolderId { get; set; } = string.Empty;
-
-            [JsonProperty("firstAncestor")]
-            public string FirstAncestor { get; set; } = string.Empty;
-
-            [JsonProperty("firstAncestorHolderId")]
-            public string FirstAncestorHolderId { get; set; } = string.Empty;
-
-            [JsonProperty("collections")]
-            public List<string> Collections { get; set; } = [];
-
-            [JsonProperty("created_at")]
-            public DateTime CreatedAt { get; set; }
-
-            [JsonProperty("updated_at")]
-            public DateTime UpdatedAt { get; set; }
-
-            [JsonProperty("template_created_at")]
-            public DateTime TemplateCreatedAt { get; set; }
-
-            [JsonProperty("template_updated_at")]
-            public DateTime TemplateUpdatedAt { get; set; }
-
-            [JsonProperty("defaultAttributes")]
-            public Dictionary<string, object> DefaultAttributes { get; set; } = [];
-
-            [JsonProperty("userAttributes")]
-            public Dictionary<string, object> UserAttributes { get; set; } = [];
-
-            [JsonProperty("equipSlot")]
-            public string EquipSlot { get; set; } = string.Empty;
-
-            [JsonProperty("equipSlots")]
-            public List<string> EquipSlots { get; set; } = [];
-
-            [JsonProperty("expiryDate")]
-            public DateTime? ExpiryDate { get; set; }
-
-            [JsonProperty("flags")]
-            public List<string> Flags { get; set; } = [];
-
-            [JsonProperty("isArchived")]
-            public bool IsArchived { get; set; }
-
-            [JsonProperty("isSeen")]
-            public bool IsSeen { get; set; }
-
-            [JsonProperty("metadata")]
-            public InventoryItemMetadata? Metadata { get; set; }
-
-            [JsonProperty("quantifiable")]
-            public bool Quantifiable { get; set; }
-
-            [JsonProperty("tags")]
-            public List<string> Tags { get; set; } = [];
-
-            [JsonProperty("templateId")]
-            public string TemplateId { get; set; } = string.Empty;
-
-            [JsonProperty("validateUserAttributes")]
-            public bool ValidateUserAttributes { get; set; }
-
-            public override string ToString()
-            {
-                return $"VRChatInventoryItem(Id={Id}, Name={Name}, ItemType={ItemType}, ImageUrl={ImageUrl}, HolderId={HolderId}, Metadata={Metadata})";
-            }
-        }
-
-        public class InventoryItemMetadata
-        {
-            [JsonProperty("animated")]
-            public bool Animated { get; set; }
-
-            [JsonProperty("animationStyle")]
-            public string AnimationStyle { get; set; } = string.Empty;
-
-            [JsonProperty("fileId")]
-            public string FileId { get; set; } = string.Empty;
-
-            [JsonProperty("imageUrl")]
-            public string ImageUrl { get; set; } = string.Empty;
-
-            [JsonProperty("maskTag")]
-            public string MaskTag { get; set; } = string.Empty;
-
-            public override string ToString()
-            {
-                return $"InventoryItemMetadata(Animated={Animated}, AnimationStyle={AnimationStyle}, FileId={FileId}, ImageUrl={ImageUrl}, MaskTag={MaskTag})";
-            }
-        }
-
-        public class ModerationReportPayload
-        {
-            [JsonProperty("type")]
-            public string Type { get; set; } = string.Empty;
-
-            [JsonProperty("category")]
-            public string Category { get; set; } = string.Empty;
-
-            [JsonProperty("reason")]
-            public string Reason { get; set; } = string.Empty;
-
-            [JsonProperty("contentId")]
-            public string ContentId { get; set; } = string.Empty;
-
-            [JsonProperty("description")]
-            public string Description { get; set; } = string.Empty;
-
-            [JsonProperty("details")]
-            public List<ModerationReportDetails> Details { get; set; } = [];
-        }
-
-        public class ModerationReportDetails
-        {
-            [JsonProperty("instanceType")]
-            public string InstanceType { get; set; } = string.Empty;
-
-            [JsonProperty("instanceAgeGated")]
-            public bool InstanceAgeGated { get; set; }
-
-            [JsonProperty("userInSameInstance")]
-            public bool UserInSameInstance { get; set; } = true;
-
-            [JsonProperty("holderId")]
-            public string HolderId { get; set; } = string.Empty;
-        }
-
-        public class ModerationReportResponse
-        {
-            [JsonProperty("category")]
-            public string Category { get; set; } = string.Empty;
-            [JsonProperty("contentId")]
-            public string ContentId { get; set; } = string.Empty;
-            [JsonProperty("contentName")]
-            public string ContentName { get; set; } = string.Empty;
-            [JsonProperty("contentThumbnailImageUrl")]
-            public string ContentThumbnailImageUrl { get; set; } = string.Empty;
-            [JsonProperty("description")]
-            public string Description { get; set; } = string.Empty;
-            [JsonProperty("evidenceRequired")]
-            public bool EvidenceRequired { get; set; } = false;
-            [JsonProperty("id")]
-            public string Id { get; set; } = string.Empty;
-            [JsonProperty("reson")] 
-            public string Reason { get; set; } = string.Empty;
-            [JsonProperty("supportRequired")]
-            public bool SupportRequired { get; set; } = false;
-            [JsonProperty("type")]
-            public string Type { get; set; } = string.Empty;    
-        }
-
-        public class ModerationReportListResponse
-        {
-            [JsonProperty("hasNext")]
-            public bool HasNext { get; set; }
-
-            [JsonProperty("results")]
-            public List<ModerationReportResponse> Results { get; set; } = new List<ModerationReportResponse>();
-            [JsonProperty("totalCount")]
-            public int TotalCount { get; set; } = 0;
-        }
-
-        public class PrintInfo
-        {
-            [JsonProperty("authorId")]
-            public string AuthorId { get; set; } = string.Empty;
-            [JsonProperty("authorName")]
-            public string AuthorName { get; set; } = string.Empty;
-            [JsonProperty("id")]
-            public string Id { get; set; } = string.Empty;
-            [JsonProperty("createdAt")]
-            public string CreatedAt { get; set; } = string.Empty;
-            [JsonProperty("note")]
-            public string Note { get; set; } = string.Empty;
-            [JsonProperty("ownerId")]
-            public string OwnerId { get; set; } = string.Empty;
-            [JsonProperty("timestamp")]
-            public string Timestamp { get; set; } = string.Empty;
-            [JsonProperty("worldId")]
-            public string WorldId { get; set; } = string.Empty;
-            [JsonProperty("worldName")]
-            public string WorldName { get; set; } = string.Empty;
-            [JsonProperty("files")]
-            public PrintFileInfo FileInfo { get; set; } = new PrintFileInfo();
-        }
-
-        public class PrintFileInfo
-        {
-            [JsonProperty("fileId")]
-            public string FileId { get; set; } = string.Empty;
-            [JsonProperty("image")]
-            public string ImageUrl { get; set; } = string.Empty;
-        }
-
-        public class UserIdPayload
-        {
-            [JsonProperty("userId")]
-            public string UserId { get; set; } = string.Empty;
-        }   
 
         public enum TGGroupMemberStatus
         {

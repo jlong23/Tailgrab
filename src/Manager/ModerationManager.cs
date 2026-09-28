@@ -5,7 +5,9 @@ using Tailgrab.Clients.VRChat;
 using Tailgrab.Models;
 using VRChat.API.Model;
 using static Tailgrab.Clients.VRChat.VRChatClient;
-using Microsoft.EntityFrameworkCore; // Add this
+using Microsoft.EntityFrameworkCore;
+using Tailgrab.Common;
+using System.Text; // Add this
 
 
 namespace Tailgrab.Manager
@@ -34,23 +36,22 @@ namespace Tailgrab.Manager
             }
 
             bool success = true;
-            ModerationReportPayload rpt = new()
+            SubmitModerationReportRequestDetails rptDtls = new()
+            {
+                InstanceType = "Group Public",
+                InstanceAgeGated = false
+            };
+            SubmitModerationReportRequest rpt = new()
             {
                 Type = "user",
                 Category = "profile",
                 Reason = reportReason,
                 ContentId = userId,
-                Description = reportDescription
+                Description = reportDescription,
+                Details = rptDtls
             };
 
-            ModerationReportDetails rptDtls = new()
-            {
-                InstanceType = "Group Public",
-                InstanceAgeGated = false
-            };
-            rpt.Details = [rptDtls];
-
-            ModerationReportResponse? response = await serviceRegistry.GetVRChatAPIClient().SubmitModerationReportAsync(rpt);
+            ModerationReport? response = await serviceRegistry.GetVRChatAPIClient().SubmitModerationReportAsync(rpt);
             if (response != null)
             {
                 logger.Info($"Profile Report submitted - UserId: {userId}, Category: {category}, ReportReason: {reportReason}, Description: {reportDescription}");
@@ -73,23 +74,22 @@ namespace Tailgrab.Manager
             }
 
             bool success = true;
-            ModerationReportPayload rpt = new()
+            SubmitModerationReportRequestDetails rptDtls = new()
+            {
+                InstanceType = "Group Public",
+                InstanceAgeGated = false
+            };
+            SubmitModerationReportRequest rpt = new()
             {
                 Type = "avatar",
                 Category = "avatar",
                 Reason = reportReason,
                 ContentId = avatarId,
-                Description = reportDescription
+                Description = reportDescription,
+                Details = rptDtls
             };
 
-            ModerationReportDetails rptDtls = new()
-            {
-                InstanceType = "Group Public",
-                InstanceAgeGated = false
-            };
-            rpt.Details = [rptDtls];
-
-            ModerationReportResponse? response = await serviceRegistry.GetVRChatAPIClient().SubmitModerationReportAsync(rpt);
+            ModerationReport? response = await serviceRegistry.GetVRChatAPIClient().SubmitModerationReportAsync(rpt);
             if (response != null)
             {
                 logger.Info($"Avatar Report submitted - AvatarId: {avatarId}, Category: {category}, ReportReason: {reportReason}, Description: {reportDescription}");
@@ -145,7 +145,7 @@ namespace Tailgrab.Manager
                 int offset = 0;
                 while (true)
                 {
-                    ModerationReportListResponse? reports = await serviceRegistry.GetVRChatAPIClient().ListModerationReportAsync(offset, isClosed);
+                    PaginatedModerationReportList? reports = await serviceRegistry.GetVRChatAPIClient().ListModerationReportAsync(offset, isClosed);
                     if (reports == null)
                         break;
 
@@ -170,7 +170,7 @@ namespace Tailgrab.Manager
             }
         }
 
-        public async Task SaveModerationReport(ModerationReportPayload rpt, ModerationReportResponse response, string UserId, bool isClosed)
+        public async Task SaveModerationReport(SubmitModerationReportRequest rpt, ModerationReport response, string UserId, bool isClosed)
         {
             if (serviceRegistry == null)
             {
@@ -214,7 +214,7 @@ namespace Tailgrab.Manager
             }
         }
 
-        public async Task SaveModerationReport(ModerationReportResponse response, bool isClosed)
+        public async Task SaveModerationReport(ModerationReport response, bool isClosed)
         {
             if (serviceRegistry == null)
             {
@@ -266,7 +266,7 @@ namespace Tailgrab.Manager
             }
         }
 
-        internal string convertModerationsReportTypeToUserId(ModerationReportResponse response)
+        internal string convertModerationsReportTypeToUserId(ModerationReport response)
         {
             if (serviceRegistry == null)
             {
@@ -342,5 +342,61 @@ namespace Tailgrab.Manager
         }
         #endregion
 
+        internal async Task<ActionResultSet> BanUserFromGroups(string userId)
+        {
+            ActionResultSet resultSet = new ActionResultSet();
+
+            if (serviceRegistry == null)
+            {
+                throw new InvalidOperationException("ServiceRegistry is not initialized.");
+            }
+
+            try
+            {
+                if (string.IsNullOrWhiteSpace(userId))
+                {
+                    resultSet.Success = false;
+                    resultSet.Message = "User ID is null or empty.";
+                    return resultSet;
+                }
+
+                var groups = await Task.Run(() => serviceRegistry.GetDBContext().GroupManagements.ToList());
+
+                StringBuilder sb = new StringBuilder();
+                foreach (var item in groups)
+                {
+                    if (string.IsNullOrWhiteSpace(item.GroupId))
+                    {
+                        continue;
+                    }
+
+                    bool success = await serviceRegistry.GetVRChatAPIClient().BanUserFromGroup(item.GroupId, userId);   
+                    if (success)
+                    {
+                        resultSet.Success = true;
+                        sb.AppendLine($"Banned user {userId} from groupId {item.GroupId} known as \"{item.GroupName}\"");
+                        logger.Info($"Banned user {userId} from group {item.GroupId}");
+                    }
+                    else
+                    {
+                        sb.AppendLine($"Ban failed for user {userId} from groupId {item.GroupId} known as \"{item.GroupName}\"");
+                    }
+
+                    // Small delay to avoid overwhelming the API
+                    await Task.Delay(100);
+                }
+
+                resultSet.Message = sb.ToString();
+
+                return resultSet;
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error banning user from all groups");
+                resultSet.Success = false;
+                resultSet.Message = $"Error: {ex.Message}";
+                return resultSet;
+            }
+        }
     }
 }

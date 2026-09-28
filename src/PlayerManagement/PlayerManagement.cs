@@ -447,6 +447,11 @@ namespace Tailgrab.PlayerManagement
             return playersByUserId.Values;
         }
 
+        public static IEnumerable<Player> GetAllPlayersByAvatarId(string avatarId)
+        {
+            return playersByUserId.Values.Where(p => p.AvatarId == avatarId);
+        }
+
         public static void ClearAllPlayers(AbstractLineHandler handler)
         {
             foreach (var player in playersByUserId.Values)

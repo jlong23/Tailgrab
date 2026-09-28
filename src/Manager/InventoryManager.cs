@@ -5,6 +5,7 @@ using Tailgrab.Common;
 using Tailgrab.Models;
 using Tailgrab.PlayerManagement;
 using static Tailgrab.Clients.VRChat.VRChatClient;
+using VRChat.API.Model;
 
 namespace Tailgrab.Manager
 {
@@ -23,14 +24,14 @@ namespace Tailgrab.Manager
             serviceRegistry = registry;
         }
 
-        public async Task<VRChatInventoryItem?> AddInventorySpawn(string userId, string inventoryId)
+        public async Task<InventoryItem?> AddInventorySpawn(string userId, string inventoryId)
         {
             if ( serviceRegistry == null) {
                 logger.Warn("ServiceRegistry is not initialized. Cannot fetch inventory item.");
                 return null;
             }
 
-            VRChatInventoryItem? item = null;
+            InventoryItem? item = null;
 
             Player? player = PlayerManager.GetPlayerByUserId(userId);
             if (player != null)
@@ -47,7 +48,7 @@ namespace Tailgrab.Manager
                     {
                         logger.Debug($"{item.ToString()}");
 
-                        itemName = item.Name ?? item.ItemType ?? "Unknown Item";
+                        itemName = item.Name ?? item.ItemType.ToString() ?? "Unknown Item";
                         itemUrl = item.ImageUrl ?? "";
                         itemContent = item.Metadata?.ImageUrl ?? itemUrl;
                         inventoryType = item.ItemTypeLabel ?? "Unknown Type";
