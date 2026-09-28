@@ -918,7 +918,9 @@ Title="Tailgrab Player Panel"
 
                 <!-- #region Moderation Reports Tab -->
                 <TabItem Header="{DynamicResource UI.Tab.ModerationReports.Tab}" Name="ModerationReportsTab">
-                    <Grid>
+                    <Grid Name="ModerationReportsContainerGrid">
+                        <!-- Main Content Grid -->
+                        <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="26*"/>
                             <ColumnDefinition Width="123*"/>
@@ -938,7 +940,7 @@ Title="Tailgrab Player Panel"
                             <Button Content="{DynamicResource UI.Tab.ModerationReports.Filter.Apply}" Click="ModerationDbApplyFilter_Click" Margin="0,0,6,0"/>
                             <Button Content="{DynamicResource UI.Tab.ModerationReports.Filter.Clear}" Click="ModerationDbClearFilter_Click" Margin="0,0,6,0"/>
                             <Button Content="{DynamicResource UI.Tab.ModerationReports.Filter.Refresh}" Click="ModerationDbRefresh_Click" Margin="0,0,6,0"/>
-                            <Button Content="{DynamicResource UI.Tab.ModerationReports.Filter.Download}" Click="ModerationCheck_Click" Margin="0,0,6,0"/>
+                            <Button Name="ModerationCheckButton" Content="{DynamicResource UI.Tab.ModerationReports.Filter.Download}" Click="ModerationCheck_Click" Margin="0,0,6,0"/>
                         </StackPanel>
 
                         <GroupBox Header="{DynamicResource UI.Tab.ModerationReports.Group.Title}" Grid.Row="1" Grid.ColumnSpan="3" Margin="0,0,0,12">
@@ -1024,6 +1026,18 @@ Title="Tailgrab Player Panel"
                                 <DataGridTextColumn Header="{DynamicResource UI.Tab.ModerationReports.Column.CloseDate}" Binding="{Binding CloseDate, StringFormat={}{0:yyyy-MM-dd HH:mm:ss}}" SortMemberPath="CloseDate" Width="140"/>
                             </DataGrid.Columns>
                         </DataGrid>
+                    </Grid>
+
+                    <!-- Loading Overlay -->
+                    <Grid Name="ModerationLoadingOverlay" Background="#CC000000" Visibility="Collapsed">
+                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                            <ProgressBar IsIndeterminate="True" Width="100" Height="10" Margin="0,0,0,16"/>
+                            <TextBlock Text="{DynamicResource UI.Tab.Common.Loading}" 
+                                       Foreground="White" 
+                                       TextAlignment="Center" 
+                                       FontSize="14"/>
+                        </StackPanel>
+                    </Grid>
                     </Grid>
                 </TabItem>
                 <!-- #endregion Moderation Reports Tab -->

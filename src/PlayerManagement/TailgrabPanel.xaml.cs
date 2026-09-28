@@ -4230,10 +4230,21 @@ namespace Tailgrab.PlayerManagement
 
         private async void ModerationCheck_Click(object sender, RoutedEventArgs e)
         {
-            // Get Active and Closed moderation reports to ensure the database is up to date
-            await _serviceRegistry.GetModerationManager().GetModerationReports(false);
-            await _serviceRegistry.GetModerationManager().GetModerationReports(true);
-            RefreshModerationDb();
+            ModerationCheckButton.IsEnabled = false;
+            ModerationLoadingOverlay.Visibility = System.Windows.Visibility.Visible;
+
+            try
+            {
+                // Get Active and Closed moderation reports to ensure the database is up to date
+                await _serviceRegistry.GetModerationManager().GetModerationReports(false);
+                await _serviceRegistry.GetModerationManager().GetModerationReports(true);
+                RefreshModerationDb();
+            }
+            finally
+            {
+                ModerationLoadingOverlay.Visibility = System.Windows.Visibility.Collapsed;
+                ModerationCheckButton.IsEnabled = true;
+            }
         }
 
         private void ModerationDbApplyFilter_Click(object sender, RoutedEventArgs e)
