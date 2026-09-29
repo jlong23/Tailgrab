@@ -70,7 +70,7 @@ namespace Tailgrab.PlayerManagement
             List<Player> matchingPlayers = [];
             foreach (var player in playersByUserId.Values)
             {
-                if (player.AvatarName.Equals(avatarName, StringComparison.OrdinalIgnoreCase))
+                if (player.AvatarName.Equals(avatarName, StringComparison.Ordinal))
                 {
                     matchingPlayers.Add(player);
                 }
