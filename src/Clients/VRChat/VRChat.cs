@@ -789,14 +789,24 @@ namespace Tailgrab.Clients.VRChat
         {
             try
             {
+                logger.Info($"Listing moderation reports with offset: {offset}, isClosed: {isClosed}");
+
                 if (_vrchat == null)
                 {
                     logger.Error("VRChat client not initialized");
                     return null;
                 }
 
-                PaginatedModerationReportList reportList = 
-                    await _vrchat.Authentication.GetModerationReportsAsync( offset: offset, status: isClosed ? "closed" : "open");
+                if( isClosed )
+                {
+                    PaginatedModerationReportList reportList2 =
+                        await _vrchat.Authentication.GetModerationReportsAsync(offset: offset, status: isClosed ? "closed" : "open");
+
+                    return reportList2;
+                }
+
+                PaginatedModerationReportList reportList =
+                        await _vrchat.Authentication.GetModerationReportsAsync(offset: offset);
 
                 return reportList;
 
