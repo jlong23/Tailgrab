@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using NLog;
 using Tailgrab.Common;
 using Tailgrab.PlayerManagement;
 
@@ -9,8 +7,9 @@ namespace Tailgrab.MCP.Tools
     internal class GroupModeration : McpToolBase
     {
 
+        private static Logger logger = LogManager.GetCurrentClassLogger();
         public override string Name => "group_moderation";
-        public override string Description => "Bans the selected player by user_id or set of players by the avatar_id.";
+        public override string Description => "Bans the selected player by user_id or set of players by the user_id and avatar_id.";
         public override object InputSchema => new
         {
             type = "object",
@@ -29,29 +28,29 @@ namespace Tailgrab.MCP.Tools
         public override async Task<McpToolResult> ExecuteAsync(Dictionary<string, object> arguments, CancellationToken cancellationToken = default)
         {
             await Task.Delay(0, cancellationToken);
+            string argumentsString = string.Join(", ", arguments.Select(kvp => $"{kvp.Key}={kvp.Value}"));
+            logger.Info($"Executing GroupModeration tool. Arguments: {argumentsString}");
             try
             {
-                bool isAvatarIdProvided = arguments.TryGetValue("avatar_id", out var avatarIdObj) && avatarIdObj is string;
-                if (!arguments.TryGetValue("action", out var actionObj) || actionObj is not string action)
-                {
-                    return McpToolResult.FromError("Missing or invalid 'action' argument.");
-                }
+                string userId = arguments.ContainsKey("user_id") ? arguments["user_id"].ToString() ?? "" : "";
+                string avatarId = arguments.ContainsKey("avatar_id") ? arguments["avatar_id"].ToString() ?? "" : "";
 
-                if (!arguments.TryGetValue("user_id", out var userIdObj) || userIdObj is not string userId)
+                if (string.IsNullOrEmpty(userId))
                 {
+                    logger.Error($"Missing or invalid 'user_id' argument. Arguments: {argumentsString}");
                     return McpToolResult.FromError("Missing or invalid 'user_id' argument.");
                 }
 
                 Player? player = PlayerManager.GetPlayerByUserId(userId);
                 if (player == null)
                 {
+                    logger.Error($"Player with ID {userId} not found. Arguments: {argumentsString}");
                     return McpToolResult.FromError($"Player with ID {userId} not found.");
                 }
 
-                if (isAvatarIdProvided)
+                if (!string.IsNullOrEmpty(avatarId))
                 {
-                    string avatarId = avatarIdObj as string ?? string.Empty;
-                    string results = ModeratePlayerByAvatarId(avatarId, action);
+                    string results = ModeratePlayerByAvatarId(avatarId);
                     return McpToolResult.FromSuccess(results);
                 }
 
@@ -60,11 +59,12 @@ namespace Tailgrab.MCP.Tools
             }
             catch (Exception ex)
             {
+                logger.Error(ex, $"An error occurred while executing the GroupModeration tool. {argumentsString}");
                 return McpToolResult.FromError($"An error occurred while executing the tool: {ex.Message}");
             }
         }
 
-        private string ModeratePlayerByAvatarId(string avatarId, string moderationType)
+        private string ModeratePlayerByAvatarId(string avatarId)
         {
             string results = string.Empty;
             try
@@ -79,6 +79,7 @@ namespace Tailgrab.MCP.Tools
             }
             catch (Exception ex)
             {
+                logger.Error(ex, $"An error occurred while moderating players with avatar ID {avatarId}.");
                 return $"An error occurred while moderating players with avatar ID {avatarId}: {ex.Message}";
             }
         }

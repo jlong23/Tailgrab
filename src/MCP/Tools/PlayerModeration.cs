@@ -1,12 +1,14 @@
-﻿using Tailgrab.Common;
+﻿using NLog;
+using Tailgrab.Common;
 using Tailgrab.PlayerManagement;
 
 namespace Tailgrab.MCP.Tools
 {
     internal class PlayerModeration : McpToolBase
     {
+        private static Logger logger = LogManager.GetCurrentClassLogger();
         public override string Name => "player_moderation";
-        public override string Description => "Moderates the selected player by user_id or set of players by the avatar_id. The possible moderation actions are \"block\", \"hideavatar\", \"interactoff\", \"interacton\", \"mute\", \"mutechat\", \"showavatar\", \"unmute\", \"unmutechat\" ";
+        public override string Description => "Moderates the selected player by user_id or set of players by the avatar_id. The possible action values are \"block\", \"hideavatar\", \"interactoff\", \"interacton\", \"mute\", \"mutechat\", \"showavatar\", \"unmute\", \"unmutechat\" ";
         public override object InputSchema => new
         {
             type = "object",
@@ -30,28 +32,36 @@ namespace Tailgrab.MCP.Tools
         public override async Task<McpToolResult> ExecuteAsync(Dictionary<string, object> arguments, CancellationToken cancellationToken = default)
         {
             await Task.Delay(0, cancellationToken);
+            string argumentsString = string.Join(", ", arguments.Select(kvp => $"{kvp.Key}={kvp.Value}"));
+            logger.Info($"Executing GroupModeration tool. Arguments: {argumentsString}");
+
             try
             {
-                bool isAvatarIdProvided = arguments.TryGetValue("avatar_id", out var avatarIdObj) && avatarIdObj is string;
-                if (!arguments.TryGetValue("action", out var actionObj) || actionObj is not string action)
+                string userId = arguments.ContainsKey("user_id") ? arguments["user_id"].ToString() ?? "" : "";
+                string avatarId = arguments.ContainsKey("avatar_id") ? arguments["avatar_id"].ToString() ?? "" : "";
+                string action = arguments.ContainsKey("action") ? arguments["action"].ToString() ?? "" : "";
+
+                if (string.IsNullOrEmpty(action))
                 {
+                    logger.Error($"Missing or invalid 'action' argument. Arguments: {argumentsString}");
                     return McpToolResult.FromError("Missing or invalid 'action' argument.");
                 }
 
-                if (!arguments.TryGetValue("user_id", out var userIdObj) || userIdObj is not string userId)
+                if (string.IsNullOrEmpty(userId))
                 {
+                    logger.Error($"Missing or invalid 'user_id' argument. Arguments: {argumentsString}");
                     return McpToolResult.FromError("Missing or invalid 'user_id' argument.");
                 }
 
                 Player? player = PlayerManager.GetPlayerByUserId(userId);
                 if (player == null)
                 {
+                    logger.Error($"Player with ID {userId} not found. Arguments: {argumentsString}");
                     return McpToolResult.FromError($"Player with ID {userId} not found.");
                 }
 
-                if ( isAvatarIdProvided)
+                if (!string.IsNullOrEmpty(avatarId))
                 {
-                    string avatarId = avatarIdObj as string ?? string.Empty;
                     string results = ModeratePlayerByAvatarId(avatarId, action);
                     return McpToolResult.FromSuccess(results);
                 }
@@ -59,12 +69,16 @@ namespace Tailgrab.MCP.Tools
                 bool moderationStatus = await ServiceRegistry.GetVRChatAPIClient().PersonalModeration(player.UserId, PlayerModerationTypeMapper.MapStringToEnum(action));
                 if(!moderationStatus)
                 {
+                    logger.Error($"Failed to moderate " + FormatPlayerLine(player, action) + $". Arguments: {argumentsString}");
                     return McpToolResult.FromError($"Failed to moderate " + FormatPlayerLine(player, action));
                 }
+
+                logger.Info($"Successfully moderated " + FormatPlayerLine(player, action) + $". Arguments: {argumentsString}");
                 return McpToolResult.FromSuccess($"Successfully moderated " + FormatPlayerLine(player, action));
             }
             catch (Exception ex)
             {
+                logger.Error(ex, $"An error occurred while executing the tool. Arguments: {argumentsString}");
                 return McpToolResult.FromError($"An error occurred while executing the tool: {ex.Message}");
             }
         }
