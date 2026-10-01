@@ -18,6 +18,7 @@ using Tailgrab.Configuration;
 using Tailgrab.Manager;
 using Tailgrab.Models;
 using Tailgrab.PlayerManagement.Views;
+using Tailgrab.PlayerManagement.SetupWizard;
 using VRChat.API.Model;
 using static Tailgrab.Clients.VRChat.VRChatClient;
 
@@ -214,13 +215,7 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
-        public List<KeyValuePair<string, AlertTypeEnum>> AlertTypeOptions { get; } =
-        [
-            new KeyValuePair<string, AlertTypeEnum>("None", AlertTypeEnum.None),
-            new KeyValuePair<string, AlertTypeEnum>("Watch", AlertTypeEnum.Watch),
-            new KeyValuePair<string, AlertTypeEnum>("Nuisance", AlertTypeEnum.Nuisance),
-            new KeyValuePair<string, AlertTypeEnum>("Crasher", AlertTypeEnum.Crasher)
-        ];
+        public List<KeyValuePair<string, AlertTypeEnum>> AlertTypeOptions { get; } = AlertTypeEnumMapper.AlertTypeOptions();
 
         private ObservableCollection<AlertColorOption> _alertColorOptions = [];
         public ObservableCollection<AlertColorOption> AlertColorOptions 
@@ -743,14 +738,14 @@ namespace Tailgrab.PlayerManagement
                 CreateMP4ChapterRecording.IsChecked = obsClient.CreateMP4Chapters;
                 FFMpegPath.Text = obsClient.FFMpegPath;
                 if( string.IsNullOrEmpty( obsClient.FFMpegPath ) ) {
-                    FFMpegPath.Text = obsClient.FindFfmpeg();
+                    FFMpegPath.Text = Utility.FindFfmpeg();
                 }   
 
                 CreateMKVChapterRecording.IsChecked = obsClient.CreateMKVChapters;
                 MkvMergePath.Text = obsClient.MKVMergePath;
                 if(string.IsNullOrEmpty(obsClient.MKVMergePath))
                 {
-                    MkvMergePath.Text = obsClient.FindMkvMerge();
+                    MkvMergePath.Text = Utility.FindMkvMerge();
                 }
 
                 ReplayBufferRecordOnKickBan.IsChecked = obsClient.KickBanEvents;
@@ -857,25 +852,67 @@ namespace Tailgrab.PlayerManagement
         }
 
         public bool IsSessionChaptersEnabled => UseOBSAutomation.IsChecked == true && StartRecordOnWorldJoin.IsChecked == true  ;
+
+        private void PersistVRChatCredentials()
+        {
+            try
+            {
+                if (!string.IsNullOrEmpty(VrUserBox.Text)) ConfigStore.SaveSecret(CommonConst.Registry_VRChat_Web_UserName, VrUserBox.Text.Trim());
+                if (!string.IsNullOrEmpty(VrPassBox.Password)) ConfigStore.SaveSecret(CommonConst.Registry_VRChat_Web_Password, VrPassBox.Password.Trim());
+                if (!string.IsNullOrEmpty(Vr2FaBox.Password)) ConfigStore.SaveSecret(CommonConst.Registry_VRChat_Web_2FactorKey, Vr2FaBox.Password.Trim());
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"Failed to save VRChat credentials: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void PersistGithubGistCredentials()
+        {
+            try
+            {
+                ConfigStore.PutStoredKeyBool(CommonConst.Registry_Github_Use_Automation, UseGistAutomation.IsChecked == true);
+                ConfigStore.PutStoredKeyString(CommonConst.Registry_Github_Gist_ID, GithubGistUrl.Text.Trim() ?? string.Empty);
+                if (!string.IsNullOrEmpty(GithubPersonalAccessToken.Text))
+                {
+                    ConfigStore.SaveSecret(CommonConst.Registry_Github_Gist_PAT, GithubPersonalAccessToken.Text.Trim() ?? string.Empty);
+                }
+
+                ConfigStore.PutStoredKeyString(CommonConst.Registry_Avatar_Gist, avatarGistUrl.Text.Trim() ?? string.Empty);
+                ConfigStore.PutStoredKeyString(CommonConst.Registry_Group_Gist, groupGistUrl.Text.Trim() ?? string.Empty);
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"Failed to save GitHub Gist credentials: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void PersistBehaviorFlags()
+        {
+            try
+            {
+                ConfigStore.PutStoredKeyBool(CommonConst.Registry_Discovered_Avatar_Caching, DiscoveredAvatarCaching.IsChecked == true);
+                ConfigStore.PutStoredKeyBool(CommonConst.Registry_Moderated_Avatar_Caching, ModeratedAvatarCaching.IsChecked == true);
+                ConfigStore.PutStoredKeyBool(CommonConst.Registry_Discovered_Group_Caching, DiscoveredGroupCaching.IsChecked == true);
+                ConfigStore.PutStoredKeyString(CommonConst.Registry_XSOverlay_Level, XSOverlayNotifications.SelectedValue.ToString() ?? CommonConst.XSOverlay_Level_None);
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"Failed to save behavior flags: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
         private void SaveConfig_Click(object sender, RoutedEventArgs e)
         {
             try
             {
                 ClearGistUrlsIfAutomationEnabled();
 
-                // Save to registry protected store
-                ConfigStore.SaveSecret(CommonConst.Registry_VRChat_Web_UserName, VrUserBox.Text.Trim() ?? string.Empty);
-                if (!string.IsNullOrEmpty(VrPassBox.Password)) ConfigStore.SaveSecret(CommonConst.Registry_VRChat_Web_Password, VrPassBox.Password.Trim());
-                if (!string.IsNullOrEmpty(Vr2FaBox.Password)) ConfigStore.SaveSecret(CommonConst.Registry_VRChat_Web_2FactorKey, Vr2FaBox.Password.Trim());
 
-                ConfigStore.PutStoredKeyString(CommonConst.Registry_Avatar_Gist, avatarGistUrl.Text.Trim() ?? string.Empty);
-                ConfigStore.PutStoredKeyString(CommonConst.Registry_Group_Gist, groupGistUrl.Text.Trim() ?? string.Empty);
-                if( !string.IsNullOrEmpty(GithubPersonalAccessToken.Text))
-                {
-                    ConfigStore.SaveSecret(CommonConst.Registry_Github_Gist_PAT, GithubPersonalAccessToken.Text.Trim() ?? string.Empty);
-                }
-                ConfigStore.PutStoredKeyString(CommonConst.Registry_Github_Gist_ID, GithubGistUrl.Text.Trim() ?? string.Empty);
-                ConfigStore.PutStoredKeyBool(CommonConst.Registry_Github_Use_Automation, UseGistAutomation.IsChecked == true);
+                // Save to registry protected store(s)
+                PersistVRChatCredentials();
+                PersistGithubGistCredentials();
+
 
                 // OBS Client Integration Settings
                 OBSClient? obsClient = _serviceRegistry.GetOBSClient();
@@ -907,11 +944,7 @@ namespace Tailgrab.PlayerManagement
                     obsClient.ImageSpawnBrowserSourceName = CustomSpawnBrowserSourceName.Text.Trim() ?? string.Empty;
                 }
 
-                ConfigStore.PutStoredKeyBool(CommonConst.Registry_Discovered_Avatar_Caching, DiscoveredAvatarCaching.IsChecked == true);
-                ConfigStore.PutStoredKeyBool(CommonConst.Registry_Moderated_Avatar_Caching, ModeratedAvatarCaching.IsChecked == true);
-                ConfigStore.PutStoredKeyBool(CommonConst.Registry_Discovered_Group_Caching, DiscoveredGroupCaching.IsChecked == true);
-
-                ConfigStore.PutStoredKeyString(CommonConst.Registry_XSOverlay_Level, XSOverlayNotifications.SelectedValue.ToString() ?? CommonConst.XSOverlay_Level_None);
+                PersistBehaviorFlags();
 
                 System.Windows.MessageBox.Show("Configuration saved. Restart the Applicaton for all changes to take affect.", "Config", MessageBoxButton.OK, MessageBoxImage.Information);
             }
@@ -4444,6 +4477,22 @@ namespace Tailgrab.PlayerManagement
         {
             try
             {
+                // Check if first-time setup wizard should run
+                if (SetupWizardHelper.IsFirstTimeSetup())
+                {
+                    var wizard = new SetupWizardDialog();
+                    wizard.Owner = this;
+                    bool? result = wizard.ShowDialog();
+
+                    if (result != true)
+                    {
+                        // User cancelled setup - show warning and close app
+                        System.Windows.MessageBox.Show("Setup is required to use Tailgrab. The application will close.", "Setup Cancelled", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        this.Close();
+                        return;
+                    }
+                }
+
                 // Load window size and position
                 WindowLayoutManager.LoadWindowSize(this);
                 WindowLayoutManager.LoadWindowPosition(this);

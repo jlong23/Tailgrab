@@ -9,6 +9,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Tailgrab.Clients.Ollama;
 using Tailgrab.Common;
+using Tailgrab.PlayerManagement.SetupWizard;
 using VRChat.API.Client;
 using VRChat.API.Model;
 
@@ -53,7 +54,13 @@ namespace Tailgrab.Clients.VRChat
             // Persist cookies to disk (cookies.json) for reuse
             try
             {
-                if (username is null || password is null )
+                if (SetupWizardHelper.IsFirstTimeSetup())
+                {
+                    // We won't start the VRChat client if this is the first time setup, as the user needs to enter credentials first.
+                    return true;
+                }
+
+                if ( username is null || password is null)
                 {
                     System.Windows.MessageBox.Show("VR Chat Web API Credentials are not set yet, use the Config / Secrets tab to update credenials and restart Tailgrab.", "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
                     return false;

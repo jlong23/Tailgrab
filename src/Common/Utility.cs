@@ -172,6 +172,37 @@ namespace Tailgrab.Common
             return $"\"{field}\"";
         }
 
+        public static string? FindFfmpeg()
+        {
+            // Check common install location
+            string candidate = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+                "FFmpeg", "bin", "ffmpeg.exe");
+            if (System.IO.File.Exists(candidate)) return candidate;
+
+            // Check PATH
+            var pathDirs = Environment.GetEnvironmentVariable("PATH")!
+                .Split(Path.PathSeparator);
+            return pathDirs.Select(d => Path.Combine(d, "ffmpeg.exe"))
+                           .FirstOrDefault(System.IO.File.Exists);
+        }
+
+        public static string? FindMkvMerge()
+        {
+            // Check common install location
+            string candidate = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+                "MKVToolNix", "mkvmerge.exe");
+            if (System.IO.File.Exists(candidate)) return candidate;
+
+            // Check PATH
+            var pathDirs = Environment.GetEnvironmentVariable("PATH")!
+                .Split(Path.PathSeparator);
+            return pathDirs.Select(d => Path.Combine(d, "mkvmerge.exe"))
+                           .FirstOrDefault(System.IO.File.Exists);
+        }
+
+
 
     }
 }

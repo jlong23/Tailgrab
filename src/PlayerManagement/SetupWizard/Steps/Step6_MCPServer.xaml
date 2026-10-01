@@ -1,0 +1,54 @@
+<UserControl x:Class="Tailgrab.PlayerManagement.SetupWizard.Steps.Step6_MCPServer"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Height="Auto">
+    <StackPanel Margin="0,20,0,20">
+        <TextBlock FontSize="14" TextWrapping="Wrap" Margin="0,0,0,15" Foreground="#333333">
+            Configure Model Context Protocol (MCP) server for advanced integrations.
+        </TextBlock>
+
+        <StackPanel Margin="0,0,0,20">
+            <CheckBox x:Name="EnableMCPCheckbox" Content="Enable MCP Tool Server" Margin="0,0,0,10" IsChecked="False" Foreground="#333333"/>
+            <TextBlock FontSize="11" TextWrapping="Wrap" Margin="20,0,0,0" Foreground="#666666">
+                The MCP server allows external applications to query and control Tailgrab functionality via a standardized protocol.
+            </TextBlock>
+        </StackPanel>
+
+        <!-- MCP Settings -->
+        <Border x:Name="MCPSettingsSection" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" Padding="15" CornerRadius="4" Margin="0,0,0,15" Visibility="Collapsed">
+            <StackPanel>
+                <StackPanel Margin="0,0,0,15">
+                    <TextBlock Text="Server Port:" FontWeight="Bold" Margin="0,0,0,5"/>
+                    <TextBox x:Name="MCPPortBox" Height="35" Padding="10,8" Text="7575" Foreground="#333333" Background="White" BorderBrush="#CCCCCC" BorderThickness="1"/>
+                    <TextBlock FontSize="11" TextWrapping="Wrap" Margin="0,5,0,0" Foreground="#999999">
+                        TCP port for the MCP server (1024-65535). Default is 7575. 
+                    </TextBlock>
+                </StackPanel>
+
+                <Border Background="#E8F5E9" BorderBrush="#81C784" BorderThickness="1" Padding="10" CornerRadius="4">
+                    <TextBlock FontSize="11" TextWrapping="Wrap" Foreground="#1B5E20">
+                        ℹ️ The MCP server will be accessible at http://localhost:[PORT]
+                    </TextBlock>
+                </Border>
+            </StackPanel>
+        </Border>
+
+        <Border Background="#FFF3E0" BorderBrush="#FFB74D" BorderThickness="1" Padding="10" CornerRadius="4">
+            <StackPanel>
+                <TextBlock FontSize="11" FontWeight="Bold" Margin="0,0,0,5" Foreground="#E65100">What is MCP?</TextBlock>
+                <TextBlock FontSize="11" TextWrapping="Wrap" Foreground="#BF360C">
+					The Model Context Protocol is a specification for AI systems to safely access tools and resources. It allows Claude and other AI assistants to interact with Tailgrab.
+                </TextBlock>
+            </StackPanel>
+        </Border>
+        
+        <Border Background="LightBlue" BorderBrush="Aqua" BorderThickness="1" Padding="10" CornerRadius="4">
+            <StackPanel>
+                <TextBlock FontSize="11" FontWeight="Bold" Margin="0,0,0,5" Foreground="Black">NOTE</TextBlock>
+                <TextBlock FontSize="11" TextWrapping="Wrap" Foreground="Black">Windows Firewall may block the MCP server. Ensure that the port is allowed through the firewall.</TextBlock>
+            </StackPanel>
+        </Border>
+
+        <TextBlock x:Name="ErrorMessageText" FontSize="12" Foreground="#D32F2F" Margin="0,15,0,0" TextWrapping="Wrap" Visibility="Collapsed"/>
+    </StackPanel>
+</UserControl>

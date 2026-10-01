@@ -2,18 +2,19 @@
 using Microsoft.Extensions.DependencyInjection;
 using NLog;
 using System.IO;
-using Tailgrab.Clients.VRCDB;
+using Tailgrab.Clients.OBS;
+using Tailgrab.Clients.Office;
 using Tailgrab.Clients.Ollama;
+using Tailgrab.Clients.VRCDB;
 using Tailgrab.Clients.VRChat;
 using Tailgrab.Clients.XSOverlay;
 using Tailgrab.Common;
 using Tailgrab.Configuration;
 using Tailgrab.Manager;
+using Tailgrab.MCP;
 using Tailgrab.Models;
 using Tailgrab.PlayerManagement;
-using Tailgrab.Clients.OBS;
-using Tailgrab.Clients.Office;
-using Tailgrab.MCP;
+using Tailgrab.PlayerManagement.SetupWizard;
 
 namespace Tailgrab
 {
@@ -67,6 +68,7 @@ namespace Tailgrab
                 services.AddDbContext<TailgrabDBContext>(options => options.UseSqlite($"Data Source={dbPath}"));
                 IServiceProvider serviceProvider = services.BuildServiceProvider();
 
+                // Must have
                 dbContext = serviceProvider.GetService<TailgrabDBContext>();
                 if (dbContext == null)
                 {
@@ -76,14 +78,17 @@ namespace Tailgrab
                 dbContext.Database.EnsureCreated();
                 dbContext.UpgradeDatabase();
 
+                // Must have
                 logger.Info("Starting Configuration Manager...");
                 configurationManager = new ConfigurationManager(this);
 
+                // Needs to run, but can wait
                 logger.Info("Starting VR Chat API Client...");           
                 bool result = await vrcAPIClient.Initialize();
                 if (!result)
                 {
-                    throw new InvalidOperationException("Failed to initialize VRChat API Client. Please check the application logs for details.");
+                    System.Windows.MessageBox.Show("Failed to initialize VRChat API Client. Please check the application logs for details.", "Initialization Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                    //throw new InvalidOperationException("Failed to initialize VRChat API Client. Please check the application logs for details.");
                 }
 
                 logger.Info("Starting OLLama API Client...");

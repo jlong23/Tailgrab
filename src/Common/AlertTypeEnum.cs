@@ -11,14 +11,13 @@ namespace Tailgrab.Common
         Watch = 1,
         Nuisance = 2,
         Crasher = 3
-
     }
 
     public class AlertTypeEnumMapper
     {
         public static string MapEnumToDescription(AlertTypeEnum alertTypeEnum)
         {
-            var resources = System.Windows.Application.Current.Resources;   
+            var resources = System.Windows.Application.Current.Resources;
             string key = alertTypeEnum switch
             {
                 AlertTypeEnum.None => "Text.AlertTypeEnum.None",
@@ -50,7 +49,7 @@ namespace Tailgrab.Common
                 AlertTypeEnum.Crasher => "Crasher",
                 _ => "None"
             };
-        }   
+        }
 
         public static AlertDisplayItem MapEnumToAlertDisplayItem(AlertTypeEnum alertType)
         {
@@ -99,5 +98,14 @@ namespace Tailgrab.Common
             return (WpfBrush)resources[key];
         }
 
+        public static List<KeyValuePair<string, AlertTypeEnum>> AlertTypeOptions()
+        {
+            return new List<KeyValuePair<string, AlertTypeEnum>> {
+                new KeyValuePair<string, AlertTypeEnum>("None", AlertTypeEnum.None),
+                new KeyValuePair<string, AlertTypeEnum>("Watch", AlertTypeEnum.Watch),
+                new KeyValuePair<string, AlertTypeEnum>("Nuisance", AlertTypeEnum.Nuisance),
+                new KeyValuePair<string, AlertTypeEnum>("Crasher", AlertTypeEnum.Crasher)
+            };
+        }
     }
 }

@@ -7,6 +7,7 @@ using System.Net.Http;
 using Tailgrab.Common;
 using Tailgrab.Models;
 using Tailgrab.PlayerManagement;
+using Tailgrab.PlayerManagement.SetupWizard;
 using static Tailgrab.Clients.VRChat.VRChatClient;
 
 namespace Tailgrab.Clients.Ollama
@@ -90,6 +91,12 @@ namespace Tailgrab.Clients.Ollama
         #region Queue Management
         public static async Task ProcessQueueTask(ConcurrentPriorityQueue<IHavePriority<int>, int> priorityQueue, ServiceRegistry serviceRegistry)
         {
+            if( SetupWizardHelper.IsFirstTimeSetup())
+            {
+                logger.Info($"AI Queue Paused due to incomplete Setup");
+                return;
+            }
+
             using OllamaApiClient? ollamaApi = GetClient();
             if (ollamaApi is null)
             {
