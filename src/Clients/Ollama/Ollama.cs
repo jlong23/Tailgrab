@@ -227,6 +227,19 @@ namespace Tailgrab.Clients.Ollama
                 string promptHash = Checksum.MD5Hash(ProfilePrompt);
 
                 UpdateQueuedProcessWithPlayer(process);
+
+                UserInfo? user = _serviceRegistry.GetDBContext().UserInfos.Find(userId);
+                if(user != null && user.LastProfileChecksum != promptHash)
+                {
+                    ProfileEvaluation? oldEvaluation = _serviceRegistry.GetDBContext().ProfileEvaluations.Find(user.LastProfileChecksum);
+                    if(oldEvaluation != null)
+                    {
+                        _serviceRegistry.GetDBContext().ProfileEvaluations.Remove(oldEvaluation);
+                        _serviceRegistry.GetDBContext().SaveChanges();
+                    }
+                    logger.Debug($"Removed old User profile evaluatation for userId: {userId}");
+                }
+
                 ProfileEvaluation? evaluated = _serviceRegistry.GetDBContext().ProfileEvaluations.Find(process.MD5Hash);
                 if (evaluated != null && evaluated.PromptMd5Checksum == promptHash)
                 {
