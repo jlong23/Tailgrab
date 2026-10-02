@@ -118,19 +118,19 @@ namespace Tailgrab.PlayerManagement.Views
                         {
                             vm.ProfileEvaluationDateTime = profileEval.LastDateTime;
 
-                            // Extract first line from Evaluation byte array
-                            if (profileEval.Evaluation != null && profileEval.Evaluation.Length > 0)
+                            try
                             {
-                                try
+                                string evaluationText = System.Text.Encoding.UTF8.GetString(profileEval.Evaluation);
+                                // Extract first line from Evaluation byte array
+                                if ( !string.IsNullOrEmpty(evaluationText))
                                 {
-                                    string evaluationText = System.Text.Encoding.UTF8.GetString(profileEval.Evaluation);
                                     string firstLine = evaluationText.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None)[0];
                                     vm.EvaluationFirstLine = firstLine.Length > 100 ? firstLine.Substring(0, 100) + "..." : firstLine;
                                 }
-                                catch
-                                {
-                                    vm.EvaluationFirstLine = null;
-                                }
+                            }
+                            catch
+                            {
+                                vm.EvaluationFirstLine = null;
                             }
                         }
 
