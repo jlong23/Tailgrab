@@ -1,6 +1,7 @@
 ﻿using NLog;
 using Tailgrab.Common;
 using Tailgrab.PlayerManagement;
+using VRChat.API.Model;
 
 namespace Tailgrab.MCP.Tools
 {
@@ -40,6 +41,7 @@ namespace Tailgrab.MCP.Tools
                 string userId = arguments.ContainsKey("user_id") ? arguments["user_id"].ToString() ?? "" : "";
                 string avatarId = arguments.ContainsKey("avatar_id") ? arguments["avatar_id"].ToString() ?? "" : "";
                 string action = arguments.ContainsKey("action") ? arguments["action"].ToString() ?? "" : "";
+                PlayerModerationType moderationType = PlayerModerationTypeMapper.MapStringToEnum(action);
 
                 if (string.IsNullOrEmpty(action))
                 {
@@ -62,19 +64,19 @@ namespace Tailgrab.MCP.Tools
 
                 if (!string.IsNullOrEmpty(avatarId))
                 {
-                    string results = ModeratePlayerByAvatarId(avatarId, action);
+                    string results = ModeratePlayerByAvatarId(avatarId, moderationType);
                     return McpToolResult.FromSuccess(results);
                 }
 
-                bool moderationStatus = await ServiceRegistry.GetVRChatAPIClient().PersonalModeration(player.UserId, PlayerModerationTypeMapper.MapStringToEnum(action));
+                bool moderationStatus = await ServiceRegistry.GetVRChatAPIClient().PersonalModeration(player.UserId, PlayerModerationType.Block);
                 if(!moderationStatus)
                 {
-                    logger.Error($"Failed to moderate " + FormatPlayerLine(player, action) + $". Arguments: {argumentsString}");
-                    return McpToolResult.FromError($"Failed to moderate " + FormatPlayerLine(player, action));
+                    logger.Error($"Failed to moderate " + FormatPlayerLine(player, moderationType) + $". Arguments: {argumentsString}");
+                    return McpToolResult.FromError($"Failed to moderate " + FormatPlayerLine(player, moderationType));
                 }
 
-                logger.Info($"Successfully moderated " + FormatPlayerLine(player, action) + $". Arguments: {argumentsString}");
-                return McpToolResult.FromSuccess($"Successfully moderated " + FormatPlayerLine(player, action));
+                logger.Info($"Successfully moderated " + FormatPlayerLine(player, moderationType) + $". Arguments: {argumentsString}");
+                return McpToolResult.FromSuccess($"Successfully moderated " + FormatPlayerLine(player, moderationType));
             }
             catch (Exception ex)
             {
@@ -83,20 +85,21 @@ namespace Tailgrab.MCP.Tools
             }
         }
 
-        private string ModeratePlayerByAvatarId(string avatarId, string moderationType)
+        private string ModeratePlayerByAvatarId(string avatarId, PlayerModerationType moderationType)
         {
             string results = string.Empty;
             try
             {
-                VRChat.API.Model.PlayerModerationType moderationTypeEnum = PlayerModerationTypeMapper.MapStringToEnum(moderationType);
+                logger.Info($"Moderating players with avatar ID {avatarId} using moderation type {moderationType}. This may take some time depending on the number of players with this avatar.");
+
+                moderationType = PlayerModerationType.Block;
 
                 IEnumerable<Player> players = PlayerManager.GetAllPlayersByAvatarId(avatarId);
                 foreach (Player player in players)
                 {
-                    bool success = Task.Run(() => ServiceRegistry.GetVRChatAPIClient().PersonalModeration(player.UserId, moderationTypeEnum)).GetAwaiter().GetResult();
+                    bool success = Task.Run(() => ServiceRegistry.GetVRChatAPIClient().PersonalModeration(player.UserId, moderationType)).GetAwaiter().GetResult();
                     if (success)
                     {
-
                         results += $"Successfully moderated " + FormatPlayerLine(player, moderationType);
                     }
                     else
@@ -113,7 +116,7 @@ namespace Tailgrab.MCP.Tools
             }
         }
 
-        private string FormatPlayerLine(Player player, string moderationType)
+        private string FormatPlayerLine(Player player, PlayerModerationType moderationType)
         {
             return $"player {player.DisplayName} (ID: {player.UserId}) with moderation type: {moderationType}\n";
         }
