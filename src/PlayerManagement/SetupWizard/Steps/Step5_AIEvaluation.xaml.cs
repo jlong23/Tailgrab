@@ -25,7 +25,7 @@ namespace Tailgrab.PlayerManagement.SetupWizard.Steps
             AIEnabled_Changed(null, null);
         }
 
-        private void AIEnabled_Changed(object sender, RoutedEventArgs e)
+        private void AIEnabled_Changed(object? sender, RoutedEventArgs? e)
         {
             AISettingsSection.Visibility = EnableAICheckbox.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
         }

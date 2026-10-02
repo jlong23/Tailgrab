@@ -24,7 +24,7 @@ namespace Tailgrab.PlayerManagement.SetupWizard.Steps
             MCPEnabled_Changed(null, null);
         }
 
-        private void MCPEnabled_Changed(object sender, RoutedEventArgs e)
+        private void MCPEnabled_Changed(object? sender, RoutedEventArgs? e)
         {
             MCPSettingsSection.Visibility = EnableMCPCheckbox.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
         }

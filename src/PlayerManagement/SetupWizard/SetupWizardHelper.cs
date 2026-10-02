@@ -285,22 +285,22 @@ namespace Tailgrab.PlayerManagement.SetupWizard
             SetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Color_Alert_Key, "Class03");
 
             // Remove all color settings from registry
-            ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Normal_Background);
-            ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Normal_Foreground);
-            ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Friend_Background);
-            ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Friend_Foreground);
-            ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Class01_Background);
-            ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Class01_Foreground);
-            ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Class02_Background);
-            ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Class02_Foreground);
-            ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Class03_Background);
-            ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Class03_Foreground);
-            ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Class04_Background);
-            ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Class04_Foreground);
-            ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Selected_Background);
-            ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Selected_Foreground);
-            ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_MouseOver_Background);
-            ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_MouseOver_Foreground);
+            ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Normal_Background, CommonConst.Default_HighlightClass_Normal_Background);
+            ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Normal_Foreground, CommonConst.Default_HighlightClass_Normal_Foreground);
+            ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Friend_Background, CommonConst.Default_HighlightClass_Friend_Background);
+            ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Friend_Foreground, CommonConst.Default_HighlightClass_Friend_Foreground);
+            ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Class01_Background, CommonConst.Default_HighlightClass_Class01_Background);
+            ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Class01_Foreground, CommonConst.Default_HighlightClass_Class01_Foreground);
+            ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Class02_Background, CommonConst.Default_HighlightClass_Class02_Background);
+            ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Class02_Foreground, CommonConst.Default_HighlightClass_Class02_Foreground);
+            ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Class03_Background, CommonConst.Default_HighlightClass_Class03_Background);
+            ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Class03_Foreground, CommonConst.Default_HighlightClass_Class03_Foreground);
+            ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Class04_Background, CommonConst.Default_HighlightClass_Class04_Background);
+            ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Class04_Foreground, CommonConst.Default_HighlightClass_Class04_Foreground);
+            ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Selected_Background, CommonConst.Default_HighlightClass_Selected_Background);
+            ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Selected_Foreground, CommonConst.Default_HighlightClass_Selected_Foreground);
+            ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_MouseOver_Background, CommonConst.Default_HighlightClass_MouseOver_Background);
+            ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_MouseOver_Foreground, CommonConst.Default_HighlightClass_MouseOver_Foreground);
         }
 
         private static void SetAlertKeyString(string alertKey, AlertTypeEnum alertType, string subType, object value)

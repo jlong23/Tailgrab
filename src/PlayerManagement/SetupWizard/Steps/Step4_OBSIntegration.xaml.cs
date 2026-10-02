@@ -92,33 +92,33 @@ namespace Tailgrab.PlayerManagement.SetupWizard.Steps
 
         }
 
-        private void OBSEnabled_Changed(object sender, RoutedEventArgs e)
+        private void OBSEnabled_Changed(object? sender, RoutedEventArgs? e)
         {
             OBSSettingsSection.Visibility = EnableOBSCheckbox.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
         }
 
-        private void ReplayBuffer_Changed(object sender, RoutedEventArgs e)
+        private void ReplayBuffer_Changed(object? sender, RoutedEventArgs? e)
         {
             CustomSpawnSceneSection.Visibility = (RecordImageCheckbox.IsChecked == true) ? Visibility.Visible : Visibility.Collapsed;
             KickBanSceneSection.Visibility = (RecordKickBanCheckbox.IsChecked == true) ? Visibility.Visible : Visibility.Collapsed;
         }
 
-        private void KickBan_Changed(object sender, RoutedEventArgs e)
+        private void KickBan_Changed(object? sender, RoutedEventArgs? e)
         {
             KickBanSceneSection.Visibility = (RecordKickBanCheckbox.IsChecked == true) ? Visibility.Visible : Visibility.Collapsed;
         }
 
-        private void ImageSpawn_Changed(object sender, RoutedEventArgs e)
+        private void ImageSpawn_Changed(object? sender, RoutedEventArgs? e)
         {
             CustomSpawnSceneSection.Visibility = (RecordImageCheckbox.IsChecked == true) ? Visibility.Visible : Visibility.Collapsed;
         }
 
-        private void MP4Chapters_Changed(object sender, RoutedEventArgs e)
+        private void MP4Chapters_Changed(object? sender, RoutedEventArgs? e)
         {
             FFMpegSection.Visibility = (CreateMP4ChaptersCheckbox.IsChecked == true) ? Visibility.Visible : Visibility.Collapsed;
         }
 
-        private void MKVChapters_Changed(object sender, RoutedEventArgs e)
+        private void MKVChapters_Changed(object? sender, RoutedEventArgs? e)
         {
             MKVMergeSection.Visibility = (CreateMKVChaptersCheckbox.IsChecked == true) ? Visibility.Visible : Visibility.Collapsed;
         }
