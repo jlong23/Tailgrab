@@ -9,6 +9,7 @@ Provide code immediately. Do not explain code unless explicitly asked.
 - UI Thread: Always perform heavy/IO async work off the UI thread; use `Dispatcher.InvokeAsync` only for UI updates.
 - Resources: Use StaticResource/DynamicResource for themes and styles. Do not hardcode colors or fonts inline.
 - Localization: Default UI text to localization resources from `localization.en-US.xaml` instead of hardcoded strings.
+- Hyperlink Binding: When binding dynamic text to a Hyperlink element, use a Run element inside the Hyperlink: `<Hyperlink NavigateUri="..."><Run Text="{DynamicResource key}"/></Hyperlink>`. Do NOT use the Text attribute directly on Hyperlink as it is not a valid bindable property.
 
 # C# Guidelines
 - Use modern C# features (file-scoped namespaces, pattern matching, primary constructors where applicable).
