@@ -40,37 +40,44 @@ namespace Tailgrab.Manager
 
         private async Task SpeechTaskProcessor(ConcurrentPriorityQueue<IHavePriority<int>, int> queue, ServiceRegistry registry)
         {
-            logger.Info($"Group Queue Running");
-            while (true)
+            try
             {
-                // Process items from the priority queue
+                logger.Info($"Speech Queue Running");
                 while (true)
                 {
-                    var result = priorityQueue.Dequeue();
-                    if (result.IsSuccess)
+                    // Process items from the priority queue
+                    while (true)
                     {
-                        if (result.Value is SpeechItem item && item.Text != null)
+                        var result = priorityQueue.Dequeue();
+                        if (result.IsSuccess)
                         {
-                            synthesizer.SelectVoice(item.Voice);
-                            synthesizer.Volume = item.Volume; // Set volume (0-100)
-                            synthesizer.Rate = item.Speed; // Set speed (-10 to 10)
-                            // Speak text synchronously
-                            synthesizer.Speak(item.Text);
-                            continue;
+                            if (result.Value is SpeechItem item && item.Text != null)
+                            {
+                                synthesizer.SelectVoice(item.Voice);
+                                synthesizer.Volume = item.Volume; // Set volume (0-100)
+                                synthesizer.Rate = item.Speed; // Set speed (-10 to 10)
+                                                               // Speak text synchronously
+                                synthesizer.Speak(item.Text);
+                                continue;
+                            }
                         }
-                    }
-                    else
-                    {
-                        // No more items to process
-                        break;
+                        else
+                        {
+                            // No more items to process
+                            break;
+                        }
+
+                        // Wait for a short period before getting next record
+                        await Task.Delay(1000);
                     }
 
-                    // Wait for a short period before getting next record
-                    await Task.Delay(1000);
+                    // Wait for a short period before checking the queue again
+                    await Task.Delay(10000);
                 }
-
-                // Wait for a short period before checking the queue again
-                await Task.Delay(10000);
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error in SpeechTaskProcessor");
             }
         }
     }

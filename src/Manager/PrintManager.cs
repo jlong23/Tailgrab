@@ -72,7 +72,6 @@ namespace Tailgrab.Manager
 
         public void UpdatePlayerPrint(Print? printInfo, ImageEvaluation? evaluated)
         {
-            logger.Info($"Updating player print for Print item {printInfo?.ToString()} with evaluated data: {evaluated?.Evaluation}");
             if (serviceRegistry == null) { return; }
             
             if (printInfo == null) { return; }

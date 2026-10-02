@@ -73,98 +73,106 @@ public class FileTailer
     [STAThread]
     public static void Main(string[] args)
     {
-        // Initialize logging and prerequisites (before DI)
-        NLog.GlobalDiagnosticsContext.Set("StartTime", DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss"));
-        string configFilePath = Path.Combine(CommonConst.APPLICATION_LOCAL_DATA_PATH, "NLog.config");
-        LogManager.Setup().LoadConfigurationFromFile(configFilePath);
-
-        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-
-        // Parse command-line arguments
-        // -l <FilePath>    : use explicit log folder/file path
-        // -clear           : remove application registry settings and exit
-        // -backup          : create a backup of the database and exit
-        string? explicitPath = null;
-        bool clearRegistry = false;
-        bool backup = false;
-        for (int i = 0; i < args.Length; i++)
+        try
         {
-            var a = args[i];
-            if (string.Equals(a, "-l", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+            // Initialize logging and prerequisites (before DI)
+            NLog.GlobalDiagnosticsContext.Set("StartTime", DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss"));
+            string configFilePath = Path.Combine(CommonConst.APPLICATION_LOCAL_DATA_PATH, "NLog.config");
+            LogManager.Setup().LoadConfigurationFromFile(configFilePath);
+
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+
+            // Parse command-line arguments
+            // -l <FilePath>    : use explicit log folder/file path
+            // -clear           : remove application registry settings and exit
+            // -backup          : create a backup of the database and exit
+            string? explicitPath = null;
+            bool clearRegistry = false;
+            bool backup = false;
+            for (int i = 0; i < args.Length; i++)
             {
-                explicitPath = args[i + 1];
-                i++;
+                var a = args[i];
+                if (string.Equals(a, "-l", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+                {
+                    explicitPath = args[i + 1];
+                    i++;
+                }
+                else if (string.Equals(a, "-clear", StringComparison.OrdinalIgnoreCase))
+                {
+                    clearRegistry = true;
+                }
+                else if (string.Equals(a, "-backup", StringComparison.OrdinalIgnoreCase))
+                {
+                    backup = true;
+                }
             }
-            else if (string.Equals(a, "-clear", StringComparison.OrdinalIgnoreCase))
+
+            if (clearRegistry)
             {
-                clearRegistry = true;
+                DeleteTailgrabRegistrySettings();
+
+                // Exit application after clearing settings
+                return;
             }
-            else if (string.Equals(a, "-backup", StringComparison.OrdinalIgnoreCase))
+
+            // Build dependency injection container
+            _serviceProvider = DiContainer.BuildServiceProvider();
+            _serviceRegistry = _serviceProvider.GetRequiredService<ServiceRegistry>();
+            _serviceRegistry.StartAllServices().GetAwaiter().GetResult();
+
+            // Initialize OfficeClient with ServiceRegistry reference (breaks circular dependency)
+            var officeClient = _serviceProvider.GetRequiredService<Tailgrab.Clients.Office.OfficeClient>();
+            officeClient.Initialize(_serviceRegistry);
+
+            // Initialize MCP Server after ServiceRegistry is ready
+            var mcpServer = _serviceProvider.GetRequiredService<Tailgrab.MCP.McpServer>();
+            mcpServer.Initialize(_serviceRegistry);
+
+            UpgradeApplication(_serviceRegistry);
+
+            if (backup)
             {
-                backup = true;
+                CreateDatabaseBackup();
+
+                // Exit application after creating backup
+                return;
             }
+
+            string filePath = GetLogsPath(args, explicitPath);
+            if (!Directory.Exists(filePath))
+            {
+                logger.Info($"Missing VRChat log directory at '{filePath}'");
+                return;
+            }
+
+
+            _serviceRegistry.GetConfigurationManager().LoadLineHandlersFromConfig(HandlerList);
+
+            // Start the MCP Server on a background thread for local network access
+            logger.Info($"Starting MCP Server on port {mcpServer.Port}");
+            _ = mcpServer.StartAsync();
+
+            // Start the watcher task on a background thread so it doesn't block the STA UI thread
+            logger.Info($"Starting file watcher and showing UI for: '{filePath}'");
+            _ = Task.Run(() => WatchPath(filePath, _serviceRegistry));
+
+            // Start the Amplitude Cache watcher task on a background thread
+            string ampPath = VRChatAmplitudePath + Path.DirectorySeparatorChar;
+            logger.Info($"Starting Amplitude Cache watcher for: '{ampPath}'");
+            _ = Task.Run(() => WatchAmpCache(ampPath, _serviceRegistry));
+
+            // Check for updates before showing the main window
+            _ = Task.Run(async () => await CheckForUpdatesAsync());
+
+            BuildAppWindow(_serviceRegistry);
+
+            // When the window closes, allow Main to complete. The watcher task will be abandoned; if desired add cancellation.
         }
-
-        if (clearRegistry)
+        catch (Exception ex)
         {
-            DeleteTailgrabRegistrySettings();
-
-            // Exit application after clearing settings
+            logger.Error(ex, "Unhandled exception in Main");
             return;
         }
-
-        // Build dependency injection container
-        _serviceProvider = DiContainer.BuildServiceProvider();
-        _serviceRegistry = _serviceProvider.GetRequiredService<ServiceRegistry>();
-        _serviceRegistry.StartAllServices().GetAwaiter().GetResult();
-
-        // Initialize OfficeClient with ServiceRegistry reference (breaks circular dependency)
-        var officeClient = _serviceProvider.GetRequiredService<Tailgrab.Clients.Office.OfficeClient>();
-        officeClient.Initialize(_serviceRegistry);
-
-        // Initialize MCP Server after ServiceRegistry is ready
-        var mcpServer = _serviceProvider.GetRequiredService<Tailgrab.MCP.McpServer>();
-        mcpServer.Initialize(_serviceRegistry);
-
-        UpgradeApplication(_serviceRegistry);
-
-        if (backup)
-        {
-            CreateDatabaseBackup();
-
-            // Exit application after creating backup
-            return;
-        }
-
-        string filePath = GetLogsPath(args, explicitPath);
-        if (!Directory.Exists(filePath))
-        {
-            logger.Info($"Missing VRChat log directory at '{filePath}'");
-            return;
-        }
-
-
-        _serviceRegistry.GetConfigurationManager().LoadLineHandlersFromConfig(HandlerList);
-
-        // Start the MCP Server on a background thread for local network access
-        logger.Info($"Starting MCP Server on port {mcpServer.Port}");
-        _ = mcpServer.StartAsync();
-
-        // Start the watcher task on a background thread so it doesn't block the STA UI thread
-        logger.Info($"Starting file watcher and showing UI for: '{filePath}'");
-        _ = Task.Run(() => WatchPath(filePath, _serviceRegistry));
-
-        // Start the Amplitude Cache watcher task on a background thread
-        string ampPath = VRChatAmplitudePath + Path.DirectorySeparatorChar;
-        logger.Info($"Starting Amplitude Cache watcher for: '{ampPath}'");
-        _ = Task.Run(() => WatchAmpCache(ampPath, _serviceRegistry));
-
-        // Check for updates before showing the main window
-        _ = Task.Run(async () => await CheckForUpdatesAsync());
-
-        BuildAppWindow(_serviceRegistry);
-
-        // When the window closes, allow Main to complete. The watcher task will be abandoned; if desired add cancellation.
     }
 
 
@@ -728,7 +736,10 @@ public class FileTailer
 
         logger.Info($"User's current culture: {userCulture.Name}, Defaulting to: {defaultCulture.Name}");
 
-        if (userCulture == null || string.IsNullOrEmpty(userCulture.Name) || userCulture.Name == "Invariant Culture" || userCulture.Name == "und")
+        // Whitelist of supported cultures (only en-US is supported currently)
+        var supportedCultures = new[] { "en-US" };
+
+        if (userCulture == null || string.IsNullOrEmpty(userCulture.Name) || userCulture.Name == "Invariant Culture" || userCulture.Name == "und" || !supportedCultures.Contains(userCulture.Name))
         {
             userCulture = defaultCulture;
         }
