@@ -1,15 +1,8 @@
 using NLog;
-using System;
-using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Threading.Tasks;
-using Tailgrab.Clients.Github;
-using Tailgrab.Clients.OBS;
-using Tailgrab.Clients.Ollama;
 using Tailgrab.Clients.VRChat;
 using Tailgrab.Common;
-using static System.Net.WebRequestMethods;
 
 namespace Tailgrab.PlayerManagement.SetupWizard
 {
@@ -263,6 +256,66 @@ namespace Tailgrab.PlayerManagement.SetupWizard
             // Check if they have new optional settings
             // This is just a heuristic; we can expand if needed
             return true;
+        }
+
+        public static void SetupAlertClassSettings()
+        {
+            // Avatar Alerts
+            SetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Watch, CommonConst.Sound_Alert_Key, "Asterisk");
+            SetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Sound_Alert_Key, "A380_Retard");
+            SetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Sound_Alert_Key, "Crasher_Crasher_Ban_Now");
+            SetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Watch, CommonConst.Color_Alert_Key, "Class01");
+            SetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Color_Alert_Key, "Class02");
+            SetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Color_Alert_Key, "Class03");
+
+            // Group Alerts
+            SetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Watch, CommonConst.Sound_Alert_Key, "Asterisk");
+            SetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Sound_Alert_Key, "Bad_Group_Bad_Group");
+            SetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Sound_Alert_Key, "Crasher_Crasher_Ban_Now");
+            SetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Watch, CommonConst.Color_Alert_Key, "Class01");
+            SetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Color_Alert_Key, "Class02");
+            SetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Color_Alert_Key, "Class03");
+
+            // Group Alerts
+            SetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Watch, CommonConst.Sound_Alert_Key, "Asterisk");
+            SetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Sound_Alert_Key, "Police_Double_Chirping");
+            SetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Sound_Alert_Key, "Crasher_Crasher_Ban_Now");
+            SetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Watch, CommonConst.Color_Alert_Key, "Class01");
+            SetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Color_Alert_Key, "Class02");
+            SetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Color_Alert_Key, "Class03");
+
+            // Remove all color settings from registry
+            ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Normal_Background);
+            ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Normal_Foreground);
+            ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Friend_Background);
+            ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Friend_Foreground);
+            ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Class01_Background);
+            ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Class01_Foreground);
+            ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Class02_Background);
+            ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Class02_Foreground);
+            ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Class03_Background);
+            ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Class03_Foreground);
+            ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Class04_Background);
+            ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Class04_Foreground);
+            ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Selected_Background);
+            ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Selected_Foreground);
+            ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_MouseOver_Background);
+            ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_MouseOver_Foreground);
+        }
+
+        private static void SetAlertKeyString(string alertKey, AlertTypeEnum alertType, string subType, object value)
+        {
+            string key = CommonConst.ConfigRegistryPath + "\\" + alertKey + "\\" + alertType.ToString();
+
+            if (value is string stringValue && !string.IsNullOrEmpty(stringValue))
+            {
+                ConfigStore.PutStoredKeyString(key, subType, stringValue);
+            }
+            else
+            {
+                ConfigStore.RemoveStoredKeyString(key, subType);
+            }
+
         }
     }
 }

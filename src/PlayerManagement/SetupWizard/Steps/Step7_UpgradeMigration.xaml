@@ -2,31 +2,38 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              Height="Auto">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/src/Resources/localization.en-US.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
     <StackPanel Margin="0,20,0,20">
-        <TextBlock FontSize="14" FontWeight="Bold" Margin="0,0,0,10" Foreground="#333333">
-            Upgrade Migration
-        </TextBlock>
+        <TextBlock FontSize="14" FontWeight="Bold" Margin="0,0,0,10" Foreground="#333333"
+                   Text="{DynamicResource SetupWizard.Step07.Title}"/>
 
-        <TextBlock FontSize="12" TextWrapping="Wrap" Margin="0,0,0,20" Foreground="#666666">
-            Tailgrab has detected that you're upgrading from a previous version. Review the following to ensure your configuration is complete:
-        </TextBlock>
+        <TextBlock FontSize="12" TextWrapping="Wrap" Margin="0,0,0,20" Foreground="#666666"
+                   Text="{DynamicResource SetupWizard.Step07.Description}"/>
 
         <Border Background="#F5F5F5" BorderBrush="#DDDDDD" BorderThickness="1" Padding="15" CornerRadius="4" Margin="0,0,0,15">
             <StackPanel>
-                <TextBlock FontSize="12" FontWeight="Bold" Margin="0,0,0,10" Foreground="#333333">Version Information</TextBlock>
+                <TextBlock FontSize="12" FontWeight="Bold" Margin="0,0,0,10" Foreground="#333333"
+                           Text="{DynamicResource SetupWizard.Step07.VersionInformationTitle}"/>
 
                 <StackPanel Margin="0,0,0,10">
                     <TextBlock FontSize="11" Foreground="#666666" Margin="0,0,0,5">
-                        <Run FontWeight="Bold">Installed Version:</Run> <Run x:Name="InstalledVersionText">1.1.6</Run>
+                        <Run FontWeight="Bold" Text="{DynamicResource SetupWizard.Step07.InstalledVersionLabel}"/> <Run x:Name="InstalledVersionText">1.1.6</Run>
                     </TextBlock>
                     <TextBlock FontSize="11" Foreground="#666666" Margin="0,0,0,5">
-                        <Run FontWeight="Bold">Current Version:</Run> <Run x:Name="CurrentVersionText">1.1.6</Run>
+                        <Run FontWeight="Bold" Text="{DynamicResource SetupWizard.Step07.CurrentVersionLabel}"/> <Run x:Name="CurrentVersionText">1.1.6</Run>
                     </TextBlock>
                 </StackPanel>
 
                 <Separator Margin="0,10,0,10" Foreground="#DDDDDD"/>
 
-                <TextBlock FontSize="12" FontWeight="Bold" Margin="0,0,0,10" Foreground="#333333">Configuration Status</TextBlock>
+                <TextBlock FontSize="12" FontWeight="Bold" Margin="0,0,0,10" Foreground="#333333"
+                           Text="{DynamicResource SetupWizard.Step07.ConfigurationStatusTitle}"/>
 
                 <StackPanel x:Name="ConfigStatusStackPanel" Margin="0,0,0,0">
                     <!-- Items will be added dynamically -->
@@ -34,28 +41,24 @@
             </StackPanel>
         </Border>
 
-        <TextBlock FontSize="12" TextWrapping="Wrap" Margin="0,0,0,15" Foreground="#666666">
-            The following steps have been completed and will not be repeated:
-        </TextBlock>
+        <TextBlock FontSize="12" TextWrapping="Wrap" Margin="0,0,0,15" Foreground="#666666"
+                   Text="{DynamicResource SetupWizard.Step07.CompletedStepsLabel}"/>
 
         <ListBox x:Name="CompletedStepsListBox" Height="120" Margin="0,0,0,15" Background="White" BorderBrush="#CCCCCC" BorderThickness="1">
             <!-- Items will be added dynamically -->
         </ListBox>
 
-        <TextBlock FontSize="12" TextWrapping="Wrap" Margin="0,0,0,15" Foreground="#666666">
-            Click "Finish" to complete setup. You can modify any settings later in the Configuration tab.
-        </TextBlock>
+        <TextBlock FontSize="12" TextWrapping="Wrap" Margin="0,0,0,15" Foreground="#666666"
+                   Text="{DynamicResource SetupWizard.Step07.FinishDescription}"/>
 
         <Border Background="#E3F2FD" BorderBrush="#90CAF9" BorderThickness="1" Padding="10" CornerRadius="4">
-            <TextBlock FontSize="11" TextWrapping="Wrap" Foreground="#1565C0">
-                ✓ Your existing configuration and database have been preserved.
-            </TextBlock>
+            <TextBlock FontSize="11" TextWrapping="Wrap" Foreground="#1565C0"
+                       Text="{DynamicResource SetupWizard.Step07.PreservationNote}"/>
         </Border>
 
         <Border Background="PaleVioletRed" BorderBrush="Red" BorderThickness="1" Padding="10" CornerRadius="4">
-            <TextBlock FontSize="11" FontWeight="Bold" TextWrapping="Wrap" Foreground="Yellow">
-                ✗ IMPORTANT! Please Close and Restart Tailgrab for all changes to take effect.
-            </TextBlock>
+            <TextBlock FontSize="11" FontWeight="Bold" TextWrapping="Wrap" Foreground="Yellow"
+                       Text="{DynamicResource SetupWizard.Step07.RestartWarning}"/>
         </Border>
     </StackPanel>
 </UserControl>

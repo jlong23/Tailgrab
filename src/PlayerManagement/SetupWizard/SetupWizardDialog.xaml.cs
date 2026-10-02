@@ -341,6 +341,7 @@ namespace Tailgrab.PlayerManagement.SetupWizard
             if (step7 != null)
             {
                 step7.PopulateStatus();
+                SetupWizardHelper.SetupAlertClassSettings();
             }
             return Task.FromResult(true);
         }

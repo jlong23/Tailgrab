@@ -6,55 +6,55 @@
          xmlns:converter="clr-namespace:Tailgrab.PlayerManagement.Converter"
          Height="Auto">
     <UserControl.Resources>
-        <converter:EnumToBooleanConverter x:Key="EnumToBooleanConverter"/>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/src/Resources/localization.en-US.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <converter:EnumToBooleanConverter x:Key="EnumToBooleanConverter"/>
+        </ResourceDictionary>
     </UserControl.Resources>
     <StackPanel Margin="0,20,0,20">
-        <TextBlock FontSize="14" TextWrapping="Wrap" Margin="0,0,0,15" Foreground="#333333">
-            Configure caching behavior for discovered avatars and groups.
-        </TextBlock>
+        <TextBlock FontSize="14" TextWrapping="Wrap" Margin="0,0,0,15" Foreground="#333333"
+                   Text="{DynamicResource SetupWizard.Step03.Description}"/>
 
         <StackPanel Margin="0,0,0,15">
-            <CheckBox x:Name="DiscoveredAvatarCachingCheckbox" Content="Cache discovered avatars locally" Margin="0,0,0,10" IsChecked="False" Foreground="#333333"/>
-            <TextBlock FontSize="11" TextWrapping="Wrap" Margin="20,0,0,0" Foreground="#666666">
-                Collect public avatars you experience for removal or reporting later.
-            </TextBlock>
+            <CheckBox x:Name="DiscoveredAvatarCachingCheckbox" Content="{DynamicResource SetupWizard.Step03.DiscoveredAvatarCachingLabel}" Margin="0,0,0,10" IsChecked="False" Foreground="#333333"/>
+            <TextBlock FontSize="11" TextWrapping="Wrap" Margin="20,0,0,0" Foreground="#666666"
+                       Text="{DynamicResource SetupWizard.Step03.DiscoveredAvatarCachingDescription}"/>
         </StackPanel>
 
         <StackPanel Margin="0,0,0,15">
-            <CheckBox x:Name="DiscoveredGroupCachingCheckbox" Content="Cache discovered groups locally" Margin="0,0,0,10" IsChecked="False" Foreground="#333333"/>
-            <TextBlock FontSize="11" TextWrapping="Wrap" Margin="20,0,0,0" Foreground="#666666">
-                Collects groups all user groups you experience in the instance for reporting/flagging later.
-            </TextBlock>
+            <CheckBox x:Name="DiscoveredGroupCachingCheckbox" Content="{DynamicResource SetupWizard.Step03.DiscoveredGroupCachingLabel}" Margin="0,0,0,10" IsChecked="False" Foreground="#333333"/>
+            <TextBlock FontSize="11" TextWrapping="Wrap" Margin="20,0,0,0" Foreground="#666666"
+                       Text="{DynamicResource SetupWizard.Step03.DiscoveredGroupCachingDescription}"/>
         </StackPanel>
 
 		<StackPanel Margin="0,0,0,15">
-			<CheckBox x:Name="ModeratedAvatarCachingCheckbox" Content="Cache moderated avatars locally" Margin="0,0,0,10" IsChecked="True" Foreground="#333333"/>
-			<TextBlock FontSize="11" TextWrapping="Wrap" Margin="20,0,0,0" Foreground="#666666">
-				Adds 'Hide Globally' avatars in your account as Nuisance Avatars on the next startup.
-			</TextBlock>
+			<CheckBox x:Name="ModeratedAvatarCachingCheckbox" Content="{DynamicResource SetupWizard.Step03.ModeratedAvatarCachingLabel}" Margin="0,0,0,10" IsChecked="True" Foreground="#333333"/>
+			<TextBlock FontSize="11" TextWrapping="Wrap" Margin="20,0,0,0" Foreground="#666666"
+					   Text="{DynamicResource SetupWizard.Step03.ModeratedAvatarCachingDescription}"/>
 		</StackPanel>
 
 		<StackPanel Margin="0,0,0,15">
-			<TextBlock FontSize="11" TextWrapping="Wrap" Margin="20,0,0,0" Foreground="#666666">
-				If you use XS Overlay in VR, you can configure this to popup notifications in VR for alerts of that level and higher.
-			</TextBlock>
+			<TextBlock FontSize="11" TextWrapping="Wrap" Margin="20,0,0,0" Foreground="#666666"
+					   Text="{DynamicResource SetupWizard.Step03.XSOverlayDescription}"/>
 
 			<StackPanel Orientation="Horizontal" Margin="2,5,2,2">
-				<RadioButton Content="None" IsChecked="{Binding SelectedXSOverlayLevel, RelativeSource={RelativeSource AncestorType=local:Step3_BehaviorFlags}, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter={x:Static common:AlertTypeEnum.None}}" Margin="0,0,15,0" VerticalAlignment="Center" Foreground="#666666"/>
-				<RadioButton Content="Watch" IsChecked="{Binding SelectedXSOverlayLevel, RelativeSource={RelativeSource AncestorType=local:Step3_BehaviorFlags}, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter={x:Static common:AlertTypeEnum.Watch}}" Margin="0,0,15,0" VerticalAlignment="Center" Foreground="#666666"/>
-				<RadioButton Content="Nuisance" IsChecked="{Binding SelectedXSOverlayLevel, RelativeSource={RelativeSource AncestorType=local:Step3_BehaviorFlags}, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter={x:Static common:AlertTypeEnum.Nuisance}}" Margin="0,0,15,0" VerticalAlignment="Center" Foreground="#666666"/>
-				<RadioButton Content="Crasher" IsChecked="{Binding SelectedXSOverlayLevel, RelativeSource={RelativeSource AncestorType=local:Step3_BehaviorFlags}, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter={x:Static common:AlertTypeEnum.Crasher}}" Margin="0,0,15,0" VerticalAlignment="Center" Foreground="#666666"/>
+				<RadioButton Content="{DynamicResource SetupWizard.Step03.XSOverlayNone}" IsChecked="{Binding SelectedXSOverlayLevel, RelativeSource={RelativeSource AncestorType=local:Step3_BehaviorFlags}, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter={x:Static common:AlertTypeEnum.None}}" Margin="0,0,15,0" VerticalAlignment="Center" Foreground="#666666"/>
+				<RadioButton Content="{DynamicResource SetupWizard.Step03.XSOverlayWatch}" IsChecked="{Binding SelectedXSOverlayLevel, RelativeSource={RelativeSource AncestorType=local:Step3_BehaviorFlags}, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter={x:Static common:AlertTypeEnum.Watch}}" Margin="0,0,15,0" VerticalAlignment="Center" Foreground="#666666"/>
+				<RadioButton Content="{DynamicResource SetupWizard.Step03.XSOverlayNuisance}" IsChecked="{Binding SelectedXSOverlayLevel, RelativeSource={RelativeSource AncestorType=local:Step3_BehaviorFlags}, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter={x:Static common:AlertTypeEnum.Nuisance}}" Margin="0,0,15,0" VerticalAlignment="Center" Foreground="#666666"/>
+				<RadioButton Content="{DynamicResource SetupWizard.Step03.XSOverlayCrasher}" IsChecked="{Binding SelectedXSOverlayLevel, RelativeSource={RelativeSource AncestorType=local:Step3_BehaviorFlags}, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter={x:Static common:AlertTypeEnum.Crasher}}" Margin="0,0,15,0" VerticalAlignment="Center" Foreground="#666666"/>
 			</StackPanel>
 
 		</StackPanel>
 
 		<Border Background="#F5F5F5" BorderBrush="#DDDDDD" BorderThickness="1" Padding="10" CornerRadius="4" Margin="0,20,0,0">
-            <StackPanel>
-                <TextBlock FontSize="11" FontWeight="Bold" Margin="0,0,0,5" Foreground="#333333">Information:</TextBlock>
-                <TextBlock FontSize="11" TextWrapping="Wrap" Foreground="#666666">
-                    Caching information can help with detection of Crashing Avatars and Groups, but will use local disk space and may affect application startup time.
-                </TextBlock>
-            </StackPanel>
-        </Border>
+			<StackPanel>
+				<TextBlock FontSize="11" FontWeight="Bold" Margin="0,0,0,5" Foreground="#333333"
+						   Text="{DynamicResource SetupWizard.Step03.InformationLabel}"/>
+				<TextBlock FontSize="11" TextWrapping="Wrap" Foreground="#666666"
+						   Text="{DynamicResource SetupWizard.Step03.CachingNote}"/>
+			</StackPanel>
+		</Border>
     </StackPanel>
 </UserControl>
