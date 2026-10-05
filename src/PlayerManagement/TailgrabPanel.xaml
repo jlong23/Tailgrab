@@ -25,6 +25,12 @@ Title="Tailgrab Player Panel"
             <convert:SoundNotNoneConverter x:Key="SoundNotNoneConverter"/>
             <convert:StringNotNullOrEmptyConverter x:Key="StringNotNullOrEmptyConverter"/>
             <convert:EnumToBooleanConverter x:Key="EnumToBooleanConverter"/>
+            <convert:MessageBoxButtonToOKVisibilityConverter x:Key="MessageBoxButtonToOKVisibilityConverter"/>
+            <convert:MessageBoxButtonToYesVisibilityConverter x:Key="MessageBoxButtonToYesVisibilityConverter"/>
+            <convert:MessageBoxButtonToNoVisibilityConverter x:Key="MessageBoxButtonToNoVisibilityConverter"/>
+            <convert:MessageBoxButtonToCancelVisibilityConverter x:Key="MessageBoxButtonToCancelVisibilityConverter"/>
+            <convert:MessageBoxImageToSymbolConverter x:Key="MessageBoxImageToSymbolConverter"/>
+            <convert:MessageBoxImageToColorConverter x:Key="MessageBoxImageToColorConverter"/>
 
             <!-- Dark theme TabItem style with template -->
         <Style TargetType="{x:Type TabItem}">
@@ -4129,6 +4135,82 @@ Title="Tailgrab Player Panel"
             </Border>
         </Border>
         <!-- #endregion Status Message Overlay -->
+
+        <!-- #region OK/Cancel Message Overlay -->
+        <Border Name="OverlayMessageOkCancel" 
+                Background="#CC000000" 
+                Panel.ZIndex="{x:Static local:TailgrabPanelConst.ZINDEX_LEVEL_MESSAGE_OVERLAY}"
+                Visibility="Collapsed">
+            <Border Background="#FF2D2D30" 
+                    MaxWidth="1080" MaxHeight="700" 
+                    CornerRadius="8" Padding="16"
+                    VerticalAlignment="Center" HorizontalAlignment="Center">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Title with Optional Icon -->
+                    <Grid Grid.Row="0" Margin="0,0,0,16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Icon -->
+                        <TextBlock Grid.Column="0" FontSize="28" Margin="0,0,12,0" VerticalAlignment="Top"
+                                   Text="{Binding OverlayMessageOkCancelImageType, Converter={StaticResource MessageBoxImageToSymbolConverter}}"
+                                   Foreground="{Binding OverlayMessageOkCancelImageType, Converter={StaticResource MessageBoxImageToColorConverter}, FallbackValue=#FFE6E6E6}"/>
+
+                        <!-- Title Text -->
+                        <TextBlock Grid.Column="1" 
+                                   Text="{Binding OverlayMessageOkCancelTitle}" 
+                                   FontSize="20" FontWeight="Bold" 
+                                   Foreground="#FFE6E6E6"
+                                   TextWrapping="Wrap"
+                                   VerticalAlignment="Center"/>
+                    </Grid>
+
+                    <!-- Message -->
+                    <TextBox Name="OverlayMessageOkCancelBodyTextBox" 
+                             Grid.Row="1"
+                             TextWrapping="Wrap" AcceptsReturn="True" 
+                             VerticalScrollBarVisibility="Auto"
+                             IsReadOnly="True"
+                             MaxHeight="500" Height="130"/>
+
+                    <!-- Dynamic Buttons based on MessageBoxButton type -->
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+                        <!-- OK Button (shown for OK, OKCancel) -->
+                        <Button Content="OK" 
+                                Width="100" Padding="8,4" Margin="0,0,8,0"
+                                Click="ConfirmOverlayMessageOkCancel"
+                                Visibility="{Binding OverlayMessageOkCancelButtonType, Converter={StaticResource MessageBoxButtonToOKVisibilityConverter}}"/>
+
+                        <!-- Yes Button (shown for YesNo, YesNoCancel) -->
+                        <Button Content="Yes" 
+                                Width="100" Padding="8,4" Margin="0,0,8,0"
+                                Click="ConfirmOverlayMessageOkCancel"
+                                Visibility="{Binding OverlayMessageOkCancelButtonType, Converter={StaticResource MessageBoxButtonToYesVisibilityConverter}}"/>
+
+                        <!-- No Button (shown for YesNo, YesNoCancel) -->
+                        <Button Content="No" 
+                                Width="100" Padding="8,4" Margin="0,0,8,0"
+                                Click="NoOverlayMessageOkCancel"
+                                Visibility="{Binding OverlayMessageOkCancelButtonType, Converter={StaticResource MessageBoxButtonToNoVisibilityConverter}}"/>
+
+                        <!-- Cancel Button (shown for OKCancel, YesNoCancel) -->
+                        <Button Content="{DynamicResource UI.Overlay.TestImageAIPrompt.Action.Close}" 
+                                Width="100" Padding="8,4"
+                                Click="CancelOverlayMessageOkCancel"
+                                Visibility="{Binding OverlayMessageOkCancelButtonType, Converter={StaticResource MessageBoxButtonToCancelVisibilityConverter}}"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Border>
+        <!-- #endregion OK/Cancel Message Overlay -->
 
         <!-- #region Status Bar -->
         <StatusBar Grid.Row="1" Background="#FF2D2D30" Foreground="#FFE6E6E6">
