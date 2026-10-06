@@ -842,9 +842,24 @@ namespace Tailgrab.Clients.VRChat
                     Type = type
                 };
 
-                PlayerModeration moderation = _vrchat.Moderations.ModerateUser( request );
-                result = moderation != null && moderation.SourceUserId == userId;
+                HttpClient httpClient = CreateHttpClientWithCookies();
+                HttpResponseMessage response = await httpClient.PostAsync($"{URI_VRC_BASE_API}/auth/user/moderate", JsonContent.Create(request));
+                logger.Info($"Submitted Personal Moderation request for user {userId} with type {type}. Status code: {response.StatusCode}");
+                logger.Info($"Request content: {JsonConvert.SerializeObject(request)}");
+                logger.Info($"Response content: {JsonConvert.SerializeObject(response)}");
+                if ( response.IsSuccessStatusCode)
+                {
+                    PlayerModeration moderation = await response.Content.ReadFromJsonAsync<PlayerModeration>();
+                    result = moderation != null && moderation.SourceUserId == userId;
+                }
+                else
+                {
+                    logger.Error($"Failed to moderate user {userId}. Status code: {response.StatusCode}");
+                    result = false;
+                }
 
+                //PlayerModeration moderation = _vrchat.Moderations.ModerateUser( request );
+                //result = moderation != null && moderation.SourceUserId == userId;
             }
             catch (Exception ex)
             {
