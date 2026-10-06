@@ -34,7 +34,7 @@ namespace Tailgrab.MCP.Tools
         {
             await Task.Delay(0, cancellationToken);
             string argumentsString = string.Join(", ", arguments.Select(kvp => $"{kvp.Key}={kvp.Value}"));
-            logger.Info($"Executing GroupModeration tool. Arguments: {argumentsString}");
+            logger.Info($"Executing PlayerModeration tool. Arguments: {argumentsString}");
 
             try
             {
