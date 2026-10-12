@@ -24,6 +24,8 @@ This guide will walk you through the steps to configure Tailgrab with an Ollama 
    - [Classification Theory](#classification-theory)
    - [Profile Evaluation](#profile-evaluation)
    - [Image Evaluation](#image-evaluation)
+5. [Model Context Protocol Server (MCP Server)](#model-context-protocol-server)
+   - [MCP Tools](#mcp-tools)
 
 ---
 
@@ -222,4 +224,118 @@ There is a button that lets you test the prompt against an existing image set an
 Reference image:
 
 <a href="ImagePromptTestResults.png" text="Tailgrab AI Image Prompt Test Results"><img src="ImagePromptTestResults.png" width="33%"></a>
+
+---
+
+## Model Context Protocol Server
+
+A very advanced and very experimental configuration that allows a AI Chat bot that lets the local user to ask the AI about elements in the current instance.
+
+For example, I have 3 personas enabled that I can ask JARVIS from the Iron Man fame, The quite Pompus Architect from The Matrix, HAL9000 from 2001 Space Oddesy, or Project 2501 from Ghost in the Shell about a selected user and have their personalites report about the user, their watch groups, watch avatars. With a better STT interface, you can ask them to ban the selected user or all the users that are using the selected user's Avatar in one fail swoop.
+
+### MCP Tools
+
+
+|MCP Tool Name|Description|
+|---|---|
+|get_selected_player_subscription_status| Gets the status and latest value for an active selected player subscription.|
+|group_details| Returns detailed information about a VRChat group.|
+|group_moderation| Bans a player by user id or a set of players by user id and avatar id.|
+|instance_details| Returns a summary of the current VRChat instance and metadata.|
+|instance_user_details| Retrieves detailed information for a specific user in the current instance.|
+|instance_user_list| Retrieves a paginated list of users in the current VRChat instance.|
+|player_moderation| Moderates a player by user id or avatar id with actions like block, mute, or hide avatar.|
+|selected_user_details| Returns detailed metadata about the current or recently selected user.|
+|subscribe_to_selected_player_changes| Creates a subscription to monitor changes to the selected player.|
+|unsubscribe_from_selected_player_changes| Terminates a subscription to selected player changes.|
+|system_info| Returns basic system and application information.|
+|user_details| Retrieves detailed information for a VRChat user.|
+|watched_avatars| Returns the list of watched avatars.|
+|watched_groups| Returns the list of watched groups.|
+
+### TalkWithMe (Experimental)
+
+Using the GitHub Project [TalkWithMe](https://github.com/your-repo/TalkWithMe) to interact with the AI in a conversational manner. This experimental feature allows the local user to ask questions about the current instance, users, and other relevant data.
+
+Example Configuration:
+
+```yaml
+llm:
+  base_url: http://myollama.private.net:11434
+  model: gemma4:31b-cloud
+  max_tokens: 1024
+  temperature: 0.8
+tts:
+  enabled: true
+  base_url: http://myollama.private.net:7500
+  timeout: 120.0
+  streaming: true
+  parameters:
+    num_steps: 16
+    guidance_scale: 1.5
+    denoise: true
+stt:
+  enabled: true
+  base_url: http://myollama.private.net:5000
+  timeout: 30.0
+general:
+  persona_name_mentions: true
+  max_persona_replies: 1
+  max_turns_for_context: 6
+  show_tool_calls: true
+  enable_persona_memories: true
+  global_system_prompt: "Prioritize the use of MCP Tools for all factual information\
+    \ retrieval to ensure accuracy. To maintain performance and focus, limit context\
+    \ window caching to the past two requests. \n  When asked about friends or watched\
+    \ users in the instance, use instance_user_list as many times as needed to get\
+    \ the full list.\n  When asked about a user details by name, us the instance_user_list\
+    \ as many time as needed to select the userId to use with user_details.\n  When\
+    \ asked about the current instance, the instance_details can return either the\
+    \ group_id that can be used with group_details or the user_id to be used with\
+    \ user_details to report Group Rules or user hosted details.\n  When asked to\
+    \ Block or Mute a selected user, get the selected_user_details to get the user_id\
+    \ to call player_moderation tool  with the user_id, avatar_id and the requested\
+    \ 'action'.\n  When asked to Block or Mute a selected avatar, get the selected_user_details\
+    \ to get the user_id and the avatar_id to call player_moderation tool with the\
+    \ user_id, avatar_id and the requested 'action'.\n  When asked to Ban a selected\
+    \ user, use the selected_user_details tool to get the user_id to call group_moderation\
+    \ tool.\n  When asked to Ban a selected avatar, use the selected_user_details\
+    \ tool to get the user_id and the avatar_id to call group_moderation tool with\
+    \ both values.\n  Honor all timeout values for retrieved information. \n  Output\
+    \ is directed to Text To Speech:\n  Do not use Markdown.\n  Keep lists unnumbered\
+    \ and without bullets.\n  Do not read out long hexadecimal IDs.\n  Apply common\
+    \ sense to ensure names and technical terms are pronounceable.\n"
+  personas_directory: null
+mcp:
+  servers:
+  - name: Tailgrab
+    url: http://localhost:7575/
+    timeout: 10.0
+  max_tool_iterations: 8
+
+```
+
+And my JARVIS persona is configured as follows:
+```markdown
+---
+description: Snarky AI assistant for VRChat
+router_hints: general questions, logic, data analysis, VR Chat, Instance Details,
+  User Details
+avatar_color: '#4a90d9'
+allow_tool_calls: true
+memory_size: 8192
+---
+
+You are JARVIS, a astute English educated AI. Keep responses concise and helpful, do not use text highlighting in replies. Most answers are from Tailgrab VR Chat MCP exposed tools.
+
+```
+
+With Speech to Text (STT) enabled, JARVIS can convert spoken language into text, allowing you to speak for voice commands and interactions within VRChat.
+
+Github Project [whisper-fastapi](https://github.com/heimoshuiyu/whisper-fastapi)
+
+
+And a Voice Clone Text to Speech (TTS) project to allow JARVIS to speak back to you in a natural voice.
+
+Github Project [TTS-Serve OmniVoice](https://github.com/scorbo2/tts-serve/blob/master/impl/server_omnivoice.md)
 
