@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using Tailgrab.Actions;
 using Tailgrab.Common;
 using Tailgrab.LineHandler;
+using Tailgrab.LineHandlers;
 
 namespace Tailgrab.Configuration
 {
@@ -294,6 +295,9 @@ namespace Tailgrab.Configuration
                 case LineHandlerType.PenNetwork:
                     handler = new PenNetworkHandler(PenNetworkHandler.LOG_PATTERN, _serviceRegistry);
                     break;
+                case LineHandlerType.PlayerModeration:
+                    handler = new PlayerModerationHandler(PlayerModerationHandler.LOG_PATTERN, _serviceRegistry);
+                    break;
                 case LineHandlerType.Print:
                     handler = new PrintHandler(PrintHandler.LOG_PATTERN, _serviceRegistry);
                     break;
@@ -420,6 +424,7 @@ namespace Tailgrab.Configuration
         OnPlayerJoin,
         OnPlayerNetwork,
         PenNetwork,
+        PlayerModeration,
         Print,
         Sticker,
         VTK,
@@ -444,6 +449,7 @@ namespace Tailgrab.Configuration
                 LineHandlerType.OnPlayerJoin => "On Player Join Handler",
                 LineHandlerType.OnPlayerNetwork => "On Player Network Handler",
                 LineHandlerType.PenNetwork => "Pen Network Handler",
+                LineHandlerType.PlayerModeration => "Player Moderation Handler",
                 LineHandlerType.Print => "Print Handler",
                 LineHandlerType.Sticker => "Sticker Handler",
                 LineHandlerType.VTK => "VTK Initiated Handler",

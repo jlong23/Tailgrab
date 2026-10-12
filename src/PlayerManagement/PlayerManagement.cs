@@ -430,6 +430,40 @@ namespace Tailgrab.PlayerManagement
             return null;
         }
 
+        public static Player? PlayerModerationEvent( string userId, string moderationType )
+        {
+            Player? player = GetPlayerByUserId(userId);
+            if(player != null)
+            {
+                player.AddAlertMessage(AlertClassEnum.Moderation, AlertTypeEnum.Nuisance, $"User has been flagged for moderation: {moderationType}");
+                OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Updated, player);
+
+                OBSClient? obsClient = serviceRegistry.GetOBSClient();
+                if (obsClient != null)
+                {
+                    string html = Utility.GetHTMLResource("HtmlTemplates", "VTK_Template.html");
+
+                    // Build formatted string from the viewmodel alone
+                    var sb = new System.Text.StringBuilder();
+                    sb.AppendLine("<dl>");
+                    sb.AppendLine(player.ToHTML(true));
+                    sb.AppendLine($" Moderation Type: {moderationType}");
+                    sb.AppendLine("</dl>");
+                    var content = sb.ToString();
+
+                    string text = html.Replace("{content}", content);
+                    text = text.Replace("{thumbnailUrl}", player.ProfileImage);
+
+                    obsClient.AddMessage($"Player Moderation: {player.DisplayName} / {moderationType}", "red");
+                    string filename = $"{player.UserId}-{player.DisplayName}_{DateTime.Now:yyyyMMdd_HHmmss}";
+                    Task.Run(() => obsClient.EventPlayerModeration(player, text));
+                }
+
+            }
+
+            return player;
+        }
+
         public static Player? AssignPlayerNetworkId(string displayName, int networkId)
         {
             Player? player = GetPlayerByDisplayName(displayName);

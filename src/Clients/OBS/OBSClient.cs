@@ -318,6 +318,29 @@ namespace Tailgrab.Clients.OBS
             await DisplayBrowserSourceOverlay(sceneName, overlayName, html, 5000);
         }
 
+        public async Task EventPlayerModeration(Player player, string html)
+        {
+            if (!IsConnected()) return;
+
+            string chapter = $"Player Moderation - {player.DisplayName}";
+            ChapterEvent(chapter);
+
+            string sceneName = KickBanSceneName;
+            string overlayName = KickBanBrowserSourceName;
+            try
+            {
+                _filename = $"{player.UserId}-{player.DisplayName}_{DateTime.Now:yyyyMMdd_HHmmss}";
+                _eventType = "PlayerModeration";
+                _eventName = _filename;
+                await DisplayBrowserSourceOverlay(sceneName, overlayName, html, 5000);
+                await SaveReplayBuffer();
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex);
+            }
+        }
+
         public async Task VTKRecording(Player player, string html)
         {
             if(!IsConnected()) return;
