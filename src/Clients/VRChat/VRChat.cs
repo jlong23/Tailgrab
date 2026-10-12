@@ -71,44 +71,66 @@ namespace Tailgrab.Clients.VRChat
                     var response = await _vrchat.Authentication.GetCurrentUserAsync();
                     if (response != null && response is not null)
                     {
-                        if( response.RequiresTwoFactorAuth != null && response.RequiresTwoFactorAuth.Count > 0)
+                        string responseType = response.ActualInstance.GetType().Name;
+
+                        if(responseType == "RequiresTwoFactorAuth")
                         {
-                            logger.Warn($"2FA is required for this account. Style : {string.Join(", ", response.RequiresTwoFactorAuth)}");
-                        }
+                            RequiresTwoFactorAuth req = (RequiresTwoFactorAuth)response.ActualInstance;
+                            logger.Warn($"2FA is required for this account. Style : {string.Join(", ", req.VarRequiresTwoFactorAuth)}");
 
-                        if (response.RequiresTwoFactorAuth != null && response.RequiresTwoFactorAuth.Contains("emailOtp"))
-                        {
-                            logger.Warn("An verification code was sent to your email address!");
-                            logger.Warn("Prompt user for code: ");
-
-                            string? code = NativeOtpDialog.PromptForOtpCode("Please enter Email OTP code (6 digits)");
-
-                            if (!string.IsNullOrEmpty(code))
+                            if( req.VarRequiresTwoFactorAuth.Contains(TwoFactorAuthType.EmailOtp))
                             {
-                                var otpResponse = await _vrchat.Authentication.Verify2FAEmailCodeAsync(new TwoFactorEmailCode(code));
+                                logger.Warn("An verification code was sent to your email address!");
+                                logger.Warn("Prompt user for code: ");
+                                string? code = NativeOtpDialog.PromptForOtpCode("Please enter Email OTP code (6 digits)");
+                                if (!string.IsNullOrEmpty(code))
+                                {
+                                    Verify2FAEmailCodeResult otpResponse = await _vrchat.Authentication.Verify2FAEmailCodeAsync(new TwoFactorEmailCode(code));
+                                    if( otpResponse.Verified)
+                                    {
+                                        logger.Info("2FA verification successful.");
+                                        response = await _vrchat.Authentication.GetCurrentUserAsync();
+                                    }
+                                    else
+                                    {
+                                        logger.Error("2FA verification failed.");
+                                        System.Windows.MessageBox.Show("2FA verification failed, please check your code and try again.", "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                                        return false;
+                                    }
+                                }
+                            }
+                            else if (req.VarRequiresTwoFactorAuth.Contains(TwoFactorAuthType.Totp))
+                            {
+                                string code = string.Empty;
+                                if (string.IsNullOrEmpty(twoFactorSecret))
+                                {
+                                    logger.Error("2FA secret is not set, Prompting user for code.");
+                                    code = NativeOtpDialog.PromptForOtpCode("Please enter Authenticator OTP code (6 digits)") ?? string.Empty;
+                                }
+                                else
+                                {
+                                    var totp = new Totp(Base32Encoding.ToBytes(twoFactorSecret));
+                                    code = totp.ComputeTotp();
+                                }
+                                if (!string.IsNullOrEmpty(code))
+                                {
+                                    Verify2FAResult otpResponse = await _vrchat.Authentication.Verify2FAAsync(new TwoFactorAuthCode(code));
+                                    if( otpResponse.Verified)
+                                    {
+                                        logger.Info("2FA verification successful.");
+                                        response = await _vrchat.Authentication.GetCurrentUserAsync();
+                                    }
+                                    else
+                                    {
+                                        logger.Error("2FA verification failed.");
+                                        System.Windows.MessageBox.Show("2FA verification failed, please check your code and try again.", "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                                        return false;
+                                    }
+                                }
                             }
                         }
-                        else if (response.RequiresTwoFactorAuth != null && response.RequiresTwoFactorAuth.Contains("totp"))
-                        {
-                            string code = string.Empty;
-                            if (string.IsNullOrEmpty(twoFactorSecret))
-                            {
-                                logger.Error("2FA secret is not set, Prompting user for code.");
-                                code = NativeOtpDialog.PromptForOtpCode("Please enter Authenticator OTP code (6 digits)") ?? string.Empty;
-                            } 
-                            else
-                            {
-                                var totp = new Totp(Base32Encoding.ToBytes(twoFactorSecret));
-                                code = totp.ComputeTotp();
-                            }
 
-                            if (!string.IsNullOrEmpty(code))
-                            {
-                                var otpResponse = await _vrchat.Authentication.Verify2FAAsync(new TwoFactorAuthCode(code));
-                            }
-                        }
-
-                        var currentUser = await _vrchat.Authentication.GetCurrentUserAsync();
+                        CurrentUser currentUser = (CurrentUser)response.ActualInstance;
                         logger.Info($"Logged in as \"{currentUser.DisplayName}\"");
 
                         var cookies = _vrchat.GetCookies();
@@ -338,7 +360,7 @@ namespace Tailgrab.Clients.VRChat
             {
                 if (_vrchat != null)
                 {
-                    avatars = _vrchat.Avatars.SearchAvatars(sort: SortOption.Order, order: OrderOption.Descending, userId: userId, tag: "avatargallery");
+                    avatars = _vrchat.Avatars.SearchAvatars(sort: SortOptionAvatar.Order, order: OrderOption.Descending, userId: userId, tag: "avatargallery");
                 }
             }
             catch (Exception ex)
@@ -380,8 +402,14 @@ namespace Tailgrab.Clients.VRChat
                 return null;
             }
 
-            User user = _vrchat.Users.GetUser(userId);
-            if (user != null)
+            UserResponse userResponse = _vrchat.Users.GetUser(userId);
+            User user = null;
+            if(userResponse != null && userResponse.ActualInstance != null && userResponse.ActualInstance.GetType() == typeof(User))
+            {
+                user = (User)userResponse.ActualInstance;
+            }
+
+            if (user != null )
             {
                 PublicProfile profile = _vrchat.Users.GetPublicProfile(userId);
                 List<LimitedUserGroups> userGroups = _vrchat.Users.GetUserGroups(userId);
@@ -842,15 +870,31 @@ namespace Tailgrab.Clients.VRChat
                     Type = type
                 };
 
+                UserModerationReq rpt = new()
+                {
+                    Moderated = userId,
+                    Type = type.ToString().ToLower()
+                };
+
+
                 HttpClient httpClient = CreateHttpClientWithCookies();
-                HttpResponseMessage response = await httpClient.PostAsync($"{URI_VRC_BASE_API}/auth/user/moderate", JsonContent.Create(request));
+                HttpResponseMessage response = await httpClient.PostAsJsonAsync($"{URI_VRC_BASE_API}/api/1/auth/user/playermoderations", rpt );
+                string responseContent = await response.Content.ReadAsStringAsync();
                 logger.Info($"Submitted Personal Moderation request for user {userId} with type {type}. Status code: {response.StatusCode}");
                 logger.Info($"Request content: {JsonConvert.SerializeObject(request)}");
-                logger.Info($"Response content: {JsonConvert.SerializeObject(response)}");
+                logger.Info($"Response content: {responseContent}");
                 if ( response.IsSuccessStatusCode)
                 {
-                    PlayerModeration moderation = await response.Content.ReadFromJsonAsync<PlayerModeration>();
-                    result = moderation != null && moderation.SourceUserId == userId;
+                    try
+                    {
+                        PlayerModeration? moderation = await response.Content?.ReadFromJsonAsync<PlayerModeration>();
+                        result = moderation != null && moderation.SourceUserId == userId;
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.Error(ex, $"Error deserializing moderation response for user {userId}: {ex.Message}");
+                    }
+                    result = true;
                 }
                 else
                 {
@@ -1049,6 +1093,16 @@ namespace Tailgrab.Clients.VRChat
             public bool HasException => Exception != null;
 
         }
+
+        public class UserModerationReq
+        {
+            [JsonProperty("type")]
+            public string Type { get; set; } = "block";
+
+            [JsonProperty("moderated")]
+            public string Moderated { get; set; } = string.Empty;
+        }
+
         #endregion
 
         #region Cached Data Structures
