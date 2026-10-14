@@ -404,38 +404,63 @@ namespace Tailgrab.Clients.VRChat
 
             UserResponse userResponse = _vrchat.Users.GetUser(userId);
             User user = null;
-            if(userResponse != null && userResponse.ActualInstance != null && userResponse.ActualInstance.GetType() == typeof(User))
-            {
-                user = (User)userResponse.ActualInstance;
-            }
-
-            if (user != null )
+            if(userResponse != null && userResponse.ActualInstance != null)
             {
                 PublicProfile profile = _vrchat.Users.GetPublicProfile(userId);
                 List<LimitedUserGroups> userGroups = _vrchat.Users.GetUserGroups(userId);
-
-                var newProfileEntry = new VRChatUserProfileEntry
+                VRChatUserProfileEntry? newProfileEntry = null;
+                if (userResponse.ActualInstance.GetType() == typeof(User))
                 {
-                    UserId = userId,
-                    DisplayName = user.DisplayName,
-                    Bio = profile.Bio,
-                    StatusDescription = string.IsNullOrEmpty(user.StatusDescription) ? string.Empty : user.StatusDescription,
-                    Pronouns = profile.Pronouns,
-                    ProfileIconUrl = profile.IconUrl,
-                    ProfileBannerUrl = profile.BannerUrl,
-                    JoinDate = user.DateJoined,
-                    IsFriend = user.IsFriend,
-                    IsFriendRequesting = user.FriendRequestStatus != null,
-                    AgeVerified = profile.AgeVerified,
-                    AgeVerificationStatus = profile.AgeVerificationStatus,
-                    Tags = user.Tags,
-                    GroupMemberships = userGroups,
-                    LastFetched = DateTime.UtcNow
-                };
+                    user = (User)userResponse.ActualInstance;
+                    newProfileEntry = new VRChatUserProfileEntry
+                    {
+                        UserId = userId,
+                        DisplayName = user.DisplayName,
+                        Bio = profile.Bio,
+                        StatusDescription = string.IsNullOrEmpty(user.StatusDescription) ? string.Empty : user.StatusDescription,
+                        Pronouns = profile.Pronouns,
+                        ProfileIconUrl = profile.IconUrl,
+                        ProfileBannerUrl = profile.BannerUrl,
+                        JoinDate = user.DateJoined,
+                        IsFriend = user.IsFriend,
+                        IsFriendRequesting = user.FriendRequestStatus != null,
+                        AgeVerified = profile.AgeVerified,
+                        AgeVerificationStatus = profile.AgeVerificationStatus,
+                        Tags = user.Tags,
+                        GroupMemberships = userGroups,
+                        LastFetched = DateTime.UtcNow
+                    };
+                }
+
+                if(userResponse.ActualInstance.GetType() == typeof(CurrentUser))
+                {
+                    CurrentUser currentUser = (CurrentUser)userResponse.ActualInstance;
+                    newProfileEntry = new VRChatUserProfileEntry
+                    {
+                        UserId = userId,
+                        DisplayName = currentUser.DisplayName,
+                        Bio = profile.Bio,
+                        StatusDescription = string.Empty,
+                        Pronouns = profile.Pronouns,
+                        ProfileIconUrl = profile.IconUrl,
+                        ProfileBannerUrl = profile.BannerUrl,
+                        JoinDate = DateOnly.FromDateTime(DateTime.UtcNow), // CurrentUser doesn't have join date, using current date as placeholder
+                        IsFriend = true,
+                        IsFriendRequesting = currentUser.FriendRequestStatus != null,
+                        AgeVerified = profile.AgeVerified,
+                        AgeVerificationStatus = profile.AgeVerificationStatus,
+                        Tags = currentUser.Tags,
+                        GroupMemberships = userGroups,
+                        LastFetched = DateTime.UtcNow
+                    };
+                }
 
                 logger.Info($"Caching and Returning profile for user {userId}.");
-                _userProfileCache[userId] = newProfileEntry;
-                return newProfileEntry;
+                if (newProfileEntry != null)
+                {
+                    _userProfileCache[userId] = newProfileEntry;
+                    return newProfileEntry;
+                }
             }
 
             return null;
