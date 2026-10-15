@@ -440,11 +440,11 @@ namespace Tailgrab.Clients.VRChat
                         UserId = userId,
                         DisplayName = currentUser.DisplayName,
                         Bio = profile.Bio,
-                        StatusDescription = string.Empty,
+                        StatusDescription = string.IsNullOrEmpty(user.StatusDescription) ? string.Empty : user.StatusDescription,
                         Pronouns = profile.Pronouns,
                         ProfileIconUrl = profile.IconUrl,
                         ProfileBannerUrl = profile.BannerUrl,
-                        JoinDate = DateOnly.FromDateTime(DateTime.UtcNow), // CurrentUser doesn't have join date, using current date as placeholder
+                        JoinDate = user.DateJoined,
                         IsFriend = true,
                         IsFriendRequesting = currentUser.FriendRequestStatus != null,
                         AgeVerified = profile.AgeVerified,
