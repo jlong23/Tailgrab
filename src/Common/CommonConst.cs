@@ -121,6 +121,17 @@ namespace Tailgrab.Common
         public const string Default_AI_MCP_Server_Port = "7575";
 
 
+        public const string Registry_OmniVoice_Enabled = "OMNIVOICE_ENABLED";
+        public const string Registry_OmniVoice_Endpoint = "OMNIVOICE_ENDPOINT";
+        public const string Registry_OmniVoice_VoiceCloneProfile = "OMNIVOICE_VOICE_CLONE_PROFILE";
+        public const string Registry_OmniVoice_AudioSampleRate = "OMNIVOICE_AUDIO_SAMPLE_RATE";
+
+
+        public const string Registry_OSC_Enabled = "OSC_ENABLED";
+        public const string Registry_OSC_Endpoint = "OSC_ENDPOINT";
+        public const string Registry_OSC_Port = "OSC_PORT";
+
+
         public const string AI_EVALUATION_SEXUAL = "Explicit Sexual";
         public const string AI_EVALUATION_HATE = "Harassment & Bullying";
         public const string AI_EVALUATION_SELFHARM = "Self Harm";

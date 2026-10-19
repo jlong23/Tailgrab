@@ -3,6 +3,7 @@ using Tailgrab;
 using Tailgrab.Clients.OBS;
 using Tailgrab.Clients.Office;
 using Tailgrab.MCP;
+using Tailgrab.MCP.Services;
 using Tailgrab.MCP.Tools;
 
 namespace Tailgrab.DependencyInjection;
@@ -36,6 +37,10 @@ public static class DiContainer
         {
             return new McpServer(provider);
         });
+
+        // Register IToolExecutor as McpServer (after McpServer is registered)
+        services.AddSingleton<IToolExecutor>(provider =>
+            provider.GetRequiredService<McpServer>());
 
         return services.BuildServiceProvider();
     }

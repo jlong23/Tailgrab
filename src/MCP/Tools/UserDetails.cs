@@ -43,7 +43,7 @@ namespace Tailgrab.MCP.Tools
             try
             {
                 string userId = arguments.ContainsKey("userId") ? arguments["userId"].ToString() ?? "" : "";
-                VRChatUserProfileEntry? userProfile = _serviceRegistry.GetVRChatAPIClient().GetCachedUserProfile(userId);
+                VRChatUserProfileEntry? userProfile = await _serviceRegistry.GetVRChatAPIClient().GetCachedUserProfileAsync(userId);
 
                 if (userProfile == null)
                 {

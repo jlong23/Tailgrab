@@ -50,7 +50,7 @@ namespace Tailgrab.MCP.Tools
                 TailgrabDBContext dBContext = _serviceRegistry.GetDBContext();
                 GroupInfo? groupInfo = dBContext.GroupInfos.Find(groupId);
 
-                VRChatUserProfileEntry? userProfile = _serviceRegistry.GetVRChatAPIClient().GetCachedUserProfile(g.OwnerId);
+                VRChatUserProfileEntry? userProfile = await _serviceRegistry.GetVRChatAPIClient().GetCachedUserProfileAsync(g.OwnerId);
                 var info = new
                 {
                     timestamp = DateTime.UtcNow,

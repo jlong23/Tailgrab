@@ -1,9 +1,8 @@
-using BuildSoft.VRChat.Osc;
-using BuildSoft.VRChat.Osc.Avatar;
 using NLog;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
+using Tailgrab.Clients.OSC;
 using Tailgrab.Common;
 
 
@@ -267,15 +266,15 @@ namespace Tailgrab.Actions
     {
         public Logger logger = LogManager.GetCurrentClassLogger();
 
-        private OscAvatarConfig? oscAvatarConfig = OscAvatarConfig.CreateAtCurrent();
-
         public string ParameterName { get; set; }
 
-        public OscType OscTypeValue { get; set; }
+        public VRChatOSCTypeEnum OscTypeValue { get; set; }
 
         public string Value { get; set; }
 
-        public OSCAction(string parameterName, OscType type, string value)
+        public ServiceRegistry? LocalSvcRegistry { get; set; }
+
+        public OSCAction(string parameterName, VRChatOSCTypeEnum type, string value)
         {
             ParameterName = parameterName;
             OscTypeValue = type;
@@ -287,31 +286,53 @@ namespace Tailgrab.Actions
 
         public void PerformAction(Dictionary<string, string> content)
         {
+
+            if (LocalSvcRegistry == null)
+            {
+                logger.Error("OSCAction: LocalSvcRegistry is null. Cannot perform OSC action.");
+                return;
+            }
+            
+            VRChatOSCChatbox chatbox = LocalSvcRegistry.GetVRChatOSCChatbox();
+
             var parameterName = ParameterName;
             var value = Value;
+
+
             if (string.IsNullOrEmpty(parameterName) || string.IsNullOrEmpty(value))
             {
                 return;
             }
 
+
             switch (OscTypeValue)
             {
-                case OscType.Bool:
+                case VRChatOSCTypeEnum.b:
                     if (bool.TryParse(value, out bool boolValue))
                     {
-                        OscParameter.SendValue(parameterName, boolValue);
+                        chatbox.SendValue(parameterName, boolValue);
                     }
                     break;
-                case OscType.Int:
+                case VRChatOSCTypeEnum.i:
                     if (int.TryParse(value, out int intValue))
                     {
-                        OscParameter.SendValue(parameterName, intValue);
+                        chatbox.SendValue(parameterName, intValue);
                     }
                     break;
-                case OscType.Float:
+                case VRChatOSCTypeEnum.f:
                     if (float.TryParse(value, out float floatValue))
                     {
-                        OscParameter.SendValue(parameterName, floatValue);
+                        chatbox.SendValue(parameterName, floatValue);
+                    }
+                    break;
+                default:
+                    string text = ActionDataFormater.FormatData(value, content);
+                    if (parameterName.StartsWith("/chatbox/input"))
+                    {
+                        chatbox.SendMessage(text);
+                    } else
+                    {
+                        chatbox.SendValue(parameterName, text);
                     }
                     break;
             }
@@ -372,8 +393,6 @@ namespace Tailgrab.Actions
     public class PlaySoundAction : IAction
     {
         public Logger logger = LogManager.GetCurrentClassLogger();
-
-        private OscAvatarConfig? oscAvatarConfig = OscAvatarConfig.CreateAtCurrent();
 
         public string soundFile { get; set; }
 

@@ -92,8 +92,6 @@ namespace Tailgrab.MCP.Tools
             {
                 logger.Info($"Moderating players with avatar ID {avatarId} using moderation type {moderationType}. This may take some time depending on the number of players with this avatar.");
 
-                moderationType = PlayerModerationType.Block;
-
                 IEnumerable<Player> players = PlayerManager.GetAllPlayersByAvatarId(avatarId);
                 foreach (Player player in players)
                 {

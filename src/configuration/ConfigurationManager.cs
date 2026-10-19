@@ -1,4 +1,3 @@
-using BuildSoft.VRChat.Osc;
 using NLog;
 using System.IO;
 using System.Text.Json;
@@ -350,7 +349,10 @@ namespace Tailgrab.Configuration
                         continue;
                     }
 
-                    actions.Add(new OSCAction(oscActionConfig.ParameterName, oscActionConfig.OscValueType, oscActionConfig.Value));
+                    OSCAction oscAction = new OSCAction(oscActionConfig.ParameterName, oscActionConfig.OscValueType, oscActionConfig.Value);
+                    oscAction.LocalSvcRegistry = _serviceRegistry;
+
+                    actions.Add(oscAction);
                 }
 
                 if (actionConfig.GetType() == typeof(DelayActionConfig))
@@ -512,7 +514,7 @@ namespace Tailgrab.Configuration
     public class OSCActionConfig : ActionBase
     {
         public string? ParameterName { get; set; }
-        public OscType OscValueType { get; set; } = OscType.Float;
+        public VRChatOSCTypeEnum OscValueType { get; set; } = VRChatOSCTypeEnum.s;
         public string? Value { get; set; }
 
         public OSCActionConfig()

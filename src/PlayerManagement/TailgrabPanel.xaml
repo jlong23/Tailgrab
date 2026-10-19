@@ -170,7 +170,7 @@ Title="Tailgrab Player Panel"
                             <Button Content="{DynamicResource UI.Tab.ActivePlayers.Filter.Clear}" Click="ActiveClearFilter_Click"/>
                         </StackPanel>
 
-                        <ListView Name="ActiveListView" ItemsSource="{Binding ActiveView}" SelectedItem="{Binding SelectedActive, Mode=TwoWay}" Grid.ColumnSpan="2" Margin="0,26,0,0" Grid.RowSpan="2">
+                        <ListView Name="ActiveListView" ItemsSource="{Binding ActiveView}" SelectedItem="{Binding SelectedActive, Mode=TwoWay}" Grid.ColumnSpan="2" Margin="0,26,0,0" Grid.RowSpan="2" PreviewMouseWheel="ActiveListView_PreviewMouseWheel">
                             <ListView.ItemContainerStyle>
                                 <StaticResource ResourceKey="PlayerListViewItemStyle"/>
                             </ListView.ItemContainerStyle>
@@ -1930,6 +1930,7 @@ Title="Tailgrab Player Panel"
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="Auto" />
                                             <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
 
                                         <Label Grid.Row="0" Grid.Column="0" Content="{DynamicResource UI.Tab.Secrets.Group.Behaviors.DiscoveredAvatarCaching}" VerticalAlignment="Center"/>
@@ -1944,8 +1945,18 @@ Title="Tailgrab Player Panel"
                                         <Label Grid.Row="1" Grid.Column="2" Content="{DynamicResource UI.Tab.Secrets.Group.Behaviors.XSOverlayNotifications}" VerticalAlignment="Center"/>
                                         <ComboBox Name="XSOverlayNotifications" ItemsSource="{Binding DataContext.AlertTypeOptions, RelativeSource={RelativeSource AncestorType=Window}}"
                                                           SelectedValuePath="Value" DisplayMemberPath="Key" Margin="2,2,2,2" Width="200" Grid.Row="1" Grid.Column="3" HorizontalAlignment="Left"/>
+                                        
+                                        <Label Grid.Row="2" Grid.Column="0" Content="{DynamicResource UI.Tab.Secrets.Group.Behaviors.OSCEnabled}" VerticalAlignment="Center"/>
+                                        <CheckBox Grid.Row="2" Grid.Column="1" Name="EnableOSCClient" VerticalAlignment="Center" Margin="6,2" ToolTip="When enabled, will allow Tailgrab to send OSC Values to VR Chat Client"/>
 
-                                    </Grid>
+                                        <Label Grid.Row="2" Grid.Column="2" Content="{DynamicResource UI.Tab.Secrets.Group.Behaviors.OSCEndpoint}" VerticalAlignment="Center"/>
+                                        <TextBox Grid.Row="2" Grid.Column="3" 
+                                                 Name="OSCEndpoint" 
+                                                 Width="300" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="6,2" 
+                                                 ToolTip="{DynamicResource UI.Tab.Secrets.Group.Behaviors.OSCEndpoint.tooltip}" 
+                                                 IsEnabled="{Binding IsChecked, ElementName=EnableOSCClient}"/>
+
+                                        </Grid>
                                 </GroupBox>
 
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,12,0,0" Grid.Row="4">

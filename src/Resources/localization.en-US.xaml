@@ -241,6 +241,9 @@
     <sys:String x:Key="UI.Tab.Secrets.Group.Behaviors.ModeratedAvatarCaching">Moderated Avatar Caching</sys:String>
     <sys:String x:Key="UI.Tab.Secrets.Group.Behaviors.DiscoveredGroupCaching">Discovered Group Caching</sys:String>
     <sys:String x:Key="UI.Tab.Secrets.Group.Behaviors.XSOverlayNotifications">XS Overlay Notifications</sys:String>
+    <sys:String x:Key="UI.Tab.Secrets.Group.Behaviors.OSCEnabled">OSC Sending Enabled</sys:String>
+    <sys:String x:Key="UI.Tab.Secrets.Group.Behaviors.OSCEndpoint">OSC Host &amp; Port</sys:String>
+    <sys:String x:Key="UI.Tab.Secrets.Group.Behaviors.OSCEndpoint.tooltip">Enter the OSC host and port in the format host:port ("127.0.0.1:9000")</sys:String>
     <sys:String x:Key="UI.Tab.Secrets.Action.SaveConfig">Save Config</sys:String>
     <sys:String x:Key="UI.Tab.Secrets.Action.Cancel">Cancel</sys:String>
     <sys:String x:Key="UI.Tab.Secrets.Action.ResetLayout">Reset Layout</sys:String>
@@ -631,5 +634,81 @@
     <sys:String x:Key="SetupWizard.Step07.FinishDescription">Click "Finish" to complete setup. You can modify any settings later in the Configuration tab.</sys:String>
     <sys:String x:Key="SetupWizard.Step07.PreservationNote">✓ Your existing configuration and database have been preserved.</sys:String>
     <sys:String x:Key="SetupWizard.Step07.RestartWarning">✗ IMPORTANT! Please Close and Restart Tailgrab for all changes to take effect.</sys:String>
+
+    <!-- MessageBox Text -->
+    <sys:String x:Key="MessageBox.CheckAvatarGist.Title">Check Avatar GIST</sys:String>
+    <sys:String x:Key="MessageBox.CheckAvatarGist.Content">Avatar GIST list processing in the background.</sys:String>
+    <sys:String x:Key="MessageBox.CheckAvatarGist_Error.Title">Check Avatar GIST Error</sys:String>
+    <sys:String x:Key="MessageBox.CheckAvatarGist_Error.Content">Failed to process Avatar GIST: {0}</sys:String>
+
+    <sys:String x:Key="MessageBox.ExportAvatarGist.Title">Export Avatar GIST Data</sys:String>
+    <sys:String x:Key="MessageBox.ExportAvatarGist.Content">Exported Avatar Watch data to the clipboard.</sys:String>
+    <sys:String x:Key="MessageBox.ExportAvatarGist_Error.Title">Export Avatar GIST Error</sys:String>
+    <sys:String x:Key="MessageBox.ExportAvatarGist_Error.Content">Failed to export Avatar GIST: {0}</sys:String>
+
+    <sys:String x:Key="MessageBox.CheckGroupGist_Error.Title">Check Group GIST Error</sys:String>
+    <sys:String x:Key="MessageBox.CheckGroupGist_Error.Content">Failed to process Group GIST: {0}</sys:String>
+
+    <sys:String x:Key="MessageBox.ExportGroupGist.Title">Export Group GIST Data</sys:String>
+    <sys:String x:Key="MessageBox.ExportGroupGist.Content">Exported Group Watch data to the clipboard.</sys:String>
+    <sys:String x:Key="MessageBox.ExportGroupGist_Error.Title">Export Group GIST Error</sys:String>
+    <sys:String x:Key="MessageBox.ExportGroupGist_Error.Content">Failed to export Group GIST: {0}</sys:String>
+
+    <sys:String x:Key="MessageBox.UpdateGist_Error.Title">Update GIST Error</sys:String>
+    <sys:String x:Key="MessageBox.UpdateGist_Error.Content">Failed to update GIST: {0}</sys:String>
+
+    <sys:String x:Key="MessageBox.SaveAIConfig.Title">AI Configuration Saved</sys:String>
+    <sys:String x:Key="MessageBox.SaveAIConfig.Content">AI Configuration saved. Restart the Application for all changes to take effect.</sys:String>
+    <sys:String x:Key="MessageBox.SaveAIConfig_Error.Title">Save AI Configuration Error</sys:String>
+    <sys:String x:Key="MessageBox.SaveAIConfig_Error.Content">Failed to save AI configuration: {0}</sys:String>
+
+    <sys:String x:Key="MessageBox.ResetOllama_Error.Title">Reset Ollama Configuration Error</sys:String>
+    <sys:String x:Key="MessageBox.ResetOllama_Error.Content">Failed to reset Ollama configuration: {0}</sys:String>
+
+    <sys:String x:Key="MessageBox.LoadOllamaModels_Error.Title">Load Ollama Models Error</sys:String>
+    <sys:String x:Key="MessageBox.LoadOllamaModels_Error.Content">Failed to load Ollama models: {0}</sys:String>
+
+    <sys:String x:Key="MessageBox.TestProfilePrompt_Validation.Title">Test Profile Prompt Validation Error</sys:String>
+    <sys:String x:Key="MessageBox.TestProfilePrompt_Validation.Content">Please ensure User ID, Prompt, and Model are specified.</sys:String>
+    <sys:String x:Key="MessageBox.TestProfilePrompt_Error.Title">Test Profile Prompt Error</sys:String>
+    <sys:String x:Key="MessageBox.TestProfilePrompt_Error.Content">Failed to test profile prompt: {0}</sys:String>
+
+    <sys:String x:Key="MessageBox.TestImagePrompt_Error.Title">Test Image Prompt Error</sys:String>
+    <sys:String x:Key="MessageBox.TestImagePrompt_Error.Content">Failed to test image prompt: {0}</sys:String>
+
+    <sys:String x:Key="MessageBox.SaveColors.Title">Color Configuration Saved</sys:String>
+    <sys:String x:Key="MessageBox.SaveColors.Content">Color Configuration saved. Changes are applied immediately.</sys:String>
+    <sys:String x:Key="MessageBox.SaveColors_Error.Title">Save Color Configuration Error</sys:String>
+    <sys:String x:Key="MessageBox.SaveColors_Error.Content">Failed to save Color configuration: {0}</sys:String>
+
+    <sys:String x:Key="MessageBox.PastViewGroups_Validation.Title">No Player Selected</sys:String>
+    <sys:String x:Key="MessageBox.PastViewGroups_Validation.Content">Please select a player first.</sys:String>
+
+    <sys:String x:Key="MessageBox.ReportPlayer_Error.Title">Error</sys:String>
+    <sys:String x:Key="MessageBox.ReportPlayer_Error.Content">Failed to open Report Profile overlay: {0}</sys:String>
+
+    <sys:String x:Key="MessageBox.SubmitReportPlayer_Error.Title">Error</sys:String>
+    <sys:String x:Key="MessageBox.SubmitReportPlayer_Error.Content">Failed to submit Report Profile overlay: {0}</sys:String>
+
+    <sys:String x:Key="MessageBox.ReportAvatar_Error.Title">Error</sys:String>
+    <sys:String x:Key="MessageBox.ReportAvatar_Error.Content">Failed to open Report Avatar overlay: {0}</sys:String>
+
+    <sys:String x:Key="MessageBox.SubmitReportAvatar_Error.Title">Error</sys:String>
+    <sys:String x:Key="MessageBox.SubmitReportAvatar_Error.Content">Failed to submit Report Avatar overlay: {0}</sys:String>
+
+    <sys:String x:Key="MessageBox.ReportPrint_Error.Title">Error</sys:String>
+    <sys:String x:Key="MessageBox.ReportPrint_Error.Content">Failed to open Report Print overlay: {0}</sys:String>
+
+    <sys:String x:Key="MessageBox.SubmitReportPrint_Error.Title">Error</sys:String>
+    <sys:String x:Key="MessageBox.SubmitReportPrint_Error.Content">Failed to submit Report Print overlay: {0}</sys:String>
+
+    <sys:String x:Key="MessageBox.UserValidation_Error1.Title">Validation Error</sys:String>
+    <sys:String x:Key="MessageBox.UserValidation_Error1.Content">Please enter a User Id first.</sys:String>
+    <sys:String x:Key="MessageBox.UserValidation_Error2.Title">Validation Error</sys:String>
+    <sys:String x:Key="MessageBox.UserValidation_Error2.Content">Invalid User ID format (must start with usr_).</sys:String>
+
+    <sys:String x:Key="MessageBox.CheckUserAvatars_Error.Title">Error</sys:String>
+    <sys:String x:Key="MessageBox.CheckUserAvatars_Error.Content">Failed to check user avatars: {0}</sys:String>
+
 
 </ResourceDictionary>

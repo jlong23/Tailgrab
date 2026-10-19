@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Tailgrab.Common;
+using Tailgrab.MCP.Services;
 using Tailgrab.MCP.Tools;
 
 namespace Tailgrab.MCP;
@@ -16,7 +17,7 @@ namespace Tailgrab.MCP;
 /// MCP Server that exposes tools via HTTP transport on port 7575 using ASP.NET Core Kestrel.
 /// Accessible from the local network.
 /// </summary>
-public class McpServer
+public class McpServer : IToolExecutor
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     private ServiceRegistry? _serviceRegistry;
@@ -388,6 +389,12 @@ public class McpServer
             Logger.Error(ex, $"Error executing tool: {toolName}");
             return McpToolResult.FromError(ex.Message);
         }
+    }
+
+    // Explicit interface implementation for IToolExecutor
+    Task<McpToolResult> IToolExecutor.ExecuteToolAsync(string toolName, Dictionary<string, object> arguments, CancellationToken cancellationToken)
+    {
+        return ExecuteToolByNameAsync(toolName, arguments);
     }
 
     private List<McpToolDefinition> GetAvailableToolsList()

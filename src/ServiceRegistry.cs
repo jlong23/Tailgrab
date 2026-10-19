@@ -5,6 +5,7 @@ using System.IO;
 using Tailgrab.Clients.OBS;
 using Tailgrab.Clients.Office;
 using Tailgrab.Clients.Ollama;
+using Tailgrab.Clients.OSC;
 using Tailgrab.Clients.VRCDB;
 using Tailgrab.Clients.VRChat;
 using Tailgrab.Clients.XSOverlay;
@@ -39,6 +40,7 @@ namespace Tailgrab
         private VRCDBClient _VRCDBClient = new VRCDBClient();
         OfficeClient? officeClient;
         McpSubscriptionManager? _subscriptionManager = null;
+        VRChatOSCChatbox? oscChatbox = new VRChatOSCChatbox();
 
         private OBSClient? obsClient;
 
@@ -301,6 +303,15 @@ namespace Tailgrab
                 throw new InvalidOperationException("Office Client has not been initialized. Call StartAllServices() first.");
             }
             return officeClient;
+        }
+
+        public VRChatOSCChatbox GetVRChatOSCChatbox()
+        {
+            if (oscChatbox == null)
+            {
+                throw new InvalidOperationException("VRChat OSC Chatbox has not been initialized. Call StartAllServices() first.");
+            }
+            return oscChatbox;
         }
 
         public async Task ProcessAvatarGist()

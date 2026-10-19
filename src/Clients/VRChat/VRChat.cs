@@ -378,7 +378,7 @@ namespace Tailgrab.Clients.VRChat
 
         internal int CacheUserTimeoutSeconds { get; set; } = 900; // Default cache timeout of 15 minutes
 
-        internal VRChatUserProfileEntry? GetCachedUserProfile(string userId)
+        internal async Task<VRChatUserProfileEntry?> GetCachedUserProfileAsync(string userId)
         {
             bool valueInCache = _userProfileCache.TryGetValue(userId, out var cachedProfile);
             if (valueInCache && cachedProfile != null)
@@ -417,6 +417,7 @@ namespace Tailgrab.Clients.VRChat
                         UserId = userId,
                         DisplayName = user.DisplayName,
                         Bio = profile.Bio,
+                        BioLinks = profile.BioLinks,
                         StatusDescription = string.IsNullOrEmpty(user.StatusDescription) ? string.Empty : user.StatusDescription,
                         Pronouns = profile.Pronouns,
                         ProfileIconUrl = profile.IconUrl,
@@ -440,11 +441,12 @@ namespace Tailgrab.Clients.VRChat
                         UserId = userId,
                         DisplayName = currentUser.DisplayName,
                         Bio = profile.Bio,
-                        StatusDescription = string.IsNullOrEmpty(user.StatusDescription) ? string.Empty : user.StatusDescription,
+                        BioLinks = profile.BioLinks,
+                        StatusDescription = string.IsNullOrEmpty(currentUser.StatusDescription) ? string.Empty : currentUser.StatusDescription,
                         Pronouns = profile.Pronouns,
                         ProfileIconUrl = profile.IconUrl,
                         ProfileBannerUrl = profile.BannerUrl,
-                        JoinDate = user.DateJoined,
+                        JoinDate = currentUser.DateJoined,
                         IsFriend = true,
                         IsFriendRequesting = currentUser.FriendRequestStatus != null,
                         AgeVerified = profile.AgeVerified,
@@ -454,6 +456,24 @@ namespace Tailgrab.Clients.VRChat
                         LastFetched = DateTime.UtcNow
                     };
                 }
+
+                HttpClient client = new HttpClient();
+                client.DefaultRequestHeaders.UserAgent.ParseAdd("TailGrab/1.0");
+                string bioText = profile.Bio ?? string.Empty;
+                if ( newProfileEntry.BioLinks != null )
+                {
+                    bioText += " " + string.Join(" ", newProfileEntry.BioLinks);
+                }
+                List<DiscordInviteResult> discordInvites = await DiscordGuildExtrator.FindAsync(bioText, client);
+
+                List<string> discordLinks = new List<string>();
+                foreach (DiscordInviteResult invite in discordInvites)
+                {
+                    logger.Debug($"Found Discord invite in user {userId} profile: {invite.InviteUrl}");
+                    string link = invite.InviteUrl + " - " + invite.Guild?.ToString();
+                    discordLinks.Add(link);
+                }
+                newProfileEntry.DiscordLinks = discordLinks;
 
                 logger.Info($"Caching and Returning profile for user {userId}.");
                 if (newProfileEntry != null)
@@ -912,7 +932,7 @@ namespace Tailgrab.Clients.VRChat
                 {
                     try
                     {
-                        PlayerModeration? moderation = await response.Content?.ReadFromJsonAsync<PlayerModeration>();
+                        UserModerationResponse? moderation = await response.Content?.ReadFromJsonAsync<UserModerationResponse>();
                         result = moderation != null && moderation.SourceUserId == userId;
                     }
                     catch (Exception ex)
@@ -1128,6 +1148,30 @@ namespace Tailgrab.Clients.VRChat
             public string Moderated { get; set; } = string.Empty;
         }
 
+        public class UserModerationResponse
+        {
+            [JsonProperty("created")]
+            public DateTime Created { get; set; }
+
+            [JsonProperty("id")]
+            public string Id { get; set; } = string.Empty;
+
+            [JsonProperty("sourceDisplayName")]
+            public string SourceDisplayName { get; set; } = string.Empty;
+
+            [JsonProperty("sourceUserId")]
+            public string SourceUserId { get; set; } = string.Empty;
+
+            [JsonProperty("targetDisplayName")]
+            public string TargetDisplayName { get; set; } = string.Empty;
+
+            [JsonProperty("targetUserId")]
+            public string TargetUserId { get; set; } = string.Empty;
+
+            [JsonProperty("type")]
+            public string Type { get; set; } = string.Empty;
+        }
+
         #endregion
 
         #region Cached Data Structures
@@ -1136,6 +1180,8 @@ namespace Tailgrab.Clients.VRChat
             public string UserId { get; set; } = string.Empty;
             public string DisplayName { get; set; } = string.Empty;
             public string Bio { get; set; } = string.Empty;
+            public List<string> BioLinks { get; set; } = new List<string>();
+            public List<string> DiscordLinks { get; set; } = new List<string>();
             public string StatusDescription { get; set; } = string.Empty;
             public string Pronouns { get; set; } = string.Empty;
             public string ProfileIconUrl { get; set; } = string.Empty;
@@ -1166,6 +1212,8 @@ namespace Tailgrab.Clients.VRChat
                            $"Pronouns: {Pronouns}\n" +
                            $"UserTrust : {TrustClassEnumMapper.MapTagsToString(Tags, AgeVerified, AgeVerificationStatus?.ToString() ?? string.Empty)}\n" +
                            $"UserAgeVerified: {AgeVerified}\n" +
+                           $"BioLinks: {string.Join("\n", BioLinks)}\n" +
+                           $"DiscordLinks: {string.Join("\n", DiscordLinks)}\n" +
                            $"ProfileBio: {Bio}\n";
                 }
             }

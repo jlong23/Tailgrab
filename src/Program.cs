@@ -15,6 +15,7 @@ using Tailgrab.DependencyInjection;
 using Tailgrab.LineHandler;
 using Tailgrab.Models;
 using Tailgrab.PlayerManagement;
+using Tailgrab.Clients.Omnivoice;
 
 namespace Tailgrab;
 

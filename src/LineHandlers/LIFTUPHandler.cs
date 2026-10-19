@@ -23,7 +23,7 @@ public class LIFTUPHandler : AbstractLineHandler
         {
             string timestamp = m.Groups[VRC_DATETIME].Value;
 
-            VRChatUserProfileEntry?  userProfileEntry  = _serviceRegistry.GetPlayerManager().LiftUpErrorHandler(this);
+            VRChatUserProfileEntry?  userProfileEntry  = Task.Run(() => _serviceRegistry.GetPlayerManager().LiftUpErrorHandler(this)).Result;
 
             if(userProfileEntry == null)
             {

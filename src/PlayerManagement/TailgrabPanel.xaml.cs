@@ -1,4 +1,3 @@
-using BuildSoft.VRChat.Osc;
 using NLog;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -13,6 +12,7 @@ using Tailgrab.Clients.Github;
 using Tailgrab.Clients.OBS;
 using Tailgrab.Clients.Ollama;
 using Tailgrab.Clients.VRChat;
+using Tailgrab.Clients.OSC;
 using Tailgrab.Common;
 using Tailgrab.Configuration;
 using Tailgrab.Manager;
@@ -825,6 +825,10 @@ namespace Tailgrab.PlayerManagement
             DiscoveredGroupCaching.IsChecked = ConfigStore.GetStoredKeyBool(CommonConst.Registry_Discovered_Group_Caching, true);
 
 
+            VRChatOSCChatbox vrChatOSCChatBox = serviceRegistry.GetVRChatOSCChatbox();
+            EnableOSCClient.IsChecked = vrChatOSCChatBox?.EnableOSCService ?? false;
+            OSCEndpoint.Text = ( vrChatOSCChatBox?.OSCHost ?? "127.0.0.1" ) + ":" + (vrChatOSCChatBox?.OSCPort ?? 9000).ToString();
+
             // Populate sound combo boxes
             try
             {
@@ -926,7 +930,11 @@ namespace Tailgrab.PlayerManagement
             }
             catch (Exception ex)
             {
-                System.Windows.MessageBox.Show($"Failed to save VRChat credentials: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                ShowOverlayMessageOkCancel(
+                    "Error",
+                    $"Failed to save VRChat credentials: {ex.Message}",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
             }
         }
 
@@ -946,7 +954,11 @@ namespace Tailgrab.PlayerManagement
             }
             catch (Exception ex)
             {
-                System.Windows.MessageBox.Show($"Failed to save GitHub Gist credentials: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                ShowOverlayMessageOkCancel(
+                    "Error",
+                    $"Failed to save GitHub Gist credentials: {ex.Message}",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
             }
         }
 
@@ -958,10 +970,29 @@ namespace Tailgrab.PlayerManagement
                 ConfigStore.PutStoredKeyBool(CommonConst.Registry_Moderated_Avatar_Caching, ModeratedAvatarCaching.IsChecked == true);
                 ConfigStore.PutStoredKeyBool(CommonConst.Registry_Discovered_Group_Caching, DiscoveredGroupCaching.IsChecked == true);
                 ConfigStore.PutStoredKeyString(CommonConst.Registry_XSOverlay_Level, XSOverlayNotifications.SelectedValue.ToString() ?? CommonConst.XSOverlay_Level_None);
+
+                VRChatOSCChatbox vRChatOSC = _serviceRegistry.GetVRChatOSCChatbox();
+                vRChatOSC.EnableOSCService = EnableOSCClient.IsChecked == true;
+                if( !string.IsNullOrEmpty(OSCEndpoint.Text) )
+                {
+                    string[] parts = OSCEndpoint.Text.Split(':');
+                    if(parts.Length == 2)
+                    {
+                        vRChatOSC.OSCHost = parts[0];
+                        if(int.TryParse(parts[1], out int port))
+                        {
+                            vRChatOSC.OSCPort = port;
+                        }
+                    }
+                }
             }
             catch (Exception ex)
             {
-                System.Windows.MessageBox.Show($"Failed to save behavior flags: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                ShowOverlayMessageOkCancel(
+                    "Error",
+                    $"Failed to save behavior flags: {ex.Message}",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
             }
         }
 
@@ -1053,7 +1084,7 @@ namespace Tailgrab.PlayerManagement
             OverlayMessageBodyTextBox.Text = string.Empty;
         }
 
-        public void ShowOverlayMessageOkCancel(string title, string body, MessageBoxButton buttonType = MessageBoxButton.OKCancel, MessageBoxImage imageType = MessageBoxImage.None, Action<MessageBoxResult> resultAction = null)
+        public void ShowOverlayMessageOkCancel(string title, string body, MessageBoxButton buttonType = MessageBoxButton.OKCancel, MessageBoxImage imageType = MessageBoxImage.None, Action<MessageBoxResult>? resultAction = null)
         {
             OverlayMessageOkCancelTitle = title;
             OverlayMessageOkCancelBody = body;
@@ -1063,6 +1094,24 @@ namespace Tailgrab.PlayerManagement
             OverlayMessageOkCancelResultAction = resultAction;
             _OverlayMessageOkCancelTaskCompletionSource = null;
             OverlayMessageOkCancel.Visibility = Visibility.Visible;
+        }
+
+        public void ShowOverlayMessageOkCancelI18N(string titleKey, string bodyKey, MessageBoxButton buttonType, MessageBoxImage imageType, Action<MessageBoxResult>? resultAction, params object[] bodyReplacements)
+        {
+            string title = Utility.I18NString(titleKey);
+            string body = Utility.I18NString(bodyKey);
+
+            if (bodyReplacements.Length > 0)
+            {
+                body = string.Format(body, bodyReplacements);
+            }
+
+            ShowOverlayMessageOkCancel(title, body, buttonType, imageType, resultAction);
+        }
+
+        public void ShowOverlayMessageOkCancelI18N(string titleKey, string bodyKey, params object[] bodyReplacements)
+        {
+            ShowOverlayMessageOkCancelI18N(titleKey, bodyKey, MessageBoxButton.OKCancel, MessageBoxImage.None, null, bodyReplacements);
         }
 
         public Task<MessageBoxResult> ShowOverlayMessageOkCancelAsync(string title, string body, MessageBoxButton buttonType = MessageBoxButton.OKCancel, MessageBoxImage imageType = MessageBoxImage.None)
@@ -1221,20 +1270,23 @@ namespace Tailgrab.PlayerManagement
 
                 await Task.Run(() => _serviceRegistry.ProcessAvatarGist());
 
-                ShowOverlayMessageOkCancel(
-                    "Check Avatar GIST",
-                    "Avatar GIST list processing in the background.",
+                ShowOverlayMessageOkCancelI18N(
+                    "MessageBox.CheckAvatarGist.Title",
+                    "MessageBox.CheckAvatarGist.Content",
                     MessageBoxButton.OK,
-                    MessageBoxImage.Information);                
+                    MessageBoxImage.Information,
+                    null);                
             }
             catch (Exception ex)
             {
                 logger.Error(ex, "Failed to process Avatar GIST");
-                ShowOverlayMessageOkCancel(
-                    "Avatar GIST Check Error",
-                    $"Failed to process Avatar GIST: {ex.Message}",
+                ShowOverlayMessageOkCancelI18N(
+                    "MessageBox.CheckAvatarGist_Error.Title",
+                    "MessageBox.CheckAvatarGist_Error.Content",
                     MessageBoxButton.OK,
-                    MessageBoxImage.Information);
+                    MessageBoxImage.Information,
+                    null,
+                    ex.Message);
             }
             finally
             {
@@ -1259,9 +1311,13 @@ namespace Tailgrab.PlayerManagement
             catch (Exception ex)
             {
                 logger.Error(ex, "Failed to process Group GIST");
-                ShowOverlayMessageOkCancel(
-                    "Group GIST Check Error",
-                    $"Failed to process Group GIST: {ex.Message}",
+
+                string msgTitle = Utility.I18NString("MessageBox.CheckGroupGist_Error.Title");
+                string msgContent = Utility.I18NString("MessageBox.CheckGroupGist_Error.Content");
+
+                ShowOverlayMessageOkCancelI18N(
+                    "MessageBox.CheckGroupGist_Error.Title",
+                    "MessageBox.CheckGroupGist_Error.Content",
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);
             }
@@ -1287,16 +1343,24 @@ namespace Tailgrab.PlayerManagement
                 System.Windows.Clipboard.SetText(result);
                 logger.Info("Exported Avatar GIST data to clipboard");
 
-                ShowOverlayMessage("Export Avatar Watch Data", $"Exported Avatar(s) to clipboard.");
+                ShowOverlayMessageOkCancelI18N(
+                    "MessageBox.ExportAvatarGist.Title",
+                    "MessageBox.ExportAvatarGist.Content",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information,
+                    null);
+
             }
             catch (Exception ex)
             {
                 logger.Error(ex, "Failed to export Avatar GIST data");
-                ShowOverlayMessageOkCancel(
-                    "Avatar GIST Export Error",
-                    $"Failed to export Avatar data: {ex.Message}",
+                ShowOverlayMessageOkCancelI18N(
+                    "MessageBox.ExportAvatarGist_Error.Title",
+                    "MessageBox.ExportAvatarGist_Error.Content",
                     MessageBoxButton.OK,
-                    MessageBoxImage.Information);
+                    MessageBoxImage.Error,
+                    null,
+                    ex.Message);
             }
         }
 
@@ -1314,15 +1378,24 @@ namespace Tailgrab.PlayerManagement
                 logger.Info("Exported Group GIST data to clipboard");
 
                 ShowOverlayMessage("Export Group Watch Data", $"Exported group(s) to clipboard.");
+                ShowOverlayMessageOkCancelI18N(
+                    "MessageBox.ExportGroupGist.Title",
+                    "MessageBox.ExportGroupGist.Content",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information,
+                    null);
+
             }
             catch (Exception ex)
             {
                 logger.Error(ex, "Failed to export group GIST data");
-                ShowOverlayMessageOkCancel(
-                    "Group GIST Export Error",
-                    $"Failed to export Group data: {ex.Message}",
+                ShowOverlayMessageOkCancelI18N(
+                    "MessageBox.ExportGroupGist_Error.Title",
+                    "MessageBox.ExportGroupGist_Error.Content",
                     MessageBoxButton.OK,
-                    MessageBoxImage.Information);
+                    MessageBoxImage.Error,
+                    null,
+                    ex.Message);
             }
         }
 
@@ -1342,11 +1415,14 @@ namespace Tailgrab.PlayerManagement
             catch (Exception ex)
             {
                 logger.Error(ex, "Failed to export GIST data");
-                ShowOverlayMessageOkCancel(
-                    "GIST Export Error",
-                    $"Failed to export GIST data: {ex.Message}",
+                ShowOverlayMessageOkCancelI18N(
+                    "MessageBox.UpdateGist_Error.Title",
+                    "MessageBox.UpdateGist_Error.Content",
                     MessageBoxButton.OK,
-                    MessageBoxImage.Error);
+                    MessageBoxImage.Error,
+                    null,
+                    ex.Message);
+
             }
         }
         #endregion
@@ -1369,19 +1445,22 @@ namespace Tailgrab.PlayerManagement
                 // Load available models from Ollama after saving credentials
                 await LoadOllamaModelsAsync();
 
-                ShowOverlayMessageOkCancel(
-                    "AI Configuration Saved",
-                    "AI Configuration saved. Restart the Application for all changes to take effect.",
+                ShowOverlayMessageOkCancelI18N(
+                    "MessageBox.SaveAIConfig.Title",
+                    "MessageBox.SaveAIConfig.Content",
                     MessageBoxButton.OK,
-                    MessageBoxImage.Information);
+                    MessageBoxImage.Information,
+                    null);
             }
             catch (Exception ex)
             {
-                ShowOverlayMessageOkCancel(
-                    "AI Configuration Error",
-                    $"Failed to save AI configuration: {ex.Message}",
+                ShowOverlayMessageOkCancelI18N(
+                    "MessageBox.SaveAIConfig_Error.Title",
+                    "MessageBox.SaveAIConfig_Error.Content",
                     MessageBoxButton.OK,
-                    MessageBoxImage.Error);
+                    MessageBoxImage.Error,
+                    null,
+                    ex.Message);
             }
         }
 
@@ -1414,11 +1493,13 @@ namespace Tailgrab.PlayerManagement
             }
             catch (Exception ex)
             {
-                ShowOverlayMessageOkCancel(
-                    "AI Configuration Error",
-                    $"Failed to reset Ollama Configuration: {ex.Message}",
+                ShowOverlayMessageOkCancelI18N(
+                    "MessageBox.ResetOllama_Error.Title",
+                    "MessageBox.ResetOllama_Error.Content",
                     MessageBoxButton.OK,
-                    MessageBoxImage.Error);
+                    MessageBoxImage.Error,
+                    null,
+                    ex.Message);
             }
         }
 
@@ -1452,11 +1533,13 @@ namespace Tailgrab.PlayerManagement
             catch (Exception ex)
             {
                 logger.Error(ex, "Failed to load Ollama models");
-                ShowOverlayMessageOkCancel(
-                    "AI Configuration Error",
-                    $"Failed to load Ollama models: {ex.Message}",
+                ShowOverlayMessageOkCancelI18N(
+                    "MessageBox.LoadOllamaModels_Error.Title",
+                    "MessageBox.LoadOllamaModels_Error.Content",
                     MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
+                    MessageBoxImage.Warning,
+                    null,
+                    ex.Message);
             }
         }
 
@@ -1485,11 +1568,12 @@ namespace Tailgrab.PlayerManagement
 
                 if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(prompt) || string.IsNullOrEmpty(model))
                 {
-                    ShowOverlayMessageOkCancel(
-                        "Validation Error",
-                        "Please ensure User ID, Prompt, and Model are specified.",
+                    ShowOverlayMessageOkCancelI18N(
+                        "MessageBox.TestProfilePrompt_Validation.Title",
+                        "MessageBox.TestProfilePrompt_Validation.Content",
                         MessageBoxButton.OK,
-                        MessageBoxImage.Warning);
+                        MessageBoxImage.Warning,
+                        null);
                     return;
                 }
 
@@ -1507,11 +1591,13 @@ namespace Tailgrab.PlayerManagement
             catch (Exception ex)
             {
                 logger.Error(ex, "Failed to test profile prompt");
-                ShowOverlayMessageOkCancel(
-                    "Error",
-                    $"Failed to test profile prompt: {ex.Message}",
+                ShowOverlayMessageOkCancelI18N(
+                    "MessageBox.TestProfilePrompt_Error.Title",
+                    "MessageBox.TestProfilePrompt_Error.Content",
                     MessageBoxButton.OK,
-                    MessageBoxImage.Error);
+                    MessageBoxImage.Error,
+                    null,
+                    ex.Message);
             }
             finally
             {
@@ -1570,11 +1656,13 @@ namespace Tailgrab.PlayerManagement
             catch (Exception ex)
             {
                 logger.Error(ex, "Failed to process AI image prompt test");
-                ShowOverlayMessageOkCancel(
-                    "Error",
-                    $"Failed to load test images: {ex.Message}",
+                ShowOverlayMessageOkCancelI18N(
+                    "MessageBox.TestImagePrompt_Error.Title",
+                    "MessageBox.TestImagePrompt_Error.Content",
                     MessageBoxButton.OK,
-                    MessageBoxImage.Error);
+                    MessageBoxImage.Error,
+                    null,
+                    ex.Message);
             }
         }
 
@@ -1619,11 +1707,13 @@ namespace Tailgrab.PlayerManagement
             catch (Exception ex)
             {
                 logger.Error(ex, "Failed to test image prompt");
-                ShowOverlayMessageOkCancel(
-                    "AI Image Test Error",
-                    $"Failed to test image prompt: {ex.Message}",
+                ShowOverlayMessageOkCancelI18N(
+                    "MessageBox.TestImagePrompt_Error.Title",
+                    "MessageBox.TestImagePrompt_Error.Content",
                     MessageBoxButton.OK,
-                    MessageBoxImage.Error);
+                    MessageBoxImage.Error,
+                    null,
+                    ex.Message);
             }
             finally
             {
@@ -1818,20 +1908,23 @@ namespace Tailgrab.PlayerManagement
                 // Reload colors with new settings
                 LoadHighlightColors();
 
-                ShowOverlayMessageOkCancel(
-                    "Colors Saved",
-                    "Color settings saved successfully. Changes are applied immediately.",
+                ShowOverlayMessageOkCancelI18N(
+                    "MessageBox.SaveColors.Title",
+                    "MessageBox.SaveColors.Content",
                     MessageBoxButton.OK,
-                    MessageBoxImage.Information);
+                    MessageBoxImage.Information,
+                    null);
             }
             catch (Exception ex)
             {
                 logger.Error(ex, "Failed to save color settings");
-                ShowOverlayMessageOkCancel(
-                    "Error",
-                    $"Failed to save color settings: {ex.Message}",
+                ShowOverlayMessageOkCancelI18N(
+                    "MessageBox.SaveColors_Error.Title",
+                    "MessageBox.SaveColors_Error.Content",
                     MessageBoxButton.OK,
-                    MessageBoxImage.Error);
+                    MessageBoxImage.Error,
+                    null,
+                    ex.Message);
             }
         }
 
@@ -2135,6 +2228,16 @@ namespace Tailgrab.PlayerManagement
             UpdateHeaderSortIndicator(header, view, property);
         }
 
+        private void ActiveListView_PreviewMouseWheel(object sender, System.Windows.Input.MouseWheelEventArgs e)
+        {
+            // Reset IsSelected for all players when user scrolls
+            foreach (var player in ActivePlayers)
+            {
+                player.IsSelected = false;
+            }
+            SelectedActive = null;
+        }
+
         private void CopyPlayer_Click(object sender, RoutedEventArgs e)
         {
             if (sender is not System.Windows.Controls.Button btn) return;
@@ -2277,11 +2380,12 @@ namespace Tailgrab.PlayerManagement
             }
             else
             {
-                ShowOverlayMessageOkCancel(
-                    "No Player Selected",
-                    "Please select a player first.",
+                ShowOverlayMessageOkCancelI18N(
+                    "MessageBox.PastViewGroups_Validation.Title",
+                    "MessageBox.PastViewGroups_Validation.Content",
                     MessageBoxButton.OK,
-                    MessageBoxImage.Information);
+                    MessageBoxImage.Information,
+                    null);
             }
         }
 
@@ -2300,11 +2404,13 @@ namespace Tailgrab.PlayerManagement
                 catch (Exception ex)
                 {
                     logger.Error(ex, "Failed to open Report Profile overlay");
-                    ShowOverlayMessageOkCancel(
-                        "Error",
-                        $"Failed to open Report Profile overlay: {ex.Message}",
+                    ShowOverlayMessageOkCancelI18N(
+                        "MessageBox.ReportPlayer_Error.Title",
+                        "MessageBox.ReportPlayer_Error.Content",
                         MessageBoxButton.OK,
-                        MessageBoxImage.Error);
+                        MessageBoxImage.Error,
+                        null,
+                        ex.Message);
                 }
             }
         }
@@ -2370,21 +2476,23 @@ namespace Tailgrab.PlayerManagement
 
                 if (string.IsNullOrWhiteSpace(userId))
                 {
-                    ShowOverlayMessageOkCancel(
-                        "Validation Error",
-                        "Please enter a User ID first.",
+                    ShowOverlayMessageOkCancelI18N(
+                        "MessageBox.UserValidation_Error1.Title",
+                        "MessageBox.UserValidation_Error1.Content",
                         MessageBoxButton.OK,
-                        MessageBoxImage.Warning);
+                        MessageBoxImage.Warning,
+                        null);
                     return;
                 }
 
                 if (!userId.StartsWith("usr_"))
                 {
-                    ShowOverlayMessageOkCancel(
-                        "Validation Error",
-                        "Invalid User ID format (must start with usr_).",
+                    ShowOverlayMessageOkCancelI18N(
+                        "MessageBox.UserValidation_Error2.Title",
+                        "MessageBox.UserValidation_Error2.Content",
                         MessageBoxButton.OK,
-                        MessageBoxImage.Warning);
+                        MessageBoxImage.Warning,
+                        null);
                     return;
                 }
 
@@ -2397,11 +2505,13 @@ namespace Tailgrab.PlayerManagement
             catch (Exception ex)
             {
                 logger.Error(ex, "Error checking groups for user");
-                ShowOverlayMessageOkCancel(
-                    "Error",
-                    $"Failed to check groups: {ex.Message}",
+                ShowOverlayMessageOkCancelI18N(
+                    "MessageBox.CheckUserAvatars_Error.Title",
+                    "MessageBox.CheckUserAvatars_Error.Content",
                     MessageBoxButton.OK,
-                    MessageBoxImage.Error);
+                    MessageBoxImage.Error,
+                    null,
+                    ex.Message);
             }
         }
 
@@ -2420,11 +2530,13 @@ namespace Tailgrab.PlayerManagement
                 catch (Exception ex)
                 {
                     logger.Error(ex, "Failed to open Report Avatar overlay");
-                    ShowOverlayMessageOkCancel(
-                        "Error",
-                        $"Failed to open Report Avatar overlay: {ex.Message}",
+                    ShowOverlayMessageOkCancelI18N(
+                        "MessageBox.ReportAvatar_Error.Title",
+                        "MessageBox.ReportAvatar_Error.Content",
                         MessageBoxButton.OK,
-                        MessageBoxImage.Error);
+                        MessageBoxImage.Error,
+                        null,
+                        ex.Message);
                 }
             }
         }
@@ -2538,11 +2650,13 @@ namespace Tailgrab.PlayerManagement
                 // Show success message
                 if (!success)
                 {
-                    ShowOverlayMessageOkCancel(
-                        "Error",
-                        "Failed to submit report. Please try again later.",
+                    ShowOverlayMessageOkCancelI18N(
+                        "MessageBox.SubmitReportPlayer_Error.Title",
+                        "MessageBox.SubmitReportPlayer_Error.Content",
                         MessageBoxButton.OK,
-                        MessageBoxImage.Error);
+                        MessageBoxImage.Error,
+                        null,
+                        "Success == false");
                     OverlayProfileReportSubmitButton.IsEnabled = true;
                     return;
                 }
@@ -2561,11 +2675,13 @@ namespace Tailgrab.PlayerManagement
             catch (Exception ex)
             {
                 logger.Error(ex, "Failed to submit profile report");
-                ShowOverlayMessageOkCancel(
-                    "Error",
-                    $"Failed to submit report: {ex.Message}",
+                ShowOverlayMessageOkCancelI18N(
+                    "MessageBox.SubmitReportPlayer_Error.Title",
+                    "MessageBox.SubmitReportPlayer_Error.Content",
                     MessageBoxButton.OK,
-                    MessageBoxImage.Error);
+                    MessageBoxImage.Error,
+                    null,
+                    ex.Message);
             }
             finally
             {
@@ -2677,11 +2793,13 @@ namespace Tailgrab.PlayerManagement
                 // Show success message
                 if (!success)
                 {
-                    ShowOverlayMessageOkCancel(
-                        "Error",
-                        "Failed to submit report. Please try again later.",
+                    ShowOverlayMessageOkCancelI18N(
+                        "MessageBox.SubmitReportAvatar_Error.Title",
+                        "MessageBox.SubmitReportAvatar_Error.Content",
                         MessageBoxButton.OK,
-                        MessageBoxImage.Error);
+                        MessageBoxImage.Error,
+                        null,
+                        "Success == False");
                     OverlayAvatarReportSubmitButton.IsEnabled = true;
                     return;
                 }
@@ -2700,11 +2818,13 @@ namespace Tailgrab.PlayerManagement
             catch (Exception ex)
             {
                 logger.Error(ex, "Failed to submit avatar report");
-                ShowOverlayMessageOkCancel(
-                    "Error",
-                    $"Failed to submit report: {ex.Message}",
+                ShowOverlayMessageOkCancelI18N(
+                    "MessageBox.SubmitReportAvatar_Error.Title",
+                    "MessageBox.SubmitReportAvatar_Error.Content",
                     MessageBoxButton.OK,
-                    MessageBoxImage.Error);
+                    MessageBoxImage.Error,
+                    null,
+                    ex.Message);
             }
             finally
             {
@@ -2752,11 +2872,13 @@ namespace Tailgrab.PlayerManagement
                 catch (Exception ex)
                 {
                     logger.Error(ex, "Failed to open Report Profile overlay");
-                    ShowOverlayMessageOkCancel(
-                        "Error",
-                        $"Failed to open Report Profile overlay: {ex.Message}",
+                    ShowOverlayMessageOkCancelI18N(
+                        "MessageBox.ReportPlayer_Error.Title",
+                        "MessageBox.ReportPlayer_Error.Content",
                         MessageBoxButton.OK,
-                        MessageBoxImage.Error);
+                        MessageBoxImage.Error,
+                        null,
+                        ex.Message);
                 }
             }
         }
@@ -2913,11 +3035,13 @@ namespace Tailgrab.PlayerManagement
             catch (Exception ex)
             {
                 logger.Error(ex, "Failed to open Report Print Item overlay");
-                ShowOverlayMessageOkCancel(
-                    "Error",
-                    $"Failed to open Report Print Item overlay: {ex.Message}",
+                ShowOverlayMessageOkCancelI18N(
+                    "MessageBox.ReportPrint_Error.Title",
+                    "MessageBox.ReportPrint_Error.Content",
                     MessageBoxButton.OK,
-                    MessageBoxImage.Error);
+                    MessageBoxImage.Error,
+                    null,
+                    ex.Message);
             }
         }
 
@@ -3036,11 +3160,13 @@ namespace Tailgrab.PlayerManagement
                 // Show success message
                 if (!success)
                 {
-                    ShowOverlayMessageOkCancel(
-                        "Error",
-                        "Failed to submit report. Please try again later.",
+                    ShowOverlayMessageOkCancelI18N(
+                        "MessageBox.SubmitReportPrint_Error.Title",
+                        "MessageBox.SubmitReportPrint_Error.Content",
                         MessageBoxButton.OK,
-                        MessageBoxImage.Error);
+                        MessageBoxImage.Error,
+                        null,
+                        "Success == false");
                     PrintOverlaySubmitButton.IsEnabled = true;
                     return;
                 }
@@ -3064,11 +3190,13 @@ namespace Tailgrab.PlayerManagement
             catch (Exception ex)
             {
                 logger.Error(ex, "Failed to submit print report");
-                ShowOverlayMessageOkCancel(
-                    "Error",
-                    $"Failed to submit report: {ex.Message}",
+                ShowOverlayMessageOkCancelI18N(
+                    "MessageBox.SubmitReportPrint_Error.Title",
+                    "MessageBox.SubmitReportPrint_Error.Content",
                     MessageBoxButton.OK,
-                    MessageBoxImage.Error);
+                    MessageBoxImage.Error,
+                    null,
+                    ex.Message);
             }
             finally
             {
@@ -3905,16 +4033,16 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
-        private void AvatarPurgeNoneRecords_Click(object sender, RoutedEventArgs e)
+        private async void AvatarPurgeNoneRecords_Click(object sender, RoutedEventArgs e)
         {
             // Show confirmation dialog
-            var confirmResult = System.Windows.MessageBox.Show(
-                "This will delete all Avatar Info Records that are marked 'NONE'. Do you want to continue?",
-                "Purge NONE Records",
-                MessageBoxButton.OKCancel,
-                MessageBoxImage.Warning);
+            var confirmResult = await ShowOverlayMessageOkCancelAsync(
+                   "Purge NONE Records",
+                   "This will delete all Avatar Info Records that are marked 'NONE'. Do you want to continue?",
+                   MessageBoxButton.YesNo,
+                   MessageBoxImage.Question);
 
-            if (confirmResult == MessageBoxResult.OK)
+            if (confirmResult == MessageBoxResult.Yes)
             {
                 try
                 {
@@ -3937,17 +4065,17 @@ namespace Tailgrab.PlayerManagement
                         RefreshAvatarDb();
 
                         // Show confirmation message
-                        System.Windows.MessageBox.Show(
+                        await ShowOverlayMessageOkCancelAsync(
+                            "Purge NONE Records",
                             $"{recordCount} record(s) were successfully removed.",
-                            "Delete Complete",
                             MessageBoxButton.OK,
-                            MessageBoxImage.Information);
+                            MessageBoxImage.Information);                        
                     }
                     else
                     {
-                        System.Windows.MessageBox.Show(
+                        await ShowOverlayMessageOkCancelAsync(
+                            "Purge NONE Records",
                             "No records with AlertType 'NONE' were found.",
-                            "Delete Complete",
                             MessageBoxButton.OK,
                             MessageBoxImage.Information);
                     }
@@ -3955,9 +4083,9 @@ namespace Tailgrab.PlayerManagement
                 catch (Exception ex)
                 {
                     logger.Error(ex, "Failed to delete NONE records");
-                    System.Windows.MessageBox.Show(
+                    ShowOverlayMessageOkCancel(
+                        "Purge NONE Records",
                         $"Failed to delete records: {ex.Message}",
-                        "Error",
                         MessageBoxButton.OK,
                         MessageBoxImage.Error);
                 }
@@ -4100,16 +4228,16 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
-        private void GroupPurgeNoneRecords_Click(object sender, RoutedEventArgs e)
+        private async void GroupPurgeNoneRecords_Click(object sender, RoutedEventArgs e)
         {
             // Show confirmation dialog
-            var confirmResult = System.Windows.MessageBox.Show(
-                "This will delete all Group Info Records that are marked 'NONE'. Do you want to continue?",
+            var confirmResult = await ShowOverlayMessageOkCancelAsync(
                 "Purge NONE Records",
-                MessageBoxButton.OKCancel,
+                "This will delete all Group Info Records that are marked 'NONE'. Do you want to continue?",
+                MessageBoxButton.YesNo,
                 MessageBoxImage.Warning);
 
-            if (confirmResult == MessageBoxResult.OK)
+            if (confirmResult == MessageBoxResult.Yes)
             {
                 try
                 {
@@ -4132,17 +4260,17 @@ namespace Tailgrab.PlayerManagement
                         RefreshGroupDb();
 
                         // Show confirmation message
-                        System.Windows.MessageBox.Show(
+                        await ShowOverlayMessageOkCancelAsync(
+                            "Purge NONE Records",
                             $"{recordCount} record(s) were successfully removed.",
-                            "Delete Complete",
                             MessageBoxButton.OK,
                             MessageBoxImage.Information);
                     }
                     else
                     {
-                        System.Windows.MessageBox.Show(
+                        await ShowOverlayMessageOkCancelAsync(
+                            "Purge NONE Records",
                             "No records with AlertType 'NONE' were found.",
-                            "Delete Complete",
                             MessageBoxButton.OK,
                             MessageBoxImage.Information);
                     }
@@ -4150,9 +4278,9 @@ namespace Tailgrab.PlayerManagement
                 catch (Exception ex)
                 {
                     logger.Error(ex, "Failed to delete NONE records");
-                    System.Windows.MessageBox.Show(
-                        $"Failed to delete records: {ex.Message}",
+                    ShowOverlayMessageOkCancel(
                         "Error",
+                        $"Failed to delete records: {ex.Message}",
                         MessageBoxButton.OK,
                         MessageBoxImage.Error);
                 }
@@ -4187,7 +4315,7 @@ namespace Tailgrab.PlayerManagement
                     BanMgmtAvatarState.Text = result.Value.ReleaseStatus.ToString();
 
 
-                    VRChatUserProfileEntry? userProfile = await Task.Run(() => vrcClient.GetCachedUserProfile(result.Value.AuthorId));
+                    VRChatUserProfileEntry? userProfile = await Task.Run(() => vrcClient.GetCachedUserProfileAsync(result.Value.AuthorId));
 
                     BanMgmtAvatarOwner.Text = userProfile?.DisplayName ?? "Unknown";
                     BanMgmtAvatarOwnerId.Text = result.Value.AuthorId ?? string.Empty;
@@ -4288,7 +4416,7 @@ namespace Tailgrab.PlayerManagement
                     string discriminator = group.Discriminator ?? string.Empty;
                     BanMgmtGroupShortCode.Text = string.IsNullOrEmpty(shortCode) ? string.Empty : $"{shortCode}.{discriminator}";
 
-                    VRChatUserProfileEntry? userProfile = _serviceRegistry.GetVRChatAPIClient().GetCachedUserProfile(group.OwnerId);
+                    VRChatUserProfileEntry? userProfile = await _serviceRegistry.GetVRChatAPIClient().GetCachedUserProfileAsync(group.OwnerId);
 
                     BanMgmtGroupOwner.Text = userProfile?.DisplayName ?? string.Empty;
                     BanMgmtGroupOwnerId.Text = group.OwnerId ?? string.Empty;
@@ -4494,16 +4622,16 @@ namespace Tailgrab.PlayerManagement
             e.Handled = true;
         }
 
-        private void PurgeInactiveUsers_Click(object sender, RoutedEventArgs e)
+        private async void PurgeInactiveUsers_Click(object sender, RoutedEventArgs e)
         {
             // Show confirmation dialog
-            MessageBoxResult confirmResult = System.Windows.MessageBox.Show(
-                "This will purge all user records that have not been seen for two months and that have less than 15 minutes of elapsed time.",
+            MessageBoxResult confirmResult = await ShowOverlayMessageOkCancelAsync(
                 "Confirm Purge",
-                MessageBoxButton.OKCancel,
+                "This will purge all user records that have not been seen for two months and that have less than 15 minutes of elapsed time.",
+                MessageBoxButton.YesNo,
                 MessageBoxImage.Warning);
 
-            if (confirmResult == MessageBoxResult.OK)
+            if (confirmResult == MessageBoxResult.Yes)
             {
                 try
                 {
@@ -4552,17 +4680,17 @@ namespace Tailgrab.PlayerManagement
                         RefreshUserDb();
 
                         // Show success message
-                        System.Windows.MessageBox.Show(
-                            $"Successfully removed {userCount} user record(s) and {profileEvalCount} profile evaluation record(s).",
+                        await ShowOverlayMessageOkCancelAsync(
                             "Purge Complete",
+                            $"Successfully removed {userCount} user record(s) and {profileEvalCount} profile evaluation record(s).",
                             MessageBoxButton.OK,
                             MessageBoxImage.Information);
                     }
                     else
                     {
-                        System.Windows.MessageBox.Show(
-                            "No inactive user records were found matching the criteria.",
+                        await ShowOverlayMessageOkCancelAsync(
                             "Purge Complete",
+                            "No inactive user records were found matching the criteria.",
                             MessageBoxButton.OK,
                             MessageBoxImage.Information);
                     }
@@ -4570,9 +4698,9 @@ namespace Tailgrab.PlayerManagement
                 catch (Exception ex)
                 {
                     logger.Error(ex, "Failed to purge inactive users");
-                    System.Windows.MessageBox.Show(
-                        $"Failed to purge records: {ex.Message}",
+                    ShowOverlayMessageOkCancel(
                         "Error",
+                        $"Failed to purge records: {ex.Message}",
                         MessageBoxButton.OK,
                         MessageBoxImage.Error);
                 }
@@ -5148,13 +5276,13 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
-        private void ResetLayout_Click(object sender, RoutedEventArgs e)
+        private async void ResetLayout_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                var result = System.Windows.MessageBox.Show(
-                    "This will reset the window size, position, all column widths, and splitter positions to their default values. Do you want to continue?",
+                var result = await ShowOverlayMessageOkCancelAsync(
                     "Reset Layout",
+                    "This will reset the window size, position, all column widths, and splitter positions to their default values. Do you want to continue?",
                     MessageBoxButton.YesNo,
                     MessageBoxImage.Question);
 
@@ -5162,9 +5290,9 @@ namespace Tailgrab.PlayerManagement
                 {
                     WindowLayoutManager.ResetLayoutSettings();
 
-                    System.Windows.MessageBox.Show(
-                        "Layout settings have been reset. Please restart the application for changes to take effect.",
+                    await ShowOverlayMessageOkCancelAsync(
                         "Reset Complete",
+                        "Layout settings have been reset. Please restart the application for changes to take effect.",
                         MessageBoxButton.OK,
                         MessageBoxImage.Information);
 
@@ -5174,7 +5302,7 @@ namespace Tailgrab.PlayerManagement
             catch (Exception ex)
             {
                 logger.Error(ex, "Failed to reset layout settings");
-                System.Windows.MessageBox.Show(
+                await ShowOverlayMessageOkCancelAsync(
                     $"Failed to reset layout: {ex.Message}",
                     "Error",
                     MessageBoxButton.OK,
@@ -5240,7 +5368,7 @@ namespace Tailgrab.PlayerManagement
                 BanMgmtUserStatusText.Foreground = System.Windows.Media.Brushes.Yellow;
 
                 // Call GetProfile
-                VRChatUserProfileEntry? profileEntry = _serviceRegistry.GetVRChatAPIClient().GetCachedUserProfile(userId);
+                VRChatUserProfileEntry? profileEntry = await _serviceRegistry.GetVRChatAPIClient().GetCachedUserProfileAsync(userId);
                 if (profileEntry == null || string.IsNullOrEmpty(profileEntry.UserId))
                 {
                     BanMgmtUserStatusText.Text = "User not found";
@@ -5557,16 +5685,16 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
-        private void BanMgmtRemoveGroup_Click(object sender, RoutedEventArgs e)
+        private async void BanMgmtRemoveGroup_Click(object sender, RoutedEventArgs e)
         {
             try
             {
                 TailgrabDBContext dBContext = _serviceRegistry.GetDBContext();
                 if (sender is System.Windows.Controls.Button button && button.Tag is GroupBanViewModel item)
                 {
-                    var result = System.Windows.MessageBox.Show(
-                        $"Are you sure you want to remove group '{item.GroupName}' from the list?\n\nThis will remove it from the database.",
+                    var result = await ShowOverlayMessageOkCancelAsync(
                         "Confirm Remove",
+                        $"Are you sure you want to remove group '{item.GroupName}' from the list?\n\nThis will remove it from the database.",
                         MessageBoxButton.YesNo,
                         MessageBoxImage.Question);
 
@@ -5594,8 +5722,8 @@ namespace Tailgrab.PlayerManagement
             {
                 logger.Error(ex, "Error removing group from ban management");
                 ShowOverlayMessageOkCancel(
-                    "Error In Group Management",
                     $"Error: {ex.Message}",
+                    "Error In Group Management",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
             }
@@ -6632,11 +6760,11 @@ namespace Tailgrab.PlayerManagement
             Grid.SetColumn(typeLabel, 0);
             Grid.SetRow(typeLabel, 1);
             var typeCombo = new System.Windows.Controls.ComboBox { Height = 24, Margin = new Thickness(6, 4, 0, 4) };
-            typeCombo.ItemsSource = Enum.GetValues(typeof(OscType)).Cast<OscType>().ToList();
+            typeCombo.ItemsSource = Enum.GetValues(typeof(VRChatOSCTypeEnum)).Cast<VRChatOSCTypeEnum>().ToList();
             typeCombo.SelectedItem = action.OscValueType;
             Grid.SetColumn(typeCombo, 1);
             Grid.SetRow(typeCombo, 1);
-            typeCombo.SelectionChanged += (s, e) => { if (e.AddedItems.Count > 0 && e.AddedItems[0] is OscType t) action.OscValueType = t; };
+            typeCombo.SelectionChanged += (s, e) => { if (e.AddedItems.Count > 0 && e.AddedItems[0] is VRChatOSCTypeEnum t) action.OscValueType = t; };
             grid.Children.Add(typeLabel);
             grid.Children.Add(typeCombo);
 
@@ -6908,13 +7036,15 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
-        private void RemoveActionButton_Click(object sender, RoutedEventArgs e)
+        private async void RemoveActionButton_Click(object sender, RoutedEventArgs e)
         {
             if (_lineHandlerEditorViewModel?.SelectedAction != null)
             {
-                var result = System.Windows.MessageBox.Show(
+                var result = await ShowOverlayMessageOkCancelAsync(
+                    "Confirm Removal",
                     $"Remove this action?",
-                    "Confirm Removal", System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Question);
+                    System.Windows.MessageBoxButton.YesNo, 
+                    System.Windows.MessageBoxImage.Question);
 
                 if (result == System.Windows.MessageBoxResult.Yes)
                 {
@@ -7177,7 +7307,19 @@ namespace Tailgrab.PlayerManagement
         public string ProfileUrl { get; set; }
         public TrustClassEnum UserTrustClass { get; set; }
 
-        public bool IsSelected { get; set; } = false;
+        private bool _isSelected = false;
+        public bool IsSelected
+        {
+            get => _isSelected;
+            set
+            {
+                if (_isSelected != value)
+                {
+                    _isSelected = value;
+                    OnPropertyChanged(nameof(IsSelected));
+                }
+            }
+        }
 
         public AgeVerificationEnum AgeVerified { get; set; }
 

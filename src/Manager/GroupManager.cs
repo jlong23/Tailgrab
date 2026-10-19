@@ -83,7 +83,7 @@ namespace Tailgrab.Manager
         }
 
 
-        private void UpdateQueuedProcessWithPlayer(QueuedProcess item)
+        private async void UpdateQueuedProcessWithPlayer(QueuedProcess item)
         {
             if (serviceRegistry == null)
             {
@@ -91,7 +91,7 @@ namespace Tailgrab.Manager
                 return;
             }
 
-            VRChatUserProfileEntry? userProfile = serviceRegistry.GetVRChatAPIClient().GetCachedUserProfile(item.UserId);
+            VRChatUserProfileEntry? userProfile = await serviceRegistry.GetVRChatAPIClient().GetCachedUserProfileAsync(item.UserId);
             string? accountThumbnailUrl = !string.IsNullOrEmpty(userProfile?.ProfileIconUrl) ? userProfile.ProfileIconUrl : userProfile?.ProfileBannerUrl;
             if (userProfile != null)
             {
@@ -142,7 +142,7 @@ namespace Tailgrab.Manager
             {
                 TailgrabDBContext dBContext = serviceRegistry.GetDBContext();
 
-                VRChatUserProfileEntry? userProfile = serviceRegistry.GetVRChatAPIClient().GetCachedUserProfile(item.UserId);
+                VRChatUserProfileEntry? userProfile = await serviceRegistry.GetVRChatAPIClient().GetCachedUserProfileAsync(item.UserId);
                 if( userProfile == null)
                 {
                     logger.Warn($"User profile for userId: {item.UserId} not found in cache.");
@@ -299,7 +299,7 @@ namespace Tailgrab.Manager
             try
             {
                 Tailgrab.Clients.VRChat.VRChatClient vrcClient = serviceRegistry.GetVRChatAPIClient();
-                VRChatUserProfileEntry? userProfile = await Task.Run(() => vrcClient.GetCachedUserProfile(userId));
+                VRChatUserProfileEntry? userProfile = await vrcClient.GetCachedUserProfileAsync(userId);
 
                 // Fetch groups from API on background thread
                 if(userProfile == null)

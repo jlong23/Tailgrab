@@ -271,9 +271,9 @@ namespace Tailgrab.Clients.Ollama
             return false;
         }
 
-        private void UpdateQueuedProcessWithPlayer(QueuedProcess item)
+        private async void UpdateQueuedProcessWithPlayer(QueuedProcess item)
         {
-            VRChatUserProfileEntry? vrcProfile = _serviceRegistry.GetVRChatAPIClient().GetCachedUserProfile(item.UserId);
+            VRChatUserProfileEntry? vrcProfile = await _serviceRegistry.GetVRChatAPIClient().GetCachedUserProfileAsync(item.UserId);
             string? accountThumbnailUrl = !string.IsNullOrEmpty(vrcProfile?.ProfileIconUrl) ? vrcProfile.ProfileIconUrl : vrcProfile?.ProfileBannerUrl;
             if (vrcProfile != null)
             {
@@ -293,7 +293,7 @@ namespace Tailgrab.Clients.Ollama
                 string promptHash = Checksum.MD5Hash(item.Prompt);
 
                 TailgrabDBContext dBContext = serviceRegistry.GetDBContext();
-                VRChatUserProfileEntry? vrcProfile = serviceRegistry.GetVRChatAPIClient().GetCachedUserProfile(item.UserId);
+                VRChatUserProfileEntry? vrcProfile = await serviceRegistry.GetVRChatAPIClient().GetCachedUserProfileAsync(item.UserId);
                 if (vrcProfile == null)
                 {
                     logger.Warn($"User profile not found for userId: {item.UserId}. Skipping evaluation.");
@@ -443,7 +443,7 @@ namespace Tailgrab.Clients.Ollama
                     return profileEvaluation;
                 }
 
-                VRChatUserProfileEntry? vrcProfile = serviceRegistry.GetVRChatAPIClient().GetCachedUserProfile(userId);
+                VRChatUserProfileEntry? vrcProfile = await serviceRegistry.GetVRChatAPIClient().GetCachedUserProfileAsync(userId);
                 if (vrcProfile == null)
                 {
                     profileEvaluation.Evaluation = System.Text.Encoding.UTF8.GetBytes($"Error: Could not create get User profile not found for userId: {userId}. Skipping evaluation.");

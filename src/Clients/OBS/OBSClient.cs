@@ -14,7 +14,7 @@ using Tailgrab.PlayerManagement;
 namespace Tailgrab.Clients.OBS
 {
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
-    public class OBSClient
+    public class OBSClient : IDisposable
     {
         protected static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
@@ -284,7 +284,23 @@ namespace Tailgrab.Clients.OBS
             }
             return false;
         }
-        
+
+        public void Dispose()
+        {
+            if (client != null)
+            {
+                client.ReplayBufferSaved -= OnReplayBufferSaved;
+                client.Connected -= OnSocketConnected;
+                client.Disconnected -= OnSocketDisconnected;
+                client.RecordStateChanged -= OnOutputStateChanged;
+                if (client.IsConnected)
+                {
+                    Task.Run(() => Disconnect()).Wait();
+                }
+                client = null;
+            }
+        }
+
         public async Task Disconnect()
         {
             if( IsConnected())

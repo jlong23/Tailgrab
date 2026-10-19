@@ -318,7 +318,7 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
-        public VRChatUserProfileEntry? LiftUpErrorHandler(AbstractLineHandler handler)
+        public async Task<VRChatUserProfileEntry?> LiftUpErrorHandler(AbstractLineHandler handler)
         {
             if( string.IsNullOrEmpty( LastPlayerLeaveEventUserId) || string.IsNullOrEmpty(LastPlayerLeaveEventDisplayName))
             {
@@ -422,7 +422,7 @@ namespace Tailgrab.PlayerManagement
 
                 SoundManager.PlayAlertSound(CommonConst.Group_Alert_Key, AlertTypeEnum.Crasher);
 
-                VRChatUserProfileEntry? userProfile = serviceRegistry.GetVRChatAPIClient().GetCachedUserProfile(userId);
+                VRChatUserProfileEntry? userProfile = await serviceRegistry.GetVRChatAPIClient().GetCachedUserProfileAsync(userId);
                 return userProfile;
             }
 
