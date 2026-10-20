@@ -250,7 +250,7 @@ namespace Tailgrab.Manager
             PlayerManager.SetAvatarByDisplayName(displayName, avatarName);
 
             Player? player = PlayerManager.AddPlayerEventByDisplayName(displayName, PlayerEvent.EventType.AvatarWatch, $"User switched to Avatar : {avatarName}"); ;
-            if (player != null)
+            if (player != null && player.AvatarName != avatarName )
             {
                 AvatarInfo? watchedAvatar = CheckAvatarByName(avatarName);
                 if (watchedAvatar != null)
@@ -258,8 +258,8 @@ namespace Tailgrab.Manager
                     logger.Info($"** MODERATED AVATAR DETECTED for Player {displayName}: {avatarName} with AlertType {watchedAvatar.AlertType}");
                     if (watchedAvatar.AlertType > AlertTypeEnum.None)
                     {
-                        player = PlayerManager.AddPlayerEventByDisplayName(displayName, PlayerEvent.EventType.AvatarWatch, $"User has used a watched Avatar : {avatarName} alertType: {watchedAvatar.AlertType}");
-                        player?.AddAlertMessage(AlertClassEnum.Avatar, watchedAvatar.AlertType, $"{avatarName}");
+                        PlayerManager.AddPlayerEventByDisplayName(displayName, PlayerEvent.EventType.AvatarWatch, $"User has used a watched Avatar : {avatarName} alertType: {watchedAvatar.AlertType}");
+                        player.AddAlertMessage(AlertClassEnum.Avatar, watchedAvatar.AlertType, $"{avatarName}");
                         OverlayManager overlay = serviceRegistry.GetXSOverlay();
 
                         Image? avatarAlert = null;
@@ -271,11 +271,10 @@ namespace Tailgrab.Manager
                             avatarAlert);
                     }
                 }
-                if (player != null)
-                {
-                    player.AvatarName = avatarName;
-                    PlayerManager.OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Updated, player);
-                }
+
+                player.AvatarName = avatarName;
+                player.AvatarId = string.Empty; // Reset AvatarId to null, will be updated when unpacked
+                PlayerManager.OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Updated, player);
             }
         }
 
