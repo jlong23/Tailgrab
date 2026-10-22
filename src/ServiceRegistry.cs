@@ -1,10 +1,16 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using ConcurrentPriorityQueue.Core;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Win32;
 using NLog;
+using OllamaSharp;
 using System.IO;
+using System.Numerics;
+using Tailgrab.Clients.Audio;
 using Tailgrab.Clients.OBS;
 using Tailgrab.Clients.Office;
 using Tailgrab.Clients.Ollama;
+using Tailgrab.Clients.Omnivoice;
 using Tailgrab.Clients.OSC;
 using Tailgrab.Clients.VRCDB;
 using Tailgrab.Clients.VRChat;
@@ -22,6 +28,8 @@ namespace Tailgrab
     public class ServiceRegistry
     {
         static Logger logger = LogManager.GetCurrentClassLogger();
+
+        private ConcurrentPriorityQueue<IHavePriority<int>, int> priorityQueue = new();
 
         TailgrabDBContext? dbContext = null;
         VRChatClient vrcAPIClient = new VRChatClient();
@@ -41,18 +49,17 @@ namespace Tailgrab
         OfficeClient? officeClient;
         McpSubscriptionManager? _subscriptionManager = null;
         VRChatOSCChatbox? oscChatbox = new VRChatOSCChatbox();
+        OmniVoiceClient? omniVoiceClient = new OmniVoiceClient();
+        MultiDevicePlayer? multiDevicePlayer = new MultiDevicePlayer();
+
 
         private OBSClient? obsClient;
-
-        public VRCDBClient GetVRCDBClient()
-        {
-            return _VRCDBClient;
-        }
 
         public ServiceRegistry(OBSClient obsClient, OfficeClient officeClient)
         {
             this.obsClient = obsClient;
             this.officeClient = officeClient;
+            _ = Task.Run(() => ProcessEventQueue(priorityQueue, this));
         }
 
         public async Task StartAllServices()
@@ -163,6 +170,7 @@ namespace Tailgrab
             }
         }
 
+        #region Get Service Instances
         public VRChatClient GetVRChatAPIClient()
         {
             return vrcAPIClient;
@@ -296,6 +304,24 @@ namespace Tailgrab
             return enableOBS ? obsClient : null;
         }
 
+        public OmniVoiceClient GetOmniVoiceClient()
+        {
+            if (omniVoiceClient == null)
+            {
+                throw new InvalidOperationException("OmniVoice Client has not been initialized. Call StartAllServices() first.");
+            }
+            return omniVoiceClient;
+        }
+
+        public MultiDevicePlayer? GetMultiDevicePlayer()
+        {
+            if (multiDevicePlayer == null)
+            {
+                throw new InvalidOperationException("MultiDevicePlayer has not been initialized. Call StartAllServices() first.");
+            }
+            return multiDevicePlayer;
+        }
+
         public OfficeClient GetOfficeClient()
         {
             if (officeClient == null)
@@ -313,6 +339,172 @@ namespace Tailgrab
             }
             return oscChatbox;
         }
+
+        public VRCDBClient GetVRCDBClient()
+        {
+            return _VRCDBClient;
+        }
+
+        #endregion
+
+        #region
+        public void PublishEvent(IHavePriority<int> eventItem)
+        {
+            priorityQueue.Enqueue(eventItem);
+        }
+
+        public void ClearQueue()
+        {
+            while (true)
+            {
+                if (priorityQueue.Count == 0)
+                {
+                    break;
+                }
+                priorityQueue.Dequeue();
+            }
+        }
+
+        public static async Task ProcessEventQueue(ConcurrentPriorityQueue<IHavePriority<int>, int> priorityQueue, ServiceRegistry serviceRegistry)
+        {
+            if (SetupWizardHelper.IsFirstTimeSetup())
+            {
+                logger.Info($"Event Queue Paused due to incomplete Setup");
+                return;
+            }
+
+            logger.Info($"Event Queue Running");
+            while (true)
+            {
+                // Process items from the Event queue
+                while (true)
+                {
+                    var result = priorityQueue.Dequeue();
+                    if (result.IsSuccess)
+                    {
+                        String eventType = result.Value.GetType().Name;
+                        switch (eventType)
+                        {
+                            case nameof(VoiceCloneSpeechEvent):
+                                logger.Info($"Processing VoiceCloneSpeechEvent item from Event Queue");
+                                VoiceCloneSpeechEvent voiceEvent = (VoiceCloneSpeechEvent)result.Value;
+
+                                ProcessVoiceSynthesisEvent(serviceRegistry, voiceEvent);
+                                break;
+                            case nameof(OSCSendEvent):
+                                logger.Info($"Processing OSCSendEvent item from Event Queue");
+                                OSCSendEvent oscEvent = (OSCSendEvent)result.Value;
+
+                                ProcessOSCSendEvent(serviceRegistry, oscEvent);
+                                break;
+                            default:
+                                logger.Warn($"Unknown event type: {eventType}");
+                                break;
+                        }
+                    }
+                    else
+                    {
+                        // No more items to process
+                        break;
+                    }
+
+                    // Wait for a short period before getting next record
+                    await Task.Delay(100);
+                }
+
+                // Wait for a short period before checking the queue again
+                await Task.Delay(1000);
+            }
+        }
+
+        private static void ProcessVoiceSynthesisEvent(ServiceRegistry serviceRegistry, VoiceCloneSpeechEvent voiceEvent)
+        {
+            OmniVoiceClient synthesisClient = serviceRegistry.GetOmniVoiceClient();
+            if( synthesisClient.EnableTTSService == false)
+                return;
+            
+            MultiDevicePlayer? player = serviceRegistry.GetMultiDevicePlayer();
+
+            synthesisClient.VoiceCloneProfile = voiceEvent.VoiceProfile ?? CommonConst.OMNIVOICE_DEFAULT_PROFILE;
+            byte[]? audio = Task.Run(() => synthesisClient.GetAudioForTextAsync(voiceEvent.Text)).Result;
+            string outputDevice = player?.SelectedOutputDevice ?? MultiDevicePlayer.GetDefaultOutputDevice();
+            if ( voiceEvent.OutputDevice != null)
+                outputDevice = voiceEvent.OutputDevice;
+
+            player?.Play(audio, outputDevice);
+        }
+
+        private static void ProcessOSCSendEvent(ServiceRegistry serviceRegistry, OSCSendEvent oscEvent)
+        {
+            VRChatOSCChatbox? chatbox = serviceRegistry.GetVRChatOSCChatbox();
+            if (chatbox != null && chatbox.EnableOSCService == true)
+            { 
+                if (oscEvent.Address != null && oscEvent.DataType != null)
+                {
+                    switch (oscEvent.DataType.ToLower())
+                    {
+                        case "int":
+                            if (int.TryParse(oscEvent.Text, out int intValue))
+                            {
+                                chatbox.SendValue(oscEvent.Address, oscEvent.DataType, intValue);
+                            }
+                            else
+                            {
+                                logger.Warn($"Failed to parse '{oscEvent.Text}' as int for OSC message.");
+                            }
+                            break;
+                        case "float":
+                            if (float.TryParse(oscEvent.Text, out float floatValue))
+                            {
+                                chatbox.SendValue(oscEvent.Address, oscEvent.DataType, floatValue);
+                            }
+                            else
+                            {
+                                logger.Warn($"Failed to parse '{oscEvent.Text}' as float for OSC message.");
+                            }
+                            break;
+                        case "string":
+                            chatbox.SendValue(oscEvent.Address, oscEvent.DataType, oscEvent.Text);
+                            break;
+                        default:
+                            logger.Warn($"Unsupported DataType '{oscEvent.DataType}' for OSC message.");
+                            break;
+                    }
+                    chatbox.SendValue(oscEvent.Address, oscEvent.DataType, oscEvent.Text);
+                }
+                else
+                    chatbox.SendMessage(oscEvent.Text, true);
+            }
+            else
+            {
+                logger.Warn($"VRChatOSCChatbox is not initialized. Cannot send OSC message.");
+            }
+        }
+
+        #endregion
+
+        #region Convienence Methods so not to clutter up the code with event creation and publishing
+        public void PublishVoiceCloneSpeechEvent(string text, string? voiceProfile, string outputDevice)
+        {
+            VoiceCloneSpeechEvent voiceEvent = new VoiceCloneSpeechEvent
+            {
+                Text = text,
+                VoiceProfile = voiceProfile,
+                OutputDevice = outputDevice
+            };
+            PublishEvent(voiceEvent);
+        }
+
+        public void PublishOSCMessageEvent(string text)
+        {
+            OSCSendEvent oscEvent = new OSCSendEvent
+            {
+                Text = text
+            };
+            PublishEvent(oscEvent);            
+        }
+
+        #endregion
 
         public async Task ProcessAvatarGist()
         {
@@ -353,4 +545,40 @@ namespace Tailgrab
             return _subscriptionManager;
         }
     }
+
+    #region Event Classes
+    public class AudioEndpointChangeEvent : IHavePriority<int>
+    {
+        public int Priority { get; set; } = 100;
+    }
+
+    public class VoiceCloneSpeechEvent: IHavePriority<int>
+    {
+        public int Priority { get; set; } = 500;
+
+        public string Text { get; set; } = string.Empty;
+        public string? VoiceProfile { get; set; }
+        public string OutputDevice { get; set; } = string.Empty;
+
+        public override string ToString()
+        {
+            return $"VoiceCloneSpeechEvent(Priority={Priority}, Text={Text}, VoiceProfile={VoiceProfile ?? CommonConst.OMNIVOICE_DEFAULT_PROFILE}, OutputDevice={OutputDevice})";
+        }
+    }
+
+    public class OSCEnablementEvent : IHavePriority<int>
+    {
+        public int Priority { get; set; } = 100;
+    }
+
+    public class OSCSendEvent : IHavePriority<int>
+    {
+        public int Priority { get; set; } = 200;
+
+        public string Text { get; set; } = string.Empty;
+        public string? Address { get; set; }
+        public string? DataType { get; set; }
+    }
+
+    #endregion
 }

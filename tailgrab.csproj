@@ -67,6 +67,7 @@
   <ItemGroup>
 	<PackageReference Include="ConcurrentPriorityQueue" Version="3.0.0" />
 	<PackageReference Include="EPPlus" Version="8.7.2" />
+	<PackageReference Include="FFMpegCore" Version="5.5.0" />
 	<PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.13" />
 	<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.13">
 	  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

@@ -125,11 +125,14 @@ namespace Tailgrab.Common
         public const string Registry_OmniVoice_Endpoint = "OMNIVOICE_ENDPOINT";
         public const string Registry_OmniVoice_VoiceCloneProfile = "OMNIVOICE_VOICE_CLONE_PROFILE";
         public const string Registry_OmniVoice_AudioSampleRate = "OMNIVOICE_AUDIO_SAMPLE_RATE";
+        public const string OMNIVOICE_DEFAULT_PROFILE = "Jarvis";
 
 
         public const string Registry_OSC_Enabled = "OSC_ENABLED";
         public const string Registry_OSC_Endpoint = "OSC_ENDPOINT";
         public const string Registry_OSC_Port = "OSC_PORT";
+
+        public const string Registry_Sound_Enabled = "SOUND_ENABLED";
 
 
         public const string AI_EVALUATION_SEXUAL = "Explicit Sexual";

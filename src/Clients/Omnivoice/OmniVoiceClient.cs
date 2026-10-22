@@ -7,7 +7,7 @@ using System.Net.Http.Json;
 
 namespace Tailgrab.Clients.Omnivoice
 {
-    internal class OmniVoiceClient
+    public class OmniVoiceClient
     {
         #region Fields & Initialization
 
@@ -63,7 +63,7 @@ namespace Tailgrab.Clients.Omnivoice
         /// <summary>
         /// Basid Voice Clone Data from the Filesystem
         /// </summary>
-        internal record VoiceJsonData
+        public record VoiceJsonData
         {
             [System.Text.Json.Serialization.JsonPropertyName("name")]
             public string Name { get; set; }

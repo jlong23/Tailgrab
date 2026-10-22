@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Win32;
 using NLog;
+using OfficeOpenXml;
 using System.Globalization;
 using System.IO;
 using System.Net.Http;
@@ -16,6 +17,8 @@ using Tailgrab.LineHandler;
 using Tailgrab.Models;
 using Tailgrab.PlayerManagement;
 using Tailgrab.Clients.Omnivoice;
+using Tailgrab.Clients.VRChat;
+using Tailgrab.PlayerManagement.Views;
 
 namespace Tailgrab;
 
@@ -84,12 +87,16 @@ public class FileTailer
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
             // Parse command-line arguments
-            // -l <FilePath>    : use explicit log folder/file path
-            // -clear           : remove application registry settings and exit
-            // -backup          : create a backup of the database and exit
+            // -l <FilePath>           : use explicit log folder/file path
+            // -clear                  : remove application registry settings and exit
+            // -backup                 : create a backup of the database and exit
+            // -banlist <input.txt>    : bulk ban users from file and export to Excel
+            // -output <output.xlsx>   : Excel output file for banlist export
             string? explicitPath = null;
             bool clearRegistry = false;
             bool backup = false;
+            string? banListFilePath = null;
+            string? outputExcelPath = null;
             for (int i = 0; i < args.Length; i++)
             {
                 var a = args[i];
@@ -105,6 +112,16 @@ public class FileTailer
                 else if (string.Equals(a, "-backup", StringComparison.OrdinalIgnoreCase))
                 {
                     backup = true;
+                }
+                else if (string.Equals(a, "-banlist", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+                {
+                    banListFilePath = args[i + 1];
+                    i++;
+                }
+                else if (string.Equals(a, "-output", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+                {
+                    outputExcelPath = args[i + 1];
+                    i++;
                 }
             }
 
@@ -136,6 +153,15 @@ public class FileTailer
                 CreateDatabaseBackup();
 
                 // Exit application after creating backup
+                return;
+            }
+
+            // Handle banlist operation if specified
+            if (!string.IsNullOrWhiteSpace(banListFilePath) && !string.IsNullOrWhiteSpace(outputExcelPath))
+            {
+                ProcessBanListAsync(banListFilePath, outputExcelPath, _serviceRegistry).GetAwaiter().GetResult();
+
+                // Exit application after processing banlist
                 return;
             }
 
@@ -1041,7 +1067,222 @@ public class FileTailer
 
         app.Run(panel);
     }
+
+    private static async Task ProcessBanListAsync(string inputFilePath, string outputExcelPath, ServiceRegistry serviceRegistry)
+    {
+        var processedUsers = new List<VRChatClient.VRChatUserProfileEntry>();
+
+        int banCount = 0;
+        try
+        {
+            logger.Info($"Starting ban list processing: input={inputFilePath}, output={outputExcelPath}");
+
+            // Load groups from database (mirrors LoadBanManagementGroupsAsync pattern)
+            var banMgmtGroupList = new List<GroupBanViewModel>();
+            var groups = await Task.Run(() => serviceRegistry.GetDBContext().GroupManagements.ToList()).ConfigureAwait(false);
+            foreach (var group in groups)
+            {
+                banMgmtGroupList.Add(new GroupBanViewModel
+                {
+                    GroupId = group.GroupId,
+                    GroupName = group.GroupName,
+                    Status = "Ready",
+                    CanBan = true,
+                    CanUnban = false
+                });
+            }
+            logger.Info($"Loaded {banMgmtGroupList.Count} groups for banning");
+
+            var vrchatClient = serviceRegistry.GetVRChatAPIClient();
+
+            // Read and process each URL from file
+            if (!File.Exists(inputFilePath))
+            {
+                logger.Error($"Input file not found: {inputFilePath}");
+                return;
+            }
+
+            using (var reader = new StreamReader(inputFilePath))
+            {
+                string? line;
+                while ((line = await reader.ReadLineAsync().ConfigureAwait(false)) != null)
+                {
+                    if (string.IsNullOrWhiteSpace(line))
+                        continue;
+
+                    // Extract user ID from URL
+                    string userId = ExtractUserIdFromUrl(line.Trim());
+                    if (string.IsNullOrWhiteSpace(userId))
+                    {
+                        logger.Warn($"Could not extract user ID from URL: {line}");
+                        continue;
+                    }
+
+                    logger.Info($"Processing user: {userId}");
+
+                    // Fetch cached profile
+                    VRChatClient.VRChatUserProfileEntry? profile = null;
+                    int retries = 0;
+                    while (true)
+                    {
+                        try
+                        {
+                            profile = await vrchatClient.GetCachedUserProfileAsync(userId).ConfigureAwait(false);
+                            if (profile == null)
+                            {
+                                logger.Warn($"Could not fetch profile for user: {userId}");
+                                await Task.Delay(60000).ConfigureAwait(false); // Wait a second before retrying
+                                continue;
+                            }
+                            break;
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.Warn(ex, $"Error fetching profile for user: {userId}. Retrying in 60 seconds...");
+                            await Task.Delay(60000).ConfigureAwait(false); // Wait a second before retrying\
+                            retries++;
+                            if (retries >= 3)
+                            {
+                                logger.Error($"Failed to fetch profile for user: {userId} after {retries} attempts. Skipping...");
+                                break;
+                            }
+                        }
+                    }
+
+                    if(profile == null)
+                    {
+                        logger.Warn($"Profile is null for user: {userId}. Skipping...");
+                        continue;
+                    }
+
+                    processedUsers.Add(profile);
+
+                    // Ban user from all groups
+                    foreach (var group in banMgmtGroupList)
+                    {
+                        try
+                        {
+                            if (string.IsNullOrWhiteSpace(group.GroupId))
+                                continue;
+
+                            bool banSuccess = await vrchatClient.BanUserFromGroup(group.GroupId, userId).ConfigureAwait(false);
+                            if (banSuccess)
+                            {
+                                logger.Info($"Banned user {userId} from group {group.GroupId}");
+                            }
+                            else
+                            {
+                                logger.Warn($"Failed to ban user {userId} from group {group.GroupId}");
+                            }
+
+                            banCount++;
+                            if ( banCount % 10 == 0)
+                            {
+                                logger.Info($"Processed {banCount} bans so far, pausing 15 seconds to avoid rate limits...");
+                                await Task.Delay(15000).ConfigureAwait(false);
+                            }
+
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.Error(ex, $"Error banning user {userId} from group {group.GroupId}");
+                        }
+                    }
+                    logger.Info($"Completed processing for {userId}, pausing 1 seconds...");
+                    await Task.Delay(1000).ConfigureAwait(false);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.Error(ex, "Error during ban list processing");
+        }
+
+        // Export all processed users to Excel
+        if (processedUsers.Count > 0)
+        {
+            await ExportUsersToExcelAsync(processedUsers, outputExcelPath).ConfigureAwait(false);
+            logger.Info($"Successfully exported {processedUsers.Count} users to {outputExcelPath}");
+        }
+        else
+        {
+            logger.Info("No users were successfully processed");
+        }
+
+    }
+
+    private static string ExtractUserIdFromUrl(string url)
+    {
+        // Expected format: https://vrchat.com/home/user/usr_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+        try
+        {
+            int userIndex = url.LastIndexOf("/user/", StringComparison.OrdinalIgnoreCase);
+            if (userIndex >= 0)
+            {
+                string userId = url.Substring(userIndex + 6).Split('?')[0].Trim();
+                if (!string.IsNullOrWhiteSpace(userId) && userId.StartsWith("usr_"))
+                {
+                    return userId;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.Warn($"Error parsing URL: {url}, {ex.Message}");
+        }
+        return string.Empty;
+    }
+
+    private static async Task ExportUsersToExcelAsync(List<VRChatClient.VRChatUserProfileEntry> users, string outputPath)
+    {
+        await Task.Run(() =>
+        {
+            try
+            {
+                using (OfficeOpenXml.ExcelPackage package = new OfficeOpenXml.ExcelPackage())
+                {
+                    OfficeOpenXml.ExcelWorksheet worksheet = package.Workbook.Worksheets.Add("VRChat Users");
+
+                    // Header row
+                    string[] headers = { "UserId", "DisplayName", "JoinDate", "Pronouns", "StatusDescription", "Bio", "BioLinks", "DiscordLinks" };
+                    for (int c = 0; c < headers.Length; c++)
+                        worksheet.Cells[1, c + 1].Value = headers[c];
+
+                    // Bold the header
+                    worksheet.Cells[1, 1, 1, headers.Length].Style.Font.Bold = true;
+
+                    // Data rows
+                    int row = 2;
+                    foreach (var user in users)
+                    {
+                        worksheet.Cells[row, 1].Value = user.UserId;
+                        worksheet.Cells[row, 2].Value = user.DisplayName;
+                        worksheet.Cells[row, 3].Value = user.JoinDate.ToString("yyyy-MM-dd");
+                        worksheet.Cells[row, 4].Value = user.Pronouns;
+                        worksheet.Cells[row, 5].Value = user.StatusDescription;
+                        worksheet.Cells[row, 6].Value = user.Bio;
+                        worksheet.Cells[row, 7].Value = string.Join("; ", user.BioLinks);
+                        worksheet.Cells[row, 8].Value = string.Join("; ", user.DiscordLinks);
+                        row++;
+                    }
+
+                    // Auto-fit column widths
+                    worksheet.Cells.AutoFitColumns();
+
+                    // Save to file
+                    FileInfo fileInfo = new FileInfo(outputPath);
+                    package.SaveAs(fileInfo);
+                }
+                logger.Info($"Excel file created successfully: {outputPath}");
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, $"Error creating Excel file: {outputPath}");
+            }
+        }).ConfigureAwait(false);
+    }
 }
+
 
 
 public class BuildInfo

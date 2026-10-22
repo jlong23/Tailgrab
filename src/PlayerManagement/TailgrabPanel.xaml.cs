@@ -21,6 +21,7 @@ using Tailgrab.PlayerManagement.Views;
 using Tailgrab.PlayerManagement.SetupWizard;
 using VRChat.API.Model;
 using static Tailgrab.Clients.VRChat.VRChatClient;
+using Tailgrab.Clients.Audio;
 
 namespace Tailgrab.PlayerManagement
 {
@@ -655,11 +656,173 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
+
+        #region Tool Bar Properties
+        private List<string> _outputDevices = [];
+        public List<string> OutputDevices
+        {
+            get => _outputDevices;
+            set
+            {
+                _outputDevices = value;
+                OnPropertyChanged(nameof(OutputDevices));
+            }
+        }
+
+        private string? _selectedOutputDevice;
+        public string? SelectedOutputDevice
+        {
+            get => _selectedOutputDevice;
+            set
+            {
+                if (_selectedOutputDevice != value)
+                {
+                    _selectedOutputDevice = value;
+                    _serviceRegistry.GetMultiDevicePlayer()?.SelectedOutputDevice = value ?? string.Empty;
+                    OnPropertyChanged(nameof(SelectedOutputDevice));
+                }
+            }
+        }
+
+        private bool _isMuteEnabled = false;
+        public bool isMuteEnabled
+        {
+            get => _isMuteEnabled;
+            set
+            {
+                if (_isMuteEnabled != value)
+                {
+                    _isMuteEnabled = value;
+                    OnPropertyChanged(nameof(isMuteEnabled));
+                    SoundManager.EnableSounds = value;
+                    if (value == false)
+                    {
+                        AudioEnabledIndicatorColor = new SolidColorBrush(Colors.Red);
+                        MuteAudioText.Text = "Audio Muted";
+                    }
+                    else
+                    {
+                        AudioEnabledIndicatorColor = new SolidColorBrush(Colors.Green);
+                        MuteAudioText.Text = "Audio Unmuted";
+                    }
+
+                    _serviceRegistry.PublishVoiceCloneSpeechEvent(
+                        value ? "Audio Events are now unmuted." : "Audio Events are now muted.",
+                        null,
+                        SelectedOutputDevice
+                        );
+                }
+            }
+        }
+
+        private System.Windows.Media.Brush _audioEnabledIndicatorColor = new SolidColorBrush(Colors.Green);
+        public System.Windows.Media.Brush AudioEnabledIndicatorColor
+        {
+            get => _audioEnabledIndicatorColor;
+            set
+            {
+                if (_audioEnabledIndicatorColor != value)
+                {
+                    _audioEnabledIndicatorColor = value;
+                    OnPropertyChanged(nameof(AudioEnabledIndicatorColor));
+                }
+            }
+        }
+
+
+        public async void ToolBarClick_Mute(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                isMuteEnabled = !isMuteEnabled;
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error toggling mute");
+            }
+        }
+
+        private bool _isOscEnabled = false;
+        public bool IsOscEnabled
+        {
+            get => _isOscEnabled;
+            set
+            {
+                if (_isOscEnabled != value)
+                {
+                    VRChatOSCChatbox chatOSCChatbox = _serviceRegistry.GetVRChatOSCChatbox();
+                    _isOscEnabled = value;
+                    EnableOSCClient.IsChecked = value;
+                    if (chatOSCChatbox != null)
+                    {
+                        chatOSCChatbox.EnableOSCService = value;
+                    }
+
+                    if (value == false)
+                    {
+                        OscEnabledIndicatorColor = new SolidColorBrush(Colors.Red);
+                        OSCEnablementText.Text = "OSC Disabled";
+                    }
+                    else
+                    {
+                        OscEnabledIndicatorColor = new SolidColorBrush(Colors.Green);
+                        OSCEnablementText.Text = "OSC Enabled";
+                    }
+                    OnPropertyChanged(nameof(IsOscEnabled));
+
+                    
+                    _serviceRegistry.PublishVoiceCloneSpeechEvent(
+                        value ? "The OSC integration has been re-enabled." : "I've disabled the OSC integration sir.",
+                        null,
+                        SelectedOutputDevice
+                        );
+                }
+            }
+        }
+
+        private System.Windows.Media.Brush _oscEnabledIndicatorColor = new SolidColorBrush(Colors.Green);
+        public System.Windows.Media.Brush OscEnabledIndicatorColor
+        {
+            get => _oscEnabledIndicatorColor;
+            set
+            {
+                if (_oscEnabledIndicatorColor != value)
+                {
+                    _oscEnabledIndicatorColor = value;
+                    OnPropertyChanged(nameof(OscEnabledIndicatorColor));
+                }
+            }
+        }
+
+        public async void ToolBarClick_OSCEnabled(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                IsOscEnabled = !IsOscEnabled;
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error toggling OSC");
+            }
+        }
+
+        #endregion
+
         public TailgrabPanel(ServiceRegistry serviceRegistry)
         {
             _serviceRegistry = serviceRegistry;
             InitializeComponent();
             DataContext = this;
+
+            // Subscribe to output device changes from MultiDevicePlayer
+            var multiDevicePlayer = _serviceRegistry.GetMultiDevicePlayer();
+            if (multiDevicePlayer != null)
+            {
+                multiDevicePlayer.OutputDeviceChanged += (s, e) =>
+                {
+                    SelectedOutputDevice = e.DeviceFriendlyName;
+                };
+            }
 
             // Hook paste event for AvatarDbFilterBox to clear on paste
             System.Windows.DataObject.AddPastingHandler(AvatarDbFilterBox, AvatarSelectionTextBox_Pasting);
@@ -827,12 +990,23 @@ namespace Tailgrab.PlayerManagement
 
             VRChatOSCChatbox vrChatOSCChatBox = serviceRegistry.GetVRChatOSCChatbox();
             EnableOSCClient.IsChecked = vrChatOSCChatBox?.EnableOSCService ?? false;
-            OSCEndpoint.Text = ( vrChatOSCChatBox?.OSCHost ?? "127.0.0.1" ) + ":" + (vrChatOSCChatBox?.OSCPort ?? 9000).ToString();
+            OSCEndpoint.Text = (vrChatOSCChatBox?.OSCHost ?? "127.0.0.1") + ":" + (vrChatOSCChatBox?.OSCPort ?? 9000).ToString();
+            if (vrChatOSCChatBox != null)
+            {
+                IsOscEnabled = vrChatOSCChatBox?.EnableOSCService ?? false;
+            }
 
             // Populate sound combo boxes
             try
             {
                 UpdateAlertComboBoxValues();
+            }
+            catch { }
+
+            try
+            {
+                OutputDevices = MultiDevicePlayer.GetAvailableOutputDevices();
+                SelectedOutputDevice = MultiDevicePlayer.GetDefaultOutputDevice();
             }
             catch { }
             #endregion
@@ -973,7 +1147,8 @@ namespace Tailgrab.PlayerManagement
 
                 VRChatOSCChatbox vRChatOSC = _serviceRegistry.GetVRChatOSCChatbox();
                 vRChatOSC.EnableOSCService = EnableOSCClient.IsChecked == true;
-                if( !string.IsNullOrEmpty(OSCEndpoint.Text) )
+                IsOscEnabled = EnableOSCClient.IsChecked == true;
+                if ( !string.IsNullOrEmpty(OSCEndpoint.Text) )
                 {
                     string[] parts = OSCEndpoint.Text.Split(':');
                     if(parts.Length == 2)

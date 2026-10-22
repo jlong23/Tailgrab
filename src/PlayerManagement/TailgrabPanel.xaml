@@ -32,8 +32,39 @@ Title="Tailgrab Player Panel"
             <convert:MessageBoxImageToSymbolConverter x:Key="MessageBoxImageToSymbolConverter"/>
             <convert:MessageBoxImageToColorConverter x:Key="MessageBoxImageToColorConverter"/>
 
+            <!-- Dark theme ToolBar style -->
+            <Style TargetType="{x:Type ToolBar}">
+                <Setter Property="Background" Value="#FF2D2D30"/>
+                <Setter Property="Foreground" Value="#FFE6E6E6"/>
+                <Setter Property="BorderBrush" Value="#FF3F3F46"/>
+            </Style>
+
+            <!-- Dark theme ToolBarTray style -->
+            <Style TargetType="{x:Type ToolBarTray}">
+                <Setter Property="Background" Value="#FF2D2D30"/>
+            </Style>
+
+            <!-- Dark theme Button style (for ToolBar buttons) -->
+            <Style TargetType="{x:Type Button}" x:Key="DarkThemeButton">
+                <Setter Property="Foreground" Value="#FFE6E6E6"/>
+                <Setter Property="Background" Value="#FF3F3F46"/>
+                <Setter Property="BorderBrush" Value="#FF3F3F46"/>
+            </Style>
+
+            <!-- Dark theme TextBlock style -->
+            <Style TargetType="{x:Type TextBlock}" x:Key="DarkThemeTextBlock">
+                <Setter Property="Foreground" Value="#FFE6E6E6"/>
+            </Style>
+
+            <!-- Dark theme ComboBox style -->
+            <Style TargetType="{x:Type ComboBox}" x:Key="DarkThemeComboBox">
+                <Setter Property="Foreground" Value="#FFE6E6E6"/>
+                <Setter Property="Background" Value="#FF3C3C3F"/>
+                <Setter Property="BorderBrush" Value="#FF3F3F46"/>
+            </Style>
+
             <!-- Dark theme TabItem style with template -->
-        <Style TargetType="{x:Type TabItem}">
+            <Style TargetType="{x:Type TabItem}">
             <Setter Property="Background" Value="#FF2D2D30"/>
             <Setter Property="Foreground" Value="#FFE6E6E6"/>
             <Setter Property="BorderBrush" Value="#FF3F3F46"/>
@@ -144,11 +175,37 @@ Title="Tailgrab Player Panel"
 
     <Grid>
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <Grid Margin="8" Grid.Row="0">
+        <Grid Grid.Row="0">
+            <ToolBarTray>
+                <ToolBar>
+                    <Button ToolTip="OSC Enabled" Click="ToolBarClick_OSCEnabled" Style="{StaticResource DarkThemeButton}">
+                        <StackPanel Orientation="Horizontal">
+                            <Ellipse Width="16" Height="16" Fill="{Binding OscEnabledIndicatorColor}" Stroke="Black" StrokeThickness="1"/>
+                            <TextBlock Name="OSCEnablementText" Text="OSC Enabled" VerticalAlignment="Center" Margin="4,0,0,0" FontWeight="Bold" Style="{StaticResource DarkThemeTextBlock}"/>
+                        </StackPanel>
+                    </Button>
+                </ToolBar>
+                <ToolBar>
+                    <Button ToolTip="Mute" Click="ToolBarClick_Mute" Style="{StaticResource DarkThemeButton}">
+                        <StackPanel Orientation="Horizontal">
+                            <Ellipse Width="16" Height="16" Fill="{Binding AudioEnabledIndicatorColor}" Stroke="Black" StrokeThickness="1"/>
+                            <TextBlock Name="MuteAudioText" Text="Mute Audio" VerticalAlignment="Center" Margin="4,0,0,0" FontWeight="Bold" Style="{StaticResource DarkThemeTextBlock}"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Content="Audio Output:" FontWeight="Bold" Style="{StaticResource DarkThemeButton}" Margin="12,0,0,0"/>
+                    <ComboBox ItemsSource="{Binding OutputDevices}"
+                        SelectedItem="{Binding SelectedOutputDevice}"
+                        Width="180" Style="{StaticResource DarkThemeComboBox}" Margin="4,0,0,0"/>
+                </ToolBar>
+            </ToolBarTray>
+        </Grid>
+
+        <Grid Margin="8" Grid.Row="1">
             <TabControl x:Name="MainTabControl">
                 <!-- #region Active Players Tab -->
                 <TabItem Header="{DynamicResource UI.Tab.ActivePlayers.Tab}" Name="ActivePlayersTab">
@@ -2847,7 +2904,6 @@ Title="Tailgrab Player Panel"
                 </TabItem>
 
             </TabControl>
-        </Grid>
 
         <!-- #region User Avatar Management Overlay -->
         <Border Name="UserAvatarOverlay" 
@@ -4222,9 +4278,10 @@ Title="Tailgrab Player Panel"
             </Border>
         </Border>
         <!-- #endregion OK/Cancel Message Overlay -->
+        </Grid>
 
         <!-- #region Status Bar -->
-        <StatusBar Grid.Row="1" Background="#FF2D2D30" Foreground="#FFE6E6E6">
+        <StatusBar Grid.Row="2" Background="#FF2D2D30" Foreground="#FFE6E6E6">
             <StatusBarItem HorizontalAlignment="Left">
                 <TextBlock>
                     <Run Text="{DynamicResource UI.StatusBar.Instaamce}"/>

@@ -18,6 +18,14 @@ namespace Tailgrab.Common
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
         private static readonly string[] allSystemSounds = { "*NONE", "Asterisk", "Beep", "Exclamation", "Warning", "Hand", "Error", "Question" };
 
+        #region Configuration
+        public static bool EnableSounds
+        {
+            get => ConfigStore.GetStoredKeyBool(CommonConst.Registry_Sound_Enabled, false);
+            set => ConfigStore.PutStoredKeyBool(CommonConst.Registry_Sound_Enabled, value);
+        }
+
+        #endregion
         /// <summary>
         /// Enumerate available sound base filenames (without extension) from the ./sounds directory.
         /// Looks for files with extensions: .wav, .mp3, .ogg and returns a distinct, ordered list.
@@ -57,6 +65,8 @@ namespace Tailgrab.Common
 
         public static void PlayAlertSound(string alertKey, AlertTypeEnum alertType)
         {
+            if (!EnableSounds) return;
+
             string key = CommonConst.ConfigRegistryPath + "\\" + alertKey + "\\" + alertType.ToString();
             string soundSetting = ConfigStore.GetStoredKeyString(key, CommonConst.Sound_Alert_Key) ?? "Hand";
             PlaySound(soundSetting);
@@ -73,6 +83,8 @@ namespace Tailgrab.Common
         public static void PlaySound(string? name)
         {
             if (string.IsNullOrWhiteSpace(name)) return;
+
+            if (!EnableSounds) return;
 
             // System sounds
             switch (name.Trim().ToLowerInvariant())
@@ -102,6 +114,8 @@ namespace Tailgrab.Common
 
         public static void PlaySoundFromApplicationPath(string soundFileName)
         {
+            if (!EnableSounds) return;
+    
             try
             {
                 var soundsDir = Path.Combine(CommonConst.APPLICATION_LOCAL_DATA_PATH, "sounds");
