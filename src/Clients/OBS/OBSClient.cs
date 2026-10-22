@@ -1,4 +1,6 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using FFMpegCore;
+using FFMpegCore.Enums;
+using Newtonsoft.Json.Linq;
 using NLog;
 using OBSWebsocketDotNet;
 using OBSWebsocketDotNet.Communication;
@@ -649,10 +651,14 @@ namespace Tailgrab.Clients.OBS
             logger.Info($"Replay buffer saved to: {e.SavedReplayPath}");
             if (!string.IsNullOrEmpty(_filename))
             {
-                logger.Info($"Attempting to rename: {e.SavedReplayPath} to {_filename}");
-                if (RenameFile(e.SavedReplayPath, _filename))
+                string directoryPath = Path.GetDirectoryName(e.SavedReplayPath) ?? string.Empty;
+                string dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
+                directoryPath = Path.Combine(directoryPath, "Replays", dateFolder);
+                logger.Info($"Attempting to rename: {directoryPath} to {_filename}");
+                if (RenameFile(directoryPath, _filename))
                 {
-                    logger.Info($"Successfully renamed: {e.SavedReplayPath} to {_filename}");
+                    CreateVideoContactSheet( Path.Combine(directoryPath, _filename));
+                    logger.Info($"Successfully renamed: {directoryPath} to {_filename}");
                     _filename = string.Empty;
                     _eventType = string.Empty;
                     _eventName = string.Empty;
@@ -680,17 +686,34 @@ namespace Tailgrab.Clients.OBS
                     logger.Info($"Creating MKV chapters for: {mkvPath}");
                     WriteChaptersXml(xmlPath);
                     AddChaptersToMkv(sourcePath, mkvPath, xmlPath);
+                    CreateTimelapseWebP(sourcePath);
+                    CreateVideoContactSheet(sourcePath);
                 }
 
                 if (CreateMP4Chapters)
                 {
                     logger.Info($"Creating MP4 chapters for: {mp4Path}");
                     AddChaptersToMp4(sourcePath, mp4Path, BuildMetadata(SessionEvent));
+                    CreateTimelapseWebP(mp4Path);
+                    CreateVideoContactSheet(mp4Path);
+
                 }
 
                 SessionEvent.Clear();
 
             }
+        }
+        #endregion
+
+        #region Check FFMpeg and MKVMerge Paths
+        public static bool CheckExecutableExists(string path, string toolName)
+        {
+            if (string.IsNullOrEmpty(path) || !File.Exists(path))
+            {
+                logger.Warn($"{toolName} not found at {path}. Please check the configuration.");
+                return false;
+            }
+            return true;
         }
         #endregion
 
@@ -725,17 +748,16 @@ namespace Tailgrab.Clients.OBS
 
         public void AddChaptersToMkv(string inputMkv, string outputMkv, string chaptersXmlPath)
         {
-            string path = MKVMergePath; //@"C:\Program Files\mkvtoolnix\mkvmerge.exe";
-            if (!File.Exists(path))
+            if( CheckExecutableExists(MKVMergePath, "mkvmerge") == false)
             {
-                logger.Warn($"mkvmerge not found at {path}. Skipping chapter addition for MKV.");
+                logger.Warn($"mkvmerge not found at {MKVMergePath}. Skipping chapter addition for MKV.");
                 return;
             }
                 
             logger.Info($"Adding chapters to MKV: {inputMkv} -> {outputMkv} using {chaptersXmlPath}");
             var psi = new ProcessStartInfo
             {
-                FileName = path,
+                FileName = MKVMergePath,
                 Arguments = $"-o \"{outputMkv}\" --chapters \"{chaptersXmlPath}\" \"{inputMkv}\"",
                 UseShellExecute = false,
                 RedirectStandardError = true,
@@ -774,10 +796,9 @@ namespace Tailgrab.Clients.OBS
 
         public void AddChaptersToMp4(string inputMp4, string outputMp4, string metadataText)
         {
-            var path = FFMpegPath; //@"D:\dev\ffmpeg\bin\ffmpeg.exe";
-            if(!File.Exists(path))
+            if( CheckExecutableExists(FFMpegPath, "FFmpeg") == false)
             {
-                logger.Warn($"FFmpeg not found at {path}. Skipping chapter addition for MP4.");
+                logger.Warn($"FFmpeg not found at {FFMpegPath}. Skipping chapter addition for MP4.");
                 return;
             }
 
@@ -786,7 +807,7 @@ namespace Tailgrab.Clients.OBS
 
             var psi = new ProcessStartInfo
             {
-                FileName = path,
+                FileName = FFMpegPath,
                 Arguments = $"-y -i \"{inputMp4}\" -i \"{metaPath}\" -map_metadata 1 -map_chapters 1 -c copy \"{outputMp4}\"",
                 UseShellExecute = false,
                 RedirectStandardError = true,
@@ -801,6 +822,120 @@ namespace Tailgrab.Clients.OBS
 
             if (proc.ExitCode != 0)
                 throw new Exception($"FFmpeg failed: {err}");
+        }
+
+
+        public string CreateTimelapseGIF(string videoPath, int maxWidth = 320)
+        {
+            if (CheckExecutableExists(FFMpegPath, "FFmpeg") == false)
+            {
+                logger.Warn($"FFmpeg not found at {FFMpegPath}. Skipping chapter addition for MP4.");
+                throw new FileNotFoundException("FFmpeg executable not found.", FFMpegPath);
+            }
+
+            if (!File.Exists(videoPath))
+                    throw new FileNotFoundException("Video file not found.", videoPath);
+
+            String outputGifPath = Path.ChangeExtension(videoPath, ".gif");
+
+            // Probe the file to get its duration
+            IMediaAnalysis analysis = FFProbe.Analyse(videoPath);
+            double duration = analysis.Duration.TotalSeconds;
+
+            if (duration <= 0)
+                throw new ArgumentException("Video duration is zero or invalid.");
+
+            FFMpeg.GifSnapshot(videoPath, outputGifPath, new Size(maxWidth, -2), captureTime: TimeSpan.FromSeconds(360), duration: TimeSpan.FromSeconds(5));
+
+            return outputGifPath;
+        }
+
+        public string CreateTimelapseWebP(string videoPath, int maxWidth = 320)
+        {
+            if (CheckExecutableExists(FFMpegPath, "FFmpeg") == false)
+            {
+                logger.Warn($"FFmpeg not found at {FFMpegPath}. Skipping chapter addition for MP4.");
+                throw new FileNotFoundException("FFmpeg executable not found.", FFMpegPath);
+            }
+
+            if (!File.Exists(videoPath))
+                throw new FileNotFoundException("Video file not found.", videoPath);
+
+            String outputWebPPath = Path.ChangeExtension(videoPath, ".webp");
+
+            // Probe the file to get its duration
+            IMediaAnalysis analysis = FFProbe.Analyse(videoPath);
+            double duration = analysis.Duration.TotalSeconds;
+
+            if (duration <= 0)
+                throw new ArgumentException("Video duration is zero or invalid.");
+
+            string ffmpegExecutable = FFMpegPath;
+
+            if (string.IsNullOrEmpty(ffmpegExecutable) || !File.Exists(ffmpegExecutable))
+                throw new FileNotFoundException("FFmpeg executable not found.", ffmpegExecutable);
+
+            // FFmpeg command for animated WebP: extract frames and encode to WebP with animation
+            var psi = new ProcessStartInfo
+            {
+                FileName = ffmpegExecutable,
+                Arguments = $@"-y -ss 00:05:00 -to 00:05:15 -i ""{videoPath}"" -vf ""scale={maxWidth}:-2,fps=10"" -loop 0 ""{outputWebPPath}""",
+                UseShellExecute = false,
+                RedirectStandardError = true,
+                RedirectStandardOutput = true,
+                CreateNoWindow = true
+            };
+
+            using var proc = Process.Start(psi)!;
+            string err = proc.StandardError.ReadToEnd();
+            proc.WaitForExit();
+
+            if (proc.ExitCode != 0)
+                throw new Exception($"FFmpeg failed to create WebP: {err}");
+
+            return outputWebPPath;
+        }
+
+        public bool CreateVideoContactSheet( string sourceVideoPath, int columns = 5, int rows = 5, int maxWidth = 1920)
+        {
+            if (CheckExecutableExists(FFMpegPath, "FFmpeg") == false)
+            {
+                logger.Warn($"FFmpeg not found at {FFMpegPath}. Skipping chapter addition for MP4.");
+                throw new FileNotFoundException("FFmpeg executable not found.", FFMpegPath);
+            }
+
+            if (!File.Exists(sourceVideoPath))
+                throw new FileNotFoundException("Video file not found.", sourceVideoPath);
+
+            IMediaAnalysis analysis = FFProbe.Analyse(sourceVideoPath);
+            double duration = analysis.Duration.TotalSeconds;
+
+            if (duration <= 0)
+                throw new ArgumentException("Video duration is zero or invalid.");
+
+            double interval = duration / (columns * rows);
+            string outputImagePath = Path.ChangeExtension(sourceVideoPath, ".png");
+            double fps = analysis.VideoStreams[0].FrameRate;
+            int frameStep = (int)(fps * interval);
+            var psi = new ProcessStartInfo
+            {
+                FileName = FFMpegPath,
+                Arguments = $@"-y -i ""{sourceVideoPath}"" -vf ""select='not(mod(n,{frameStep}))',drawtext='text=gmtime(n/{fps}):hms:fontsize=20:fontcolor=white:box=1:boxcolor=black@0.7:y=h-text_h-5:x=5',scale={maxWidth}:-2,tile={columns}x{rows}"" -frames:v 1 ""{outputImagePath}""",
+                UseShellExecute = false,
+                RedirectStandardError = true,
+                RedirectStandardOutput = true,
+                CreateNoWindow = true
+            };
+
+            using var proc = Process.Start(psi)!;
+            string err = proc.StandardError.ReadToEnd();
+            proc.WaitForExit();
+            if (proc.ExitCode != 0)
+            {
+                logger.Error($"FFmpeg failed to create contact sheet: {err}");
+                return false;
+            }
+            return true;
         }
         #endregion
     }
