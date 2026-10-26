@@ -500,7 +500,7 @@ namespace Tailgrab.Clients.OBS
             }
         }
 
-        private bool RenameFile(string existingPath, string newFilename)
+        private bool RenameFile(string existingPath, string? newDirectoryPath, string newFilename)
         {
             if (!string.IsNullOrEmpty(existingPath) && File.Exists(existingPath))
             {
@@ -509,8 +509,14 @@ namespace Tailgrab.Clients.OBS
                     string? directoryPath = Path.GetDirectoryName(existingPath) ?? string.Empty;
                     string extension = Path.GetExtension(existingPath);
 
-                    string newPath = Path.Combine(directoryPath, newFilename + extension);
+                    string newPath = Path.Combine(newDirectoryPath ?? directoryPath, newFilename + extension);
+
                     logger.Info($"Attempting to rename file from {existingPath} to {newPath}");
+                    if (newDirectoryPath != null && !Directory.Exists(newDirectoryPath))
+                    {
+                        Directory.CreateDirectory(newDirectoryPath);
+                    }
+
                     File.Move(existingPath, newPath);
                     logger.Info($"Successfully renamed file from {existingPath} to {newPath}");
 
@@ -609,7 +615,6 @@ namespace Tailgrab.Clients.OBS
         }
         #endregion
 
-
         #region Event Handlers
         private void OnSocketConnected(object? sender, System.EventArgs e)
         {
@@ -651,14 +656,16 @@ namespace Tailgrab.Clients.OBS
             logger.Info($"Replay buffer saved to: {e.SavedReplayPath}");
             if (!string.IsNullOrEmpty(_filename))
             {
-                string directoryPath = Path.GetDirectoryName(e.SavedReplayPath) ?? string.Empty;
                 string dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
-                directoryPath = Path.Combine(directoryPath, "Replays", dateFolder);
-                logger.Info($"Attempting to rename: {directoryPath} to {_filename}");
-                if (RenameFile(directoryPath, _filename))
-                {
-                    CreateVideoContactSheet( Path.Combine(directoryPath, _filename));
-                    logger.Info($"Successfully renamed: {directoryPath} to {_filename}");
+                string directoryPath = Path.GetDirectoryName(e.SavedReplayPath) ?? string.Empty;
+                string existingFilename = Path.GetFileName(e.SavedReplayPath);
+                
+                string newDirectoryPath = Path.Combine(directoryPath, "Replays", dateFolder);
+                logger.Info($"Attempting to rename: {Path.Combine(directoryPath, existingFilename)} to {Path.Combine(newDirectoryPath, existingFilename)}");
+                if (RenameFile(Path.Combine(directoryPath, existingFilename), newDirectoryPath, _filename))
+                {   
+                    CreateVideoContactSheet( Path.Combine(newDirectoryPath, _filename));
+                    logger.Info($"Successfully renamed: {Path.Combine(directoryPath, existingFilename)} to {Path.Combine(newDirectoryPath, _filename)}");
                     _filename = string.Empty;
                     _eventType = string.Empty;
                     _eventName = string.Empty;
@@ -850,6 +857,45 @@ namespace Tailgrab.Clients.OBS
             return outputGifPath;
         }
 
+        public void RecreateAllTimelapse(string videoPath, int maxWidth = 320)
+        {
+            if (!Directory.Exists(videoPath))
+            {
+                logger.Error($"Directory does not exist: {videoPath}");
+                return;
+            }
+
+            string[] mp4Files = Directory.GetFiles(videoPath, "*.mp4", SearchOption.TopDirectoryOnly);
+
+            if (mp4Files.Length == 0)
+            {
+                logger.Warn($"No MP4 files found in directory: {videoPath}");
+                return;
+            }
+
+            foreach (string mp4File in mp4Files)
+            {
+                try
+                {
+                    CreateVideoContactSheet(mp4File);
+                    logger.Info($"Created video contact sheet for: {mp4File}");
+                }
+                catch (Exception ex)
+                {
+                    logger.Error($"Failed to create video contact sheet for {mp4File}: {ex.Message}");
+                }
+                try
+                {
+                    string webpPath = CreateTimelapseWebP(mp4File, maxWidth);
+                    logger.Info($"Created timelapse WebP: {webpPath}");
+                }
+                catch (Exception ex)
+                {
+                    logger.Error($"Failed to create timelapse WebP for {mp4File}: {ex.Message}");
+                }
+            }
+        }
+
         public string CreateTimelapseWebP(string videoPath, int maxWidth = 320)
         {
             if (CheckExecutableExists(FFMpegPath, "FFmpeg") == false)
@@ -876,10 +922,28 @@ namespace Tailgrab.Clients.OBS
                 throw new FileNotFoundException("FFmpeg executable not found.", ffmpegExecutable);
 
             // FFmpeg command for animated WebP: extract frames and encode to WebP with animation
+            string ssArg, toArg;
+            const int targetDuration = 15; // seconds
+            const int earlyOffsetSeconds = 5 * 60; // 5 minutes in seconds
+
+            if (duration >= earlyOffsetSeconds + targetDuration)
+            {
+                // Duration > 5:15: use fixed range 00:05:00 to 00:05:15
+                ssArg = "00:05:00";
+                toArg = "00:05:15";
+            }
+            else
+            {
+                // Duration < 5:15: extract from end, up to 15 seconds
+                double startSeconds = Math.Max(0, duration - targetDuration);
+                ssArg = FormatTimespan(startSeconds);
+                toArg = FormatTimespan(duration);
+            }
+
             var psi = new ProcessStartInfo
             {
                 FileName = ffmpegExecutable,
-                Arguments = $@"-y -ss 00:05:00 -to 00:05:15 -i ""{videoPath}"" -vf ""scale={maxWidth}:-2,fps=10"" -loop 0 ""{outputWebPPath}""",
+                Arguments = $@"-y -ss {ssArg} -to {toArg} -i ""{videoPath}"" -vf ""scale={maxWidth}:-2,fps=10"" -loop 0 ""{outputWebPPath}""",
                 UseShellExecute = false,
                 RedirectStandardError = true,
                 RedirectStandardOutput = true,
@@ -920,7 +984,7 @@ namespace Tailgrab.Clients.OBS
             var psi = new ProcessStartInfo
             {
                 FileName = FFMpegPath,
-                Arguments = $@"-y -i ""{sourceVideoPath}"" -vf ""select='not(mod(n,{frameStep}))',drawtext='text=gmtime(n/{fps}):hms:fontsize=20:fontcolor=white:box=1:boxcolor=black@0.7:y=h-text_h-5:x=5',scale={maxWidth}:-2,tile={columns}x{rows}"" -frames:v 1 ""{outputImagePath}""",
+                Arguments = $@"-y -i ""{sourceVideoPath}"" -vf ""select='not(mod(n,{frameStep}))',scale={maxWidth}:-2,tile={columns}x{rows}"" -frames:v 1 ""{outputImagePath}""",
                 UseShellExecute = false,
                 RedirectStandardError = true,
                 RedirectStandardOutput = true,
@@ -937,6 +1001,13 @@ namespace Tailgrab.Clients.OBS
             }
             return true;
         }
+
+        private static string FormatTimespan(double seconds)
+        {
+            var ts = TimeSpan.FromSeconds(seconds);
+            return $"{(int)ts.TotalHours:00}:{ts.Minutes:00}:{ts.Seconds:00}";
+        }
+
         #endregion
     }
 #pragma warning restore CS8602 // Dereference of a possibly null reference.
