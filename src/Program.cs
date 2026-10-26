@@ -19,6 +19,7 @@ using Tailgrab.PlayerManagement;
 using Tailgrab.Clients.Omnivoice;
 using Tailgrab.Clients.VRChat;
 using Tailgrab.PlayerManagement.Views;
+using Tailgrab.Clients.OBS;
 
 namespace Tailgrab;
 
@@ -190,6 +191,9 @@ public class FileTailer
 
             // Check for updates before showing the main window
             _ = Task.Run(async () => await CheckForUpdatesAsync());
+
+            //OBSClient obsClient = _serviceProvider.GetRequiredService<OBSClient>();
+            //obsClient.RecreateAllTimelapse(@"D:\VR Chat");
 
             BuildAppWindow(_serviceRegistry);
 

@@ -1552,7 +1552,6 @@ namespace Tailgrab.PlayerManagement
                 System.Windows.Clipboard.SetText(result);
                 logger.Info("Exported Group GIST data to clipboard");
 
-                ShowOverlayMessage("Export Group Watch Data", $"Exported group(s) to clipboard.");
                 ShowOverlayMessageOkCancelI18N(
                     "MessageBox.ExportGroupGist.Title",
                     "MessageBox.ExportGroupGist.Content",

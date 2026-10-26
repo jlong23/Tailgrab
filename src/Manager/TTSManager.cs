@@ -1,8 +1,10 @@
 ﻿using ConcurrentPriorityQueue.Core;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using NLog;
 using System.Diagnostics.CodeAnalysis;
 using System.Speech.Synthesis;
-using Tailgrab;
+using Tailgrab.Clients.Omnivoice;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Tailgrab.Manager
 {
@@ -36,6 +38,7 @@ namespace Tailgrab.Manager
             };
 
             priorityQueue.Enqueue(item);
+            logger.Info($"TTSManager: Queuing TTS: '{item.Text}' with Volume: {item.Volume} and Rate: {item.Speed}.");
         }
 
         private async Task SpeechTaskProcessor(ConcurrentPriorityQueue<IHavePriority<int>, int> queue, ServiceRegistry registry)

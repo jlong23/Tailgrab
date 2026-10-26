@@ -610,7 +610,6 @@ namespace Tailgrab.PlayerManagement
                     text = text.Replace("{thumbnailUrl}", player.ProfileImage);
 
                     obsClient.AddMessage($"{player.DisplayName} has a Vote to Kick", "red");
-                    string filename = $"{player.UserId}-{player.DisplayName}_{DateTime.Now:yyyyMMdd_HHmmss}";
                     Task.Run(() => obsClient.VTKRecording(player, text)).GetAwaiter().GetResult();
                 }
             }
@@ -642,7 +641,6 @@ namespace Tailgrab.PlayerManagement
                     text = text.Replace("{thumbnailUrl}", player.ProfileImage);
 
                     obsClient.AddMessage($"{player.DisplayName} has a Vote to Kick initiated by {initiatedBy}", "red");
-                    string filename = $"{player.UserId}-{player.DisplayName}_{DateTime.Now:yyyyMMdd_HHmmss}";
                     Task.Run(() => obsClient.VTKRecording(player, text)).GetAwaiter().GetResult();
                 }
             }

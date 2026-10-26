@@ -380,8 +380,7 @@ namespace Tailgrab.Actions
             }
 
             string textToSpeak = ActionDataFormater.FormatData(Text, content);
-            LocalSvcRegistry.GetTTSManager().EnqueueSpeech(textToSpeak);
-            logger.Info($"TTSAction: Speaking Text: '{textToSpeak}' with Volume: {Volume} and Rate: {Rate}.");
+            LocalSvcRegistry.SendTTSEvent(textToSpeak);
         }
 
         public override string ToString()

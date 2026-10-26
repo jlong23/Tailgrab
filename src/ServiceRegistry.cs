@@ -484,6 +484,20 @@ namespace Tailgrab
         #endregion
 
         #region Convienence Methods so not to clutter up the code with event creation and publishing
+
+        public void SendTTSEvent(string text)
+        {
+            if (omniVoiceClient != null && omniVoiceClient.EnableTTSService)
+            {
+                string outputDevice = GetMultiDevicePlayer()?.SelectedOutputDevice ?? MultiDevicePlayer.GetDefaultOutputDevice();
+                PublishVoiceCloneSpeechEvent(text, null, outputDevice);
+            }
+            else
+            {
+                GetTTSManager().EnqueueSpeech(text);
+            }
+        }
+
         public void PublishVoiceCloneSpeechEvent(string text, string? voiceProfile, string outputDevice)
         {
             VoiceCloneSpeechEvent voiceEvent = new VoiceCloneSpeechEvent

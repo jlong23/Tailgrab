@@ -131,6 +131,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="Tailgrab.Tests\**" />
+    <EmbeddedResource Remove="Tailgrab.Tests\**" />
+    <None Remove="Tailgrab.Tests\**" />
+    <Page Remove="Tailgrab.Tests\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Remove="HtmlTemplates\VTK_Template.html" />
   </ItemGroup>
 
@@ -146,10 +153,6 @@
     <EmbeddedResource Include="HtmlTemplates\Image_Template.html" />
     <EmbeddedResource Include="HtmlTemplates\BanKickWarn_Template.html" />
     <EmbeddedResource Include="HtmlTemplates\VTK_Template.html" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="Tailgrab.Tests\Tailgrab.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup>
