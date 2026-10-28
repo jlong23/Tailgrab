@@ -91,7 +91,7 @@ namespace Tailgrab.Clients.Omnivoice
 
         public bool EnableTTSService
         {
-            get => ConfigStore.GetStoredKeyBool(CommonConst.Registry_OmniVoice_Enabled, true);
+            get => ConfigStore.GetStoredKeyBool(CommonConst.Registry_OmniVoice_Enabled, false);
             set => ConfigStore.PutStoredKeyBool(CommonConst.Registry_OmniVoice_Enabled, value);
         }
 
