@@ -47,7 +47,7 @@ For example, the WarnKick LineHandler will extract the userId, userName and what
 #### AvatarChange LineHandler
 
 
-| Replacement Variable | Contents | Source |
+|Replacement Variable | Contents | Source |
 |--------|--------|
 | timestamp | The timestamp of the log line | Log line |
 | userId | The VRChat userId of the user that changed avatars| VRC API |
@@ -58,7 +58,7 @@ For example, the WarnKick LineHandler will extract the userId, userName and what
 #### AvatarUnpack LineHandler
 
 
-| Replacement Variable | Contents | Source |
+|Replacement Variable | Contents | Source |
 |--------|--------|
 | timestamp | The timestamp of the log line | Log line |
 | userName | The VRChat userName of the user that UPLOADED the avatar | Log Line |
@@ -68,7 +68,7 @@ For example, the WarnKick LineHandler will extract the userId, userName and what
 #### AvatarUnpack LineHandler
 
 
-| Replacement Variable | Contents | Source |
+|Replacement Variable | Contents | Source |
 |--------|--------|
 | timestamp | The timestamp of the log line | Log line |
 | userName | The VRChat userName of the user that UPLOADED the avatar | Log Line |
@@ -78,7 +78,7 @@ For example, the WarnKick LineHandler will extract the userId, userName and what
 #### Emoji LineHandler
 
 
-| Replacement Variable | Contents | Source |
+|Replacement Variable | Contents | Source |
 |--------|--------|
 | timestamp | The timestamp of the log line | Log line |
 | userId | The VRChat userId of the user that used the emoji| Log line |
@@ -94,7 +94,7 @@ For example, the WarnKick LineHandler will extract the userId, userName and what
 #### OnPlayerJoin LineHandler
 
 
-| Replacement Variable | Contents | Source |
+|Replacement Variable | Contents | Source |
 |--------|--------|
 | timestamp | The timestamp of the log line | Log line |
 | userId | The VRChat userId of the user that joined | Log line |
@@ -105,7 +105,7 @@ For example, the WarnKick LineHandler will extract the userId, userName and what
 #### OnPlayerNetwork LineHandler
 
 
-| Replacement Variable | Contents | Source |
+|Replacement Variable | Contents | Source |
 |--------|--------|
 | timestamp | The timestamp of the log line | Log line |
 | userName | The VRChat userName of the user that joined | Log line |
@@ -115,7 +115,7 @@ For example, the WarnKick LineHandler will extract the userId, userName and what
 #### PenNetworkId LineHandler
 
 
-| Replacement Variable | Contents | Source |
+|Replacement Variable | Contents | Source |
 |--------|--------|
 | timestamp | The timestamp of the log line | Log line |
 | objectId | The VRChat World Object NetworkId of the pen that was used | Log line |
@@ -125,7 +125,7 @@ For example, the WarnKick LineHandler will extract the userId, userName and what
 
 #### Print LineHandler
 
-| Replacement Variable | Contents | Source |
+|Replacement Variable | Contents | Source |
 |--------|--------|
 | timestamp | The timestamp of the log line | Log line |
 | fileUrl | The VRChat Print Data URL | Log line |
@@ -133,7 +133,7 @@ For example, the WarnKick LineHandler will extract the userId, userName and what
 
 #### Quit LineHandler
 
-| Replacement Variable | Contents | Source |
+|Replacement Variable | Contents | Source |
 |--------|--------|
 | timestamp | The timestamp of the log line | Log line |
 | action | Always 'quit' | Hard Coded |
@@ -143,7 +143,7 @@ For example, the WarnKick LineHandler will extract the userId, userName and what
 #### Sticker LineHandler
 
 
-| Replacement Variable | Contents | Source |
+|Replacement Variable | Contents | Source |
 |--------|--------|
 | timestamp | The timestamp of the log line | Log line |
 | userId | The VRChat userId of the user that used the sticker| Log line |
@@ -154,7 +154,7 @@ For example, the WarnKick LineHandler will extract the userId, userName and what
 #### VTK LineHandler
 
 
-| Replacement Variable | Contents | Source |
+|Replacement Variable | Contents | Source |
 |--------|--------|
 | timestamp | The timestamp of the log line | Log line |
 | userId | The VRChat userId of the user that had the VTK | VRC API |
@@ -164,7 +164,7 @@ For example, the WarnKick LineHandler will extract the userId, userName and what
 #### Warn/Kick LineHandler
 
 
-| Replacement Variable | Contents | Source |
+|Replacement Variable | Contents | Source |
 |--------|--------|
 | timestamp | The timestamp of the log line | Log line |
 | userId | The VRChat userId of the user that had the VTK | VRC API |
@@ -175,7 +175,7 @@ For example, the WarnKick LineHandler will extract the userId, userName and what
 #### WorldChange LineHandler
 
 
-| Replacement Variable | Contents | Source |
+|Replacement Variable | Contents | Source |
 |--------|--------|
 | timestamp | The timestamp of the log line | Log line |
 | worldId | The VRChat worldId of the world that was changed to | Log line |
