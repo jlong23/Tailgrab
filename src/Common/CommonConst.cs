@@ -58,6 +58,8 @@ namespace Tailgrab.Common
 
         public const string Registry_OBS_FFMpegPath = "OBS_FFMPEG_PATH";
         public const string Registry_OBS_MKVMergePath = "OBS_MKV_MERGE_PATH";
+        public const string Registry_OBS_FFMpegCreateContactSheet = "OBS_FFMPEG_CONTACT_SHEET";
+        public const string Registry_OBS_FFMpegCreateWEBP = "OBS_FFMPEG_CREATE_WEBP";
 
         // Gist related registry keys
         public const string Registry_Group_Checksum = "GIST_GROUP_LIST_CHECKSUM";

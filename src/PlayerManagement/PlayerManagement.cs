@@ -1,6 +1,9 @@
 using NLog;
 using System.ComponentModel;
+using System.IO;
+using System.Numerics;
 using System.Text;
+using System.Text.Json;
 using Tailgrab.Clients.OBS;
 using Tailgrab.Clients.XSOverlay;
 using Tailgrab.Common;
@@ -586,6 +589,59 @@ namespace Tailgrab.PlayerManagement
                 }
             }
         }
+
+        public string LocalAvatarId { get; set; } = string.Empty;
+
+        public string? SecurityFileURI(string securityId)
+        {
+            string avatarId = string.Empty;
+
+            if( string.IsNullOrEmpty( LocalAvatarId ))
+                return avatarId;
+
+            avatarId = LocalAvatarId;
+
+            // Check if the securityId is valid and matches the local avatar ID
+            string? securityFile = serviceRegistry.GetVRChatAPIClient().GetAvatarSecurityFile(securityId);
+            if (!string.IsNullOrEmpty(securityFile))
+            {
+                logger.Info($"SecurityFileURI: Security file retrieved for avatar {avatarId} with security ID {securityId}");
+
+                try
+                {
+                    string userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                    string tailgrabDataDir = Path.Combine(userProfile, "AppData", "Local", "Tailgrab");
+                    string securityDir = Path.Combine(tailgrabDataDir, "SecurityFiles");
+
+                    Directory.CreateDirectory(securityDir);
+
+                    string securityFilePath = Path.Combine(securityDir, $"{avatarId}_Security.json");
+
+                    var jsonOptions = new JsonSerializerOptions { WriteIndented = true };
+                    var jsonDoc = JsonDocument.Parse(securityFile);
+                    string prettyJson = JsonSerializer.Serialize(jsonDoc.RootElement, jsonOptions);
+
+                    System.IO.File.WriteAllText(securityFilePath, prettyJson);
+                    logger.Info($"Security file saved to {securityFilePath}");
+                }
+                catch (Exception ex)
+                {
+                    logger.Error(ex, $"Failed to save security file for avatar {avatarId}");
+                }
+            }
+            else
+            {
+                logger.Warn($"SecurityFileURI: No security file found for avatar {avatarId} with security ID {securityId}");
+            }
+
+            return avatarId;
+        }
+
+        public void ClearSecurityFileURI()
+        {
+            LocalAvatarId = string.Empty;   
+        }
+
 
         public static Player? VoteToKickEventPublic(string displayName, string eventDescription)
         {

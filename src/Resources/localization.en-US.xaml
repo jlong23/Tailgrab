@@ -218,6 +218,11 @@
     <sys:String x:Key="UI.Tab.Secrets.Group.OBS.FFMPegPath">ffmpeg.exe Path:</sys:String>
     <sys:String x:Key="UI.Tab.Secrets.Group.OBS.FFMPegPath.tooltip">Specifies the path to the ffmpeg executable needed to embed the chapters into the MP4 file. See the ffmpeg project</sys:String>
 
+    <sys:String x:Key="UI.Tab.Secrets.Group.OBS.CreateFFMpegContactSheets">Create Contact Sheets</sys:String>
+    <sys:String x:Key="UI.Tab.Secrets.Group.OBS.CreateFFMpegContactSheets.tooltip">When enabled and FFMpeg is installed, Clippings will be accompanied with a 5x5 contact sheet of thumbnails through out the video.</sys:String>
+    <sys:String x:Key="UI.Tab.Secrets.Group.OBS.CreateFFMpegWEBP">Create Animated WEBP</sys:String>
+    <sys:String x:Key="UI.Tab.Secrets.Group.OBS.CreateFFMpegWEBP.tooltip">When enabled and FFMpeg is installed, Clippings will be accompanied with a 15sec 10fps Animated thumbnails 05:00 into the video or 15 seconds from the end if shorter than 05:00.</sys:String>
+    
     <sys:String x:Key="UI.Tab.Secrets.Group.OBS.CreateMKVChapterRecording">Create MKV Chapters:</sys:String>
     <sys:String x:Key="UI.Tab.Secrets.Group.OBS.CreateMKVChapterRecording.tooltip">When enabled, Tailgrab will create duplicate the session recording with moderation events as chapters with the extension *.mkv.</sys:String>
     <sys:String x:Key="UI.Tab.Secrets.Group.OBS.MkvMergePath">mkvmerge.exe Path:</sys:String>
@@ -592,6 +597,12 @@
     <sys:String x:Key="SetupWizard.Step04.CreateMP4ChaptersDescription">Requires FFMpeg to be installed.</sys:String>
     <sys:String x:Key="SetupWizard.Step04.FFMpegPathLabel">FFMpeg Path:</sys:String>
     <sys:String x:Key="SetupWizard.Step04.DownloadFFMpeg">Click here to download FFMpeg for Windows 11 (Release Builds: ffmpeg-release-full.7z)</sys:String>
+
+    <sys:String x:Key="SetupWizard.Step04.CreateContactSheets">Create Contact Sheets</sys:String>
+    <sys:String x:Key="SetupWizard.Step04.CreateContactSheetsDescription">Creates a 5x5 thumbnail contact sheet of the video; Requires FFMpeg to be installed.</sys:String>
+    <sys:String x:Key="SetupWizard.Step04.CreateWebP">Create Animated WebP images</sys:String>
+    <sys:String x:Key="SetupWizard.Step04.CreateWebPDescription">Creates a 15 second 10fps Animated WebP 5min into the video or 15 sec from the end if shorter; Requires FFMpeg to be installed.</sys:String>
+
     <sys:String x:Key="SetupWizard.Step04.CreateMKVChaptersLabel">Create MKV chapter markers</sys:String>
     <sys:String x:Key="SetupWizard.Step04.CreateMKVChaptersDescription">Requires MKVMerge to be installed.</sys:String>
     <sys:String x:Key="SetupWizard.Step04.MKVMergePathLabel">MKVMerge Path:</sys:String>

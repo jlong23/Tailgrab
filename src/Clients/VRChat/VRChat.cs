@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using Microsoft.AspNetCore.Http;
+using Newtonsoft.Json;
 using NLog;
 using OtpNet;
 using System.IO;
@@ -370,6 +371,17 @@ namespace Tailgrab.Clients.VRChat
 
             return avatars;
         }
+
+        public string? GetAvatarSecurityFile(string securityId)
+        {
+            string baseUrl = $"https://api.vrchat.cloud/api/1/analysis/{securityId}";
+            HttpClient client = CreateHttpClientWithCookies();
+            HttpResponseMessage response = client.GetAsync(baseUrl).Result;
+            response.EnsureSuccessStatusCode();
+
+            return response.Content.ReadAsStringAsync().Result;
+        }
+
         #endregion
 
         #region Profile Management

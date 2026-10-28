@@ -106,6 +106,18 @@
                 </StackPanel>
 
                 <StackPanel Margin="0,0,0,10">
+                    <CheckBox x:Name="CreateContactSheetsCheckbox" Content="{DynamicResource SetupWizard.Step04.CreateContactSheets}" Margin="0,0,0,5" IsChecked="False" Foreground="#333333"/>
+                    <TextBlock FontSize="11" TextWrapping="Wrap" Margin="20,0,0,0" Foreground="#666666"
+                               Text="{DynamicResource SetupWizard.Step04.CreateContactSheetsDescription}"/>
+                </StackPanel>
+
+                <StackPanel Margin="0,0,0,10">
+                    <CheckBox x:Name="CreateWebPCheckbox" Content="{DynamicResource SetupWizard.Step04.CreateWebP}" Margin="0,0,0,5" IsChecked="False" Foreground="#333333"/>
+                    <TextBlock FontSize="11" TextWrapping="Wrap" Margin="20,0,0,0" Foreground="#666666"
+                               Text="{DynamicResource SetupWizard.Step04.CreateWebPDescription}"/>
+                </StackPanel>
+
+                <StackPanel Margin="0,0,0,10">
                     <CheckBox x:Name="CreateMKVChaptersCheckbox" Content="{DynamicResource SetupWizard.Step04.CreateMKVChaptersLabel}" Margin="0,0,0,5" IsChecked="False" Foreground="#333333"/>
                     <TextBlock FontSize="11" TextWrapping="Wrap" Margin="20,0,0,0" Foreground="#666666"
                                Text="{DynamicResource SetupWizard.Step04.CreateMKVChaptersDescription}"/>

@@ -968,6 +968,9 @@ namespace Tailgrab.PlayerManagement
                 }   
 
                 CreateMKVChapterRecording.IsChecked = obsClient.CreateMKVChapters;
+                CreateFFMpegContactSheets.IsChecked = obsClient.FFMpegContactSheet;
+                CreateFFMpegWebP.IsChecked = obsClient.FFMpegWEBP;
+
                 MkvMergePath.Text = obsClient.MKVMergePath;
                 if(string.IsNullOrEmpty(obsClient.MKVMergePath))
                 {
@@ -1203,6 +1206,8 @@ namespace Tailgrab.PlayerManagement
                     obsClient.FFMpegPath = FFMpegPath.Text.Trim() ?? string.Empty;
                     obsClient.CreateMKVChapters = CreateMKVChapterRecording.IsChecked == true;
                     obsClient.MKVMergePath = MkvMergePath.Text.Trim() ?? string.Empty;
+                    obsClient.FFMpegContactSheet = CreateFFMpegContactSheets.IsChecked == true;
+                    obsClient.FFMpegWEBP = CreateFFMpegWebP.IsChecked == true;    
 
                     obsClient.KickBanEvents = ReplayBufferRecordOnKickBan.IsChecked == true;
                     obsClient.KickBanSceneName = KickBanSceneName.Text.Trim() ?? string.Empty;

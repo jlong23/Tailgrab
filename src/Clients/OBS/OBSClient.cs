@@ -160,6 +160,32 @@ namespace Tailgrab.Clients.OBS
             }
         }
 
+        public bool FFMpegContactSheet
+        {
+            get
+            {
+                return ConfigStore.GetStoredKeyBool(CommonConst.Registry_OBS_FFMpegCreateContactSheet, false);
+            }
+            set
+            {
+                ConfigStore.PutStoredKeyBool(CommonConst.Registry_OBS_FFMpegCreateContactSheet, value);
+            }
+        }
+
+        public bool FFMpegWEBP
+        {
+            get
+            {
+                return ConfigStore.GetStoredKeyBool(CommonConst.Registry_OBS_FFMpegCreateWEBP, false);
+            }
+            set
+            {
+                ConfigStore.PutStoredKeyBool(CommonConst.Registry_OBS_FFMpegCreateWEBP, value);
+            }
+        }
+
+
+
         public bool KickBanEvents
         {
             get
@@ -507,19 +533,15 @@ namespace Tailgrab.Clients.OBS
                 try
                 {
                     string? directoryPath = Path.GetDirectoryName(existingPath) ?? string.Empty;
-                    string extension = Path.GetExtension(existingPath);
 
-                    string newPath = Path.Combine(newDirectoryPath ?? directoryPath, newFilename + extension);
+                    string newPath = Path.Combine(newDirectoryPath ?? directoryPath, newFilename);
 
-                    logger.Info($"Attempting to rename file from {existingPath} to {newPath}");
                     if (newDirectoryPath != null && !Directory.Exists(newDirectoryPath))
                     {
                         Directory.CreateDirectory(newDirectoryPath);
                     }
 
                     File.Move(existingPath, newPath);
-                    logger.Info($"Successfully renamed file from {existingPath} to {newPath}");
-
                     ReplayBufferEvent replayEvent = new ReplayBufferEvent
                     {
                         EventTime = DateTime.Now,
@@ -656,19 +678,29 @@ namespace Tailgrab.Clients.OBS
             logger.Info($"Replay buffer saved to: {e.SavedReplayPath}");
             if (!string.IsNullOrEmpty(_filename))
             {
+                string existingFilename = Path.GetFileName(e.SavedReplayPath);
+
                 string dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
                 string directoryPath = Path.GetDirectoryName(e.SavedReplayPath) ?? string.Empty;
-                string existingFilename = Path.GetFileName(e.SavedReplayPath);
                 
                 string newDirectoryPath = Path.Combine(directoryPath, "Replays", dateFolder);
+                string newFilename = _filename + Path.GetExtension(e.SavedReplayPath);
+
+                string destinationPath = Path.Combine(newDirectoryPath, newFilename);
+
                 logger.Info($"Attempting to rename: {Path.Combine(directoryPath, existingFilename)} to {Path.Combine(newDirectoryPath, existingFilename)}");
-                if (RenameFile(Path.Combine(directoryPath, existingFilename), newDirectoryPath, _filename))
-                {   
-                    CreateVideoContactSheet( Path.Combine(newDirectoryPath, _filename));
-                    logger.Info($"Successfully renamed: {Path.Combine(directoryPath, existingFilename)} to {Path.Combine(newDirectoryPath, _filename)}");
+                if (RenameFile(Path.Combine(directoryPath, existingFilename), newDirectoryPath, newFilename))
+                {
+                    CreateVideoContactSheet( Path.Combine(newDirectoryPath, newFilename));
+                    CreateTimelapseWebP(Path.Combine(newDirectoryPath, newFilename));
+                    logger.Info($"Successfully renamed: {Path.Combine(directoryPath, existingFilename)} to {Path.Combine(newDirectoryPath, newFilename)}");
                     _filename = string.Empty;
                     _eventType = string.Empty;
                     _eventName = string.Empty;
+                } else
+                {
+                    CreateVideoContactSheet(Path.Combine(directoryPath, existingFilename));
+                    CreateTimelapseWebP(Path.Combine(directoryPath, existingFilename));
                 }
                 RestorePreviousScene();
             }
@@ -904,6 +936,9 @@ namespace Tailgrab.Clients.OBS
                 throw new FileNotFoundException("FFmpeg executable not found.", FFMpegPath);
             }
 
+            if (!FFMpegWEBP)
+                return string.Empty;
+
             if (!File.Exists(videoPath))
                 throw new FileNotFoundException("Video file not found.", videoPath);
 
@@ -967,6 +1002,9 @@ namespace Tailgrab.Clients.OBS
                 logger.Warn($"FFmpeg not found at {FFMpegPath}. Skipping chapter addition for MP4.");
                 throw new FileNotFoundException("FFmpeg executable not found.", FFMpegPath);
             }
+
+            if (!FFMpegContactSheet)
+                return false;
 
             if (!File.Exists(sourceVideoPath))
                 throw new FileNotFoundException("Video file not found.", sourceVideoPath);

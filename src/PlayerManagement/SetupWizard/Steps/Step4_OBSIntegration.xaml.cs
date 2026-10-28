@@ -68,6 +68,9 @@ namespace Tailgrab.PlayerManagement.SetupWizard.Steps
                 FFMpegPathBox.Text = storedFFMpegPath;
             }
 
+            CreateContactSheetsCheckbox.IsChecked = ConfigStore.GetStoredKeyBool(CommonConst.Registry_OBS_FFMpegCreateContactSheet, false);            
+            CreateWebPCheckbox.IsChecked = ConfigStore.GetStoredKeyBool(CommonConst.Registry_OBS_FFMpegCreateWEBP, false);
+    
             CreateMKVChaptersCheckbox.IsChecked = ConfigStore.GetStoredKeyBool(CommonConst.Registry_OBS_CreateChaptersMkv, false);
             string? storedMKVMergePath = ConfigStore.GetStoredKeyString(CommonConst.Registry_OBS_MKVMergePath);
             if (CreateMKVChaptersCheckbox.IsChecked == true && string.IsNullOrEmpty(storedMKVMergePath))
