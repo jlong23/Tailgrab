@@ -2,6 +2,20 @@
 
 This guide explains how to install OBS, place the supplied Tailgrab asset pack in the correct Windows folder, import the Tailgrab scene configuration, and understand the main overlay sources used in the VRChat scene.
 
+## Features of Tailgrab OBS Integration
+- Auto Start of OBS Session Recording
+- Auto Start of OBS Replay Buffer
+- Auto Start of OBS Virtual Camera
+- Auto Capture of Vote to Kick events, both moderated and un-moderated instance from the Replay Buffer settings
+- Auto Capture of Warn, Kick, Ban events in a moderated instance from the Replay Buffer Settings
+- Auto Rename of Replay Buffer file to match the {UserID}_{DisplayName}_{EventDateTime}.{ext} to make it easy to attach evidence to your logs.
+- Automated Generation of Chapter markers for session events, embedding them into a mp4 or mkv file format.
+- Automated Generation of 'Video Contact Sheets'; a 5x5 thumbnail rendering of the video file.
+- Automated Generation of 'Animated Thumbnail' WebP file for use in Discord or other social media platforms.
+- Video Embedding of VTK, Warn, Kick, Ban events into the video file for evidential purposes.
+- Video Embedding of Print, Sticker and Emoji events into the video file for evidential purposes.
+
+
 ## 1. Install Open Broadcaster Studio (OBS)
 
 1. Download OBS Studio from the official project site:
@@ -189,6 +203,20 @@ The scene includes audio inputs for monitoring and visualizing mic/game/source l
 4. Confirm that the `VRChat` scene loads correctly.
 5. Validate the `FOXON BODY 3`, `MessageOverlay`, and `TailgrabWindow` sources.
 6. Check the audio meters and the `VRChat Desktop View` capture before recording or streaming.
+
+Example PowerShell script to launch OBS, Tailgrab, and the overlay:
+
+**StartVRChatWithTailgrab.ps1**
+
+```powershell
+Start-Process -FilePath "C:\Program Files\obs-studio\bin\64bit\obs64.exe" -WorkingDirectory "C:\Program Files\obs-studio\bin\64bit"
+Start-Sleep -Seconds 5
+
+Start-Process "D:\dev\TailGrab\bin\Release\net10.0-windows\win-x64\publish\tailGrab.exe"
+Start-Sleep -Seconds 10
+
+Get-Content -Path (Get-ChildItem -Path $HOME\AppData\Local\Tailgrab\logs\ -File | Sort-Object LastWriteTime -Descending | Select-Object -First 1).FullName -Wait -Tail 100
+```
 
 ## 8. Notes
 

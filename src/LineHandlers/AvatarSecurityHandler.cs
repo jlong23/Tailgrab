@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 using Tailgrab.Common;
 using Tailgrab.PlayerManagement;
 
-public class AvatarSecurityUser : AbstractLineHandler
+public class LocalAvatarSecurityChange : AbstractLineHandler
 {
 
     public static readonly string LOG_PATTERN = @"([\d]{4}.[\d]{2}.[\d]{2}\W[\d]{2}:[\d]{2}:[\d]{2})\W(Log[\W]{8}|Debug[\W]{6})-\W\W\[API\]\W\[(\d+)\] Sending Get request to https:\/\/api.vrchat.cloud\/api\/1\/analysis\/([\d\w\W]+)";
@@ -14,9 +14,9 @@ public class AvatarSecurityUser : AbstractLineHandler
     public static readonly int VRC_SECURITY_URI = 4;
 
 
-    public AvatarSecurityUser(string matchPattern, ServiceRegistry serviceRegistry) : base(matchPattern, serviceRegistry)
+    public LocalAvatarSecurityChange(string matchPattern, ServiceRegistry serviceRegistry) : base(matchPattern, serviceRegistry)
     {
-        logger.Info($"** AvatarSecurityUser Handler:  Regular Expression: {Pattern}");
+        logger.Info($"** LocalAvatarSecurityChange Handler:  Regular Expression: {Pattern}");
     }
 
     public override bool HandleLine(string line)

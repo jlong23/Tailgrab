@@ -327,8 +327,8 @@ namespace Tailgrab.Configuration
                 case LineHandlerType.LocalAvatarChange:
                     handler = new LocalAvatarChangeHandler(LocalAvatarChangeHandler.LOG_PATTERN, _serviceRegistry);
                     break;
-                case LineHandlerType.AvatarSecurity:
-                    handler = new AvatarSecurityUser(AvatarSecurityUser.LOG_PATTERN, _serviceRegistry);
+                case LineHandlerType.LocalAvatarSecurity:
+                    handler = new LocalAvatarSecurityChange(LocalAvatarSecurityChange.LOG_PATTERN, _serviceRegistry);
                     break;
             }
 
@@ -442,7 +442,7 @@ namespace Tailgrab.Configuration
         WorldChange,
         Quit,
         LocalAvatarChange,
-        AvatarSecurity
+        LocalAvatarSecurity
     }
 
     public static class LineHandlerTypeExtensions
@@ -469,7 +469,7 @@ namespace Tailgrab.Configuration
                 LineHandlerType.WorldChange => "World Change Handler",
                 LineHandlerType.Quit => "Quit Handler",
                 LineHandlerType.LocalAvatarChange => "Local Avatar Change Handler",
-                LineHandlerType.AvatarSecurity => "Avatar Security Handler",
+                LineHandlerType.LocalAvatarSecurity => "Avatar Security Handler",
                 _ => "Unknown Handler",
             };
         }

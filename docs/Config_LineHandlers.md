@@ -46,6 +46,7 @@ For example, the WarnKick LineHandler will extract the userId, userName and what
 
 #### AvatarChange LineHandler
 
+Purpose: Detect when a user changes avatars and to extract the userId, userName and avatarName for usage in actions.
 
 |Replacement Variable | Contents | Source |
 |--------|--------|--------|
@@ -57,16 +58,7 @@ For example, the WarnKick LineHandler will extract the userId, userName and what
 
 #### AvatarUnpack LineHandler
 
-
-|Replacement Variable | Contents | Source |
-|--------|--------|--------|
-| timestamp | The timestamp of the log line | Log line |
-| userName | The VRChat userName of the user that UPLOADED the avatar | Log Line |
-| avatarName | The VRChat avatarName of the avatar that was changed into, from the log line| Log line |
-
-
-#### AvatarUnpack LineHandler
-
+Purpose: Detect when the local client unpacks an avatar and to extract the userName and avatarName for usage in actions, this also looks up public Avatars from the VRCDB service
 
 |Replacement Variable | Contents | Source |
 |--------|--------|--------|
@@ -77,6 +69,7 @@ For example, the WarnKick LineHandler will extract the userId, userName and what
 
 #### Emoji LineHandler
 
+Purpose: Detect when a user uses an Emoji and to extract the userId, userName, inventoryId, itemName, itemType, itemTypeLabel, itemDescription and itemImageUrl for usage in actions.
 
 |Replacement Variable | Contents | Source |
 |--------|--------|--------|
@@ -93,6 +86,7 @@ For example, the WarnKick LineHandler will extract the userId, userName and what
 
 #### OnPlayerJoin LineHandler
 
+Purpose: Detect when a user joins or leaves the instance and to extract the userId, userName and action for usage in actions.
 
 |Replacement Variable | Contents | Source |
 |--------|--------|--------|
@@ -104,6 +98,7 @@ For example, the WarnKick LineHandler will extract the userId, userName and what
 
 #### OnPlayerNetwork LineHandler
 
+Purpose: Detect when a user's network state changes and to extract the userName and networkId for usage in actions.  Semi Functional as it relies on Debug Messages from the Furry Hideout pen system.
 
 |Replacement Variable | Contents | Source |
 |--------|--------|--------|
@@ -112,8 +107,22 @@ For example, the WarnKick LineHandler will extract the userId, userName and what
 | networkId | The user instance state network id | Log line |
 
 
+#### PlayerModeration LineHandler
+
+Purpose: Detect when the local user mutes, blocks or otherwise moderates another user (Non Group Moderation).
+
+|Replacement Variable | Contents | Source |
+|--------|--------|--------|
+| timestamp | The timestamp of the log line | Log line |
+| userId | The VRChat userId of the user that was moderated | Log line |
+| userName | The VRChat userName of the user that was moderated | VRC API |
+| moderationType | The action taken by the local user (mute, block, etc.) | Log line |
+
+
+
 #### PenNetworkId LineHandler
 
+Purpose: Detect when a user's network state changes and to extract the userName and networkId for usage in actions.  Semi Functional as it relies on Debug Messages from the Furry Hideout pen system.
 
 |Replacement Variable | Contents | Source |
 |--------|--------|--------|
@@ -125,13 +134,22 @@ For example, the WarnKick LineHandler will extract the userId, userName and what
 
 #### Print LineHandler
 
+Purpose: Detect when a user spawns a Print and to extract the fileUrl for usage in actions.
+
 |Replacement Variable | Contents | Source |
 |--------|--------|--------|
 | timestamp | The timestamp of the log line | Log line |
 | fileUrl | The VRChat Print Data URL | Log line |
-
+| ownerId | The VRChat userId of the user that emitted the print | VRC API |
+| authorName | The VRChat userName of the user that emitted the print | VRC API |
+| worldId | The VRChat worldId of the world that the print was captured in | VRC API |
+| worldName | The VRChat worldName of the world that the print was captured in | VRC API |
+| createdAt | The timestamp of when the print was captured | VRC API |
+| files | The VRChat Print Data URL files array (comma seperated) | VRC API |
 
 #### Quit LineHandler
+
+Purpose: Detect when the local user quits VRChat and to extract the totalTime for usage in actions.
 
 |Replacement Variable | Contents | Source |
 |--------|--------|--------|
@@ -142,6 +160,7 @@ For example, the WarnKick LineHandler will extract the userId, userName and what
 
 #### Sticker LineHandler
 
+Purpose: Detect when a user spawns a Sticker and to extract the userId, userName and fileUrl for usage in actions.
 
 |Replacement Variable | Contents | Source |
 |--------|--------|--------|
@@ -153,6 +172,7 @@ For example, the WarnKick LineHandler will extract the userId, userName and what
 
 #### VTK LineHandler
 
+Purpose: Detect when a user receives a General Vote to Kick (VTK) action and to extract the userId and userName for usage in actions.
 
 |Replacement Variable | Contents | Source |
 |--------|--------|--------|
@@ -161,8 +181,33 @@ For example, the WarnKick LineHandler will extract the userId, userName and what
 | userName | The VRChat userName of the user that had the VTK | Log line |
 
 
+#### VTK Requested LineHandler
+
+Purpose: Detect when a user initiates a General Vote to Kick (VTK) action and to extract the userId and userName for usage in actions.
+
+|Replacement Variable | Contents | Source |
+|--------|--------|--------|
+| timestamp | The timestamp of the log line | Log line |
+| userId | The VRChat userId of the targeted user for the VTK | VRC API |
+| userName | The VRChat userName of the targeted user for the VTK | Log line |
+
+
+#### VTK Group LineHandler
+
+Purpose: Detect when a the Group Moderator receives a General Vote to Kick (VTK) action and to extract the userId and userName for usage in actions.
+
+|Replacement Variable | Contents | Source |
+|--------|--------|--------|
+| timestamp | The timestamp of the log line | Log line |
+| userId | The VRChat userId of the targeted user for the VTK | VRC API |
+| userName | The VRChat userName of the targeted user for the VTK | Log line |
+| initiatedByUserId | The VRChat userId of the user that initiated the VTK | VRC API |
+| initiatedBy | The VRChat userName of the user that initiated the VTK | Log line |
+
+
 #### Warn/Kick LineHandler
 
+Purpose: Detect when a Group Moderator initiates a Warn or Kick action and to extract the userId and userName for usage in actions.
 
 |Replacement Variable | Contents | Source |
 |--------|--------|--------|
@@ -178,10 +223,43 @@ For example, the WarnKick LineHandler will extract the userId, userName and what
 |Replacement Variable | Contents | Source |
 |--------|--------|--------|
 | timestamp | The timestamp of the log line | Log line |
+| avatarId | The VRChat avatarId of the avatar that was changed to | Log line |
+
+
+#### LocalAvatarChange LineHandler
+
+Purpose: Detect when the local user changes avatars and to extract the avatarId for usage in actions.
+
+
+|Replacement Variable | Contents | Source |
+|--------|--------|--------|
+| timestamp | The timestamp of the log line | Log line |
 | worldId | The VRChat worldId of the world that was changed to | Log line |
 | instanceId | The VRChat instanceId of the world that was changed to 93883~group(grp_b6593dd3-6e86-4951-a8d8-e2fa3cb91096)~groupAccessType(public)~region(us) | Log line |
 
 
+#### LocalAvatarSecurityChange LineHandler
+
+Purpose: Detect when the local client requests the Avatar Security JSON data in relation to LocalAvatarChange (avatar statistics panel).  This is reliable in a single user private instance used to grab avatar statistic data for reporting.
+
+
+|Replacement Variable | Contents | Source |
+|--------|--------|--------|
+| timestamp | The timestamp of the log line | Log line |
+| securityId | The VRChat securityId of the avatar that was requested | Log line |
+| avatarId | The VRChat avatarId of the avatar that was requested | Prior Log line |
+
+
+#### LIFTUP LineHandler
+
+Purpose: Detect when the local client detects the HEXXED.CC client LIFTUP error.  These are BOT Accounts there to get the avatars in the instance to Clone them and sell access to them on the black market.
+
+
+|Replacement Variable | Contents | Source |
+|--------|--------|--------|
+| timestamp | The timestamp of the log line | Log line |
+| userName | The VRChat userName of the user that was detected | Log line / VRC API |
+| userId | The VRChat userId of the user that was detected | Log line / VRC API |
 
 
 ## Action Definitions
