@@ -288,18 +288,18 @@ The Delay Action will allow you to pause other actions with millisecond precisio
 
 ### Action: OSCAction Definition
 
-The OSC Action will allow you to send values (```Float```/```Int```/```Bool```) to your VRChat avatar that could be used to trigger animations on it during a action set.
+The OSC Action will allow you to send values (```Float```/```Int```/```Bool```/```String```) to your VRChat avatar that could be used to trigger animations on it during a action set.
 
 |Attribute | Definition |
 |--------|--------|
 | actionTypeValue | ```OSCAction``` See ```actionTypeValue``` |
-| parameterName | The VRChat Avatar Parameter Path to send to; EG. ```/avatar/parameters/Ear/Right_Angle``` |
-| oscValueType | OSC Value types associated with that Parameter Path; ```Float``` or ```Int``` or ```Bool``` |
+| parameterName | The VRChat Avatar Parameter Path to send to; EG. ```/avatar/parameters/Ear/Right_Angle``` or ```/chatbox/input``` |
+| oscValueType | OSC Value types associated with that Parameter Path; ```f``` or ```i``` or ```b``` or ```s``` |
 | value | The Value to send to your avatar; Floats expect a decimal place ```0.0```, Int expect no decimal place ```0```, and Bool expects either ```true``` or ```false```
 
 ### Action: TTSAction Definition (Not Working ATM)
 
-The TTS Action will allow you to say a phrase when triggered.
+The TTS Action will allow you to say a phrase when triggered. (NOTE: This has a override for the next feature of using Cloned Voices from OmniVoice service, when enabled all TTS are cloned voices)
 
 |Attribute | Definition |
 |--------|--------|
