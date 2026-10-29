@@ -1,5 +1,4 @@
 ﻿using FFMpegCore;
-using FFMpegCore.Enums;
 using Newtonsoft.Json.Linq;
 using NLog;
 using OBSWebsocketDotNet;

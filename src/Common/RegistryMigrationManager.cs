@@ -196,6 +196,35 @@ namespace Tailgrab.Common
             return string.Compare(version1, version2, StringComparison.OrdinalIgnoreCase);
         }
 
+        public static void DeleteTailgrabRegistrySettings()
+        {
+            try
+            {
+                // Remove the Tailgrab subtree from HKCU\Software\DeviousFox
+                using var baseKey = Registry.CurrentUser.OpenSubKey("Software\\DeviousFox", writable: true);
+                if (baseKey != null)
+                {
+                    try
+                    {
+                        baseKey.DeleteSubKeyTree("Tailgrab", false);
+                        logger.Info("Application registry settings cleared from HKCU\\Software\\DeviousFox\\Tailgrab");
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.Warn(ex, "Failed to delete Tailgrab registry subtree");
+                    }
+                }
+                else
+                {
+                    logger.Info("No registry settings found to clear.");
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Warn(ex, "Failed while attempting to clear registry settings");
+            }
+        }
+
         /// <summary>
         /// Represents a single migration step.
         /// </summary>

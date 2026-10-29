@@ -25,6 +25,11 @@ namespace Tailgrab.Clients.Omnivoice
             LoadVoicePersonalities();
         }
 
+        public List<string> GetAvailableVoiceCloneProfiles()
+        {
+            return _voicePersonalities.Select(v => v.Name).ToList();
+        }
+
         #endregion
 
         #region Internal Records
@@ -34,16 +39,16 @@ namespace Tailgrab.Clients.Omnivoice
         internal record SythesisRequest
         {
             [System.Text.Json.Serialization.JsonPropertyName("text")]
-            public string Text { get; init; }
+            public string Text { get; init; } = string.Empty;
 
             [System.Text.Json.Serialization.JsonPropertyName("audio_base64")]
-            public string AudioBase64 { get; init; }
+            public string AudioBase64 { get; init; } = string.Empty;
 
             [System.Text.Json.Serialization.JsonPropertyName("reference_text")]
-            public string RefrenceText { get; init; }
+            public string RefrenceText { get; init; } = string.Empty;
 
             [System.Text.Json.Serialization.JsonPropertyName("language")]
-            public string Language { get; init; }
+            public string Language { get; init; } = "en";
 
             [System.Text.Json.Serialization.JsonPropertyName("num_steps")]
             public Int32 NumberSteps { get; set; } = 16;
@@ -66,29 +71,28 @@ namespace Tailgrab.Clients.Omnivoice
         public record VoiceJsonData
         {
             [System.Text.Json.Serialization.JsonPropertyName("name")]
-            public string Name { get; set; }
+            public string Name { get; set; } = string.Empty;
 
             [System.Text.Json.Serialization.JsonPropertyName("description")]
-            public string Description { get; set; }
+            public string Description { get; set; } = string.Empty;
 
             [System.Text.Json.Serialization.JsonPropertyName("prompt")]
-            public string Prompt { get; set; }
+            public string Prompt { get; set; } = string.Empty;
 
             [System.Text.Json.Serialization.JsonPropertyName("language")]
-            public string Language { get; set; }
+            public string Language { get; set; } = "en";
 
             [System.Text.Json.Serialization.JsonPropertyName("referenceText")]
-            public string ReferenceText { get; set; }
+            public string ReferenceText { get; set; } = string.Empty;
 
             // Not serialized from JSON
-            public string AudioReferenceUrl { get; set; }
-            public byte[] AudioReferenceBytes { get; set; }
+            public string AudioReferenceUrl { get; set; } = string.Empty;
+            public byte[] AudioReferenceBytes { get; set; } = Array.Empty<byte>();
         }
 
         #endregion
 
         #region Configuration
-
         public bool EnableTTSService
         {
             get => ConfigStore.GetStoredKeyBool(CommonConst.Registry_OmniVoice_Enabled, false);
@@ -97,7 +101,7 @@ namespace Tailgrab.Clients.Omnivoice
 
         public string OmnivoiceEndpoint
         {
-            get => ConfigStore.GetStoredKeyString(CommonConst.Registry_OmniVoice_Endpoint) ?? @"http://10.4.1.115:7500/synthesize";
+            get => ConfigStore.GetStoredKeyString(CommonConst.Registry_OmniVoice_Endpoint) ?? @"http://127.0.0.1:7500/synthesize";
             set => ConfigStore.PutStoredKeyString(CommonConst.Registry_OmniVoice_Endpoint, value);
         }
 
@@ -122,11 +126,7 @@ namespace Tailgrab.Clients.Omnivoice
         /// </summary>
         public void LoadVoicePersonalities()
         {
-            string voicesPath = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "Tailgrab",
-                "voices");
-
+            string voicesPath = Path.Combine(CommonConst.APPLICATION_LOCAL_DATA_PATH, "voices");
             if (!Directory.Exists(voicesPath))
             {
                 Logger.Warn($"Voices directory not found: {voicesPath}");
@@ -134,7 +134,6 @@ namespace Tailgrab.Clients.Omnivoice
             }
 
             _voicePersonalities.Clear();
-
             try
             {
                 var jsonFiles = Directory.GetFiles(voicesPath, "*.json", SearchOption.TopDirectoryOnly);
@@ -155,7 +154,7 @@ namespace Tailgrab.Clients.Omnivoice
                             voiceData.Description ??= string.Empty;
 
                             _voicePersonalities.Add(voiceData);
-                            Logger.Info($"Loaded voice personality: {voiceData.Name}");
+                            Logger.Debug($"Loaded voice personality: {voiceData.Name}");
                         }
                     }
                     catch (Exception ex)
@@ -253,14 +252,13 @@ namespace Tailgrab.Clients.Omnivoice
                 Language = "en"
             };
 
-            Logger.Info($"Sending TTS request to {ttsEndpoint} with payload: {payload}");
+            Logger.Debug($"Sending TTS request to {ttsEndpoint} with payload: {payload}");
             HttpResponseMessage resp = await _http.PostAsJsonAsync(ttsEndpoint, payload);
 
             resp.EnsureSuccessStatusCode();
             var body = await resp.Content.ReadAsStringAsync();
             var doc = JsonDocument.Parse(body);
 
-            // Response: { "audio_base64": "...", "sample_rate": 24000, ... }
             string audioBase64 = doc.RootElement
                 .GetProperty("audio_base64").GetString()!;
 
@@ -277,7 +275,7 @@ namespace Tailgrab.Clients.Omnivoice
             if (!EnableTTSService)
             {
                 Logger.Warn("TTS service is disabled.");
-                return null;
+                return Array.Empty<byte>();
             }
 
             try
@@ -287,7 +285,7 @@ namespace Tailgrab.Clients.Omnivoice
                 if (vp == null)
                 {
                     Logger.Error($"Voice personality '{VoiceCloneProfile}' not found.");
-                    return null;
+                    return Array.Empty<byte>();
                 }
 
                 // Call the TTS service
@@ -303,7 +301,7 @@ namespace Tailgrab.Clients.Omnivoice
             catch (Exception ex)
             {
                 Logger.Error($"Error generating audio: {ex.Message}");
-                return null;
+                return Array.Empty<byte>();
             }
         }
         #endregion

@@ -1,7 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Win32;
 using NLog;
-using OfficeOpenXml;
 using System.Globalization;
 using System.IO;
 using System.Net.Http;
@@ -10,53 +9,26 @@ using System.Text;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Media;
-using Tailgrab.Manager;
 using Tailgrab.Common;
 using Tailgrab.DependencyInjection;
-using Tailgrab.LineHandler;
 using Tailgrab.Models;
 using Tailgrab.PlayerManagement;
-using Tailgrab.Clients.Omnivoice;
 using Tailgrab.Clients.VRChat;
 using Tailgrab.PlayerManagement.Views;
-using Tailgrab.Clients.OBS;
 
 namespace Tailgrab;
 
-public class FileTailer
+public class App
 {
-    /// <summary>
-    /// A list of the Regex Line Matchers that are used to process log lines.
-    /// </summary>
-    static List<ILineHandler> HandlerList = new List<ILineHandler> { };
-
-    /// <summary>
-    /// A List of opened file paths to avoid opening the same file multiple times.
-    /// </summary>
-    static List<string> OpenedFiles = new List<string> { };
-    static Dictionary<string, FileWatchItem> WatchedFiles = new Dictionary<string, FileWatchItem>();
 
     /// <summary>
     /// The path to the user's profile directory.
     /// </summary>
     internal static readonly string UserProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
 
-    /// <summary>
-    /// The path to the VRChat AppData directory.
-    /// </summary>
-    public static readonly string VRChatAppDataPath = Path.Combine(UserProfile, @"AppData", "LocalLow", "VRChat", "VRChat");
-    public static readonly string VRChatAmplitudePath = Path.Combine(UserProfile, @"AppData", "Local", "Temp", "VRChat", "VRChat");
-
-    static FileSystemWatcher LogWatcher = new FileSystemWatcher();
-    static FileSystemWatcher AmpWatcher = new FileSystemWatcher();
     static Logger logger = LogManager.GetCurrentClassLogger();
     static ServiceRegistry? _serviceRegistry;
     static IServiceProvider? _serviceProvider;
-
-    // At the class level, add a dictionary to track active tail tasks
-    static Dictionary<string, FileTailStatus> ActiveTailTasks = new Dictionary<string, FileTailStatus>();
-
-    public static IReadOnlyDictionary<string, FileTailStatus> GetActiveTailTasks() => ActiveTailTasks;
 
     /// <summary>
     /// Gets the service provider for dependency resolution.
@@ -126,11 +98,11 @@ public class FileTailer
                 }
             }
 
+            // Handle the clear registry operation if specified
             if (clearRegistry)
             {
-                DeleteTailgrabRegistrySettings();
-
                 // Exit application after clearing settings
+                RegistryMigrationManager.DeleteTailgrabRegistrySettings();
                 return;
             }
 
@@ -147,7 +119,8 @@ public class FileTailer
             var mcpServer = _serviceProvider.GetRequiredService<Tailgrab.MCP.McpServer>();
             mcpServer.Initialize(_serviceRegistry);
 
-            UpgradeApplication(_serviceRegistry);
+            TailgrabMigration migration = new TailgrabMigration(_serviceRegistry);
+            migration.UpgradeApplication();
 
             if (backup)
             {
@@ -166,34 +139,15 @@ public class FileTailer
                 return;
             }
 
-            string filePath = GetLogsPath(args, explicitPath);
-            if (!Directory.Exists(filePath))
-            {
-                logger.Info($"Missing VRChat log directory at '{filePath}'");
-                return;
-            }
-
-
-            _serviceRegistry.GetConfigurationManager().LoadLineHandlersFromConfig(HandlerList);
-
             // Start the MCP Server on a background thread for local network access
             logger.Info($"Starting MCP Server on port {mcpServer.Port}");
             _ = mcpServer.StartAsync();
 
-            // Start the watcher task on a background thread so it doesn't block the STA UI thread
-            logger.Info($"Starting file watcher and showing UI for: '{filePath}'");
-            _ = Task.Run(() => WatchPath(filePath, _serviceRegistry));
-
-            // Start the Amplitude Cache watcher task on a background thread
-            string ampPath = VRChatAmplitudePath + Path.DirectorySeparatorChar;
-            logger.Info($"Starting Amplitude Cache watcher for: '{ampPath}'");
-            _ = Task.Run(() => WatchAmpCache(ampPath, _serviceRegistry));
-
             // Check for updates before showing the main window
             _ = Task.Run(async () => await CheckForUpdatesAsync());
 
-            //OBSClient obsClient = _serviceProvider.GetRequiredService<OBSClient>();
-            //obsClient.RecreateAllTimelapse(@"D:\VR Chat");
+            // Start the FileTailer to watch VRChat logs and process them
+            _serviceRegistry.GetFileTailer()?.Start(explicitPath);
 
             BuildAppWindow(_serviceRegistry);
 
@@ -206,460 +160,6 @@ public class FileTailer
         }
     }
 
-
-    /// <summary>
-    /// Threaded tailing of a file, reading new lines as they are added.
-    /// Returns the FileTailStatus immediately and processes the file in the background.
-    /// </summary>
-    public static FileTailStatus? TailFileAsync(string filePath)
-    {
-        if (OpenedFiles.Contains(filePath))
-        {
-            return null;
-        }
-
-        var status = new FileTailStatus(filePath);
-        logger.Info($"Tailing file: {filePath}");
-
-        OpenedFiles.Add(filePath);
-
-        // Start the file tailing process in the background
-        _ = Task.Run(async () =>
-        {
-            try
-            {
-                using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-                using (StreamReader sr = new StreamReader(fs, Encoding.UTF8))
-                {
-                    // Start at the end of the file
-                    long lastMaxOffset = fs.Length;
-                    fs.Seek(lastMaxOffset, SeekOrigin.Begin);
-
-                    WatchedFiles[filePath] = new FileWatchItem(lastMaxOffset);
-
-                    while (!status.IsCancellationRequested)
-                    {
-                        // If the file size hasn't changed, wait
-                        if (fs.Length == lastMaxOffset)
-                        {
-                            if (WatchedFiles.ContainsKey(filePath))
-                            {
-                                WatchedFiles[filePath].ElapsedTime += 1;
-                                if (WatchedFiles[filePath].ElapsedTime >= 9000) // If we've been watching this file for 15 minutes without changes
-                                {
-                                    logger.Info($"Timeout waiting for new lines in '{filePath}'");
-                                    break;
-                                }
-                            }
-
-                            await Task.Delay(100, status.CancellationSource.Token).ConfigureAwait(false);
-                            continue;
-                        }
-
-                        // Read and display new lines
-                        string? line;
-                        while ((line = await sr.ReadLineAsync().ConfigureAwait(false)) != null)
-                        {
-                            if (status.IsCancellationRequested)
-                                break;
-
-                            foreach (ILineHandler handler in HandlerList)
-                            {
-                                if (handler.HandleLine(line))
-                                {
-                                    break;
-                                }
-                            }
-
-                            status.IncrementLinesProcessed();
-                        }
-
-                        // Update the offset to the new end of the file
-                        lastMaxOffset = fs.Length;
-
-                        // Reset the watch counter for this file since we have new data
-                        WatchedFiles.Remove(filePath);
-                    }
-                }
-
-                logger.Info($"Stopped tailing file: {filePath}. Total lines processed: {status.LinesProcessed}");
-            }
-            catch (OperationCanceledException)
-            {
-                logger.Info($"Tailing cancelled for: {filePath}. Total lines processed: {status.LinesProcessed}");
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex, $"Error tailing file: {filePath}");
-            }
-            finally
-            {
-                // Clean up
-                OpenedFiles.Remove(filePath);
-                WatchedFiles.Remove(filePath);
-                ActiveTailTasks.Remove(filePath);
-            }
-        });
-
-        return status;
-    }
-
-    /// <summary>
-    /// Watch and dispatch File Tailing.
-    /// </summary>
-    public static async Task WatchPath(string path, ServiceRegistry _serviceRegistry)
-    {
-        LogWatcher.Path = Path.GetDirectoryName(path)!;
-        LogWatcher.Filter = Path.GetFileName("output_log*.txt");
-        LogWatcher.NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size | NotifyFilters.FileName;
-
-        LogWatcher.Created += async (source, e) =>
-        {
-            var status = TailFileAsync(e.FullPath);
-            if (status != null)
-            {
-                ActiveTailTasks[e.FullPath] = status;
-            }
-        };
-
-        LogWatcher.Changed += async (source, e) =>
-        {
-            var status = TailFileAsync(e.FullPath);
-            if (status != null)
-            {
-                ActiveTailTasks[e.FullPath] = status;
-            }
-        };
-
-        LogWatcher.EnableRaisingEvents = true;
-
-        // ensure existing files are tailed immediately
-        try
-        {
-            string _todaysFile = $"output_log_{DateTime.Now:yyyy-MM-dd}_*.txt";
-            logger.Debug($"Looking for existing log files matching: {_todaysFile}");
-            var existing = Directory.GetFiles(LogWatcher.Path, _todaysFile);
-            foreach (var f in existing)
-            {
-                logger.Debug($"Found File to Tail: {f}");
-                _ = Task.Run(() =>
-                {
-                    var status = TailFileAsync(f);
-                    if (status != null)
-                    {
-                        ActiveTailTasks[f] = status;
-                    }
-                });
-            }
-        }
-        catch
-        {
-            /* ignore errors */
-        }
-
-        // Keep the application running to monitor changes
-        await Task.Delay(Timeout.Infinite);
-    }
-
-
-    public static async Task ProcessAmplitudeCache(string filePath, ServiceRegistry ServiceRegistryInstance)
-    {
-        bool saveAvatars = ConfigStore.GetStoredKeyBool(CommonConst.Registry_Discovered_Avatar_Caching, true);
-        if (!saveAvatars) {  
-              logger.Info($"Ignoring changes in Amplitude cache at '{filePath}'. Due to Discover Avatar Flag...");
-              return;
-        }
-
-        // Resolve path: prefer explicit, then local repo config.json, then user config path
-        if (!File.Exists(filePath))
-        {
-            logger.Warn($"AmplitudeCache file not found at '{filePath}'.");
-            return;
-        }
-
-        try
-        {
-            string jsonString = File.ReadAllText(filePath);
-
-            // Parse the JSON and extract ROOT[0]/event_properties/avatarIdsEncountered
-            var avatarIds = new List<string>();
-
-            using (JsonDocument doc = JsonDocument.Parse(jsonString))
-            {
-                var root = doc.RootElement;
-                if (root.ValueKind == JsonValueKind.Array && root.GetArrayLength() > 0)
-                {
-                    var first = root[0];
-                    if (first.TryGetProperty("event_properties", out JsonElement eventProps))
-                    {
-                        if (eventProps.TryGetProperty("avatarIdsEncountered", out JsonElement avatarArray) && avatarArray.ValueKind == JsonValueKind.Array)
-                        {
-                            foreach (var item in avatarArray.EnumerateArray())
-                            {
-                                if (item.ValueKind == JsonValueKind.String)
-                                {
-                                    avatarIds.Add(item.GetString()!);
-                                }
-                            }
-
-                            AvatarManager.CacheAvatars(avatarIds);
-                        }
-                    }
-                }
-            }
-
-            // Do something with the extracted avatar IDs; for now log the count and a sample
-            if (avatarIds.Count > 0)
-            {
-                ServiceRegistryInstance.GetAvatarManager().CompactDatabase();
-            }
-
-        }
-        catch
-        {
-            //logger.Error(ex, $"Failed to read or parse Amplitude cache file '{filePath}'.");
-            return;
-        }
-    }
-
-    public static async Task WatchAmpCache(string path, ServiceRegistry serviceRegistryInstance)
-    {
-        Console.OutputEncoding = Encoding.UTF8;
-
-        logger.Info($"Tailgrab Version: {BuildInfo.GetInformationalVersion()}");
-
-        AmpWatcher.Path = Path.GetDirectoryName(path)!;
-        AmpWatcher.Filter = Path.GetFileName("amplitude.cache");
-        AmpWatcher.NotifyFilter = NotifyFilters.LastWrite;
-
-        AmpWatcher.Changed += async (source, e) =>
-        {
-            await ProcessAmplitudeCache(e.FullPath, serviceRegistryInstance);
-        };
-
-        AmpWatcher.EnableRaisingEvents = true;
-
-        // Keep the application running to monitor changes
-        await Task.Delay(Timeout.Infinite);
-    }
-
-    private static void UpgradeApplication(ServiceRegistry serviceRegistry)
-    {       
-        // Execute registry migrations
-        ExecuteRegistryMigrations(serviceRegistry);
-
-        // Create missing registry items with default values
-        InitializeMissingRegistryItems();
-    }
-
-    /// <summary>
-    /// Configures and executes registry migrations to bring the registry schema up to the current application version.
-    /// </summary>
-    private static void ExecuteRegistryMigrations(ServiceRegistry serviceRegistry)
-    {
-        var migrationManager = new Tailgrab.Common.RegistryMigrationManager();
-        string currentAppVersion = BuildInfo.GetInformationalVersion().Split('+')[0].TrimStart('v');
-
-        logger.Info($"Configuring registry migrations for application version {currentAppVersion}");
-
-        // Register migrations in order from oldest to newest
-        // Example: migrationManager.RegisterMigration("1.0.0", "1.1.0", MigrateFrom_1_0_0_To_1_1_0);
-
-
-        // Migration from 1.1.0 to 1.1.3 - Add Ollama API settings
-        migrationManager.RegisterMigration("1.1.0", "1.1.3", () =>
-        {
-            logger.Info("Migrating registry from 1.1.0-2 to 1.1.3: Adding Ollama API settings");
-
-            try
-            {
-                // Move Registry Ollama API settings from secrets to plain text entries
-                var ollamaEndpoint = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_Ollama_API_Endpoint);
-                if (!string.IsNullOrEmpty(ollamaEndpoint))
-                {
-                    ConfigStore.DeleteSecret(Tailgrab.Common.CommonConst.Registry_Ollama_API_Endpoint);
-                    ConfigStore.PutStoredKeyString(Tailgrab.Common.CommonConst.Registry_Ollama_API_Endpoint, ollamaEndpoint);
-                    logger.Info("Migrated Ollama API Endpoint from secrets to registry");
-                }
-
-                // Move Ollama API Model from secrets to plain text entry
-                var ollamaModel = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_Ollama_API_Model);
-                if (!string.IsNullOrEmpty(ollamaModel))
-                {
-                    ConfigStore.DeleteSecret(Tailgrab.Common.CommonConst.Registry_Ollama_API_Model);
-                    ConfigStore.PutStoredKeyString(Tailgrab.Common.CommonConst.Registry_Ollama_API_Model, ollamaModel);
-                    logger.Info("Migrated Ollama API Model from secrets to registry");
-                }
-
-                // Move Ollama API Prompt from secrets to plain text entry
-                var ollamaPrompt = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_Ollama_API_Prompt);
-                if (!string.IsNullOrEmpty(ollamaPrompt))
-                {
-                    ConfigStore.DeleteSecret(Tailgrab.Common.CommonConst.Registry_Ollama_API_Prompt);
-                    ConfigStore.PutStoredKeyString(Tailgrab.Common.CommonConst.Registry_Ollama_API_Prompt, ollamaPrompt);
-                    logger.Info("Migrated Ollama API Prompt from secrets to registry");
-                }
-
-                // Move Ollama API Image Prompt from secrets to plain text entry
-                var ollamaImagePrompt = ConfigStore.LoadSecret(Tailgrab.Common.CommonConst.Registry_Ollama_API_Image_Prompt);
-                if (!string.IsNullOrEmpty(ollamaImagePrompt))
-                {
-                    ConfigStore.DeleteSecret(Tailgrab.Common.CommonConst.Registry_Ollama_API_Image_Prompt);
-                    ConfigStore.PutStoredKeyString(Tailgrab.Common.CommonConst.Registry_Ollama_API_Image_Prompt, ollamaImagePrompt);
-                    logger.Info("Migrated Ollama API Image Prompt from secrets to registry");
-                }
-
-                TailgrabDBContext dbContext = serviceRegistry.GetDBContext();
-                if (dbContext != null)
-                {
-                    // Migrate the ProfileEvaluation table to add the new PromptMd5Checksum column, which is used to link evaluations to specific prompts.
-                    try
-                    {
-                        dbContext.ExecuteSql("ALTER TABLE ProfileEvaluation RENAME TO ProfileEvaluation_OLD;");
-                        dbContext.ExecuteSql("CREATE TABLE IF NOT EXISTS ProfileEvaluation (MD5Checksum TEXT NOT NULL, ProfileText BLOB, Evaluation\tBLOB, LastDateTime TEXT NOT NULL, isIgnored INTEGER NOT NULL DEFAULT 0, PromptMd5Checksum TEXT, CONSTRAINT PK_ProfileEvaluation PRIMARY KEY(MD5Checksum))");
-                        dbContext.ExecuteSql("INSERT INTO ProfileEvaluation SELECT * FROM ProfileEvaluation WHERE 1=1");
-                        dbContext.ExecuteSql("DROP TABLE IF EXISTS ProfileEvaluation_OLD");
-                    }
-                    catch 
-                    { 
-                        logger.Warn("Failed to migrate ProfileEvaluation table during registry migration. This may cause issues with profile evaluations. Consider backing up your database, deleting it, and allowing Tailgrab to create a new one if you encounter problems with profile evaluations after this update.");
-                    }
-                }
-                
-            }
-            catch (Exception ex)
-            {
-                logger.Warn(ex, "Failed during registry migration from 1.1.0-2 to 1.1.3");
-            }
-        });
-
-        // To add a new migration for a future version:
-        // 1. Add a new RegisterMigration call with the appropriate version numbers
-        // 2. Implement the migration action to handle version-specific changes
-        // 3. The migration will automatically execute when users upgrade
-        // Example:
-        // migrationManager.RegisterMigration("1.1.3", "1.2.0", () =>
-        // {
-        //     logger.Info("Migrating registry from 1.1.3 to 1.2.0: Adding new feature settings");
-        //     // Perform version-specific registry changes here
-        //     // e.g., rename keys, remove obsolete keys, or transform data
-        // });
-
-        // Execute all pending migrations
-        bool success = migrationManager.ExecuteMigrations(currentAppVersion);
-
-        if (!success)
-        {
-            logger.Error("Registry migration failed. Application may not function correctly.");
-        }
-    }
-
-    /// <summary>
-    /// Initialize missing registry items with their default values.
-    /// This ensures all required configuration keys exist without overwriting existing values.
-    /// </summary>
-    private static void InitializeMissingRegistryItems()
-    {
-        try
-        {
-            using var key = Registry.CurrentUser.CreateSubKey(Tailgrab.Common.CommonConst.ConfigRegistryPath);
-            if (key == null)
-            {
-                logger.Warn("Failed to create or open registry key for configuration.");
-                return;
-            }
-
-            // Helper function to set value only if it doesn't exist
-            void SetDefaultIfMissing(string name, string defaultValue)
-            {
-                if (key.GetValue(name) == null && !string.IsNullOrEmpty(defaultValue))
-                {
-                    key.SetValue(name, defaultValue, RegistryValueKind.String);
-                    logger.Info($"Initialized missing registry item: {name}");
-                }
-            }
-
-            // Initialize Ollama API registry keys with defaults
-            SetDefaultIfMissing(Tailgrab.Common.CommonConst.Registry_Ollama_API_Endpoint,
-                Tailgrab.Common.CommonConst.Default_Ollama_API_Endpoint);
-            SetDefaultIfMissing(Tailgrab.Common.CommonConst.Registry_Ollama_API_Model,
-                Tailgrab.Common.CommonConst.Default_Ollama_API_Model);
-            SetDefaultIfMissing(Tailgrab.Common.CommonConst.Registry_Ollama_API_Prompt,
-                Tailgrab.Common.CommonConst.Default_Ollama_API_Prompt);
-            SetDefaultIfMissing(Tailgrab.Common.CommonConst.Registry_Ollama_API_Image_Prompt,
-                Tailgrab.Common.CommonConst.Default_Ollama_API_Image_Prompt);
-
-            // Note: The following keys don't have default values and should be set by the user:
-            // - Registry_VRChat_Web_UserName
-            // - Registry_VRChat_Web_Password
-            // - Registry_VRChat_Web_2FactorKey
-            // - Registry_Ollama_API_Key
-            // - Registry_Alert_Avatar
-            // - Registry_Alert_Group
-            // - Registry_Alert_Profile
-            // - Registry_Group_Checksum
-            // - Registry_Group_Gist
-            // - Registry_Avatar_Checksum
-            // - Registry_Avatar_Gist
-
-            logger.Info("Registry initialization completed.");
-        }
-        catch (Exception ex)
-        {
-            logger.Warn(ex, "Failed to initialize missing registry items");
-        }
-    }
-
-    private static string GetLogsPath(string[] args, string? explicitPath)
-    {
-        string filePath = explicitPath ?? (VRChatAppDataPath + Path.DirectorySeparatorChar);
-        if (explicitPath == null)
-        {
-            if (args.Length == 0)
-            {
-                logger.Warn($"No path argument provided, defaulting to VRChat log directory: {filePath}");
-            }
-            else
-            {
-                logger.Warn($"No '-l' argument provided; ignoring other command line arguments and defaulting to VRChat log directory: {filePath}");
-            }
-        }
-        else
-        {
-            logger.Info($"Using explicit path from -l: '{filePath}'");
-        }
-
-        return filePath;
-    }
-
-    private static void DeleteTailgrabRegistrySettings()
-    {
-        try
-        {
-            // Remove the Tailgrab subtree from HKCU\Software\DeviousFox
-            using var baseKey = Registry.CurrentUser.OpenSubKey("Software\\DeviousFox", writable: true);
-            if (baseKey != null)
-            {
-                try
-                {
-                    baseKey.DeleteSubKeyTree("Tailgrab", false);
-                    logger.Info("Application registry settings cleared from HKCU\\Software\\DeviousFox\\Tailgrab");
-                }
-                catch (Exception ex)
-                {
-                    logger.Warn(ex, "Failed to delete Tailgrab registry subtree");
-                }
-            }
-            else
-            {
-                logger.Info("No registry settings found to clear.");
-            }
-        }
-        catch (Exception ex)
-        {
-            logger.Warn(ex, "Failed while attempting to clear registry settings");
-        }
-    }
 
     /// <summary>
     /// Create a timestamped backup of the SQLite database.
@@ -701,23 +201,23 @@ public class FileTailer
 
             if (!response.IsSuccessStatusCode)
             {
-                logger.Debug($"Failed to check for updates. Status: {response.StatusCode}");
+                logger.Info($"Failed to check for updates. Status: {response.StatusCode}");
                 return;
             }
 
-            var json = await response.Content.ReadAsStringAsync();
-            using var doc = JsonDocument.Parse(json);
+            string json = await response.Content.ReadAsStringAsync();
+            using JsonDocument doc = JsonDocument.Parse(json);
             var root = doc.RootElement;
 
             if (!root.TryGetProperty("tag_name", out var tagNameElement))
             {
-                logger.Debug("No tag_name found in GitHub release response");
+                logger.Info("No tag_name found in GitHub release response");
                 return;
             }
 
             if (!root.TryGetProperty("name", out var releaseNameElement))
             {
-                logger.Debug("No tag_name found in GitHub release response");
+                logger.Info("No name found in GitHub release response");
                 return;
             }
 
@@ -726,8 +226,8 @@ public class FileTailer
             string currentVersion = BuildInfo.GetInformationalVersion();
 
             // Remove 'v' prefix if present for comparison
-            latestVersion = latestVersion.TrimStart('v');
-            currentVersion = currentVersion.TrimStart('v');
+            latestVersion = latestVersion.ToLower().TrimStart('v');
+            currentVersion = currentVersion.ToLower().TrimStart('v');
 
             // Parse and compare versions
             if (Version.TryParse(latestVersion, out var latest) && 
@@ -746,12 +246,12 @@ public class FileTailer
                 }
                 else
                 {
-                    logger.Debug($"Already on latest version: {currentVersion}");
+                    logger.Info($"Already on latest version: {currentVersion}");
                 }
             }
             else
             {
-                logger.Debug($"Failed to parse versions. Latest: {latestVersion}, Current: {currentVersion}");
+                logger.Info($"Failed to parse versions. Latest: {latestVersion}, Current: {currentVersion}");
             }
         }
         catch (Exception ex)
@@ -760,10 +260,10 @@ public class FileTailer
         }
     }
 
-    private static void BuildAppWindow(ServiceRegistry serviceRegistryInstance)
+    private static CultureInfo SetUserCulture()
     {
         var defaultCulture = CultureInfo.GetCultureInfo("en-US");
-        var userCulture = CultureInfo.CurrentCulture;
+        CultureInfo userCulture = CultureInfo.CurrentCulture;
 
         logger.Info($"User's current culture: {userCulture.Name}, Defaulting to: {defaultCulture.Name}");
 
@@ -777,6 +277,13 @@ public class FileTailer
 
         CultureInfo.DefaultThreadCurrentCulture = userCulture;
         CultureInfo.DefaultThreadCurrentUICulture = userCulture;
+
+        return userCulture;
+    }
+
+    private static void BuildAppWindow(ServiceRegistry serviceRegistryInstance)
+    {
+        CultureInfo userCulture = SetUserCulture();
 
         // Start WPF application and show the TailgrabPanel on this STA thread
         var app = new System.Windows.Application();
@@ -1287,8 +794,6 @@ public class FileTailer
     }
 }
 
-
-
 public class BuildInfo
 {
     public static string GetAssemblyVersion()
@@ -1304,46 +809,4 @@ public class BuildInfo
                        ?.InformationalVersion
                        ?? GetAssemblyVersion();
     }
-}
-
-public class FileWatchItem
-{
-    public long StartingSize { get; set; }
-    public int ElapsedTime { get; set; }
-    public FileWatchItem(long startingSize)
-    {
-        StartingSize = startingSize;
-        ElapsedTime = 0;
-    }
-}
-
-public class FileTailStatus
-{
-    public string FilePath { get; }
-    public int LinesProcessed { get; private set; }
-    public DateTime? LastLineProcessedTime { get; private set; }
-    public DateTime StartTime { get; }
-    public CancellationTokenSource CancellationSource { get; }
-
-    public FileTailStatus(string filePath)
-    {
-        FilePath = filePath;
-        LinesProcessed = 0;
-        LastLineProcessedTime = null;
-        StartTime = DateTime.Now;
-        CancellationSource = new CancellationTokenSource();
-    }
-
-    public void IncrementLinesProcessed()
-    {
-        LinesProcessed++;
-        LastLineProcessedTime = DateTime.Now;
-    }
-
-    public void RequestCancellation()
-    {
-        CancellationSource.Cancel();
-    }
-
-    public bool IsCancellationRequested => CancellationSource.Token.IsCancellationRequested;
 }

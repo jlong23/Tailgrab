@@ -191,16 +191,58 @@ Title="Tailgrab Player Panel"
                     </Button>
                 </ToolBar>
                 <ToolBar>
-                    <Button ToolTip="Mute" Click="ToolBarClick_Mute" Style="{StaticResource DarkThemeButton}">
+                    <Button Content="Ch01 Out:" FontWeight="Bold" Style="{StaticResource DarkThemeButton}" Margin="12,0,0,0"/>
+                    <ComboBox ItemsSource="{Binding OutputDevices}"
+                        SelectedItem="{Binding Channel01SelectdDevice}"
+                        Width="180" Style="{StaticResource DarkThemeComboBox}" Margin="4,0,0,0"/>
+                    <Slider x:Name="VolumeSlider1"
+                        Minimum="0" Maximum="1"
+                        Value="{Binding Channel01Volume}"
+                        Width="100"
+                        IsSnapToTickEnabled="True"
+                        TickFrequency="0.01"
+                        SmallChange="0.01"
+                        VerticalAlignment="Center"
+                        ValueChanged="Channel01VolumeSlider_ValueChanged"/>
+                    <Button ToolTip="Mute" Click="ToolBarClick_Channel01Mute" Style="{StaticResource DarkThemeButton}">
                         <StackPanel Orientation="Horizontal">
-                            <Ellipse Width="16" Height="16" Fill="{Binding AudioEnabledIndicatorColor}" Stroke="Black" StrokeThickness="1"/>
-                            <TextBlock Name="MuteAudioText" Text="Mute Audio" VerticalAlignment="Center" Margin="4,0,0,0" FontWeight="Bold" Style="{StaticResource DarkThemeTextBlock}"/>
+                            <Ellipse Width="16" Height="16" Fill="{Binding Channel01IndicatorColor}" Stroke="Black" StrokeThickness="1"/>
+                            <TextBlock Name="Channel01_MuteAudioText" Text="Unmuted" VerticalAlignment="Center" Margin="4,0,0,0" FontWeight="Bold" Style="{StaticResource DarkThemeTextBlock}"/>
                         </StackPanel>
                     </Button>
-                    <Button Content="Audio Output:" FontWeight="Bold" Style="{StaticResource DarkThemeButton}" Margin="12,0,0,0"/>
+                </ToolBar>
+                <ToolBar>
+                    <Button Content="Ch02 Out:" FontWeight="Bold" Style="{StaticResource DarkThemeButton}" Margin="12,0,0,0"/>
                     <ComboBox ItemsSource="{Binding OutputDevices}"
-                        SelectedItem="{Binding SelectedOutputDevice}"
+                        SelectedItem="{Binding Channel02SelectdDevice}"
                         Width="180" Style="{StaticResource DarkThemeComboBox}" Margin="4,0,0,0"/>
+                    <Slider x:Name="Channel02VolumeSlider"
+                        Minimum="0" Maximum="1"
+                        Value="{Binding Channel02Volume}"
+                        Width="100"
+                        IsSnapToTickEnabled="True"
+                        TickFrequency="0.01"
+                        SmallChange="0.01"
+                        VerticalAlignment="Center"
+                        ValueChanged="Channel02VolumeSlider_ValueChanged"/>
+                    <Button ToolTip="Mute" Click="ToolBarClick_Channel02Mute" Style="{StaticResource DarkThemeButton}">
+                        <StackPanel Orientation="Horizontal">
+                            <Ellipse Width="16" Height="16" Fill="{Binding Channel02IndicatorColor}" Stroke="Black" StrokeThickness="1"/>
+                            <TextBlock Name="Channel02_MuteAudioText" Text="Muted" VerticalAlignment="Center" Margin="4,0,0,0" FontWeight="Bold" Style="{StaticResource DarkThemeTextBlock}"/>
+                        </StackPanel>
+                    </Button>
+                </ToolBar>
+                <ToolBar>
+                    <Button Content="Voice Clone:" FontWeight="Bold" Style="{StaticResource DarkThemeButton}" Margin="12,0,0,0"/>
+                    <ComboBox ItemsSource="{Binding VoiceCloneProfiles}"
+                        SelectedItem="{Binding VoiceCloneProfile}"
+                        Width="180" Style="{StaticResource DarkThemeComboBox}" Margin="4,0,0,0"/>
+                    <Button ToolTip="Enable TTS" Click="ToolBarClick_TTSEnablement" Style="{StaticResource DarkThemeButton}">
+                        <StackPanel Orientation="Horizontal">
+                            <Ellipse Width="16" Height="16" Fill="{Binding TTSEnabledIndicatorColor}" Stroke="Black" StrokeThickness="1"/>
+                            <TextBlock Name="TTSEnableText" Text="Enabled" VerticalAlignment="Center" Margin="4,0,0,0" FontWeight="Bold" Style="{StaticResource DarkThemeTextBlock}"/>
+                        </StackPanel>
+                    </Button>
                 </ToolBar>
             </ToolBarTray>
         </Grid>

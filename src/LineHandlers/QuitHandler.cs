@@ -33,7 +33,7 @@ public class QuitHandler : AbstractLineHandler
             if (LogOutput)
             {
                 //string formattedTime = string.Format("{0:D2}:{1:D2}:{2:D2}", time.Hours, time.Minutes, time.Seconds);
-                //logger.Info($"{COLOR_PREFIX}Application Stop :  {totalTime} seconds{COLOR_RESET.GetAnsiEscape()}");
+                //_Logger.Info($"{COLOR_PREFIX}Application Stop :  {totalTime} seconds{COLOR_RESET.GetAnsiEscape()}");
                 logger.Info($"{COLOR_PREFIX}Application Stop :  {time} {COLOR_RESET.GetAnsiEscape()}");
             }
 

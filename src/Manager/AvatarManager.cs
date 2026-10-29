@@ -1,8 +1,10 @@
 ﻿using ConcurrentPriorityQueue.Core;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microsoft.Win32;
 using NLog;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
@@ -26,14 +28,21 @@ namespace Tailgrab.Manager
 {
     public class AvatarManager
     {
-        protected static readonly Logger logger = LogManager.GetCurrentClassLogger();
+        protected static readonly Logger _Logger = LogManager.GetCurrentClassLogger();
+        private Task? _AmplitudeWatch;
         private readonly HttpClient _httpClient;
-        private static ServiceRegistry? serviceRegistry;
+        private static ServiceRegistry? _serviceRegistry;
         private static ConcurrentPriorityQueue<IHavePriority<int>, int> avatarEvaluationQueue = new();
-        private static ConcurrentPriorityQueue<IHavePriority<int>, int> priorityQueue = new();
+        private static ConcurrentPriorityQueue<IHavePriority<int>, int> _AvatarCheckQueue = new();
         private static Dictionary<String, DateTime> recentlyProcessedAvatars = [];
-
         private static Dictionary<string, Avatar> avatarUnpackCache = new();
+
+        /// <summary>
+        /// The path to the VRChat AppData directory.
+        /// </summary>
+        public static readonly string VRChatAmplitudePath = Path.Combine(CommonConst.UserProfile, @"AppData", "Local", "Temp", "VRChat", "VRChat");
+
+        static FileSystemWatcher AmpWatcher = new FileSystemWatcher();
 
         [SetsRequiredMembers]
         public AvatarManager(ServiceRegistry registry)
@@ -42,23 +51,52 @@ namespace Tailgrab.Manager
             {
                 throw new ArgumentNullException(nameof(registry), "ServiceRegistry parameter cannot be null.");
             }
-            serviceRegistry = registry;
+            _serviceRegistry = registry;
             _httpClient = new HttpClient();
-            _ = Task.Run(() => AvatarUnpackQueueTask(avatarEvaluationQueue, serviceRegistry));
-            _ = Task.Run(() => AvatarCheckTask(priorityQueue, serviceRegistry));
+            _ = Task.Run(() => AvatarUnpackQueueTask(avatarEvaluationQueue, _serviceRegistry));
+            _ = Task.Run(() => AvatarCheckTask(_AvatarCheckQueue, _serviceRegistry));
+
+            if (EnableAvatarModerationCaching)
+            {
+                _Logger.Info("Syncing avatar moderations...");
+                SyncAvatarModerations();
+            }
+
+            if (EnableAmplitudeCacheWatcher)
+            {
+                // Start the Amplitude Cache watcher task on a background thread
+                string ampPath = VRChatAmplitudePath + Path.DirectorySeparatorChar;
+                _Logger.Info($"Starting Amplitude Cache watcher for: '{ampPath}'");
+                _AmplitudeWatch = Task.Run(() => WatchAmpCache(ampPath));
+            }
         }
+
+        #region Configuration
+        public bool EnableAmplitudeCacheWatcher
+        {
+            get => ConfigStore.GetStoredKeyBool(CommonConst.Registry_Discovered_Avatar_Caching, false);
+            set => ConfigStore.PutStoredKeyBool(CommonConst.Registry_Discovered_Avatar_Caching, value);
+        }
+
+        public bool EnableAvatarModerationCaching
+        {
+            get => ConfigStore.GetStoredKeyBool(CommonConst.Registry_Moderated_Avatar_Caching, true);
+            set => ConfigStore.PutStoredKeyBool(CommonConst.Registry_Moderated_Avatar_Caching, value);
+        }
+        #endregion
+
 
         #region Avatar Management
         public void ProcessAvatarUnpack(string authorName, string avatarName)
         {
             string cacheKey = $"{avatarName} by {authorName}";
-            logger.Debug($"Enqueue Avatar Unpack Lookup : {cacheKey}");
+            _Logger.Debug($"Enqueue Avatar Unpack Lookup : {cacheKey}");
 
             try
             {
                 if (avatarUnpackCache.ContainsKey(cacheKey))
                 {
-                    logger.Debug($"Avatar Unpack Cache Hit : {cacheKey}");
+                    _Logger.Debug($"Avatar Unpack Cache Hit : {cacheKey}");
                     Avatar avatar = avatarUnpackCache[cacheKey];
                     UpdateMatchingAvatars(avatar);
                     return;
@@ -72,7 +110,7 @@ namespace Tailgrab.Manager
             }
             catch (Exception ex)
             {
-                logger.Error(ex, $"Error enqueueing avatar unpack process for avatar: {avatarName} by author: {authorName}");
+                _Logger.Error(ex, $"Error enqueueing avatar unpack process for avatar: {avatarName} by author: {authorName}");
 
             }
         }
@@ -83,7 +121,7 @@ namespace Tailgrab.Manager
 
         public static async Task AvatarUnpackQueueTask(ConcurrentPriorityQueue<IHavePriority<int>, int> priorityQueue, ServiceRegistry serviceRegistry)
         {
-            AvatarManager.logger.Info($"Avatar Unpack Queue Running");
+            AvatarManager._Logger.Info($"Avatar Unpack Queue Running");
             while (true)
             {
                 // Process items from the priority queue
@@ -116,9 +154,9 @@ namespace Tailgrab.Manager
 
         public static async Task<Avatar?> AvatarUnpackHandler(string authorName, string avatarName)
         {
-            if (serviceRegistry == null)
+            if (_serviceRegistry == null)
             {
-                logger.Warn("ServiceRegistry is not initialized.");
+                _Logger.Warn("ServiceRegistry is not initialized.");
                 return null;
             }
 
@@ -135,12 +173,12 @@ namespace Tailgrab.Manager
             else
             {
                 // Otherwise, search for the authorId using the VRChat API
-                authorId = await serviceRegistry.GetVRChatAPIClient().SearchUserByDisplayName(authorName);
+                authorId = await _serviceRegistry.GetVRChatAPIClient().SearchUserByDisplayName(authorName);
             }
 
             if (string.IsNullOrEmpty(authorId))
             {
-                logger.Warn($"Could not find author ID for author name: {authorName}");
+                _Logger.Warn($"Could not find author ID for author name: {authorName}");
                 return null;
             }
 
@@ -154,7 +192,7 @@ namespace Tailgrab.Manager
             if (avatar != null)
             {
                 avatarUnpackCache[cacheKey] = avatar;
-                logger.Info($"Unpack avatar: {avatar.Name} by author: {avatar.AuthorName} (ID: {avatar.Id})");
+                _Logger.Info($"Unpack avatar: {avatar.Name} by author: {avatar.AuthorName} (ID: {avatar.Id})");
                 UpdateMatchingAvatars(avatar);
             }
 
@@ -174,7 +212,7 @@ namespace Tailgrab.Manager
                 if (player.AvatarId != avatar.Id)
                 {
                     player.AvatarId = avatar.Id;
-                    logger.Info($"Updated Player {player.DisplayName} to use Avatar ID: {avatar.Id} for Avatar Name: {avatar.Name}");
+                    _Logger.Info($"Updated Player {player.DisplayName} to use Avatar ID: {avatar.Id} for Avatar Name: {avatar.Name}");
                     player.AddEvent(new PlayerEvent(PlayerEvent.EventType.AvatarLookup, $"Updated to use Avatar ID: {avatar.Id} for Avatar Name: {avatar.Name}"));
                     PlayerManager.OnPlayerChanged(PlayerChangedEventArgs.ChangeType.Updated, player);
                 }
@@ -183,13 +221,13 @@ namespace Tailgrab.Manager
 
         public static async Task<Avatar?> FindModeratedAvatarByAuthorIdAndName(string authorId, string name)
         {
-            if (serviceRegistry == null)
+            if (_serviceRegistry == null)
             {
-                logger.Warn("ServiceRegistry is not initialized.");
+                _Logger.Warn("ServiceRegistry is not initialized.");
                 return null;
             }
 
-            TailgrabDBContext dBContext = serviceRegistry.GetDBContext();
+            TailgrabDBContext dBContext = _serviceRegistry.GetDBContext();
             List<AvatarInfo> matchingInfos = dBContext.AvatarInfos.Where(a => a.UserId == authorId && a.AvatarName == name)
                 .OrderByDescending(a => a.AlertType)
                 .ToList();
@@ -204,13 +242,13 @@ namespace Tailgrab.Manager
 
         public static async Task<Avatar?> FindAvatarByAuthorIdAndName(string authorId, string name)
         {
-            if (serviceRegistry == null)
+            if (_serviceRegistry == null)
             {
-                logger.Warn("ServiceRegistry is not initialized.");
+                _Logger.Warn("ServiceRegistry is not initialized.");
                 return null;
             }
 
-            List<AvatarItem> avatarItems = await serviceRegistry.GetVRCDBClient().GetAvatarsByAuthorAsync(authorId);
+            List<AvatarItem> avatarItems = await _serviceRegistry.GetVRCDBClient().GetAvatarsByAuthorAsync(authorId);
             foreach (AvatarItem avatarItem in avatarItems)
             {
                 if (avatarItem.Name?.Equals(name, StringComparison.Ordinal) == true && avatarItem.Id != null)
@@ -225,13 +263,13 @@ namespace Tailgrab.Manager
 
         public static async Task<Avatar?> FindAvatarByAvatarId(string avatarId)
         {
-            if (serviceRegistry == null)
+            if (_serviceRegistry == null)
             {
-                logger.Warn("ServiceRegistry is not initialized.");
+                _Logger.Warn("ServiceRegistry is not initialized.");
                 return null;
             }
 
-            Result<Avatar?> result = serviceRegistry.GetVRChatAPIClient().GetAvatarById(avatarId);
+            Result<Avatar?> result = _serviceRegistry.GetVRChatAPIClient().GetAvatarById(avatarId);
             if (result.Value != null)
             {
                 return result.Value;
@@ -241,9 +279,9 @@ namespace Tailgrab.Manager
 
         public void SetAvatarForPlayer(string displayName, string avatarName)
         {
-            if (serviceRegistry == null)
+            if (_serviceRegistry == null)
             {
-                logger.Warn("ServiceRegistry is not initialized.");
+                _Logger.Warn("ServiceRegistry is not initialized.");
                 return;
             }
 
@@ -255,12 +293,12 @@ namespace Tailgrab.Manager
                 AvatarInfo? watchedAvatar = CheckAvatarByName(avatarName);
                 if (watchedAvatar != null)
                 {
-                    logger.Info($"** MODERATED AVATAR DETECTED for Player {displayName}: {avatarName} with AlertType {watchedAvatar.AlertType}");
+                    _Logger.Info($"** MODERATED AVATAR DETECTED for Player {displayName}: {avatarName} with AlertType {watchedAvatar.AlertType}");
                     if (watchedAvatar.AlertType > AlertTypeEnum.None)
                     {
                         PlayerManager.AddPlayerEventByDisplayName(displayName, PlayerEvent.EventType.AvatarWatch, $"User has used a watched Avatar : {avatarName} alertType: {watchedAvatar.AlertType}");
                         player.AddAlertMessage(AlertClassEnum.Avatar, watchedAvatar.AlertType, $"{avatarName}");
-                        OverlayManager overlay = serviceRegistry.GetXSOverlay();
+                        OverlayManager overlay = _serviceRegistry.GetXSOverlay();
 
                         Image? avatarAlert = null;
 
@@ -298,23 +336,23 @@ namespace Tailgrab.Manager
         #region Avatar Moderation Management
         public void SyncAvatarModerations()
         {
-            if (serviceRegistry == null)
+            if (_serviceRegistry == null)
             {
-                logger.Warn("ServiceRegistry is not initialized.");
+                _Logger.Warn("ServiceRegistry is not initialized.");
                 return;
             }
 
             try
             {
-                TailgrabDBContext dBContext = serviceRegistry.GetDBContext();
-                Tailgrab.Clients.VRChat.VRChatClient vrcClient = serviceRegistry.GetVRChatAPIClient();
+                TailgrabDBContext dBContext = _serviceRegistry.GetDBContext();
+                Tailgrab.Clients.VRChat.VRChatClient vrcClient = _serviceRegistry.GetVRChatAPIClient();
                 if (dBContext != null && vrcClient != null)
                 {
                     int lineNumber = 0;
                     List<VRChat.API.Model.AvatarModeration> moderations = vrcClient.GetAvatarModerations();
                     foreach (VRChat.API.Model.AvatarModeration mod in moderations)
                     {
-                        logger.Debug($"Processing Avatar Moderation for Avatar ID {mod.TargetAvatarId} with Status {mod.AvatarModerationType} and CreatedAt {mod.Created}");
+                        _Logger.Debug($"Processing Avatar Moderation for Avatar ID {mod.TargetAvatarId} with Status {mod.AvatarModerationType} and CreatedAt {mod.Created}");
                         if (mod != null && mod.AvatarModerationType.Equals(AvatarModerationType.Block))
                         {
 
@@ -331,78 +369,78 @@ namespace Tailgrab.Manager
             }
             catch (Exception ex)
             {
-                logger.Error(ex, "Failed to clear the database");
+                _Logger.Error(ex, "Failed to clear the database");
             }
         }
 
         public static int GetQueueCount()
         {
-            return priorityQueue.Count;
+            return _AvatarCheckQueue.Count;
         }
 
         public void AddAvatar(AvatarInfo avatar)
         {
-            if (serviceRegistry == null)
+            if (_serviceRegistry == null)
             {
-                logger.Warn("ServiceRegistry is not initialized.");
+                _Logger.Warn("ServiceRegistry is not initialized.");
                 return;
             }
 
             try
             {
-                serviceRegistry.GetDBContext().AvatarInfos.Add(avatar);
-                serviceRegistry.GetDBContext().SaveChanges();
+                _serviceRegistry.GetDBContext().AvatarInfos.Add(avatar);
+                _serviceRegistry.GetDBContext().SaveChanges();
             }
             catch (Exception ex)
             {
-                logger.Error($"Error creating avatar: {ex.Message}");
+                _Logger.Error($"Error creating avatar: {ex.Message}");
             }
         }
 
         public static AvatarInfo? GetAvatarById(string avatarId)
         {
-            if (serviceRegistry == null)
+            if (_serviceRegistry == null)
             {
-                logger.Warn("ServiceRegistry is not initialized.");
+                _Logger.Warn("ServiceRegistry is not initialized.");
                 return null;
             }
 
-            return serviceRegistry.GetDBContext().AvatarInfos.Find(avatarId);
+            return _serviceRegistry.GetDBContext().AvatarInfos.Find(avatarId);
         }
 
         public void UpdateAvatar(AvatarInfo avatar)
         {
-            if (serviceRegistry == null)
+            if (_serviceRegistry == null)
             {
-                logger.Warn("ServiceRegistry is not initialized.");
+                _Logger.Warn("ServiceRegistry is not initialized.");
                 return;
             }
 
             try
             {
                 avatar.UpdatedAt = DateTime.UtcNow;
-                serviceRegistry.GetDBContext().AvatarInfos.Update(avatar);
-                serviceRegistry.GetDBContext().SaveChanges();
+                _serviceRegistry.GetDBContext().AvatarInfos.Update(avatar);
+                _serviceRegistry.GetDBContext().SaveChanges();
             }
             catch (Exception ex)
             {
-                logger.Error($"Error updating avatar: {ex.Message}");
+                _Logger.Error($"Error updating avatar: {ex.Message}");
             }
         }
 
         public void DeleteAvatar(string avatarId)
         {
-            if (serviceRegistry == null)
+            if (_serviceRegistry == null)
             {
-                logger.Warn("ServiceRegistry is not initialized.");
+                _Logger.Warn("ServiceRegistry is not initialized.");
                 return;
             }
 
-            var avatar = serviceRegistry.GetDBContext().AvatarInfos.Find(avatarId);
+            var avatar = _serviceRegistry.GetDBContext().AvatarInfos.Find(avatarId);
             if (avatar != null)
             {
-                serviceRegistry.GetDBContext().AvatarInfos.Remove(avatar);
-                serviceRegistry.GetDBContext().SaveChanges();
+                _serviceRegistry.GetDBContext().AvatarInfos.Remove(avatar);
+                _serviceRegistry.GetDBContext().SaveChanges();
             }
         }
 
@@ -427,38 +465,38 @@ namespace Tailgrab.Manager
 
             var queuedItem = new QueuedAvatarProcess(5, avatarId);
 
-            priorityQueue.Enqueue(queuedItem);
+            _AvatarCheckQueue.Enqueue(queuedItem);
         }
 
         public static void EnqueueWatchAvatarForCheck(QueuedAvatarWatch watch)
         {
-            priorityQueue.Enqueue(watch);
+            _AvatarCheckQueue.Enqueue(watch);
         }
 
         public void EnqueueModeratedAvatarForCheck(QueuedModeratedAvatarWatch watch)
         {
-            priorityQueue.Enqueue(watch);
+            _AvatarCheckQueue.Enqueue(watch);
         }
 
 
         public void GetAvatarsFromUser(string userId, string avatarName)
         {
-            if (serviceRegistry == null)
+            if (_serviceRegistry == null)
             {
-                logger.Warn("ServiceRegistry is not initialized.");
+                _Logger.Warn("ServiceRegistry is not initialized.");
                 return;
             }
 
-            logger.Debug($"Fetching avatars for user {userId} to find avatar named {avatarName}");
+            _Logger.Debug($"Fetching avatars for user {userId} to find avatar named {avatarName}");
 
             try
             {
                 // Avatar already exists in the database and was updated within the last 12 hours
                 System.Threading.Thread.Sleep(500);
-                List<Avatar> avatarData = serviceRegistry.GetVRChatAPIClient().GetAvatarsByUserId(userId);
+                List<Avatar> avatarData = _serviceRegistry.GetVRChatAPIClient().GetAvatarsByUserId(userId);
                 foreach (var avatar in avatarData)
                 {
-                    logger.Debug(avatar.ToString());
+                    _Logger.Debug(avatar.ToString());
                     if (avatar.Name.Equals(avatarName, StringComparison.OrdinalIgnoreCase))
                     {
                         AvatarInfo? dbAvatarInfo = GetAvatarById(avatar.Id);
@@ -493,30 +531,30 @@ namespace Tailgrab.Manager
             }
             catch (Exception ex)
             {
-                logger.Error($"Error fetching avatar: {ex.Message}");
+                _Logger.Error($"Error fetching avatar: {ex.Message}");
             }
         }
 
         public void CompactDatabase()
         {
-            if (serviceRegistry == null)
+            if (_serviceRegistry == null)
             {
-                logger.Warn("ServiceRegistry is not initialized.");
+                _Logger.Warn("ServiceRegistry is not initialized.");
                 return;
             }
 
-            serviceRegistry.GetDBContext().Database.ExecuteSqlRaw("VACUUM;");
+            _serviceRegistry.GetDBContext().Database.ExecuteSqlRaw("VACUUM;");
         }
 
         public static AvatarInfo? CheckAvatarByName(string avatarName)
         {
-            if (serviceRegistry == null)
+            if (_serviceRegistry == null)
             {
-                logger.Warn("ServiceRegistry is not initialized.");
+                _Logger.Warn("ServiceRegistry is not initialized.");
                 return null;
             }
 
-            var bannedAvatars = serviceRegistry.GetDBContext().AvatarInfos
+            var bannedAvatars = _serviceRegistry.GetDBContext().AvatarInfos
                                          .Where(b => b.AvatarName != null && b.AvatarName.Equals(avatarName) && b.AlertType > 0)
                                          .OrderByDescending(b => b.AlertType)
                                          .ToList();
@@ -533,7 +571,7 @@ namespace Tailgrab.Manager
             return null;
         }
 
-        public static async Task AvatarCheckTask(ConcurrentPriorityQueue<IHavePriority<int>, int> priorityQueue, ServiceRegistry serviceRegistry)
+        public static async Task AvatarCheckTask(ConcurrentPriorityQueue<IHavePriority<int>, int> queue, ServiceRegistry serviceRegistry)
         {
             int processedCount = 0;
             OllamaClient.logger.Info($"Avatar Queue Running");
@@ -543,7 +581,7 @@ namespace Tailgrab.Manager
                 // Process items from the priority queue
                 while (true)
                 {
-                    var result = priorityQueue.Dequeue();
+                    var result = queue.Dequeue();
                     if (result.IsSuccess)
                     {
                         processedCount++;
@@ -562,7 +600,7 @@ namespace Tailgrab.Manager
 
                         if(processedCount % 50 == 0)
                         {
-                            logger.Info($"Processed {processedCount} avatars from the queue. Throttling for 10 seconds to avoid overwhelming the API.");
+                            _Logger.Info($"Processed {processedCount} avatars from the queue. Throttling for 10 seconds to avoid overwhelming the API.");
                             await Task.Delay(10000); // Throttle processing to avoid overwhelming the API
                         }
                     }
@@ -611,16 +649,16 @@ namespace Tailgrab.Manager
             }
             catch (Exception ex)
             {
-                logger.Error(ex, $"Error fetching user profile for userId: {avatarId}");
+                _Logger.Error(ex, $"Error fetching user profile for userId: {avatarId}");
             }
         }
 
 
         private static async Task UpdateModeratedAvatarRecord(ServiceRegistry _serviceRegistry, TailgrabDBContext dbContext, QueuedModeratedAvatarWatch watch)
         {
-            if (serviceRegistry == null)
+            if (AvatarManager._serviceRegistry == null)
             {
-                logger.Warn("ServiceRegistry is not initialized.");
+                _Logger.Warn("ServiceRegistry is not initialized.");
                 return;
             }
 
@@ -635,8 +673,8 @@ namespace Tailgrab.Manager
 
                     if (avatarInfo == null)
                     {
-                        logger.Debug($"Line {watch.LineNumber}: Avatar ID '{watch.AvatarId}' not found in database/vrc, skipping.");
-                        await serviceRegistry.GetVRChatAPIClient().DeleteAvatarGlobal(watch.AvatarId);
+                        _Logger.Debug($"Line {watch.LineNumber}: Avatar ID '{watch.AvatarId}' not found in database/vrc, skipping.");
+                        await AvatarManager._serviceRegistry.GetVRChatAPIClient().DeleteAvatarGlobal(watch.AvatarId);
                     }
                     else if (avatarInfo.AlertType == AlertTypeEnum.None)
                     {
@@ -644,16 +682,18 @@ namespace Tailgrab.Manager
                         avatarInfo.UpdatedAt = DateTime.UtcNow;
                         dbContext.AvatarInfos.Update(avatarInfo);
                         dbContext.SaveChanges();
+
+                        _Logger.Info($"Line {watch.LineNumber}: Set Watch State for Avatar ID '{watch.AvatarId}' /  '{avatarInfo.AvatarName} by {avatarInfo.UserName}' to Nuisance due to moderation."); ")
                     }
                     else
                     {
-                        logger.Debug($"Line {watch.LineNumber}: Avatar ID '{watch.AvatarId}' already has Has an Alert, skipping.");
+                        _Logger.Debug($"Line {watch.LineNumber}: Avatar ID '{watch.AvatarId}' already has Has an Alert, skipping.");
                     }
                 }
             }
             catch (Exception ex)
             {
-                logger.Error(ex, $"Line {watch.LineNumber}: Error processing avatar ID '{watch.AvatarId}'");
+                _Logger.Error(ex, $"Line {watch.LineNumber}: Error processing avatar ID '{watch.AvatarId}'");
             }
 
             // Throttle processing to avoid overwhelming the API
@@ -680,7 +720,7 @@ namespace Tailgrab.Manager
 
                     if (avatarInfo == null)
                     {
-                        logger.Debug($"Line {watch.LineNumber}: Avatar ID '{watch.AvatarId}' not found in database/vrc, skipping.");
+                        _Logger.Debug($"Line {watch.LineNumber}: Avatar ID '{watch.AvatarId}' not found in database/vrc, skipping.");
                     }
                     else if (avatarInfo.AlertType == AlertTypeEnum.None)
                     {
@@ -699,18 +739,18 @@ namespace Tailgrab.Manager
                             await _serviceRegistry.GetVRChatAPIClient().DeleteAvatarGlobal(avatarInfo.AvatarId);
                         }
 
-                        logger.Debug($"Line {watch.LineNumber}: Set Watch State for Avatar ID '{watch.AvatarId}'");
+                        _Logger.Debug($"Line {watch.LineNumber}: Set Watch State for Avatar ID '{watch.AvatarId}'");
 
                     }
                     else
                     {
-                        logger.Debug($"Line {watch.LineNumber}: Avatar ID '{watch.AvatarId}' already has Has an Alert, skipping.");
+                        _Logger.Debug($"Line {watch.LineNumber}: Avatar ID '{watch.AvatarId}' already has Has an Alert, skipping.");
                     }
                 }
             }
             catch (Exception ex)
             {
-                logger.Error(ex, $"Line {watch.LineNumber}: Error processing avatar ID '{watch.AvatarId}'");
+                _Logger.Error(ex, $"Line {watch.LineNumber}: Error processing avatar ID '{watch.AvatarId}'");
             }
 
             // Throttle processing to avoid overwhelming the API
@@ -734,11 +774,11 @@ namespace Tailgrab.Manager
             {
                 dBContext.Add(avatarInfo);
                 dBContext.SaveChanges();
-                logger.Debug($"Adding fallback avatar record for {avatarInfo}");
+                _Logger.Debug($"Adding fallback avatar record for {avatarInfo}");
             }
             catch (Exception ex)
             {
-                logger.Error($"Error adding fallback avatar record for {AvatarId}: {ex.Message}");
+                _Logger.Error($"Error adding fallback avatar record for {AvatarId}: {ex.Message}");
             }
         }
 
@@ -752,7 +792,7 @@ namespace Tailgrab.Manager
 
             if (serviceRegistry == null)
             {
-                logger.Warn("ServiceRegistry is not initialized.");
+                _Logger.Warn("ServiceRegistry is not initialized.");
                 return result;
             }
 
@@ -778,7 +818,7 @@ namespace Tailgrab.Manager
                         }
                         catch (Exception ex)
                         {
-                            logger.Error($"Error adding avatar record for {AvatarId}: {ex.Message}");
+                            _Logger.Error($"Error adding avatar record for {AvatarId}: {ex.Message}");
                         }
                     }
                     else
@@ -800,7 +840,7 @@ namespace Tailgrab.Manager
                         }
                         catch (Exception ex)
                         {
-                            logger.Error($"Error updating avatar record for {AvatarId}: {ex.Message}");
+                            _Logger.Error($"Error updating avatar record for {AvatarId}: {ex.Message}");
                         }
                     }
                 }
@@ -809,11 +849,11 @@ namespace Tailgrab.Manager
                     if ( result.Exception != null && result.Exception is ApiException )
                     {
                         ApiException apiEx = (ApiException)result.Exception;
-                        logger.Warn($"API Exception: StatusCode={apiEx.ErrorCode}, Content={apiEx.ErrorContent}");
+                        _Logger.Warn($"API Exception: StatusCode={apiEx.ErrorCode}, Content={apiEx.ErrorContent}");
 
                         if( apiEx.ErrorCode == 404)
                         {
-                            logger.Warn($"Avatar with ID {AvatarId} not found in VRChat API (404 Not Found).");
+                            _Logger.Warn($"Avatar with ID {AvatarId} not found in VRChat API (404 Not Found).");
                             ResetAvatarRecordToNone(dBContext, AvatarId);
                             result.Value = null;
                             result.Exception = apiEx;
@@ -821,12 +861,12 @@ namespace Tailgrab.Manager
                         }
                     }
 
-                    logger.Warn($"Avatar with ID {AvatarId} not found in VRChat API.");
+                    _Logger.Warn($"Avatar with ID {AvatarId} not found in VRChat API.");
                 }
             }
             catch (Exception ex)
             {
-                logger.Error($"Error fetching avatar: {ex.Message}");
+                _Logger.Error($"Error fetching avatar: {ex.Message}");
             }
 
             return result;
@@ -853,45 +893,45 @@ namespace Tailgrab.Manager
                     info.UpdatedAt = DateTime.UtcNow;
                     dBContext.Update(info);
                     dBContext.SaveChanges();
-                    logger.Info($"Updated AvatarInfo for {AvatarId} to AlertType None due to 404 Not Found.");
+                    _Logger.Info($"Updated AvatarInfo for {AvatarId} to AlertType None due to 404 Not Found.");
 
-                    if( serviceRegistry != null)
-                        Task.Run(() => serviceRegistry.GetVRChatAPIClient().DeleteAvatarGlobal(AvatarId));
+                    if( _serviceRegistry != null)
+                        Task.Run(() => _serviceRegistry.GetVRChatAPIClient().DeleteAvatarGlobal(AvatarId));
 
                 }
                 catch (Exception ex)
                 {
-                    logger.Error($"Error updating AvatarInfo for {AvatarId}: {ex.Message}");
+                    _Logger.Error($"Error updating AvatarInfo for {AvatarId}: {ex.Message}");
                 }
             }
         }
 
         public async Task<bool> SwitchAvatar(string avatarId)
         {
-            if (serviceRegistry == null)
+            if (_serviceRegistry == null)
             {
-                logger.Warn("ServiceRegistry is not initialized.");
+                _Logger.Warn("ServiceRegistry is not initialized.");
                 return false;
             }
 
             try
             {
-                Tailgrab.Clients.VRChat.VRChatClient vrcClient = serviceRegistry.GetVRChatAPIClient();
+                Tailgrab.Clients.VRChat.VRChatClient vrcClient = _serviceRegistry.GetVRChatAPIClient();
                 bool avatarResult = await vrcClient.ChangeIntoAvatar(avatarId);
                 if (avatarResult)
                 {
-                    logger.Info($"Successfully switched avatar to {avatarId}");
+                    _Logger.Info($"Successfully switched avatar to {avatarId}");
                     return true;
                 }
                 else
                 {
-                    logger.Error($"Failed to switch avatar to {avatarId}");
+                    _Logger.Error($"Failed to switch avatar to {avatarId}");
                     return false;
                 }
             }
             catch (Exception ex)
             {
-                logger.Error(ex, $"Error switching avatar to {avatarId}");
+                _Logger.Error(ex, $"Error switching avatar to {avatarId}");
                 return false;
             }
         }
@@ -912,36 +952,36 @@ namespace Tailgrab.Manager
             if ( ConfigStore.GetStoredKeyBool(CommonConst.Registry_Github_Use_Automation, false) == true && !string.IsNullOrEmpty(gistId))
             {
                 gistUrl = await GithubClient.GetGistFileUrl(gistId, "Avatars.csv");
-                logger.Info($"Using GIST URL from GitHub Automation: {gistUrl}");
+                _Logger.Info($"Using GIST URL from GitHub Automation: {gistUrl}");
             } 
             else
             {
                 gistUrl = GetStoredUri();
-                logger.Info($"Using GIST URL from stored URI: {gistUrl}");
+                _Logger.Info($"Using GIST URL from stored URI: {gistUrl}");
             }
 
             if (string.IsNullOrWhiteSpace(gistUrl))
             {
-                logger.Error("Avatar GIST URL was empty, no update.");
+                _Logger.Error("Avatar GIST URL was empty, no update.");
                 return false;
             }
 
             try
             {
-                logger.Info($"Downloading GIST content from: {gistUrl}");
+                _Logger.Info($"Downloading GIST content from: {gistUrl}");
 
                 // Download the GIST content
                 string gistContent = await DownloadGistContentAsync(gistUrl);
 
                 if (string.IsNullOrEmpty(gistContent))
                 {
-                    logger.Warn("Downloaded GIST content is empty.");
+                    _Logger.Warn("Downloaded GIST content is empty.");
                     return false;
                 }
 
                 // Calculate MD5 checksum of the downloaded content
                 string currentChecksum = CalculateMD5Checksum(gistContent);
-                logger.Debug($"Calculated checksum: {currentChecksum}");
+                _Logger.Debug($"Calculated checksum: {currentChecksum}");
 
                 // Get the stored checksum from registry
                 string? storedChecksum = GetStoredChecksum();
@@ -949,31 +989,31 @@ namespace Tailgrab.Manager
                 // Compare checksums
                 if (storedChecksum != null && storedChecksum.Equals(currentChecksum, StringComparison.OrdinalIgnoreCase))
                 {
-                    logger.Info("GIST content has not changed (checksum match). Skipping processing.");
+                    _Logger.Info("GIST content has not changed (checksum match). Skipping processing.");
                     return true;
                 }
 
-                logger.Info("GIST content is new or has changed. Processing avatar IDs...");
+                _Logger.Info("GIST content is new or has changed. Processing avatar IDs...");
 
                 // Process the file line by line
                 int processedCount = await ProcessAvatarIdsAsync(gistContent);
 
-                logger.Info($"Processed {processedCount} avatar IDs from GIST.");
+                _Logger.Info($"Processed {processedCount} avatar IDs from GIST.");
 
                 // Save the new checksum to registry
                 SaveChecksum(currentChecksum);
-                logger.Info("Checksum saved to registry.");
+                _Logger.Info("Checksum saved to registry.");
 
                 return true;
             }
             catch (HttpRequestException ex)
             {
-                logger.Error(ex, $"Failed to download GIST content from {gistUrl}");
+                _Logger.Error(ex, $"Failed to download GIST content from {gistUrl}");
                 return false;
             }
             catch (Exception ex)
             {
-                logger.Error(ex, "An error occurred while processing GIST BOS list.");
+                _Logger.Error(ex, "An error occurred while processing GIST BOS list.");
                 return false;
             }
         }
@@ -1009,14 +1049,14 @@ namespace Tailgrab.Manager
                 {
                     if (key == null)
                     {
-                        logger.Debug("Registry key does not exist. No stored checksum found.");
+                        _Logger.Debug("Registry key does not exist. No stored checksum found.");
                         return null;
                     }
 
                     string? value = key.GetValue(Common.CommonConst.Registry_Avatar_Checksum) as string;
                     if (string.IsNullOrEmpty(value))
                     {
-                        logger.Debug("No checksum stored in registry.");
+                        _Logger.Debug("No checksum stored in registry.");
                         return null;
                     }
 
@@ -1025,7 +1065,7 @@ namespace Tailgrab.Manager
             }
             catch (Exception ex)
             {
-                logger.Error(ex, "Failed to read checksum from registry.");
+                _Logger.Error(ex, "Failed to read checksum from registry.");
                 return null;
             }
         }
@@ -1038,14 +1078,14 @@ namespace Tailgrab.Manager
                 {
                     if (key == null)
                     {
-                        logger.Debug("Registry key does not exist. No stored URI");
+                        _Logger.Debug("Registry key does not exist. No stored URI");
                         return null;
                     }
 
                     string? value = key.GetValue(Common.CommonConst.Registry_Avatar_Gist) as string;
                     if (string.IsNullOrEmpty(value))
                     {
-                        logger.Debug("No Avatar GIST Uri stored in registry.");
+                        _Logger.Debug("No Avatar GIST Uri stored in registry.");
                         return null;
                     }
 
@@ -1054,7 +1094,7 @@ namespace Tailgrab.Manager
             }
             catch (Exception ex)
             {
-                logger.Error(ex, "Failed to read Avatar GIST Uri from registry.");
+                _Logger.Error(ex, "Failed to read Avatar GIST Uri from registry.");
                 return null;
             }
         }
@@ -1070,7 +1110,7 @@ namespace Tailgrab.Manager
             }
             catch (Exception ex)
             {
-                logger.Error(ex, "Failed to save checksum to registry.");
+                _Logger.Error(ex, "Failed to save checksum to registry.");
             }
         }
 
@@ -1101,7 +1141,7 @@ namespace Tailgrab.Manager
                     }
                 }
 
-                logger.Info($"Total valid AvatarImportItems parsed: {processedCount}");
+                _Logger.Info($"Total valid AvatarImportItems parsed: {processedCount}");
 
             }
 
@@ -1116,8 +1156,8 @@ namespace Tailgrab.Manager
 
             if (columns.Length < 3)
             {
-                logger.Warn($"Line {lineNumber}: Expected at least 3 columns (AvatarId, AvatarName, AlertType), but got {columns.Length}. Skipping line.");
-                logger.Warn(line);
+                _Logger.Warn($"Line {lineNumber}: Expected at least 3 columns (AvatarId, AvatarName, AlertType), but got {columns.Length}. Skipping line.");
+                _Logger.Warn(line);
                 return null;
             }
 
@@ -1127,8 +1167,8 @@ namespace Tailgrab.Manager
 
             if (string.IsNullOrWhiteSpace(avatarId))
             {
-                logger.Warn($"Line {lineNumber}: Empty avatar ID, skipping.");
-                logger.Warn(line);
+                _Logger.Warn($"Line {lineNumber}: Empty avatar ID, skipping.");
+                _Logger.Warn(line);
                 return null;
             }
 
@@ -1136,7 +1176,7 @@ namespace Tailgrab.Manager
             AlertTypeEnum alertType = AlertTypeEnum.None;
             if (!Enum.TryParse<AlertTypeEnum>(avatarAlert, out alertType))
             {
-                logger.Warn($"Line {lineNumber}: Invalid AlertType '{avatarAlert}' for Avatar ID '{avatarId}', defaulting to None.");
+                _Logger.Warn($"Line {lineNumber}: Invalid AlertType '{avatarAlert}' for Avatar ID '{avatarId}', defaulting to None.");
             }
 
             return new AvatarImportItem(lineNumber, avatarId, avatarName, alertType);
@@ -1147,16 +1187,16 @@ namespace Tailgrab.Manager
         {
             try
             {
-                if(serviceRegistry == null)
+                if(_serviceRegistry == null)
                 {
-                    logger.Warn("ServiceRegistry is not initialized.");
+                    _Logger.Warn("ServiceRegistry is not initialized.");
                     return string.Empty;
                 }
 
-                var context = serviceRegistry.GetDBContext();
+                var context = _serviceRegistry.GetDBContext();
                 if (context == null)
                 {
-                    logger.Warn("Database context is not available.");
+                    _Logger.Warn("Database context is not available.");
                     return string.Empty;
                 }
 
@@ -1167,7 +1207,7 @@ namespace Tailgrab.Manager
 
                 if (avatarInfos.Count == 0)
                 {
-                    logger.Info("No avatars with alerts found to export.");
+                    _Logger.Info("No avatars with alerts found to export.");
                     return string.Empty;
                 }
 
@@ -1182,7 +1222,7 @@ namespace Tailgrab.Manager
             }
             catch (Exception ex)
             {
-                logger.Error(ex, "Failed to get avatar export data");
+                _Logger.Error(ex, "Failed to get avatar export data");
                 return string.Empty;
             }
         }
@@ -1191,9 +1231,9 @@ namespace Tailgrab.Manager
         #region User Avatar Overlay
         public async Task<List<UserAvatarViewModel>> LoadUserAvatarAsync(string userId)
         {
-            if (serviceRegistry == null)
+            if (_serviceRegistry == null)
             {
-                logger.Warn("ServiceRegistry is not initialized.");
+                _Logger.Warn("ServiceRegistry is not initialized.");
                 return new List<UserAvatarViewModel>();
             }
 
@@ -1202,16 +1242,16 @@ namespace Tailgrab.Manager
             try
             {
                 // Fetch DB data on background thread
-                TailgrabDBContext dbContext = serviceRegistry.GetDBContext();
-                VRCDBClient vrcdbClient = serviceRegistry.GetVRCDBClient();
+                TailgrabDBContext dbContext = _serviceRegistry.GetDBContext();
+                VRCDBClient vrcdbClient = _serviceRegistry.GetVRCDBClient();
 
                 // Fetch groups from API on background thread
                 List<AvatarItem> avatarItems = await Task.Run(() => vrcdbClient.GetAvatarsByAuthorAsync(userId));
-                logger.Info($"Fetched {avatarItems?.Count ?? 0} avatars for user {userId}");
+                _Logger.Info($"Fetched {avatarItems?.Count ?? 0} avatars for user {userId}");
 
                 if (avatarItems == null || avatarItems.Count == 0)
                 {
-                    logger.Info($"No avatars found for user {userId}");
+                    _Logger.Info($"No avatars found for user {userId}");
                     return avatarViewModels;
                 }
 
@@ -1245,7 +1285,7 @@ namespace Tailgrab.Manager
                         }
 
 
-                        Result<Avatar?> avatarResult = serviceRegistry.GetVRChatAPIClient().GetAvatarById(model.AvatarId);
+                        Result<Avatar?> avatarResult = _serviceRegistry.GetVRChatAPIClient().GetAvatarById(model.AvatarId);
                         if (avatarResult != null && avatarResult.Value != null)
                         {
                             Avatar avatar = avatarResult.Value;
@@ -1256,7 +1296,7 @@ namespace Tailgrab.Manager
                         }
                         else
                         {
-                            logger.Warn($"Failed to fetch avatar details for Avatar ID {avatarItem.Id}. Exception: {avatarResult?.Exception?.Message}");
+                            _Logger.Warn($"Failed to fetch avatar details for Avatar ID {avatarItem.Id}. Exception: {avatarResult?.Exception?.Message}");
                             model.Description = $"Failed to fetch avatar details. {avatarResult?.Exception?.Message}";
                         }
 
@@ -1266,7 +1306,7 @@ namespace Tailgrab.Manager
             }
             catch (Exception ex)
             {
-                logger.Error(ex, $"Error loading user avatars for {userId}");
+                _Logger.Error(ex, $"Error loading user avatars for {userId}");
                 throw;
             }
 
@@ -1287,7 +1327,7 @@ namespace Tailgrab.Manager
             try
             {
                 string uri = $"http://warren01.rabbitearsvideoproduction.net:5000/api/prismic/avatar?author={Uri.EscapeDataString(author)}";
-                logger.Info($"Fetching Prismic avatars for author: {author} from {uri}");
+                _Logger.Info($"Fetching Prismic avatars for author: {author} from {uri}");
                 HttpResponseMessage response = await client.GetAsync(uri);
                 response.EnsureSuccessStatusCode();
 
@@ -1302,7 +1342,7 @@ namespace Tailgrab.Manager
             }
             catch (JsonException ex)
             {
-                logger.Error($"JSON deserialization error: {ex.Message}");
+                _Logger.Error($"JSON deserialization error: {ex.Message}");
                 return null;
             }
         }
@@ -1310,9 +1350,9 @@ namespace Tailgrab.Manager
 
         public async Task<List<UserAvatarViewModel>> LoadPrismicUserAvatarAsync(string displayName, List<AvatarEntry>? avatarsLookupResponse)
         {
-            if (serviceRegistry == null)
+            if (_serviceRegistry == null)
             {
-                logger.Warn("ServiceRegistry is not initialized.");
+                _Logger.Warn("ServiceRegistry is not initialized.");
                 return new List<UserAvatarViewModel>();
             }
 
@@ -1321,14 +1361,14 @@ namespace Tailgrab.Manager
             try
             {
                 // Fetch DB data on background thread
-                TailgrabDBContext dbContext = serviceRegistry.GetDBContext();
+                TailgrabDBContext dbContext = _serviceRegistry.GetDBContext();
 
                 // Fetch groups from API on background thread
-                logger.Info($"Fetched {avatarsLookupResponse?.Count ?? 0} avatars for user {displayName}");
+                _Logger.Info($"Fetched {avatarsLookupResponse?.Count ?? 0} avatars for user {displayName}");
 
                 if (avatarsLookupResponse == null || avatarsLookupResponse.Count == 0)
                 {
-                    logger.Info($"No avatars found for user {displayName}");
+                    _Logger.Info($"No avatars found for user {displayName}");
                     return avatarViewModels;
                 }
 
@@ -1364,7 +1404,7 @@ namespace Tailgrab.Manager
                         }
 
 
-                        Result<Avatar?> avatarResult = serviceRegistry.GetVRChatAPIClient().GetAvatarById(model.AvatarId);
+                        Result<Avatar?> avatarResult = _serviceRegistry.GetVRChatAPIClient().GetAvatarById(model.AvatarId);
                         if (avatarResult != null && avatarResult.Value != null)
                         {
                             Avatar avatar = avatarResult.Value;
@@ -1375,7 +1415,7 @@ namespace Tailgrab.Manager
                         }
                         else
                         {
-                            logger.Warn($"Failed to fetch avatar details for Avatar ID {avatarItem.AvatarId}. Exception: {avatarResult?.Exception?.Message}");
+                            _Logger.Warn($"Failed to fetch avatar details for Avatar ID {avatarItem.AvatarId}. Exception: {avatarResult?.Exception?.Message}");
                             model.Description = $"Failed to fetch avatar details. {avatarResult?.Exception?.Message}";
                         }
 
@@ -1385,7 +1425,7 @@ namespace Tailgrab.Manager
             }
             catch (Exception ex)
             {
-                logger.Error(ex, $"Error loading user avatars for {displayName}");
+                _Logger.Error(ex, $"Error loading user avatars for {displayName}");
                 throw;
             }
 
@@ -1400,17 +1440,17 @@ namespace Tailgrab.Manager
         {
             UpdateAvatarInfoResult result = new UpdateAvatarInfoResult(false, string.Empty);
 
-            if (serviceRegistry == null)
+            if (_serviceRegistry == null)
             {
                 result.Success = false;
                 result.Message = "ServiceRegistry is not initialized.";
-                logger.Warn(result.Message);
+                _Logger.Warn(result.Message);
 
                 return result;
             }
             try
             {
-                var dbContext = serviceRegistry.GetDBContext();
+                var dbContext = _serviceRegistry.GetDBContext();
 
                 // Check if already exists
                 var existingAvatarInfo = dbContext.AvatarInfos.Find(vm.AvatarId);
@@ -1448,14 +1488,99 @@ namespace Tailgrab.Manager
             catch (Exception ex)
             {
                 result.Message = $"Error updating alert type for Avatar ID {vm.AvatarId}";
-                logger.Error(ex, result.Message);
+                _Logger.Error(ex, result.Message);
                 return result;
             }
 
             result.Success = true;
-            logger.Info(result.Message);
+            _Logger.Info(result.Message);
             return result;
         }
+        #endregion
+
+        #region Amplitude Cache Watching
+        public async Task WatchAmpCache(string path)
+        {
+            Console.OutputEncoding = Encoding.UTF8;
+
+            _Logger.Info($"Tailgrab Version: {BuildInfo.GetInformationalVersion()}");
+
+            AmpWatcher.Path = Path.GetDirectoryName(path)!;
+            AmpWatcher.Filter = Path.GetFileName("amplitude.cache");
+            AmpWatcher.NotifyFilter = NotifyFilters.LastWrite;
+
+            AmpWatcher.Changed += async (source, e) =>
+            {
+                await ProcessAmplitudeCache(e.FullPath);
+            };
+
+            AmpWatcher.EnableRaisingEvents = true;
+
+            // Keep the application running to monitor changes
+            await Task.Delay(Timeout.Infinite);
+        }
+
+        public async Task ProcessAmplitudeCache(string filePath)
+        {
+            bool saveAvatars = ConfigStore.GetStoredKeyBool(CommonConst.Registry_Discovered_Avatar_Caching, true);
+            if (!saveAvatars)
+            {
+                _Logger.Info($"Ignoring changes in Amplitude cache at '{filePath}'. Due to Discover Avatar Flag...");
+                return;
+            }
+
+            // Resolve path: prefer explicit, then local repo config.json, then user config path
+            if (!System.IO.File.Exists(filePath))
+            {
+                _Logger.Warn($"AmplitudeCache file not found at '{filePath}'.");
+                return;
+            }
+
+            try
+            {
+                string jsonString = System.IO.File.ReadAllText(filePath);
+
+                // Parse the JSON and extract ROOT[0]/event_properties/avatarIdsEncountered
+                var avatarIds = new List<string>();
+
+                using (JsonDocument doc = JsonDocument.Parse(jsonString))
+                {
+                    var root = doc.RootElement;
+                    if (root.ValueKind == JsonValueKind.Array && root.GetArrayLength() > 0)
+                    {
+                        var first = root[0];
+                        if (first.TryGetProperty("event_properties", out JsonElement eventProps))
+                        {
+                            if (eventProps.TryGetProperty("avatarIdsEncountered", out JsonElement avatarArray) && avatarArray.ValueKind == JsonValueKind.Array)
+                            {
+                                foreach (var item in avatarArray.EnumerateArray())
+                                {
+                                    if (item.ValueKind == JsonValueKind.String)
+                                    {
+                                        avatarIds.Add(item.GetString()!);
+                                    }
+                                }
+
+                                CacheAvatars(avatarIds);
+                            }
+                        }
+                    }
+                }
+
+                // Do something with the extracted avatar IDs; for now log the count and a sample
+                if (avatarIds.Count > 0)
+                {
+                    CompactDatabase();
+                }
+
+            }
+            catch
+            {
+                //_Logger.Error(ex, $"Failed to read or parse Amplitude cache file '{filePath}'.");
+                return;
+            }
+        }
+
         #endregion
 
     }

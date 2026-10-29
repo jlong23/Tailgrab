@@ -46,7 +46,7 @@ namespace Tailgrab.Clients.ChatBot
             string endpoint,
             string model,
             string text,
-            IReadOnlyList<ToolDefinition> tools = null)
+            IReadOnlyList<ToolDefinition>? tools = null)
         {
             // Build the message list (conversation history)
             var messages = new List<Dictionary<string, object>>
@@ -55,7 +55,7 @@ namespace Tailgrab.Clients.ChatBot
             };
 
             // Build the tools array for the request (OpenAI format)
-            List<Dictionary<string, object>> toolsArray = null;
+            List<Dictionary<string, object>>? toolsArray = null;
             if (tools != null && tools.Count > 0)
             {
                 toolsArray = tools.Select(t => new Dictionary<string, object>
@@ -112,7 +112,7 @@ namespace Tailgrab.Clients.ChatBot
                         string toolCallId = tc.GetProperty("id").GetString()!;
 
                         // Dispatch to the registered C# method
-                        string result = await ExecuteToolAsync(tools, toolName, argsJson);
+                        string result = await ExecuteToolAsync(tools ?? Array.Empty<ToolDefinition>(), toolName, argsJson);
 
                         // Append the tool result to history
                         messages.Add(new Dictionary<string, object>

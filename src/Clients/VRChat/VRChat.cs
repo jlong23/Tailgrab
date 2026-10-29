@@ -415,7 +415,7 @@ namespace Tailgrab.Clients.VRChat
             }
 
             UserResponse userResponse = _vrchat.Users.GetUser(userId);
-            User user = null;
+            User? user = null;
             if(userResponse != null && userResponse.ActualInstance != null)
             {
                 PublicProfile profile = _vrchat.Users.GetPublicProfile(userId);
@@ -472,7 +472,7 @@ namespace Tailgrab.Clients.VRChat
                 HttpClient client = new HttpClient();
                 client.DefaultRequestHeaders.UserAgent.ParseAdd("TailGrab/1.0");
                 string bioText = profile.Bio ?? string.Empty;
-                if ( newProfileEntry.BioLinks != null )
+                if ( newProfileEntry?.BioLinks != null )
                 {
                     bioText += " " + string.Join(" ", newProfileEntry.BioLinks);
                 }
@@ -485,7 +485,7 @@ namespace Tailgrab.Clients.VRChat
                     string link = invite.InviteUrl + " - " + invite.Guild?.ToString();
                     discordLinks.Add(link);
                 }
-                newProfileEntry.DiscordLinks = discordLinks;
+                newProfileEntry?.DiscordLinks = discordLinks;
 
                 logger.Info($"Caching and Returning profile for user {userId}.");
                 if (newProfileEntry != null)
@@ -944,7 +944,7 @@ namespace Tailgrab.Clients.VRChat
                 {
                     try
                     {
-                        UserModerationResponse? moderation = await response.Content?.ReadFromJsonAsync<UserModerationResponse>();
+                        UserModerationResponse? moderation = await response.Content.ReadFromJsonAsync<UserModerationResponse>();
                         result = moderation != null && moderation.SourceUserId == userId;
                     }
                     catch (Exception ex)

@@ -1,10 +1,5 @@
 ﻿using CoreOSC;
 using NLog;
-using OllamaSharp.Models.Chat;
-using System.IO;
-using System.Net;
-using System.Net.Sockets;
-using System.Text;
 using Tailgrab.Common;
 
 namespace Tailgrab.Clients.OSC
@@ -96,7 +91,7 @@ namespace Tailgrab.Clients.OSC
         {
             // Trigger the "is typing" indicator
             OscMessage typingMsg = new OscMessage("/chatbox/typing", true);
-            Task.Run(() => _udpSender?.Send(typingMsg));
+            await Task.Run(() => _udpSender?.Send(typingMsg));
             await Task.Delay(typingDurationMs);
 
             // Send the actual message
@@ -104,7 +99,7 @@ namespace Tailgrab.Clients.OSC
 
             // Clear the typing indicator
             OscMessage clearTypingMsg = new OscMessage("/chatbox/typing", false);
-            Task.Run(() => _udpSender?.Send(clearTypingMsg));
+            await Task.Run(() => _udpSender?.Send(clearTypingMsg));
         }
 
         /// <summary>

@@ -7,6 +7,8 @@ namespace Tailgrab.Common
 {
     public static class CommonConst
     {
+        internal static readonly string UserProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        public static readonly string VRCHAT_APP_LOG_PATH = Path.Combine(UserProfile, @"AppData", "LocalLow", "VRChat", "VRChat");
 
         public static string APPLICATION_LOCAL_DATA_PATH = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Tailgrab");
         public const string APPLICATION_LOCAL_DATABASE = "tailgrab.db";
@@ -135,7 +137,6 @@ namespace Tailgrab.Common
         public const string Registry_OSC_Port = "OSC_PORT";
 
         public const string Registry_Sound_Enabled = "SOUND_ENABLED";
-
 
         public const string AI_EVALUATION_SEXUAL = "Explicit Sexual";
         public const string AI_EVALUATION_HATE = "Harassment & Bullying";

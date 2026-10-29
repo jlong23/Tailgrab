@@ -15,6 +15,7 @@ using Tailgrab.Clients.VRChat;
 using Tailgrab.Clients.OSC;
 using Tailgrab.Common;
 using Tailgrab.Configuration;
+using Tailgrab.LineHandler;
 using Tailgrab.Manager;
 using Tailgrab.Models;
 using Tailgrab.PlayerManagement.Views;
@@ -343,6 +344,9 @@ namespace Tailgrab.PlayerManagement
             new ReportReasonItem("Something Else", "other")
         ];
 
+
+        #region TAB - Color Classes - Highlight class color properties with backing fields
+        // Selected color options for ComboBoxes
         // Color options for selection
         public List<ColorOption> ColorOptions { get; } =
         [
@@ -487,7 +491,6 @@ namespace Tailgrab.PlayerManagement
             set { _mouseOverForeground = value; OnPropertyChanged(nameof(MouseOverForeground)); }
         }
 
-        // Selected color options for ComboBoxes
         private ColorOption? _selectedNormalBackground;
         public ColorOption? SelectedNormalBackground
         {
@@ -656,8 +659,378 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
+        private void LoadHighlightColors()
+        {
+            try
+            {
+                UpdateAlertColorOptions();
+
+                // Load colors from registry or use defaults
+                var normalBg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Normal_Background) ?? CommonConst.Default_HighlightClass_Normal_Background;
+                var normalFg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Normal_Foreground) ?? CommonConst.Default_HighlightClass_Normal_Foreground;
+                var friendBg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Friend_Background) ?? CommonConst.Default_HighlightClass_Friend_Background;
+                var friendFg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Friend_Foreground) ?? CommonConst.Default_HighlightClass_Friend_Foreground;
+                var class01Bg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Class01_Background) ?? CommonConst.Default_HighlightClass_Class01_Background;
+                var class01Fg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Class01_Foreground) ?? CommonConst.Default_HighlightClass_Class01_Foreground;
+                var class02Bg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Class02_Background) ?? CommonConst.Default_HighlightClass_Class02_Background;
+                var class02Fg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Class02_Foreground) ?? CommonConst.Default_HighlightClass_Class02_Foreground;
+                var class03Bg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Class03_Background) ?? CommonConst.Default_HighlightClass_Class03_Background;
+                var class03Fg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Class03_Foreground) ?? CommonConst.Default_HighlightClass_Class03_Foreground;
+                var class04Bg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Class04_Background) ?? CommonConst.Default_HighlightClass_Class04_Background;
+                var class04Fg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Class04_Foreground) ?? CommonConst.Default_HighlightClass_Class04_Foreground;
+                var selectedBg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Selected_Background) ?? CommonConst.Default_HighlightClass_Selected_Background;
+                var selectedFg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Selected_Foreground) ?? CommonConst.Default_HighlightClass_Selected_Foreground;
+                var mouseOverBg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_MouseOver_Background) ?? CommonConst.Default_HighlightClass_MouseOver_Background;
+                var mouseOverFg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_MouseOver_Foreground) ?? CommonConst.Default_HighlightClass_MouseOver_Foreground;
+
+                // Set the brush properties
+                var converter = new BrushConverter();
+                NormalBackground = (System.Windows.Media.Brush)converter.ConvertFromString(normalBg)!;
+                NormalForeground = (System.Windows.Media.Brush)converter.ConvertFromString(normalFg)!;
+                FriendBackground = (System.Windows.Media.Brush)converter.ConvertFromString(friendBg)!;
+                FriendForeground = (System.Windows.Media.Brush)converter.ConvertFromString(friendFg)!;
+                Class01Background = (System.Windows.Media.Brush)converter.ConvertFromString(class01Bg)!;
+                Class01Foreground = (System.Windows.Media.Brush)converter.ConvertFromString(class01Fg)!;
+                Class02Background = (System.Windows.Media.Brush)converter.ConvertFromString(class02Bg)!;
+                Class02Foreground = (System.Windows.Media.Brush)converter.ConvertFromString(class02Fg)!;
+                Class03Background = (System.Windows.Media.Brush)converter.ConvertFromString(class03Bg)!;
+                Class03Foreground = (System.Windows.Media.Brush)converter.ConvertFromString(class03Fg)!;
+                Class04Background = (System.Windows.Media.Brush)converter.ConvertFromString(class04Bg)!;
+                Class04Foreground = (System.Windows.Media.Brush)converter.ConvertFromString(class04Fg)!;
+                SelectedBackground = (System.Windows.Media.Brush)converter.ConvertFromString(selectedBg)!;
+                SelectedForeground = (System.Windows.Media.Brush)converter.ConvertFromString(selectedFg)!;
+                MouseOverBackground = (System.Windows.Media.Brush)converter.ConvertFromString(mouseOverBg)!;
+                MouseOverForeground = (System.Windows.Media.Brush)converter.ConvertFromString(mouseOverFg)!;
+
+                // Set selected options in ComboBoxes
+                SelectedNormalBackground = ColorOptions.FirstOrDefault(c => c.Value.Equals(normalBg, StringComparison.OrdinalIgnoreCase));
+                SelectedNormalForeground = ColorOptions.FirstOrDefault(c => c.Value.Equals(normalFg, StringComparison.OrdinalIgnoreCase));
+                SelectedFriendBackground = ColorOptions.FirstOrDefault(c => c.Value.Equals(friendBg, StringComparison.OrdinalIgnoreCase));
+                SelectedFriendForeground = ColorOptions.FirstOrDefault(c => c.Value.Equals(friendFg, StringComparison.OrdinalIgnoreCase));
+                SelectedClass01Background = ColorOptions.FirstOrDefault(c => c.Value.Equals(class01Bg, StringComparison.OrdinalIgnoreCase));
+                SelectedClass01Foreground = ColorOptions.FirstOrDefault(c => c.Value.Equals(class01Fg, StringComparison.OrdinalIgnoreCase));
+                SelectedClass02Background = ColorOptions.FirstOrDefault(c => c.Value.Equals(class02Bg, StringComparison.OrdinalIgnoreCase));
+                SelectedClass02Foreground = ColorOptions.FirstOrDefault(c => c.Value.Equals(class02Fg, StringComparison.OrdinalIgnoreCase));
+                SelectedClass03Background = ColorOptions.FirstOrDefault(c => c.Value.Equals(class03Bg, StringComparison.OrdinalIgnoreCase));
+                SelectedClass03Foreground = ColorOptions.FirstOrDefault(c => c.Value.Equals(class03Fg, StringComparison.OrdinalIgnoreCase));
+                SelectedClass04Background = ColorOptions.FirstOrDefault(c => c.Value.Equals(class04Bg, StringComparison.OrdinalIgnoreCase));
+                SelectedClass04Foreground = ColorOptions.FirstOrDefault(c => c.Value.Equals(class04Fg, StringComparison.OrdinalIgnoreCase));
+                SelectedSelectedBackground = ColorOptions.FirstOrDefault(c => c.Value.Equals(selectedBg, StringComparison.OrdinalIgnoreCase));
+                SelectedSelectedForeground = ColorOptions.FirstOrDefault(c => c.Value.Equals(selectedFg, StringComparison.OrdinalIgnoreCase));
+
+                // Need to update alert color options after loading new colors to ensure they reflect in the ComboBoxes
+                UpdateAlertColorOptions();
+                LoadAlertClassSettings();
+
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to load highlight colors");
+            }
+        }
+
+        private void SaveColors_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // Save all color settings to registry
+                if (SelectedNormalBackground != null)
+                    ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Normal_Background, SelectedNormalBackground.Value);
+                if (SelectedNormalForeground != null)
+                    ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Normal_Foreground, SelectedNormalForeground.Value);
+                if (SelectedFriendBackground != null)
+                    ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Friend_Background, SelectedFriendBackground.Value);
+                if (SelectedFriendForeground != null)
+                    ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Friend_Foreground, SelectedFriendForeground.Value);
+                if (SelectedClass01Background != null)
+                    ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Class01_Background, SelectedClass01Background.Value);
+                if (SelectedClass01Foreground != null)
+                    ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Class01_Foreground, SelectedClass01Foreground.Value);
+                if (SelectedClass02Background != null)
+                    ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Class02_Background, SelectedClass02Background.Value);
+                if (SelectedClass02Foreground != null)
+                    ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Class02_Foreground, SelectedClass02Foreground.Value);
+                if (SelectedClass03Background != null)
+                    ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Class03_Background, SelectedClass03Background.Value);
+                if (SelectedClass03Foreground != null)
+                    ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Class03_Foreground, SelectedClass03Foreground.Value);
+                if (SelectedClass04Background != null)
+                    ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Class04_Background, SelectedClass04Background.Value);
+                if (SelectedClass04Foreground != null)
+                    ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Class04_Foreground, SelectedClass04Foreground.Value);
+                if (SelectedSelectedBackground != null)
+                    ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Selected_Background, SelectedSelectedBackground.Value);
+                if (SelectedSelectedForeground != null)
+                    ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Selected_Foreground, SelectedSelectedForeground.Value);
+
+                // Reload colors with new settings
+                LoadHighlightColors();
+
+                ShowOverlayMessageOkCancelI18N(
+                    "MessageBox.SaveColors.Title",
+                    "MessageBox.SaveColors.Content",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information,
+                    null);
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to save color settings");
+                ShowOverlayMessageOkCancelI18N(
+                    "MessageBox.SaveColors_Error.Title",
+                    "MessageBox.SaveColors_Error.Content",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error,
+                    null,
+                    ex.Message);
+            }
+        }
+
+        private async void ResetColors_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var result = await ShowOverlayMessageOkCancelAsync(
+                    "Reset Colors to Defaults?",
+                    "Are you sure you want to reset all colors to their default values?",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question);
+
+                if (result == MessageBoxResult.Yes)
+                {
+                    // Remove all color settings from registry
+                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Normal_Background);
+                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Normal_Foreground);
+                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Friend_Background);
+                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Friend_Foreground);
+                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Class01_Background);
+                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Class01_Foreground);
+                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Class02_Background);
+                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Class02_Foreground);
+                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Class03_Background);
+                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Class03_Foreground);
+                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Class04_Background);
+                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Class04_Foreground);
+                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Selected_Background);
+                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Selected_Foreground);
+                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_MouseOver_Background);
+                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_MouseOver_Foreground);
+
+                    // Reload colors with defaults
+                    LoadHighlightColors();
+
+                    await ShowOverlayMessageOkCancelAsync(
+                        "Colors Reset",
+                        "Colors reset to defaults successfully.",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to reset color settings");
+                ShowOverlayMessageOkCancel(
+                    "Error",
+                    $"Failed to reset color settings: {ex.Message}",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+        }
+
+        #endregion
+
+        #region TAB - Alert Sounds and Classes
+        private void UpdateAlertColorOptions()
+        {
+            AlertColorOptions.Clear();
+            AlertColorOptions.Add(new AlertColorOption("*NONE", "Normal", NormalBackground, NormalForeground));
+            AlertColorOptions.Add(new AlertColorOption("Class 1", "Class01", Class01Background, Class01Foreground));
+            AlertColorOptions.Add(new AlertColorOption("Class 2", "Class02", Class02Background, Class02Foreground));
+            AlertColorOptions.Add(new AlertColorOption("Class 3", "Class03", Class03Background, Class03Foreground));
+            AlertColorOptions.Add(new AlertColorOption("Class 4", "Class04", Class04Background, Class04Foreground));
+        }
+
+
+        private void LoadAlertClassSettings()
+        {
+            var sounds = SoundManager.GetAvailableSounds();
+            AlertSoundOptions = [.. sounds.Select(s => new KeyValuePair<string, string>(s, s))];
+
+            // Avatar Alerts
+            AvatarWarnSound.SelectedValue = GetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Watch, CommonConst.Sound_Alert_Key) ?? "*NONE";
+            AvatarNuisanceSound.SelectedValue = GetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Sound_Alert_Key) ?? "*NONE";
+            AvatarCrasherSound.SelectedValue = GetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Sound_Alert_Key) ?? "*NONE";
+            AvatarWarnColor.SelectedValue = GetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Watch, CommonConst.Color_Alert_Key) ?? "Normal";
+            AvatarNuisanceColor.SelectedValue = GetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Color_Alert_Key) ?? "Yellow";
+            AvatarCrasherColor.SelectedValue = GetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Color_Alert_Key) ?? "Red";
+
+            // Group Alerts
+            GroupWarnSound.SelectedValue = GetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Watch, CommonConst.Sound_Alert_Key) ?? "*NONE";
+            GroupNuisanceSound.SelectedValue = GetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Sound_Alert_Key) ?? "*NONE";
+            GroupCrasherSound.SelectedValue = GetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Sound_Alert_Key) ?? "*NONE";
+            GroupWarnColor.SelectedValue = GetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Watch, CommonConst.Color_Alert_Key) ?? "Normal";
+            GroupNuisanceColor.SelectedValue = GetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Color_Alert_Key) ?? "Yellow";
+            GroupCrasherColor.SelectedValue = GetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Color_Alert_Key) ?? "Red";
+
+            // Profile Alerts
+            ProfileWarnSound.SelectedValue = GetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Watch, CommonConst.Sound_Alert_Key) ?? "*NONE";
+            ProfileNuisanceSound.SelectedValue = GetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Sound_Alert_Key) ?? "*NONE";
+            ProfileCrasherSound.SelectedValue = GetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Sound_Alert_Key) ?? "*NONE";
+            ProfileWarnColor.SelectedValue = GetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Watch, CommonConst.Color_Alert_Key) ?? "Normal";
+            ProfileNuisanceColor.SelectedValue = GetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Color_Alert_Key) ?? "Yellow";
+            ProfileCrasherColor.SelectedValue = GetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Color_Alert_Key) ?? "Red";
+        }
+
+        private void SaveAlerts_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // Avatar Alerts
+                SetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Watch, CommonConst.Sound_Alert_Key, (string)AvatarWarnSound.SelectedValue);
+                SetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Sound_Alert_Key, (string)AvatarNuisanceSound.SelectedValue);
+                SetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Sound_Alert_Key, (string)AvatarCrasherSound.SelectedValue);
+                SetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Watch, CommonConst.Color_Alert_Key, (string)AvatarWarnColor.SelectedValue);
+                SetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Color_Alert_Key, (string)AvatarNuisanceColor.SelectedValue);
+                SetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Color_Alert_Key, (string)AvatarCrasherColor.SelectedValue);
+
+                // Group Alerts
+                SetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Watch, CommonConst.Sound_Alert_Key, (string)GroupWarnSound.SelectedValue);
+                SetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Sound_Alert_Key, (string)GroupNuisanceSound.SelectedValue);
+                SetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Sound_Alert_Key, (string)GroupCrasherSound.SelectedValue);
+                SetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Watch, CommonConst.Color_Alert_Key, (string)GroupWarnColor.SelectedValue);
+                SetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Color_Alert_Key, (string)GroupNuisanceColor.SelectedValue);
+                SetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Color_Alert_Key, (string)GroupCrasherColor.SelectedValue);
+
+                // Group Alerts
+                SetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Watch, CommonConst.Sound_Alert_Key, (string)ProfileWarnSound.SelectedValue);
+                SetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Sound_Alert_Key, (string)ProfileNuisanceSound.SelectedValue);
+                SetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Sound_Alert_Key, (string)ProfileCrasherSound.SelectedValue);
+                SetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Watch, CommonConst.Color_Alert_Key, (string)ProfileWarnColor.SelectedValue);
+                SetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Color_Alert_Key, (string)ProfileNuisanceColor.SelectedValue);
+                SetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Color_Alert_Key, (string)ProfileCrasherColor.SelectedValue);
+            }
+            catch (Exception ex)
+            {
+                ShowOverlayMessageOkCancel(
+                    "Error",
+                    $"Failed to save configuration: {ex.Message}",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+        }
+
+        private void TestSound_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is System.Windows.Controls.Button button && button.Tag is string soundName)
+            {
+                SoundManager.PlaySound(soundName);
+            }
+        }
+
+        private static void SetAlertKeyString(string alertKey, AlertTypeEnum alertType, string subType, object value)
+        {
+            string key = CommonConst.ConfigRegistryPath + "\\" + alertKey + "\\" + alertType.ToString();
+
+            if (value is string stringValue && !string.IsNullOrEmpty(stringValue))
+            {
+                ConfigStore.PutStoredKeyString(key, subType, stringValue);
+            }
+            else
+            {
+                ConfigStore.RemoveStoredKeyString(key, subType);
+            }
+        }
+
+        private static string? GetAlertKeyString(string alertKey, AlertTypeEnum alertType, string subType)
+        {
+            string key = CommonConst.ConfigRegistryPath + "\\" + alertKey + "\\" + alertType.ToString();
+
+            return ConfigStore.GetStoredKeyString(key, subType);
+        }
+
+        #endregion
 
         #region Tool Bar Properties
+
+        #region OSC Properties
+        private System.Windows.Media.Brush _oscEnabledIndicatorColor = new SolidColorBrush(Colors.Red);
+        public System.Windows.Media.Brush OscEnabledIndicatorColor
+        {
+            get
+            {
+                return _oscEnabledIndicatorColor;
+            }
+            set
+            {
+                if (_oscEnabledIndicatorColor != value)
+                {
+                    _oscEnabledIndicatorColor = value;
+                    OnPropertyChanged(nameof(OscEnabledIndicatorColor));
+                }
+            }
+        }
+
+        private bool IsOscEnabled
+        {
+            get
+            {
+                bool enabled = _serviceRegistry.GetVRChatOSCChatbox()?.EnableOSCService ?? false;
+                SetOscEnabledIndicatorColor(enabled);
+                return enabled;
+            }
+            set
+            {
+                if (_serviceRegistry.GetVRChatOSCChatbox()?.EnableOSCService != value)
+                {
+                    VRChatOSCChatbox chatOSCChatbox = _serviceRegistry.GetVRChatOSCChatbox();
+                    EnableOSCClient.IsChecked = value;
+                    if (chatOSCChatbox != null)
+                    {
+                        chatOSCChatbox.EnableOSCService = value;
+                    }
+
+                    SetOscEnabledIndicatorColor(value);
+                    OnPropertyChanged(nameof(IsOscEnabled));
+
+
+                    _serviceRegistry.PublishVoiceCloneSpeechEvent(
+                        value ? "The OSC integration has been re-enabled." : "The OSC Integration is now disabled.",
+                        null,
+                        Channel01SelectdDevice
+                        );
+                }
+            }
+        }
+
+        private async void ToolBarClick_OSCEnabled(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                IsOscEnabled = !IsOscEnabled;
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error toggling OSC");
+            }
+        }
+
+        private void SetOscEnabledIndicatorColor(bool enabled)
+        {
+            if (enabled)
+            {
+                OscEnabledIndicatorColor = new SolidColorBrush(Colors.Green);
+                OSCEnablementText.Text = "OSC Enabled";
+            }
+            else
+            {
+                OscEnabledIndicatorColor = new SolidColorBrush(Colors.Red);
+                OSCEnablementText.Text = "OSC Disabled";
+            }
+        }
+
+        #endregion
+
+        #region Audio Output Properties
         private List<string> _outputDevices = [];
         public List<string> OutputDevices
         {
@@ -669,72 +1042,88 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
-        private string? _selectedOutputDevice;
-        public string? SelectedOutputDevice
+        #endregion
+
+        #region Audio Channel 1 Properties
+        private System.Windows.Media.Brush _channel01IndicatorColor = new SolidColorBrush(Colors.Green);
+        public System.Windows.Media.Brush Channel01IndicatorColor
         {
-            get => _selectedOutputDevice;
+            get => _channel01IndicatorColor;
             set
             {
-                if (_selectedOutputDevice != value)
+                if (_channel01IndicatorColor != value)
                 {
-                    _selectedOutputDevice = value;
-                    _serviceRegistry.GetMultiDevicePlayer()?.SelectedOutputDevice = value ?? string.Empty;
-                    OnPropertyChanged(nameof(SelectedOutputDevice));
+                    _channel01IndicatorColor = value;
+                    OnPropertyChanged(nameof(Channel01IndicatorColor));
                 }
             }
         }
 
-        private bool _isMuteEnabled = false;
-        public bool isMuteEnabled
+        private string? _channel01SelectedDevice;
+        public string? Channel01SelectdDevice
         {
-            get => _isMuteEnabled;
+            get => _channel01SelectedDevice;
             set
             {
-                if (_isMuteEnabled != value)
+                if (_channel01SelectedDevice != value)
                 {
-                    _isMuteEnabled = value;
-                    OnPropertyChanged(nameof(isMuteEnabled));
+                    _serviceRegistry.GetMultiDevicePlayer()?.SetChannelSettings(1, value ?? string.Empty, Channel01Volume, IsChannel01Muted);
+                    _channel01SelectedDevice = value;
+                    OnPropertyChanged(nameof(Channel01SelectdDevice));
+                }
+            }
+        }
+
+        public float Channel01Volume
+        {
+            get => _serviceRegistry.GetMultiDevicePlayer()?.GetChannelSettings(1)?.Volume ?? 1.0f;
+            set
+            {
+                if (_serviceRegistry.GetMultiDevicePlayer() != null)
+                {
+                    _serviceRegistry.GetMultiDevicePlayer().SetChannelSettings(1, Channel01SelectdDevice ?? string.Empty, value, IsChannel01Muted);
+                    OnPropertyChanged(nameof(Channel01Volume));
+                }
+            }
+        }
+
+        private bool IsChannel01Muted
+        {
+            get
+            {
+                bool enabled = _serviceRegistry.GetMultiDevicePlayer()?.GetChannelSettings(1)?.IsMuted ?? false;
+                Channel01IndicatorColors(enabled);
+
+                return enabled;
+            }
+            set
+            {
+                if (_serviceRegistry.GetMultiDevicePlayer()?.GetChannelSettings(1)?.IsMuted != value)
+                {
+                    OnPropertyChanged(nameof(IsChannel01Muted));
                     SoundManager.EnableSounds = value;
-                    if (value == false)
-                    {
-                        AudioEnabledIndicatorColor = new SolidColorBrush(Colors.Red);
-                        MuteAudioText.Text = "Audio Muted";
-                    }
-                    else
-                    {
-                        AudioEnabledIndicatorColor = new SolidColorBrush(Colors.Green);
-                        MuteAudioText.Text = "Audio Unmuted";
-                    }
+                    _serviceRegistry.GetMultiDevicePlayer()?.SetChannelSettings(1, Channel01SelectdDevice ?? string.Empty, Channel01Volume, value);
+                    Channel01IndicatorColors(value);
 
                     _serviceRegistry.PublishVoiceCloneSpeechEvent(
-                        value ? "Audio Events are now unmuted." : "Audio Events are now muted.",
+                        value ? "Audio Channel 01 Events are now muted." : "Audio Channel 01 Events are now unmuted.",
                         null,
-                        SelectedOutputDevice
+                        Channel01SelectdDevice
                         );
                 }
             }
         }
 
-        private System.Windows.Media.Brush _audioEnabledIndicatorColor = new SolidColorBrush(Colors.Green);
-        public System.Windows.Media.Brush AudioEnabledIndicatorColor
+        private void Channel01VolumeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            get => _audioEnabledIndicatorColor;
-            set
-            {
-                if (_audioEnabledIndicatorColor != value)
-                {
-                    _audioEnabledIndicatorColor = value;
-                    OnPropertyChanged(nameof(AudioEnabledIndicatorColor));
-                }
-            }
+            _serviceRegistry.GetMultiDevicePlayer()?.SetChannelSettings(1, Channel01SelectdDevice ?? string.Empty, (float)e.NewValue, IsChannel01Muted);
         }
 
-
-        public async void ToolBarClick_Mute(object sender, RoutedEventArgs e)
+        private async void ToolBarClick_Channel01Mute(object sender, RoutedEventArgs e)
         {
             try
             {
-                isMuteEnabled = !isMuteEnabled;
+                IsChannel01Muted = !IsChannel01Muted;
             }
             catch (Exception ex)
             {
@@ -742,69 +1131,219 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
-        private bool _isOscEnabled = false;
-        public bool IsOscEnabled
+        private void Channel01IndicatorColors(bool enabled)
         {
-            get => _isOscEnabled;
+            if (enabled == true)
+            {
+                Channel01IndicatorColor = new SolidColorBrush(Colors.Red);
+                Channel01_MuteAudioText.Text = "Muted";
+            }
+            else
+            {
+                Channel01IndicatorColor = new SolidColorBrush(Colors.Green);
+                Channel01_MuteAudioText.Text = "Unmuted";
+            }
+        }
+
+        #endregion
+
+        #region Audio Channel 2 Properties
+        private System.Windows.Media.Brush _channel02IndicatorColor = new SolidColorBrush(Colors.Red);
+        public System.Windows.Media.Brush Channel02IndicatorColor
+        {
+            get => _channel02IndicatorColor;
             set
             {
-                if (_isOscEnabled != value)
+                if (_channel02IndicatorColor != value)
                 {
-                    VRChatOSCChatbox chatOSCChatbox = _serviceRegistry.GetVRChatOSCChatbox();
-                    _isOscEnabled = value;
-                    EnableOSCClient.IsChecked = value;
-                    if (chatOSCChatbox != null)
-                    {
-                        chatOSCChatbox.EnableOSCService = value;
-                    }
+                    _channel02IndicatorColor = value;
+                    OnPropertyChanged(nameof(Channel02IndicatorColor));
+                }
+            }
+        }
 
-                    if (value == false)
-                    {
-                        OscEnabledIndicatorColor = new SolidColorBrush(Colors.Red);
-                        OSCEnablementText.Text = "OSC Disabled";
-                    }
-                    else
-                    {
-                        OscEnabledIndicatorColor = new SolidColorBrush(Colors.Green);
-                        OSCEnablementText.Text = "OSC Enabled";
-                    }
-                    OnPropertyChanged(nameof(IsOscEnabled));
+        private string? _channel02SelectedDevice;
 
-                    
+        public string? Channel02SelectdDevice
+        {
+            get => _channel02SelectedDevice;
+            set
+            {
+                if (_channel02SelectedDevice != value)
+                {
+                    _serviceRegistry.GetMultiDevicePlayer()?.SetChannelSettings(2, value ?? string.Empty, Channel02Volume, IsChannel02Muted);
+                    _channel02SelectedDevice = value;
+                    OnPropertyChanged(nameof(Channel02SelectdDevice));
+                }
+            }
+        }
+
+        public float Channel02Volume
+        {
+            get => _serviceRegistry.GetMultiDevicePlayer()?.GetChannelSettings(2)?.Volume ?? 1.0f;
+            set
+            {
+                _serviceRegistry.GetMultiDevicePlayer()?.SetChannelSettings(2, Channel02SelectdDevice ?? string.Empty, value, IsChannel02Muted);
+                OnPropertyChanged(nameof(Channel02Volume));
+            }
+        }
+
+        private bool IsChannel02Muted
+        {
+            get
+            {
+                bool enabled = _serviceRegistry.GetMultiDevicePlayer()?.GetChannelSettings(2)?.IsMuted ?? false;
+                Channel02IndicatorColors(enabled);
+
+                return enabled;
+            }
+
+            set
+            {
+                if (_serviceRegistry.GetMultiDevicePlayer()?.GetChannelSettings(2)?.IsMuted != value)
+                {
+                    OnPropertyChanged(nameof(IsChannel02Muted));
+                    SoundManager.EnableSounds = value;
+                    _serviceRegistry.GetMultiDevicePlayer()?.SetChannelSettings(2, Channel02SelectdDevice ?? string.Empty, Channel02Volume, value);
+                    Channel02IndicatorColors(value);
+
                     _serviceRegistry.PublishVoiceCloneSpeechEvent(
-                        value ? "The OSC integration has been re-enabled." : "I've disabled the OSC integration sir.",
+                        value ? "Audio channel 02 is now muted." : "Audio channel 02 is now unmuted.",
                         null,
-                        SelectedOutputDevice
+                        Channel02SelectdDevice
                         );
                 }
             }
         }
 
-        private System.Windows.Media.Brush _oscEnabledIndicatorColor = new SolidColorBrush(Colors.Green);
-        public System.Windows.Media.Brush OscEnabledIndicatorColor
+        private void Channel02VolumeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            get => _oscEnabledIndicatorColor;
+            _serviceRegistry.GetMultiDevicePlayer()?.SetChannelSettings(2, _channel02SelectedDevice ?? string.Empty, (float)e.NewValue, IsChannel02Muted);
+        }
+
+        private async void ToolBarClick_Channel02Mute(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                IsChannel02Muted = !IsChannel02Muted;
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error toggling mute");
+            }
+        }
+
+        private void Channel02IndicatorColors(bool enabled)
+        {
+            if (enabled == true)
+            {
+                Channel02IndicatorColor = new SolidColorBrush(Colors.Red);
+                Channel02_MuteAudioText.Text = "Muted";
+            }
+            else
+            {
+                Channel02IndicatorColor = new SolidColorBrush(Colors.Green);
+                Channel02_MuteAudioText.Text = "Unmuted";
+            }
+        }
+
+        #endregion
+
+        #region TTS Voice Properties
+        private List<string> _voiceCloneProfiles = [];
+        public List<string> VoiceCloneProfiles
+        {
+            get => _voiceCloneProfiles;
             set
             {
-                if (_oscEnabledIndicatorColor != value)
+                _voiceCloneProfiles = value;
+                OnPropertyChanged(nameof(VoiceCloneProfiles));
+            }
+        }
+
+        private System.Windows.Media.Brush _ttsEnabledIndicatorColor = new SolidColorBrush(Colors.Green);
+        public System.Windows.Media.Brush TTSEnabledIndicatorColor
+        {
+            get => _ttsEnabledIndicatorColor;
+            set
+            {
+                if (_ttsEnabledIndicatorColor != value)
                 {
-                    _oscEnabledIndicatorColor = value;
-                    OnPropertyChanged(nameof(OscEnabledIndicatorColor));
+                    _ttsEnabledIndicatorColor = value;
+                    OnPropertyChanged(nameof(TTSEnabledIndicatorColor));
                 }
             }
         }
 
-        public async void ToolBarClick_OSCEnabled(object sender, RoutedEventArgs e)
+        private string? _voiceCloneProfile;
+        public string? VoiceCloneProfile
+        {
+            get => _voiceCloneProfile ?? _serviceRegistry.GetOmniVoiceClient()?.VoiceCloneProfile ?? "Jarvis";
+            set
+            {
+                if (_voiceCloneProfile != value)
+                {
+                    _voiceCloneProfile = value;
+                    _serviceRegistry.GetOmniVoiceClient()?.VoiceCloneProfile = value ?? "Jarvis";
+                    OnPropertyChanged(nameof(VoiceCloneProfile));
+                }
+            }
+        }
+
+        private bool IsTTSEnabled
+        {
+            get
+            {
+                bool enabled = _serviceRegistry.GetOmniVoiceClient()?.EnableTTSService ?? false;
+                TTSEnabledIndicatorColors(enabled);
+
+                return enabled;
+            }
+
+            set
+            {
+                if (_serviceRegistry.GetOmniVoiceClient()?.EnableTTSService != value)
+                {
+                    _serviceRegistry.GetOmniVoiceClient()?.EnableTTSService = value;
+                    OnPropertyChanged(nameof(IsTTSEnabled));
+                    TTSEnabledIndicatorColors(value);
+
+                    _serviceRegistry.PublishVoiceCloneSpeechEvent(
+                        value ? "TTS is now enabled." : "TTS is now disabled.",
+                        null,
+                        Channel01SelectdDevice
+                        );
+                }
+            }
+        }
+
+        public async void ToolBarClick_TTSEnablement(object sender, RoutedEventArgs e)
         {
             try
             {
-                IsOscEnabled = !IsOscEnabled;
+                IsTTSEnabled = !IsTTSEnabled;
             }
             catch (Exception ex)
             {
-                logger.Error(ex, "Error toggling OSC");
+                logger.Error(ex, "Error toggling TTS");
             }
         }
+
+        private void TTSEnabledIndicatorColors(bool enabled)
+        {
+            if (enabled == true)
+            {
+                TTSEnabledIndicatorColor = new SolidColorBrush(Colors.Green);
+                TTSEnableText.Text = "Enabled";
+            }
+            else
+            {
+                TTSEnabledIndicatorColor = new SolidColorBrush(Colors.Red);
+                TTSEnableText.Text = "Disabled";
+            }
+        }
+
+        #endregion
 
         #endregion
 
@@ -820,7 +1359,7 @@ namespace Tailgrab.PlayerManagement
             {
                 multiDevicePlayer.OutputDeviceChanged += (s, e) =>
                 {
-                    SelectedOutputDevice = e.DeviceFriendlyName;
+                    Channel01SelectdDevice = e.DeviceFriendlyName;
                 };
             }
 
@@ -986,8 +1525,10 @@ namespace Tailgrab.PlayerManagement
                 CustomSpawnBrowserSourceName.Text = obsClient.ImageSpawnBrowserSourceName;
             }
 
-            ModeratedAvatarCaching.IsChecked = ConfigStore.GetStoredKeyBool(CommonConst.Registry_Moderated_Avatar_Caching, true);
-            DiscoveredAvatarCaching.IsChecked = ConfigStore.GetStoredKeyBool(CommonConst.Registry_Discovered_Avatar_Caching, true);
+            AvatarManager avatarManager = _serviceRegistry.GetAvatarManager();
+            ModeratedAvatarCaching.IsChecked = avatarManager.EnableAvatarModerationCaching;
+            DiscoveredAvatarCaching.IsChecked = avatarManager.EnableAmplitudeCacheWatcher;
+
             DiscoveredGroupCaching.IsChecked = ConfigStore.GetStoredKeyBool(CommonConst.Registry_Discovered_Group_Caching, true);
 
 
@@ -996,20 +1537,24 @@ namespace Tailgrab.PlayerManagement
             OSCEndpoint.Text = (vrChatOSCChatBox?.OSCHost ?? "127.0.0.1") + ":" + (vrChatOSCChatBox?.OSCPort ?? 9000).ToString();
             if (vrChatOSCChatBox != null)
             {
-                IsOscEnabled = vrChatOSCChatBox?.EnableOSCService ?? false;
+                bool enabled = vrChatOSCChatBox?.EnableOSCService ?? false;
+                IsOscEnabled = enabled;
+                SetOscEnabledIndicatorColor(enabled);
             }
 
             // Populate sound combo boxes
             try
             {
-                UpdateAlertComboBoxValues();
+                LoadAlertClassSettings();
             }
             catch { }
 
+            // Set the default output device and load available voice clone profiles
             try
             {
                 OutputDevices = MultiDevicePlayer.GetAvailableOutputDevices();
-                SelectedOutputDevice = MultiDevicePlayer.GetDefaultOutputDevice();
+                Channel01SelectdDevice = MultiDevicePlayer.GetDefaultOutputDevice();
+                VoiceCloneProfiles = _serviceRegistry.GetOmniVoiceClient()?.GetAvailableVoiceCloneProfiles() ?? new List<string>();
             }
             catch { }
             #endregion
@@ -1065,36 +1610,6 @@ namespace Tailgrab.PlayerManagement
             this.LocationChanged += Window_LocationChanged;
         }
 
-        private void UpdateAlertComboBoxValues()
-        {
-            var sounds = SoundManager.GetAvailableSounds();
-            AlertSoundOptions = [.. sounds.Select(s => new KeyValuePair<string, string>(s, s))];
-
-            // Avatar Alerts
-            AvatarWarnSound.SelectedValue = GetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Watch, CommonConst.Sound_Alert_Key) ?? "*NONE";
-            AvatarNuisanceSound.SelectedValue = GetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Sound_Alert_Key) ?? "*NONE";
-            AvatarCrasherSound.SelectedValue = GetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Sound_Alert_Key) ?? "*NONE";
-            AvatarWarnColor.SelectedValue = GetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Watch, CommonConst.Color_Alert_Key) ?? "Normal";
-            AvatarNuisanceColor.SelectedValue = GetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Color_Alert_Key) ?? "Yellow";
-            AvatarCrasherColor.SelectedValue = GetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Color_Alert_Key) ?? "Red";
-
-            // Group Alerts
-            GroupWarnSound.SelectedValue = GetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Watch, CommonConst.Sound_Alert_Key) ?? "*NONE";
-            GroupNuisanceSound.SelectedValue = GetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Sound_Alert_Key) ?? "*NONE";
-            GroupCrasherSound.SelectedValue = GetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Sound_Alert_Key) ?? "*NONE";
-            GroupWarnColor.SelectedValue = GetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Watch, CommonConst.Color_Alert_Key) ?? "Normal";
-            GroupNuisanceColor.SelectedValue = GetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Color_Alert_Key) ?? "Yellow";
-            GroupCrasherColor.SelectedValue = GetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Color_Alert_Key) ?? "Red";
-
-            // Profile Alerts
-            ProfileWarnSound.SelectedValue = GetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Watch, CommonConst.Sound_Alert_Key) ?? "*NONE";
-            ProfileNuisanceSound.SelectedValue = GetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Sound_Alert_Key) ?? "*NONE";
-            ProfileCrasherSound.SelectedValue = GetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Sound_Alert_Key) ?? "*NONE";
-            ProfileWarnColor.SelectedValue = GetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Watch, CommonConst.Color_Alert_Key) ?? "Normal";
-            ProfileNuisanceColor.SelectedValue = GetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Color_Alert_Key) ?? "Yellow";
-            ProfileCrasherColor.SelectedValue = GetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Color_Alert_Key) ?? "Red";
-        }
-
         public bool IsSessionChaptersEnabled => UseOBSAutomation.IsChecked == true && StartRecordOnWorldJoin.IsChecked == true  ;
 
         private void PersistVRChatCredentials()
@@ -1143,8 +1658,10 @@ namespace Tailgrab.PlayerManagement
         {
             try
             {
-                ConfigStore.PutStoredKeyBool(CommonConst.Registry_Discovered_Avatar_Caching, DiscoveredAvatarCaching.IsChecked == true);
-                ConfigStore.PutStoredKeyBool(CommonConst.Registry_Moderated_Avatar_Caching, ModeratedAvatarCaching.IsChecked == true);
+                AvatarManager avatarManager = _serviceRegistry.GetAvatarManager();
+                avatarManager.EnableAmplitudeCacheWatcher = DiscoveredAvatarCaching.IsChecked == true;
+                avatarManager.EnableAvatarModerationCaching = ModeratedAvatarCaching.IsChecked == true;
+
                 ConfigStore.PutStoredKeyBool(CommonConst.Registry_Discovered_Group_Caching, DiscoveredGroupCaching.IsChecked == true);
                 ConfigStore.PutStoredKeyString(CommonConst.Registry_XSOverlay_Level, XSOverlayNotifications.SelectedValue.ToString() ?? CommonConst.XSOverlay_Level_None);
 
@@ -1897,264 +2414,6 @@ namespace Tailgrab.PlayerManagement
             finally
             {
                 TestImagePromptButton.IsEnabled = true;
-            }
-        }
-        #endregion
-
-        #region Config / Alert Tab Handling
-        private void SaveAlerts_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                // Avatar Alerts
-                SetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Watch, CommonConst.Sound_Alert_Key, (string)AvatarWarnSound.SelectedValue);
-                SetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Sound_Alert_Key, (string)AvatarNuisanceSound.SelectedValue);
-                SetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Sound_Alert_Key, (string)AvatarCrasherSound.SelectedValue);
-                SetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Watch, CommonConst.Color_Alert_Key, (string)AvatarWarnColor.SelectedValue);
-                SetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Color_Alert_Key, (string)AvatarNuisanceColor.SelectedValue);
-                SetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Color_Alert_Key, (string)AvatarCrasherColor.SelectedValue);
-
-                // Group Alerts
-                SetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Watch, CommonConst.Sound_Alert_Key, (string)GroupWarnSound.SelectedValue);
-                SetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Sound_Alert_Key, (string)GroupNuisanceSound.SelectedValue);
-                SetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Sound_Alert_Key, (string)GroupCrasherSound.SelectedValue);
-                SetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Watch, CommonConst.Color_Alert_Key, (string)GroupWarnColor.SelectedValue);
-                SetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Color_Alert_Key, (string)GroupNuisanceColor.SelectedValue);
-                SetAlertKeyString(CommonConst.Group_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Color_Alert_Key, (string)GroupCrasherColor.SelectedValue);
-
-                // Group Alerts
-                SetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Watch, CommonConst.Sound_Alert_Key, (string)ProfileWarnSound.SelectedValue);
-                SetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Sound_Alert_Key, (string)ProfileNuisanceSound.SelectedValue);
-                SetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Sound_Alert_Key, (string)ProfileCrasherSound.SelectedValue);
-                SetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Watch, CommonConst.Color_Alert_Key, (string)ProfileWarnColor.SelectedValue);
-                SetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Nuisance, CommonConst.Color_Alert_Key, (string)ProfileNuisanceColor.SelectedValue);
-                SetAlertKeyString(CommonConst.Profile_Alert_Key, AlertTypeEnum.Crasher, CommonConst.Color_Alert_Key, (string)ProfileCrasherColor.SelectedValue);
-            }
-            catch (Exception ex)
-            {
-                ShowOverlayMessageOkCancel(
-                    "Error",
-                    $"Failed to save configuration: {ex.Message}",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
-            }
-        }
-
-        private void TestSound_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is System.Windows.Controls.Button button && button.Tag is string soundName)
-            {
-                SoundManager.PlaySound(soundName);
-            }
-        }
-
-        private static void SetAlertKeyString(string alertKey, AlertTypeEnum alertType, string subType, object value)
-        {
-            string key = CommonConst.ConfigRegistryPath + "\\" + alertKey + "\\" + alertType.ToString();
-
-            if (value is string stringValue && !string.IsNullOrEmpty(stringValue))
-            {
-                ConfigStore.PutStoredKeyString(key, subType, stringValue);
-            }
-            else
-            {
-                ConfigStore.RemoveStoredKeyString(key, subType);
-            }
-
-        }
-
-        private static string? GetAlertKeyString(string alertKey, AlertTypeEnum alertType, string subType)
-        {
-            string key = CommonConst.ConfigRegistryPath + "\\" + alertKey + "\\" + alertType.ToString();
-
-            return ConfigStore.GetStoredKeyString(key, subType);
-        }
-
-        private void LoadHighlightColors()
-        {
-            try
-            {
-                UpdateAlertColorOptions();
-
-                // Load colors from registry or use defaults
-                var normalBg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Normal_Background) ?? CommonConst.Default_HighlightClass_Normal_Background;
-                var normalFg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Normal_Foreground) ?? CommonConst.Default_HighlightClass_Normal_Foreground;
-                var friendBg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Friend_Background) ?? CommonConst.Default_HighlightClass_Friend_Background;
-                var friendFg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Friend_Foreground) ?? CommonConst.Default_HighlightClass_Friend_Foreground;
-                var class01Bg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Class01_Background) ?? CommonConst.Default_HighlightClass_Class01_Background;
-                var class01Fg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Class01_Foreground) ?? CommonConst.Default_HighlightClass_Class01_Foreground;
-                var class02Bg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Class02_Background) ?? CommonConst.Default_HighlightClass_Class02_Background;
-                var class02Fg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Class02_Foreground) ?? CommonConst.Default_HighlightClass_Class02_Foreground;
-                var class03Bg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Class03_Background) ?? CommonConst.Default_HighlightClass_Class03_Background;
-                var class03Fg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Class03_Foreground) ?? CommonConst.Default_HighlightClass_Class03_Foreground;
-                var class04Bg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Class04_Background) ?? CommonConst.Default_HighlightClass_Class04_Background;
-                var class04Fg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Class04_Foreground) ?? CommonConst.Default_HighlightClass_Class04_Foreground;
-                var selectedBg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Selected_Background) ?? CommonConst.Default_HighlightClass_Selected_Background;
-                var selectedFg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_Selected_Foreground) ?? CommonConst.Default_HighlightClass_Selected_Foreground;
-                var mouseOverBg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_MouseOver_Background) ?? CommonConst.Default_HighlightClass_MouseOver_Background;
-                var mouseOverFg = ConfigStore.GetStoredKeyString(CommonConst.Registry_HighlightClass_MouseOver_Foreground) ?? CommonConst.Default_HighlightClass_MouseOver_Foreground;
-
-                // Set the brush properties
-                var converter = new BrushConverter();
-                NormalBackground = (System.Windows.Media.Brush)converter.ConvertFromString(normalBg)!;
-                NormalForeground = (System.Windows.Media.Brush)converter.ConvertFromString(normalFg)!;
-                FriendBackground = (System.Windows.Media.Brush)converter.ConvertFromString(friendBg)!;
-                FriendForeground = (System.Windows.Media.Brush)converter.ConvertFromString(friendFg)!;
-                Class01Background = (System.Windows.Media.Brush)converter.ConvertFromString(class01Bg)!;
-                Class01Foreground = (System.Windows.Media.Brush)converter.ConvertFromString(class01Fg)!;
-                Class02Background = (System.Windows.Media.Brush)converter.ConvertFromString(class02Bg)!;
-                Class02Foreground = (System.Windows.Media.Brush)converter.ConvertFromString(class02Fg)!;
-                Class03Background = (System.Windows.Media.Brush)converter.ConvertFromString(class03Bg)!;
-                Class03Foreground = (System.Windows.Media.Brush)converter.ConvertFromString(class03Fg)!;
-                Class04Background = (System.Windows.Media.Brush)converter.ConvertFromString(class04Bg)!;
-                Class04Foreground = (System.Windows.Media.Brush)converter.ConvertFromString(class04Fg)!;
-                SelectedBackground = (System.Windows.Media.Brush)converter.ConvertFromString(selectedBg)!;
-                SelectedForeground = (System.Windows.Media.Brush)converter.ConvertFromString(selectedFg)!;
-                MouseOverBackground = (System.Windows.Media.Brush)converter.ConvertFromString(mouseOverBg)!;
-                MouseOverForeground = (System.Windows.Media.Brush)converter.ConvertFromString(mouseOverFg)!;
-
-                // Set selected options in ComboBoxes
-                SelectedNormalBackground = ColorOptions.FirstOrDefault(c => c.Value.Equals(normalBg, StringComparison.OrdinalIgnoreCase));
-                SelectedNormalForeground = ColorOptions.FirstOrDefault(c => c.Value.Equals(normalFg, StringComparison.OrdinalIgnoreCase));
-                SelectedFriendBackground = ColorOptions.FirstOrDefault(c => c.Value.Equals(friendBg, StringComparison.OrdinalIgnoreCase));
-                SelectedFriendForeground = ColorOptions.FirstOrDefault(c => c.Value.Equals(friendFg, StringComparison.OrdinalIgnoreCase));
-                SelectedClass01Background = ColorOptions.FirstOrDefault(c => c.Value.Equals(class01Bg, StringComparison.OrdinalIgnoreCase));
-                SelectedClass01Foreground = ColorOptions.FirstOrDefault(c => c.Value.Equals(class01Fg, StringComparison.OrdinalIgnoreCase));
-                SelectedClass02Background = ColorOptions.FirstOrDefault(c => c.Value.Equals(class02Bg, StringComparison.OrdinalIgnoreCase));
-                SelectedClass02Foreground = ColorOptions.FirstOrDefault(c => c.Value.Equals(class02Fg, StringComparison.OrdinalIgnoreCase));
-                SelectedClass03Background = ColorOptions.FirstOrDefault(c => c.Value.Equals(class03Bg, StringComparison.OrdinalIgnoreCase));
-                SelectedClass03Foreground = ColorOptions.FirstOrDefault(c => c.Value.Equals(class03Fg, StringComparison.OrdinalIgnoreCase));
-                SelectedClass04Background = ColorOptions.FirstOrDefault(c => c.Value.Equals(class04Bg, StringComparison.OrdinalIgnoreCase));
-                SelectedClass04Foreground = ColorOptions.FirstOrDefault(c => c.Value.Equals(class04Fg, StringComparison.OrdinalIgnoreCase));
-                SelectedSelectedBackground = ColorOptions.FirstOrDefault(c => c.Value.Equals(selectedBg, StringComparison.OrdinalIgnoreCase));
-                SelectedSelectedForeground = ColorOptions.FirstOrDefault(c => c.Value.Equals(selectedFg, StringComparison.OrdinalIgnoreCase));
-
-                // Need to update alert color options after loading new colors to ensure they reflect in the ComboBoxes
-                UpdateAlertColorOptions();
-                UpdateAlertComboBoxValues();
-
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex, "Failed to load highlight colors");
-            }
-        }
-
-        private void UpdateAlertColorOptions()
-        {
-            AlertColorOptions.Clear();
-            AlertColorOptions.Add(new AlertColorOption("*NONE", "Normal", NormalBackground, NormalForeground));
-            AlertColorOptions.Add(new AlertColorOption("Class 1", "Class01", Class01Background, Class01Foreground));
-            AlertColorOptions.Add(new AlertColorOption("Class 2", "Class02", Class02Background, Class02Foreground));
-            AlertColorOptions.Add(new AlertColorOption("Class 3", "Class03", Class03Background, Class03Foreground));
-            AlertColorOptions.Add(new AlertColorOption("Class 4", "Class04", Class04Background, Class04Foreground));
-        }
-
-        private void SaveColors_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                // Save all color settings to registry
-                if (SelectedNormalBackground != null)
-                    ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Normal_Background, SelectedNormalBackground.Value);
-                if (SelectedNormalForeground != null)
-                    ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Normal_Foreground, SelectedNormalForeground.Value);
-                if (SelectedFriendBackground != null)
-                    ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Friend_Background, SelectedFriendBackground.Value);
-                if (SelectedFriendForeground != null)
-                    ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Friend_Foreground, SelectedFriendForeground.Value);
-                if (SelectedClass01Background != null)
-                    ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Class01_Background, SelectedClass01Background.Value);
-                if (SelectedClass01Foreground != null)
-                    ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Class01_Foreground, SelectedClass01Foreground.Value);
-                if (SelectedClass02Background != null)
-                    ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Class02_Background, SelectedClass02Background.Value);
-                if (SelectedClass02Foreground != null)
-                    ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Class02_Foreground, SelectedClass02Foreground.Value);
-                if (SelectedClass03Background != null)
-                    ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Class03_Background, SelectedClass03Background.Value);
-                if (SelectedClass03Foreground != null)
-                    ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Class03_Foreground, SelectedClass03Foreground.Value);
-                if (SelectedClass04Background != null)
-                    ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Class04_Background, SelectedClass04Background.Value);
-                if (SelectedClass04Foreground != null)
-                    ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Class04_Foreground, SelectedClass04Foreground.Value);
-                if (SelectedSelectedBackground != null)
-                    ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Selected_Background, SelectedSelectedBackground.Value);
-                if (SelectedSelectedForeground != null)
-                    ConfigStore.PutStoredKeyString(CommonConst.Registry_HighlightClass_Selected_Foreground, SelectedSelectedForeground.Value);
-
-                // Reload colors with new settings
-                LoadHighlightColors();
-
-                ShowOverlayMessageOkCancelI18N(
-                    "MessageBox.SaveColors.Title",
-                    "MessageBox.SaveColors.Content",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information,
-                    null);
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex, "Failed to save color settings");
-                ShowOverlayMessageOkCancelI18N(
-                    "MessageBox.SaveColors_Error.Title",
-                    "MessageBox.SaveColors_Error.Content",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error,
-                    null,
-                    ex.Message);
-            }
-        }
-
-        private async void ResetColors_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                var result = await ShowOverlayMessageOkCancelAsync(
-                    "Reset Colors to Defaults?",
-                    "Are you sure you want to reset all colors to their default values?",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Question);
-
-                if (result == MessageBoxResult.Yes)
-                {
-                    // Remove all color settings from registry
-                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Normal_Background);
-                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Normal_Foreground);
-                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Friend_Background);
-                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Friend_Foreground);
-                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Class01_Background);
-                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Class01_Foreground);
-                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Class02_Background);
-                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Class02_Foreground);
-                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Class03_Background);
-                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Class03_Foreground);
-                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Class04_Background);
-                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Class04_Foreground);
-                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Selected_Background);
-                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_Selected_Foreground);
-                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_MouseOver_Background);
-                    ConfigStore.RemoveStoredKeyString(CommonConst.Registry_HighlightClass_MouseOver_Foreground);
-
-                    // Reload colors with defaults
-                    LoadHighlightColors();
-
-                    await ShowOverlayMessageOkCancelAsync(
-                        "Colors Reset",
-                        "Colors reset to defaults successfully.",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Information);
-                }
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex, "Failed to reset color settings");
-                ShowOverlayMessageOkCancel(
-                    "Error",
-                    $"Failed to reset color settings: {ex.Message}",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
             }
         }
         #endregion
@@ -5056,7 +5315,12 @@ namespace Tailgrab.PlayerManagement
         {
             try
             {
-                var activeTasks = FileTailer.GetActiveTailTasks();
+                var activeTasks = _serviceRegistry.GetFileTailer()?.GetActiveTailTasks();
+
+                if (activeTasks == null)
+                {
+                    return;
+                }
 
                 // Remove tasks that are no longer active
                 var toRemove = OpenLogs.Where(vm => !activeTasks.ContainsKey(vm.FilePath)).ToList();

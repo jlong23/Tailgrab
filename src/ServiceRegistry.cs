@@ -17,6 +17,7 @@ using Tailgrab.Clients.VRChat;
 using Tailgrab.Clients.XSOverlay;
 using Tailgrab.Common;
 using Tailgrab.Configuration;
+using Tailgrab.LineHandler;
 using Tailgrab.Manager;
 using Tailgrab.MCP;
 using Tailgrab.Models;
@@ -31,6 +32,7 @@ namespace Tailgrab
 
         private ConcurrentPriorityQueue<IHavePriority<int>, int> priorityQueue = new();
 
+        private FileTailer? _fileTailer = null;  
         TailgrabDBContext? dbContext = null;
         VRChatClient vrcAPIClient = new VRChatClient();
         PlayerManager? playerManager = null;
@@ -125,13 +127,6 @@ namespace Tailgrab
                 logger.Info("Starting TTS Manager...");
                 ttsManager = new TTSManager(this);
 
-                bool saveAvatars = ConfigStore.GetStoredKeyBool(CommonConst.Registry_Moderated_Avatar_Caching, true);
-                if (saveAvatars)
-                {
-                    logger.Info("Syncing avatar moderations...");
-                    avatarManager.SyncAvatarModerations();
-                }
-
                 logger.Info("Starting Group Manager...");
                 groupManager = new GroupManager(this);
                 _ = Task.Run(() => groupManager.ProcessGroupGistList( null, false ));
@@ -144,6 +139,9 @@ namespace Tailgrab
                 GetOBSClient();
 
                 logger.Info("Office Client initialized via dependency injection.");
+
+                logger.Info("Starting VR Chat Log Watch Thread...");
+                _fileTailer = new FileTailer(this);
 
                 logger.Info("All services started.");
             }
@@ -163,6 +161,11 @@ namespace Tailgrab
                 {
                     await obsClient.Disconnect();
                 }
+
+                if(_fileTailer != null)
+                {
+                    _fileTailer.Dispose();
+                }
             }
             catch (Exception ex)
             {
@@ -174,6 +177,15 @@ namespace Tailgrab
         public VRChatClient GetVRChatAPIClient()
         {
             return vrcAPIClient;
+        }
+
+        public FileTailer? GetFileTailer()
+        {
+            if (_fileTailer == null)
+            {
+                throw new InvalidOperationException("File Tailer has not been initialized. Call StartAllServices() first.");
+            }   
+            return _fileTailer;
         }
 
         public TailgrabDBContext GetDBContext()
@@ -425,13 +437,11 @@ namespace Tailgrab
             
             MultiDevicePlayer? player = serviceRegistry.GetMultiDevicePlayer();
 
-            synthesisClient.VoiceCloneProfile = voiceEvent.VoiceProfile ?? CommonConst.OMNIVOICE_DEFAULT_PROFILE;
+            //synthesisClient.VoiceCloneProfile = voiceEvent.VoiceProfile ?? CommonConst.OMNIVOICE_DEFAULT_PROFILE;
             byte[]? audio = Task.Run(() => synthesisClient.GetAudioForTextAsync(voiceEvent.Text)).Result;
-            string outputDevice = player?.SelectedOutputDevice ?? MultiDevicePlayer.GetDefaultOutputDevice();
-            if ( voiceEvent.OutputDevice != null)
-                outputDevice = voiceEvent.OutputDevice;
+            List<AudioChannelSettings> outputDevices = player?.GetSelectedDevices() ?? new List<AudioChannelSettings>();
 
-            player?.Play(audio, outputDevice);
+            player?.Play(audio, outputDevices);
         }
 
         private static void ProcessOSCSendEvent(ServiceRegistry serviceRegistry, OSCSendEvent oscEvent)
@@ -498,7 +508,7 @@ namespace Tailgrab
             }
         }
 
-        public void PublishVoiceCloneSpeechEvent(string text, string? voiceProfile, string outputDevice)
+        public void PublishVoiceCloneSpeechEvent(string text, string? voiceProfile, string? outputDevice)
         {
             VoiceCloneSpeechEvent voiceEvent = new VoiceCloneSpeechEvent
             {

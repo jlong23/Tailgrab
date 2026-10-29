@@ -132,7 +132,7 @@ namespace Tailgrab.PlayerManagement
         {
             WorldInstanceInfo worldInfo = await GetWorldInstanceInfo(worldId, instanceId);
             CurrentSession = worldInfo;
-            serviceRegistry.GetXSOverlay().Initialize();
+            await serviceRegistry.GetXSOverlay().Initialize();
 
             bool recordImageEvent = ConfigStore.GetStoredKeyBool(CommonConst.Registry_OBS_StartRecordOnWorldJoin, false);
             if (recordImageEvent)
@@ -417,7 +417,7 @@ namespace Tailgrab.PlayerManagement
 
                 OverlayManager overlay = serviceRegistry.GetXSOverlay();
                 Image? groupAlert = null;
-                Task.Run(() => overlay.SendNotification(
+                await Task.Run(() => overlay.SendNotification(
                     AlertTypeEnum.Crasher,
                     "<b>LIFTUP ERROR Alert</b>",
                     $"<b>{player.DisplayName}</b> a VRChat Client LIFTUP Error.",
