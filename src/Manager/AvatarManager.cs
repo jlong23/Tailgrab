@@ -683,7 +683,7 @@ namespace Tailgrab.Manager
                         dbContext.AvatarInfos.Update(avatarInfo);
                         dbContext.SaveChanges();
 
-                        _Logger.Info($"Line {watch.LineNumber}: Set Watch State for Avatar ID '{watch.AvatarId}' /  '{avatarInfo.AvatarName} by {avatarInfo.UserName}' to Nuisance due to moderation."); ")
+                        _Logger.Info($"Line {watch.LineNumber}: Set Watch State for Avatar ID '{watch.AvatarId}' /  '{avatarInfo.AvatarName} by {avatarInfo.UserName}' to Nuisance due to moderation.");
                     }
                     else
                     {
