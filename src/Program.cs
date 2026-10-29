@@ -9,11 +9,10 @@ using System.Text;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Media;
+using Tailgrab.Clients.VRChat;
 using Tailgrab.Common;
 using Tailgrab.DependencyInjection;
-using Tailgrab.Models;
 using Tailgrab.PlayerManagement;
-using Tailgrab.Clients.VRChat;
 using Tailgrab.PlayerManagement.Views;
 
 namespace Tailgrab;
