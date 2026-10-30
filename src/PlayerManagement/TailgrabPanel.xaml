@@ -1096,8 +1096,13 @@ Title="Tailgrab Player Panel"
 
 
                                 <Label Grid.Row="1" Grid.Column="3" Content="{DynamicResource UI.Tab.ModerationReports.Group.ContentId}" FontWeight="Bold" Margin="0,0,8,0" VerticalAlignment="Center" HorizontalAlignment="Right"/>
-                                <TextBlock Grid.Row="1" Grid.Column="4" Name="ModerationReportContentId" VerticalAlignment="Center"/>
-
+                                    <TextBlock Grid.Row="1" Grid.Column="4" VerticalAlignment="Center">
+                                    <Hyperlink NavigateUri="{Binding ElementName=ModerationReportContentId, Path=Text}"
+                                        RequestNavigate="VRChatContentHyperlink_RequestNavigate">
+                                        <TextBlock Name="ModerationReportContentId"/>
+                                    </Hyperlink>
+                                </TextBlock>
+                                
                                 <Label Grid.Row="2" Grid.Column="1" Content="{DynamicResource UI.Tab.ModerationReports.Group.ContentName}" FontWeight="Bold" Margin="0,0,8,0" VerticalAlignment="Center" HorizontalAlignment="Right"/>
                                 <TextBlock Grid.Row="2" Grid.Column="2" Grid.ColumnSpan="3" Name="ModerationReportContentName" VerticalAlignment="Center"/>
 

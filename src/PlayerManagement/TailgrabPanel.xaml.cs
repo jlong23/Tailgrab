@@ -4980,6 +4980,46 @@ namespace Tailgrab.PlayerManagement
         }
         #endregion
 
+
+        private void VRChatContentHyperlink_RequestNavigate(object? sender, System.Windows.Navigation.RequestNavigateEventArgs e)
+        {
+            try
+            {
+                logger.Info($"Opening Content URL: {e.Uri}");
+                string contentType = e.Uri.ToString().Split('_')[0]; // Extract the content type prefix (e.g., "avtr", "grp", "usr")
+                string directive = string.Empty;
+                switch (contentType)
+                {
+                    case "avtr":
+                        // Avatar
+                        directive = "avatar/";
+                        break;
+                    case "grp":
+                        // Group
+                        directive = "group/";
+                        break;
+                    case "usr":
+                        // User
+                        directive = "user/";
+                        break;
+                    default:
+                        logger.Warn($"Unknown content type for URL: {e.Uri}");
+                        break;
+                }
+                var uri = new Uri($"https://vrchat.com/home/{directive}{e.Uri}");
+                var psi = new System.Diagnostics.ProcessStartInfo(uri.AbsoluteUri)
+                {
+                    UseShellExecute = true
+                };
+                System.Diagnostics.Process.Start(psi);
+            }
+            catch (Exception ex)
+            {
+                logger?.Error(ex, "Failed to open group URL");
+            }
+            e.Handled = true;
+        }
+
         //
         // User DB UI handlers
         #region User DB handlers

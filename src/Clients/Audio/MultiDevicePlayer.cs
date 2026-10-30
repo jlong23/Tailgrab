@@ -2,6 +2,7 @@
 using NAudio.Wave;
 using NLog;
 using System.IO;
+using System.Windows;
 using System.Windows.Forms.VisualStyles;
 
 namespace Tailgrab.Clients.Audio
@@ -60,9 +61,23 @@ namespace Tailgrab.Clients.Audio
                 // Notify subscribers of the device change
                 if (device != null)
                 {
-                    OutputDeviceChanged?.Invoke(this, new OutputDeviceChangedEventArgs(device.FriendlyName));
+                    RaiseOutputDeviceChanged(device.FriendlyName);
                 }
             };
+        }
+
+        private void RaiseOutputDeviceChanged(string deviceFriendlyName)
+        {
+            if (System.Windows.Application.Current != null)
+            {
+                System.Windows.Application.Current.Dispatcher.BeginInvoke(() =>
+                    OutputDeviceChanged?.Invoke(this, new OutputDeviceChangedEventArgs(deviceFriendlyName))
+                );
+            }
+            else
+            {
+                OutputDeviceChanged?.Invoke(this, new OutputDeviceChangedEventArgs(deviceFriendlyName));
+            }
         }
 
 
