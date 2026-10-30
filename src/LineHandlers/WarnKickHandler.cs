@@ -39,6 +39,10 @@ public class WarnKickHandler : AbstractLineHandler
                 { "userName", userName },
                 { "action", action },
                 { "userId", player?.UserId.ToString() ?? string.Empty  },
+                { "trustLevel", TrustClassEnumMapper.MapEnumToDescription( player?.UserTrustClass ?? TrustClassEnum.VISITOR ) },
+                { "avatarId", player?.AvatarId.ToString() ?? string.Empty },
+                { "avatarName", player?.AvatarName ?? string.Empty },
+                { "elapsedMinutes", player?.InstanceEndTime != null ? ((DateTime.UtcNow - player.InstanceEndTime.Value).TotalMinutes.ToString()) : string.Empty },
             };
 
             ExecuteActions(actionData);
