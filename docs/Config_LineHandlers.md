@@ -179,6 +179,11 @@ Purpose: Detect when a user receives a General Vote to Kick (VTK) action and to 
 | timestamp | The timestamp of the log line | Log line |
 | userId | The VRChat userId of the user that had the VTK | VRC API |
 | userName | The VRChat userName of the user that had the VTK | Log line |
+| trustLevel | The VRChat trustLevel of the user that had the VTK | VRC API |
+| avatarId | The VRChat avatarId of the user that had the VTK | VRC API |
+| avatarName | The VRChat avatarName of the user that had the VTK | Log line |
+| elapsedMinutes | The elapsed minutes since the user that had the VTK was last seen in the instance | VRC API |
+| action | Always 'VoteKickReceived' | Hard Coded |
 
 
 #### VTK Requested LineHandler
@@ -190,6 +195,11 @@ Purpose: Detect when a user initiates a General Vote to Kick (VTK) action and to
 | timestamp | The timestamp of the log line | Log line |
 | userId | The VRChat userId of the targeted user for the VTK | VRC API |
 | userName | The VRChat userName of the targeted user for the VTK | Log line |
+| trustLevel | The VRChat trustLevel of the user that had the VTK | VRC API |
+| avatarId | The VRChat avatarId of the user that had the VTK | VRC API |
+| avatarName | The VRChat avatarName of the user that had the VTK | Log line |
+| elapsedMinutes | The elapsed minutes since the user that had the VTK was last seen in the instance | VRC API |
+| action | Always 'VoteKickRequested' | Hard Coded |
 
 
 #### VTK Group LineHandler
@@ -203,6 +213,11 @@ Purpose: Detect when a the Group Moderator receives a General Vote to Kick (VTK)
 | userName | The VRChat userName of the targeted user for the VTK | Log line |
 | initiatedByUserId | The VRChat userId of the user that initiated the VTK | VRC API |
 | initiatedBy | The VRChat userName of the user that initiated the VTK | Log line |
+| trustLevel | The VRChat trustLevel of the user that had the VTK | VRC API |
+| avatarId | The VRChat avatarId of the user that had the VTK | VRC API |
+| avatarName | The VRChat avatarName of the user that had the VTK | Log line |
+| elapsedMinutes | The elapsed minutes since the user that had the VTK was last seen in the instance | VRC API |
+| action | Always 'VoteKickGroupModeration' | Hard Coded |
 
 
 #### Warn/Kick LineHandler
@@ -215,6 +230,10 @@ Purpose: Detect when a Group Moderator initiates a Warn or Kick action and to ex
 | userId | The VRChat userId of the user that had the VTK | VRC API |
 | userName | The VRChat userName of the user that had the VTK | Log line |
 | action | The user instance moderation state Warn/Kick | Log line |
+| trustLevel | The VRChat trustLevel of the user that had the VTK | VRC API |
+| avatarId | The VRChat avatarId of the user that had the VTK | VRC API |
+| avatarName | The VRChat avatarName of the user that had the VTK | Log line |
+| elapsedMinutes | The elapsed minutes since the user that had the VTK was last seen in the instance | VRC API |
 
 
 #### WorldChange LineHandler
@@ -391,3 +410,29 @@ To specify that any combination of SHIFT, CTRL, and ALT should be held down whil
 To specify repeating keys, use the form ```{key number}```. You must put a space between key and number. For example, ```{LEFT 42}``` means press the LEFT ARROW key 42 times; ```{h 10}``` means press H 10 times.
 
 
+### HTTPGetAction Definition in Actions
+
+** Untested **
+
+The HTTPGetAction will let you perform an HTTP GET request to a specified URL when triggered.
+
+|Attribute | Definition |
+|--------|--------|
+| actionTypeValue | ```HTTPGetAction``` See ```actionTypeValue``` |
+| url | The URL to send the GET request to; EG. ```https://example.com/api``` |
+| cookies | Optional cookies to include in the request; EG. ```sessionid=abc123``` |
+| timeout | Optional timeout in milliseconds for the request; EG. ```5000``` |
+
+
+### HTTPPostAction Definition in Actions
+
+** Untested **
+
+The HTTPPostAction will let you perform an HTTP POST request to a specified URL when triggered with the LineHandler Variable replacement values in the body of the request.  The body of the request is a JSON object with key/value pairs that can be used to send data to your server.
+
+|Attribute | Definition |
+|--------|--------|
+| actionTypeValue | ```HTTPPostAction``` See ```actionTypeValue``` |
+| url | The URL to send the POST request to; EG. ```https://example.com/api``` |
+| cookies | Optional cookies to include in the request; EG. ```sessionid=abc123``` |
+| timeout | Optional timeout in milliseconds for the request; EG. ```5000``` |

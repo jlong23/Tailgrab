@@ -2,6 +2,7 @@ using NLog;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Net.Http;
 using Tailgrab.Clients.OSC;
 using Tailgrab.Common;
 
@@ -419,6 +420,128 @@ namespace Tailgrab.Actions
         public override string ToString()
         {
             return $"PlaySoundAction: SoundFile: '{soundFile}'.";
+        }
+    }
+
+    public class HTTPGetAction : IAction
+    {
+        public Logger logger = LogManager.GetCurrentClassLogger();
+
+        public string Url { get; set; }
+        public string? Cookies { get; set; }
+        public int Timeout { get; set; }
+
+        private static readonly HttpClient _httpClient = new HttpClient();
+
+        public HTTPGetAction(string url, string? cookies, int timeout)
+        {
+            Url = url;
+            Cookies = cookies;
+            Timeout = timeout;
+
+            logger.Info($"Added HTTPGetAction: Url: '{url}'; Timeout: {timeout}.");
+        }
+
+        public void PerformAction(Dictionary<string, string> content)
+        {
+            var url = this.Url;
+            if (string.IsNullOrEmpty(url))
+            {
+                return;
+            }
+
+            string formatedUri = Uri.EscapeDataString(ActionDataFormater.FormatData(url, content));
+            logger.Info($"HTTPGetAction: Performing GET request to URL: '{formatedUri}'.");
+
+            // Perform the HTTP GET request
+            _httpClient.Timeout = TimeSpan.FromMilliseconds(Timeout);
+            _httpClient.DefaultRequestHeaders.Clear();
+            _httpClient.DefaultRequestHeaders.Add("User-Agent", "TailGrabClient/1.0");
+            _httpClient.DefaultRequestHeaders.Add("Accept", "*/*");
+            _httpClient.DefaultRequestHeaders.Add("Connection", "keep-alive");
+            _httpClient.DefaultRequestHeaders.Add("Accept-Encoding", "gzip, deflate, br");
+            if (!string.IsNullOrEmpty(Cookies))
+            {
+               _httpClient.DefaultRequestHeaders.Add("Cookie", Cookies);
+            }
+            Task.Run(() => _httpClient.GetAsync(formatedUri).ContinueWith(responseTask =>
+            {
+                if (responseTask.IsCompletedSuccessfully)
+                {
+                    var response = responseTask.Result;
+                    logger.Info($"HTTPGetAction: Received response with status code: {response.StatusCode} for URL: '{formatedUri}'.");
+                }
+                else
+                {
+                    logger.Error(responseTask.Exception, $"HTTPGetAction: Error performing GET request to URL: '{formatedUri}'.");
+                }
+            }));
+        }
+
+        public override string ToString()
+        {
+            return $"HTTPGetAction: Url: '{Url}'; Timeout: {Timeout}.";
+        }
+    }
+
+    public class HTTPPostAction : IAction
+    {
+        public Logger logger = LogManager.GetCurrentClassLogger();
+
+        public string Url { get; set; }
+        public string? Cookies { get; set; }
+        public int Timeout { get; set; }
+
+        private static readonly HttpClient _httpClient = new HttpClient();
+
+        public HTTPPostAction(string url, string? cookies, int timeout)
+        {
+            Url = url;
+            Cookies = cookies;
+            Timeout = timeout;
+
+            logger.Info($"Added HTTPPostAction: Url: '{url}'; Timeout: {timeout}.");
+        }
+
+        public void PerformAction(Dictionary<string, string> content)
+        {
+            var url = this.Url;
+            if (string.IsNullOrEmpty(url))
+            {
+                return;
+            }
+
+            string formatedUri = Uri.EscapeDataString( ActionDataFormater.FormatData(url, content));
+            logger.Info($"HTTPPostAction: Performing POST request to URL: '{formatedUri}'.");
+
+            // Perform the HTTP POST request
+            _httpClient.Timeout = TimeSpan.FromMilliseconds(Timeout);
+            _httpClient.DefaultRequestHeaders.Clear();
+            _httpClient.DefaultRequestHeaders.Add("User-Agent", "TailGrabClient/1.0");
+            _httpClient.DefaultRequestHeaders.Add("Accept", "*/*");
+            _httpClient.DefaultRequestHeaders.Add("Connection", "keep-alive");
+            _httpClient.DefaultRequestHeaders.Add("Accept-Encoding", "gzip, deflate, br");
+            if (!string.IsNullOrEmpty(Cookies))
+            {
+                _httpClient.DefaultRequestHeaders.Add("Cookie", Cookies);
+            }
+            Task.Run(() => _httpClient.PostAsync(formatedUri, new FormUrlEncodedContent(content)).ContinueWith(responseTask =>
+            {
+                if (responseTask.IsCompletedSuccessfully)
+                {
+                    var response = responseTask.Result;
+                    logger.Info($"HTTPPostAction: Received response with status code: {response.StatusCode} for URL: '{formatedUri}'.");
+                }
+                else
+                {
+                    logger.Error(responseTask.Exception, $"HTTPPostAction: Error performing POST request to URL: '{formatedUri}'.");
+                }
+            }));
+        }
+
+        public override string ToString()
+        {
+            return $"HTTPPostAction: Url: '{Url}'; Timeout: {Timeout}.";
         }
     }
 }

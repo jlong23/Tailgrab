@@ -409,6 +409,31 @@ namespace Tailgrab.Configuration
 
                     actions.Add(ttsAcction);
                 }
+
+                if(actionConfig.GetType() == typeof(HTTPGetActionConfig))
+                {
+                    var httpGetActionConfig = (HTTPGetActionConfig)actionConfig;
+                    if (httpGetActionConfig.Url == null)
+                    {
+                        logger.Warn("HTTP GET Action configuration is missing required field; 'url', skipping this action.");
+                        continue;
+                    }
+                    HTTPGetAction httpGetAction = new HTTPGetAction(httpGetActionConfig.Url, httpGetActionConfig.cookies, httpGetActionConfig.timeout);
+                    actions.Add(httpGetAction);
+                }
+
+                if (actionConfig.GetType() == typeof(HTTPPostActionConfig))
+                {
+                    var httpPostActionConfig = (HTTPPostActionConfig)actionConfig;
+                    if (httpPostActionConfig.Url == null)
+                    {
+                        logger.Warn("HTTP POST Action configuration is missing required field; 'url', skipping this action.");
+                        continue;
+                    }
+                    HTTPPostAction httpPostAction = new HTTPPostAction(httpPostActionConfig.Url, httpPostActionConfig.cookies, httpPostActionConfig.timeout);
+                    actions.Add(httpPostAction);
+                }
+
             }
 
             return actions;
