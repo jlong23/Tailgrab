@@ -280,7 +280,7 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
-        public List<KeyValuePair<string, AlertTypeEnum>> AlertTypeOptions { get; } = AlertTypeEnumMapper.AlertTypeOptions();
+        public List<AlertTypeOption> AlertTypeOptions { get; } = AlertTypeEnumMapper.AlertTypeOptions();
 
         private ObservableCollection<AlertColorOption> _alertColorOptions = [];
         public ObservableCollection<AlertColorOption> AlertColorOptions 
@@ -293,7 +293,7 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
-        public List<KeyValuePair<string, string>> AlertSoundOptions { get; set; } = [];
+        public List<AlertSoundOption> AlertSoundOptions { get; set; } = [];
 
         private List<KeyValuePair<string, string>> _ollamaModelOptions = [];
         public List<KeyValuePair<string, string>> OllamaModelOptions
@@ -853,8 +853,8 @@ namespace Tailgrab.PlayerManagement
 
         private void LoadAlertClassSettings()
         {
-            var sounds = SoundManager.GetAvailableSounds();
-            AlertSoundOptions = [.. sounds.Select(s => new KeyValuePair<string, string>(s, s))];
+            List<string> sounds = SoundManager.GetAvailableSounds();
+            AlertSoundOptions = [.. sounds.Select(s => new AlertSoundOption(s, s))];
 
             // Avatar Alerts
             AvatarWarnSound.SelectedValue = GetAlertKeyString(CommonConst.Avatar_Alert_Key, AlertTypeEnum.Watch, CommonConst.Sound_Alert_Key) ?? "*NONE";
@@ -1076,7 +1076,7 @@ namespace Tailgrab.PlayerManagement
 
         public float Channel01Volume
         {
-            get => _serviceRegistry.GetMultiDevicePlayer()?.GetChannelSettings(1)?.Volume ?? 1.0f;
+            get => _serviceRegistry.GetMultiDevicePlayer()?.GetChannelSettings(1)?.Volume ?? 0.75f;
             set
             {
                 if (_serviceRegistry.GetMultiDevicePlayer() != null)
@@ -1180,7 +1180,7 @@ namespace Tailgrab.PlayerManagement
 
         public float Channel02Volume
         {
-            get => _serviceRegistry.GetMultiDevicePlayer()?.GetChannelSettings(2)?.Volume ?? 1.0f;
+            get => _serviceRegistry.GetMultiDevicePlayer()?.GetChannelSettings(2)?.Volume ?? 0.25f;
             set
             {
                 _serviceRegistry.GetMultiDevicePlayer()?.SetChannelSettings(2, Channel02SelectdDevice ?? string.Empty, value, IsChannel02Muted);
@@ -1483,8 +1483,8 @@ namespace Tailgrab.PlayerManagement
 
             if (!string.IsNullOrEmpty(avatarGistUri)) avatarGistUrl.Text = avatarGistUri;
             if (!string.IsNullOrEmpty(groupGistUri)) groupGistUrl.Text = groupGistUri;
-            if (!string.IsNullOrEmpty(xsOverlayLevel) && AlertTypeOptions.Any(o => o.Key == xsOverlayLevel))
-                XSOverlayNotifications.SelectedValue = xsOverlayLevel;
+            if (!string.IsNullOrEmpty(xsOverlayLevel) && AlertTypeOptions.Any(o => o.DisplayName == xsOverlayLevel))
+                XSOverlayNotifications.SelectedValue = Enum.Parse<AlertTypeEnum>(xsOverlayLevel);
 
             // OBS Integration settings
             OBSClient? obsClient = _serviceRegistry.GetOBSClient();
@@ -2952,6 +2952,52 @@ namespace Tailgrab.PlayerManagement
                     ex.Message);
             }
         }
+        private void ReportGroup_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                string groupId = BanMgmtGroupId.Text.Trim();
+
+                if (string.IsNullOrWhiteSpace(groupId))
+                {
+                    ShowOverlayMessageOkCancelI18N(
+                        "MessageBox.GroupValidation_Error1.Title",
+                        "MessageBox.GroupValidation_Error1.Content",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning,
+                        null);
+                    return;
+                }
+
+                if (!groupId.StartsWith("grp_"))
+                {
+                    ShowOverlayMessageOkCancelI18N(
+                        "MessageBox.GroupValidation_Error2.Title",
+                        "MessageBox.GroupValidation_Error2.Content",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning,
+                        null);
+                    return;
+                }
+
+                // Get display name if user is already loaded, otherwise use userId
+                string displayName = BanMgmtGroupName.Text ?? groupId;
+
+                // Call ShowGroupReportOverlay with the groupId and display name
+                //ShowGroupReportOverlay(groupId, displayName);
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error Reporting Group");
+                ShowOverlayMessageOkCancelI18N(
+                    "MessageBox.ReportGroup_Error.Title",
+                    "MessageBox.ReportGroup_Error.Content",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error,
+                    null,
+                    ex.Message);
+            }
+        }
 
         private void ReportAvatar_Click(object sender, RoutedEventArgs e)
         {
@@ -2961,21 +3007,7 @@ namespace Tailgrab.PlayerManagement
             if (btn.DataContext is UserAvatarViewModel uavm)
             {
                 string avatarId = uavm.AvatarId;
-                try
-                {
-                    ShowAvatarReportOverlay(avatarId);
-                }
-                catch (Exception ex)
-                {
-                    logger.Error(ex, "Failed to open Report Avatar overlay");
-                    ShowOverlayMessageOkCancelI18N(
-                        "MessageBox.ReportAvatar_Error.Title",
-                        "MessageBox.ReportAvatar_Error.Content",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Error,
-                        null,
-                        ex.Message);
-                }
+                ReportAvatar(avatarId);
             }
         }
 
@@ -3127,6 +3159,25 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
+        private void ReportAvatar(string avatarId)
+        {
+            try
+            {
+                ShowAvatarReportOverlay(avatarId);
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to open Report Avatar overlay");
+                ShowOverlayMessageOkCancelI18N(
+                    "MessageBox.ReportAvatar_Error.Title",
+                    "MessageBox.ReportAvatar_Error.Content",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error,
+                    null,
+                    ex.Message);
+            }
+        }
+
         private void ShowAvatarReportOverlay(string avatarId)
         {
             // Populate the overlay fields
@@ -3134,7 +3185,7 @@ namespace Tailgrab.PlayerManagement
 
             // Setup report reasons for avatar (includes Child Exploitation)
             OverlayAvatarReportReasonComboBox.ItemsSource = AvatarReportReasonsOptions;
-            OverlayAvatarReportReasonComboBox.SelectedIndex = 0;
+            OverlayAvatarReportReasonComboBox.SelectedIndex = 5;
 
             if (string.IsNullOrEmpty(avatarId))
             {
@@ -4530,24 +4581,6 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
-        private void AvatarHyperlink_RequestNavigate(object? sender, System.Windows.Navigation.RequestNavigateEventArgs e)
-        {
-            try
-            {
-                logger.Info($"Opening Avatar URL: {e.Uri}");
-                var uri = new Uri($"https://vrchat.com/home/avatar/{e.Uri}");
-                var psi = new System.Diagnostics.ProcessStartInfo(uri.AbsoluteUri)
-                {
-                    UseShellExecute = true
-                };
-                System.Diagnostics.Process.Start(psi);
-            }
-            catch (Exception ex)
-            {
-                logger?.Error(ex, "Failed to open group URL");
-            }
-            e.Handled = true;
-        }
         #endregion
 
         //
@@ -4744,6 +4777,7 @@ namespace Tailgrab.PlayerManagement
                 if (result.Value != null)
                 {
                     UseAvatarButton.IsEnabled = true;
+                    ReportAvatarButton.IsEnabled = true;
                     SelectedAvatarId = result.Value.Id;
 
                     // Populate the UI fields
@@ -4811,6 +4845,7 @@ namespace Tailgrab.PlayerManagement
             BanAvatarOwnerButton.IsEnabled = false;
             ShowOwnerAvatarsButton.IsEnabled = false;
             UseAvatarButton.IsEnabled = false;
+            ReportAvatarButton.IsEnabled = false;
             SelectedAvatarId = string.Empty;
         }
 
@@ -4823,6 +4858,16 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
+        private void ReportAvatarButton_Click(object sender, RoutedEventArgs e)
+        {
+            logger.Info("Report Avatar button clicked");
+            if (!string.IsNullOrWhiteSpace(SelectedAvatarId))
+            {
+                // Call the load user function
+                ReportAvatar(SelectedAvatarId);
+            }
+        }
+
 
         private void GroupDbGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -4832,18 +4877,19 @@ namespace Tailgrab.PlayerManagement
             }
         }
 
-        private async void PopulateGroupInformation(string groupId)
+        private void PopulateGroupInformation(string groupId)
         {
             try
             {
                 // Get the full group information from VRChat API
                 VRChatClient vrcClient = _serviceRegistry.GetVRChatAPIClient();
-                Result<VRChat.API.Model.Group?> groupResult = await Task.Run(() => vrcClient.GetGroupById(groupId));
+                Result<VRChat.API.Model.Group?> groupResult = Task.Run(() => vrcClient.GetGroupById(groupId)).Result;
                 VRChat.API.Model.Group? group = groupResult.Value;
 
                 if (group != null)
                 {
                     // Populate the UI fields
+                    BanMgmtGroupId.Text = group.Id ?? string.Empty;
                     BanMgmtGroupName.Text = group.Name ?? string.Empty;
                     BanMgmtGroupJoinState.Text = group.JoinState?.ToString() ?? string.Empty;
                     BanMgmtGroupmemberCount.Text = group.MemberCount.ToString();
@@ -4854,7 +4900,7 @@ namespace Tailgrab.PlayerManagement
                     string discriminator = group.Discriminator ?? string.Empty;
                     BanMgmtGroupShortCode.Text = string.IsNullOrEmpty(shortCode) ? string.Empty : $"{shortCode}.{discriminator}";
 
-                    VRChatUserProfileEntry? userProfile = await _serviceRegistry.GetVRChatAPIClient().GetCachedUserProfileAsync(group.OwnerId);
+                    VRChatUserProfileEntry? userProfile = Task.Run(() => _serviceRegistry.GetVRChatAPIClient().GetCachedUserProfileAsync(group.OwnerId)).Result;
 
                     BanMgmtGroupOwner.Text = userProfile?.DisplayName ?? string.Empty;
                     BanMgmtGroupOwnerId.Text = group.OwnerId ?? string.Empty;
@@ -4864,6 +4910,7 @@ namespace Tailgrab.PlayerManagement
                     // Enable the Ban Owner button if we have an owner ID
                     BanGroupOwnerButton.IsEnabled = !string.IsNullOrWhiteSpace(group.OwnerId);
                     ShowGroupOwnerAvatarsButton.IsEnabled = !string.IsNullOrWhiteSpace(group.OwnerId);
+                    ReportGroupButton.IsEnabled = false; //!string.IsNullOrWhiteSpace(group.OwnerId);
 
                     // Load group banner image
                     if (!string.IsNullOrEmpty(group.BannerUrl))
@@ -4939,45 +4986,9 @@ namespace Tailgrab.PlayerManagement
             BanMgmtGroupIcon.Source = null;
             BanGroupOwnerButton.IsEnabled = false;
             ShowGroupOwnerAvatarsButton.IsEnabled = false;
+            ReportGroupButton.IsEnabled = false;
         }
 
-        private void GroupHyperlink_RequestNavigate(object? sender, System.Windows.Navigation.RequestNavigateEventArgs e)
-        {
-            try
-            {
-                logger.Info($"Opening group URL: {e.Uri}");
-                var uri = new Uri($"https://vrchat.com/home/group/{e.Uri}");
-                var psi = new System.Diagnostics.ProcessStartInfo(uri.AbsoluteUri)
-                {
-                    UseShellExecute = true
-                };
-                System.Diagnostics.Process.Start(psi);
-            }
-            catch (Exception ex)
-            {
-                logger?.Error(ex, "Failed to open group URL");
-            }
-            e.Handled = true;
-        }
-
-        private void GroupUserHyperlink_RequestNavigate(object? sender, System.Windows.Navigation.RequestNavigateEventArgs e)
-        {
-            try
-            {
-                logger.Info($"Opening User URL: {e.Uri}");
-                var uri = new Uri($"https://vrchat.com/home/user/{e.Uri}");
-                var psi = new System.Diagnostics.ProcessStartInfo(uri.AbsoluteUri)
-                {
-                    UseShellExecute = true
-                };
-                System.Diagnostics.Process.Start(psi);
-            }
-            catch (Exception ex)
-            {
-                logger?.Error(ex, "Failed to open group URL");
-            }
-            e.Handled = true;
-        }
         #endregion
 
 
@@ -5079,25 +5090,6 @@ namespace Tailgrab.PlayerManagement
                 }
                 catch { }
             }
-        }
-
-        private void UserHyperlink_RequestNavigate(object? sender, System.Windows.Navigation.RequestNavigateEventArgs e)
-        {
-            try
-            {
-                logger.Info($"Opening User URL: {e.Uri}");
-                var uri = new Uri($"https://vrchat.com/home/user/{e.Uri}");
-                var psi = new System.Diagnostics.ProcessStartInfo(uri.AbsoluteUri)
-                {
-                    UseShellExecute = true
-                };
-                System.Diagnostics.Process.Start(psi);
-            }
-            catch (Exception ex)
-            {
-                logger?.Error(ex, "Failed to open user URL");
-            }
-            e.Handled = true;
         }
 
         private async void PurgeInactiveUsers_Click(object sender, RoutedEventArgs e)
@@ -6895,6 +6887,7 @@ namespace Tailgrab.PlayerManagement
                 if (!string.IsNullOrWhiteSpace(vm.AvatarId))
                 {
                     // Call the load user function
+                    ReportAvatar(vm.AvatarId);
                 }
             }
         }
@@ -8038,6 +8031,8 @@ namespace Tailgrab.PlayerManagement
     {
         public string DisplayName { get; set; } = displayName;
         public string Value { get; set; } = value;
+
+        public override string ToString() => DisplayName;
     }
     #endregion
 

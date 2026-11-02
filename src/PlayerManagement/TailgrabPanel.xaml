@@ -17,6 +17,9 @@ Title="Tailgrab Player Panel"
     <Window.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
+                <!-- Theme resources - make available to this window for DynamicResource bindings -->
+                <ResourceDictionary Source="/src/Resources/ThemeResources.xaml"/>
+                <ResourceDictionary Source="/src/Resources/ControlStyles.xaml"/>
                 <!-- Localization dictionary (design-time and runtime) -->
                 <ResourceDictionary Source="/src/Resources/localization.en-US.xaml"/>
             </ResourceDictionary.MergedDictionaries>
@@ -34,82 +37,36 @@ Title="Tailgrab Player Panel"
 
             <!-- Dark theme ToolBar style -->
             <Style TargetType="{x:Type ToolBar}">
-                <Setter Property="Background" Value="#FF2D2D30"/>
-                <Setter Property="Foreground" Value="#FFE6E6E6"/>
-                <Setter Property="BorderBrush" Value="#FF3F3F46"/>
+                <Setter Property="Background" Value="{DynamicResource Brush.Control.Background}"/>
+                <Setter Property="Foreground" Value="{DynamicResource Brush.Control.Foreground}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border.Regular}"/>
             </Style>
 
             <!-- Dark theme ToolBarTray style -->
             <Style TargetType="{x:Type ToolBarTray}">
-                <Setter Property="Background" Value="#FF2D2D30"/>
+                <Setter Property="Background" Value="{DynamicResource Brush.Control.Background}"/>
             </Style>
 
             <!-- Dark theme Button style (for ToolBar buttons) -->
             <Style TargetType="{x:Type Button}" x:Key="DarkThemeButton">
-                <Setter Property="Foreground" Value="#FFE6E6E6"/>
-                <Setter Property="Background" Value="#FF3F3F46"/>
-                <Setter Property="BorderBrush" Value="#FF3F3F46"/>
+                <Setter Property="Foreground" Value="{DynamicResource Brush.Control.Foreground}"/>
+                <Setter Property="Background" Value="{DynamicResource Brush.Control.Background}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border.Regular}"/>
             </Style>
 
             <!-- Dark theme TextBlock style -->
             <Style TargetType="{x:Type TextBlock}" x:Key="DarkThemeTextBlock">
-                <Setter Property="Foreground" Value="#FFE6E6E6"/>
+                <Setter Property="Foreground" Value="{DynamicResource Brush.Control.Foreground}"/>
             </Style>
 
-            <!-- Dark theme ComboBox style -->
-            <Style TargetType="{x:Type ComboBox}" x:Key="DarkThemeComboBox">
-                <Setter Property="Foreground" Value="#FFE6E6E6"/>
-                <Setter Property="Background" Value="#FF3C3C3F"/>
-                <Setter Property="BorderBrush" Value="#FF3F3F46"/>
+            <!-- Dark theme ComboBox style - inherits global style and template -->
+            <Style TargetType="{x:Type ComboBox}" x:Key="DarkThemeComboBox" BasedOn="{StaticResource {x:Type ComboBox}}">
+                <Setter Property="Foreground" Value="{DynamicResource Brush.Control.Foreground}"/>
+                <Setter Property="Background" Value="{DynamicResource Brush.Control.Background}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border.Regular}"/>
             </Style>
 
-            <!-- Dark theme TabItem style with template -->
-            <Style TargetType="{x:Type TabItem}">
-            <Setter Property="Background" Value="#FF2D2D30"/>
-            <Setter Property="Foreground" Value="#FFE6E6E6"/>
-            <Setter Property="BorderBrush" Value="#FF3F3F46"/>
-            <Setter Property="Padding" Value="8,4,8,4"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="{x:Type TabItem}">
-                        <Border Name="Border" 
-                                Background="{TemplateBinding Background}" 
-                                BorderBrush="{TemplateBinding BorderBrush}" 
-                                BorderThickness="1,1,1,0" 
-                                CornerRadius="3,3,0,0"
-                                Margin="2,0,2,0">
-                            <ContentPresenter x:Name="ContentSite"
-                                            VerticalAlignment="Center"
-                                            HorizontalAlignment="Center"
-                                            ContentSource="Header"
-                                            Margin="{TemplateBinding Padding}"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <!-- Disabled state -->
-                            <Trigger Property="IsEnabled" Value="False">
-                                <Setter TargetName="Border" Property="Background" Value="#FF37373A"/>
-                                <Setter Property="Foreground" Value="#FF828282"/>
-                            </Trigger>
-                            <!-- Selected state -->
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="Border" Property="Background" Value="#FF46466D"/>
-                                <Setter Property="Foreground" Value="#FFC8C881"/>
-                                <Setter TargetName="Border" Property="BorderThickness" Value="1,1,1,0"/>
-                            </Trigger>
-                            <!-- Mouse over state (only when not selected) -->
-                            <MultiTrigger>
-                                <MultiTrigger.Conditions>
-                                    <Condition Property="IsMouseOver" Value="True"/>
-                                    <Condition Property="IsSelected" Value="False"/>
-                                </MultiTrigger.Conditions>
-                                <Setter TargetName="Border" Property="Background" Value="#FF3C3C3F"/>
-                                <Setter Property="Foreground" Value="#FFE6E6E6"/>
-                            </MultiTrigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
+            <!-- TabItem style removed - using ControlStyles.xaml version from application resources -->
 
         <!-- Reusable ComboBox ItemTemplate for Single Color Display -->
         <DataTemplate x:Key="SingleColorItemTemplate">
@@ -134,6 +91,21 @@ Title="Tailgrab Player Panel"
             <Setter Property="Foreground" Value="{Binding DataContext.NormalForeground, RelativeSource={RelativeSource AncestorType=Window}}"/>
             <Setter Property="BorderBrush" Value="Transparent"/>
             <Setter Property="IsSelected" Value="{Binding IsSelected}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ListViewItem}">
+                        <Border Name="ItemBorder"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                Padding="{TemplateBinding Padding}">
+                            <GridViewRowPresenter Columns="{TemplateBinding GridView.ColumnCollection}"
+                                                  Content="{TemplateBinding Content}"
+                                                  TextBlock.Foreground="{TemplateBinding Foreground}"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
             <Style.Triggers>
                 <DataTrigger Binding="{Binding HighlightClass}" Value="Normal">
                     <Setter Property="Background" Value="{Binding DataContext.NormalBackground, RelativeSource={RelativeSource AncestorType=Window}}" />
@@ -168,6 +140,40 @@ Title="Tailgrab Player Panel"
                     <Setter Property="Foreground" Value="{Binding DataContext.MouseOverForeground, RelativeSource={RelativeSource AncestorType=Window}}"/>
                 </Trigger>
             </Style.Triggers>
+        </Style>
+
+        <!-- Override GridViewColumnHeader to ensure proper visibility -->
+        <Style TargetType="{x:Type GridViewColumnHeader}">
+            <Setter Property="Background" Value="{DynamicResource Brush.Control.Background}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Brush.Control.Foreground}"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border.Regular}"/>
+            <Setter Property="Padding" Value="8,4"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type GridViewColumnHeader}">
+                        <Border Name="HeaderBorder"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="0,0,1,1"
+                                Padding="{TemplateBinding Padding}">
+                            <TextBlock Text="{TemplateBinding Content}"
+                                       Foreground="{TemplateBinding Foreground}"
+                                       FontWeight="{TemplateBinding FontWeight}"
+                                       VerticalAlignment="Center"
+                                       HorizontalAlignment="Left"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="true">
+                                <Setter TargetName="HeaderBorder" Property="Background" Value="{DynamicResource Brush.Control.MouseOver.Background}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="true">
+                                <Setter TargetName="HeaderBorder" Property="Background" Value="{DynamicResource Brush.Control.Pressed.Background}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
         </ResourceDictionary>
     </Window.Resources>
@@ -247,7 +253,7 @@ Title="Tailgrab Player Panel"
             </ToolBarTray>
         </Grid>
 
-        <Grid Margin="8" Grid.Row="1">
+        <Grid Margin="0" Grid.Row="1">
             <TabControl x:Name="MainTabControl">
                 <!-- #region Active Players Tab -->
                 <TabItem Header="{DynamicResource UI.Tab.ActivePlayers.Tab}" Name="ActivePlayersTab">
@@ -312,7 +318,10 @@ Title="Tailgrab Player Panel"
                                         </GridViewColumn.Header>
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate>
-                                                <Border ClipToBounds="True" ToolTip="{Binding UserTrust}">
+                                                <Border ClipToBounds="True" 
+                                                        Background="{Binding RelativeSource={RelativeSource AncestorType=ListViewItem}, Path=Background}"
+                                                        ToolTip="{Binding UserTrust}"
+                                                        Padding="4,2">
                                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                                                         <Viewbox Width="16" Height="16">
                                                             <Path Data="{Binding UserTrustIconGeometry}" 
@@ -360,8 +369,9 @@ Title="Tailgrab Player Panel"
                                         </GridViewColumn.Header>
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate>
-                                                <Border ClipToBounds="True" TextElement.Foreground="Black"
-                                                        ToolTip="{Binding AlertMessages.Count}">
+                                                <Border ClipToBounds="True" 
+                                                        Background="{Binding RelativeSource={RelativeSource AncestorType=ListViewItem}, Path=Background}"
+                                                        Padding="4,2">
                                                     <ItemsControl ItemsSource="{Binding AlertMessages}">
                                                         <ItemsControl.ItemsPanel>
                                                             <ItemsPanelTemplate>
@@ -404,7 +414,7 @@ Title="Tailgrab Player Panel"
                                             <DataTemplate>
                                                 <TextBlock>
                                                 <Hyperlink NavigateUri="{Binding UserId, StringFormat=https://vrchat.com/home/user/{0}}"
-                                                           RequestNavigate="UserHyperlink_RequestNavigate">
+                                                           RequestNavigate="VRChatContentHyperlink_RequestNavigate">
                                                     <Run Text="{DynamicResource UI.Tab.ActivePlayers.Action.Open}"/>
                                                 </Hyperlink>
                                                 </TextBlock>
@@ -576,7 +586,10 @@ Title="Tailgrab Player Panel"
                                         </GridViewColumn.Header>
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate>
-                                                <Border ClipToBounds="True" ToolTip="{Binding UserTrust}">
+                                                <Border ClipToBounds="True" 
+                                                        Background="{Binding RelativeSource={RelativeSource AncestorType=ListViewItem}, Path=Background}"
+                                                        ToolTip="{Binding UserTrust}"
+                                                        Padding="4,2">
                                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                                                         <Viewbox Width="24" Height="24">
                                                             <Path Data="{Binding UserTrustIconGeometry}" 
@@ -624,7 +637,9 @@ Title="Tailgrab Player Panel"
                                         </GridViewColumn.Header>
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate>
-                                                <Border ClipToBounds="True" TextElement.Foreground="Black">
+                                                <Border ClipToBounds="True"
+                                                        Background="{Binding RelativeSource={RelativeSource AncestorType=ListViewItem}, Path=Background}"
+                                                        Padding="4,2">
                                                     <ItemsControl ItemsSource="{Binding AlertMessages}">
                                                         <ItemsControl.ItemsPanel>
                                                             <ItemsPanelTemplate>
@@ -666,7 +681,7 @@ Title="Tailgrab Player Panel"
                                             <DataTemplate>
                                                 <TextBlock>
                                                 <Hyperlink NavigateUri="{Binding UserId, StringFormat=https://vrchat.com/home/user/{0}}"
-                                                           RequestNavigate="UserHyperlink_RequestNavigate">
+                                                           RequestNavigate="VRChatContentHyperlink_RequestNavigate">
                                                     <Run Text="{DynamicResource UI.Tab.PastPlayers.Action.Open}"/>
                                                 </Hyperlink>
                                                 </TextBlock>
@@ -1089,7 +1104,7 @@ Title="Tailgrab Player Panel"
                                 <Label Grid.Row="1" Grid.Column="1" Content="{DynamicResource UI.Tab.ModerationReports.Group.UserId}" FontWeight="Bold" Margin="0,0,8,0" VerticalAlignment="Center" HorizontalAlignment="Right"/>
                                 <TextBlock Grid.Row="1" Grid.Column="2" VerticalAlignment="Center">
                                     <Hyperlink NavigateUri="{Binding ElementName=ModerationReportUserId, Path=Text}"
-                                        RequestNavigate="GroupUserHyperlink_RequestNavigate">
+                                        RequestNavigate="VRChatContentHyperlink_RequestNavigate">
                                         <TextBlock Name="ModerationReportUserId"/>
                                     </Hyperlink>
                                 </TextBlock>
@@ -1232,7 +1247,13 @@ Title="Tailgrab Player Panel"
                                             <Button Content="{DynamicResource UI.Tab.KnownAvatars.Group.Action.SwitchIntoAvatar}" 
                                                    Name="UseAvatarButton"
                                                    Click="UseAvatarButton_Click" 
-                                                   Margin="2,0,0,0"
+                                                   Margin="6,0,6,0"
+                                                   IsEnabled="False"/>
+                                            <Button Content="{DynamicResource UI.Tab.KnownAvatars.Group.Action.ReportAvatar}" 
+                                                   Name="ReportAvatarButton"
+                                                   Click="ReportAvatarButton_Click" 
+                                                   Margin="6,0,6,0" 
+                                                   Background="Red" Foreground="White" FontWeight="Bold" 
                                                    IsEnabled="False"/>
                                         </StackPanel>
 
@@ -1246,7 +1267,7 @@ Title="Tailgrab Player Panel"
                                         <StackPanel Grid.Row="2" Grid.Column="5" Orientation="Horizontal" VerticalAlignment="Center">
                                             <TextBlock VerticalAlignment="Center">
                                                 <Hyperlink NavigateUri="{Binding ElementName=BanMgmtAvatarOwnerId, Path=Text}"
-                                                           RequestNavigate="GroupUserHyperlink_RequestNavigate">
+                                                           RequestNavigate="VRChatContentHyperlink_RequestNavigate">
                                                     <TextBlock Name="BanMgmtAvatarOwner"/> / <TextBlock Name="BanMgmtAvatarOwnerId"/>
                                                 </Hyperlink>
                                             </TextBlock>
@@ -1283,13 +1304,13 @@ Title="Tailgrab Player Panel"
                                         <DataGridTemplateColumn Header="{DynamicResource UI.Tab.KnownAvatars.Column.Alert}" SortMemberPath="AlertType" Width="80">
                                             <DataGridTemplateColumn.CellTemplate>
                                                 <DataTemplate>
-                                                    <TextBlock Text="{Binding AlertType}" Foreground="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" />
+                                                    <TextBlock Text="{Binding AlertType}" Foreground="{StaticResource Brush.Control.Foreground}" />
                                                 </DataTemplate>
                                             </DataGridTemplateColumn.CellTemplate>
                                             <DataGridTemplateColumn.CellEditingTemplate>
                                                 <DataTemplate>
                                                     <ComboBox ItemsSource="{Binding DataContext.AlertTypeOptions, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                          SelectedValuePath="Value" DisplayMemberPath="Key"
+                                                          SelectedValuePath="Value" DisplayMemberPath="DisplayName"
                                                           SelectedValue="{Binding AlertType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                                                 </DataTemplate>
                                             </DataGridTemplateColumn.CellEditingTemplate>
@@ -1300,7 +1321,7 @@ Title="Tailgrab Player Panel"
                                                 <DataTemplate>
                                                     <TextBlock>
                                                     <Hyperlink NavigateUri="{Binding AvatarId, StringFormat=https://vrchat.com/home/avatar/{0}}"
-                                                               RequestNavigate="AvatarHyperlink_RequestNavigate">
+                                                               RequestNavigate="VRChatContentHyperlink_RequestNavigate">
                                                         <Run Text="{Binding AvatarId}" />
                                                     </Hyperlink>
                                                     </TextBlock>
@@ -1396,6 +1417,8 @@ Title="Tailgrab Player Panel"
                                         <!-- User Details -->
                                         <Label Grid.Row="0" Grid.Column="2" Content="{DynamicResource UI.Tab.KnownGroups.Group.GroupName}" FontWeight="Bold" Margin="0,0,8,0" HorizontalAlignment="Right"/>
                                         <TextBlock Grid.Row="0" Grid.Column="3" Name="BanMgmtGroupName" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Row="0" Grid.Column="3" Name="BanMgmtGroupId" VerticalAlignment="Center" Visibility="Hidden"/>
+
 
                                         <Label Grid.Row="1" Grid.Column="2" Content="{DynamicResource UI.Tab.KnownGroups.Group.JoinState}" FontWeight="Bold" Margin="0,0,8,0" HorizontalAlignment="Right"/>
                                         <TextBlock Grid.Row="1" Grid.Column="3" Name="BanMgmtGroupJoinState" VerticalAlignment="Center"/>
@@ -1413,7 +1436,7 @@ Title="Tailgrab Player Panel"
                                         <StackPanel Grid.Row="2" Grid.Column="5" Orientation="Horizontal" VerticalAlignment="Center">
                                             <TextBlock VerticalAlignment="Center">
                                                 <Hyperlink NavigateUri="{Binding ElementName=BanMgmtGroupOwnerId, Path=Text}"
-                                                           RequestNavigate="GroupUserHyperlink_RequestNavigate">
+                                                           RequestNavigate="VRChatContentHyperlink_RequestNavigate">
                                                     <TextBlock Name="BanMgmtGroupOwner"/> / <TextBlock Name="BanMgmtGroupOwnerId"/>
                                                 </Hyperlink>
                                             </TextBlock>
@@ -1430,6 +1453,13 @@ Title="Tailgrab Player Panel"
                                                     Click="GroupCheckAvatars_Click" 
                                                     Margin="8,0,0,0"
                                                     Padding="6,2"
+                                                    IsEnabled="False"/>
+                                            <Button Content="{DynamicResource UI.Tab.KnownGroups.Group.Action.ReportGroup}" 
+                                                    Name="ReportGroupButton"
+                                                    Click="ReportGroup_Click" 
+                                                    Margin="8,0,0,0"
+                                                    Padding="6,2"
+                                                    Background="DarkGray" Foreground="Gray" FontWeight="Bold" 
                                                     IsEnabled="False"/>
                                         </StackPanel>
 
@@ -1452,13 +1482,13 @@ Title="Tailgrab Player Panel"
                                         <DataGridTemplateColumn Header="{DynamicResource UI.Tab.KnownGroups.Column.Alert}" SortMemberPath="AlertType" Width="120">
                                             <DataGridTemplateColumn.CellTemplate>
                                                 <DataTemplate>
-                                                    <TextBlock Text="{Binding AlertType}" Foreground="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" />
+                                                    <TextBlock Text="{Binding AlertType}" Foreground="{StaticResource Brush.Control.Foreground}" />
                                                 </DataTemplate>
                                             </DataGridTemplateColumn.CellTemplate>
                                             <DataGridTemplateColumn.CellEditingTemplate>
                                                 <DataTemplate>
                                                     <ComboBox ItemsSource="{Binding DataContext.AlertTypeOptions, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                          SelectedValuePath="Value" DisplayMemberPath="Key"
+                                                          SelectedValuePath="Value" DisplayMemberPath="DisplayName"
                                                           SelectedValue="{Binding AlertType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                                                 </DataTemplate>
                                             </DataGridTemplateColumn.CellEditingTemplate>
@@ -1469,7 +1499,7 @@ Title="Tailgrab Player Panel"
                                                 <DataTemplate>
                                                     <TextBlock>
                                                     <Hyperlink NavigateUri="{Binding GroupId, StringFormat=https://vrchat.com/home/group/{0}}"
-                                                               RequestNavigate="GroupHyperlink_RequestNavigate">
+                                                               RequestNavigate="VRChatContentHyperlink_RequestNavigate">
                                                         <Run Text="{Binding GroupId}" />
                                                     </Hyperlink>
                                                     </TextBlock>
@@ -1525,7 +1555,7 @@ Title="Tailgrab Player Panel"
                                                 <DataTemplate>
                                                     <TextBlock>
                                                     <Hyperlink NavigateUri="{Binding UserId, StringFormat=https://vrchat.com/home/user/{0}}"
-                                                               RequestNavigate="UserHyperlink_RequestNavigate">
+                                                               RequestNavigate="VRChatContentHyperlink_RequestNavigate">
                                                         <Run Text="{Binding UserId}" />
                                                     </Hyperlink>
                                                     </TextBlock>
@@ -2281,7 +2311,7 @@ Title="Tailgrab Player Panel"
                                         <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="2">
                                             <Label Content="{DynamicResource UI.Tab.Alerts.Group.Warn}" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
                                             <ComboBox Name="AvatarWarnSound" ItemsSource="{Binding DataContext.AlertSoundOptions, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                          SelectedValuePath="Value" DisplayMemberPath="Key" Margin="2,2,2,2" Width="200"/>
+                                                          SelectedValuePath="Value" DisplayMemberPath="Name" Margin="2,2,2,2" Width="200"/>
                                             <Button Content="🔊" Padding="6,2" Margin="4,2,0,2" ToolTip="Test Sound" Click="TestSound_Click" Tag="{Binding ElementName=AvatarWarnSound, Path=SelectedValue}">
                                                 <Button.IsEnabled>
                                                     <MultiBinding Converter="{StaticResource SoundNotNoneConverter}">
@@ -2300,7 +2330,7 @@ Title="Tailgrab Player Panel"
                                         <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="2">
                                             <Label Content="{DynamicResource UI.Tab.Alerts.Group.Nuisance}" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
                                             <ComboBox Name="AvatarNuisanceSound" ItemsSource="{Binding DataContext.AlertSoundOptions, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                          SelectedValuePath="Value" DisplayMemberPath="Key" Margin="2,2,2,2" Width="200"/>
+                                                          SelectedValuePath="Value" DisplayMemberPath="Name" Margin="2,2,2,2" Width="200"/>
                                             <Button Content="🔊" Padding="6,2" Margin="4,2,0,2" ToolTip="Test Sound" Click="TestSound_Click" Tag="{Binding ElementName=AvatarNuisanceSound, Path=SelectedValue}">
                                                 <Button.IsEnabled>
                                                     <MultiBinding Converter="{StaticResource SoundNotNoneConverter}">
@@ -2319,7 +2349,7 @@ Title="Tailgrab Player Panel"
                                         <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="2">
                                             <Label Content="{DynamicResource UI.Tab.Alerts.Group.Crasher}" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
                                             <ComboBox Name="AvatarCrasherSound" ItemsSource="{Binding DataContext.AlertSoundOptions, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                          SelectedValuePath="Value" DisplayMemberPath="Key" Margin="2,2,2,2" Width="200"/>
+                                                          SelectedValuePath="Value" DisplayMemberPath="Name" Margin="2,2,2,2" Width="200"/>
                                             <Button Content="🔊" Padding="6,2" Margin="4,2,0,2" ToolTip="Test Sound" Click="TestSound_Click" Tag="{Binding ElementName=AvatarCrasherSound, Path=SelectedValue}">
                                                 <Button.IsEnabled>
                                                     <MultiBinding Converter="{StaticResource SoundNotNoneConverter}">
@@ -2341,7 +2371,7 @@ Title="Tailgrab Player Panel"
                                         <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="2">
                                             <Label Content="{DynamicResource UI.Tab.Alerts.Group.Warn}" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
                                             <ComboBox Name="GroupWarnSound" ItemsSource="{Binding DataContext.AlertSoundOptions, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                          SelectedValuePath="Value" DisplayMemberPath="Key" Margin="2,2,2,2" Width="200"/>
+                                                          SelectedValuePath="Value" DisplayMemberPath="Name" Margin="2,2,2,2" Width="200"/>
                                             <Button Content="🔊" Padding="6,2" Margin="4,2,0,2" ToolTip="Test Sound" Click="TestSound_Click" Tag="{Binding ElementName=GroupWarnSound, Path=SelectedValue}">
                                                 <Button.IsEnabled>
                                                     <MultiBinding Converter="{StaticResource SoundNotNoneConverter}">
@@ -2360,7 +2390,7 @@ Title="Tailgrab Player Panel"
                                         <StackPanel Grid.Row="4" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="2">
                                             <Label Content="{DynamicResource UI.Tab.Alerts.Group.Nuisance}" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
                                             <ComboBox Name="GroupNuisanceSound" ItemsSource="{Binding DataContext.AlertSoundOptions, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                          SelectedValuePath="Value" DisplayMemberPath="Key" Margin="2,2,2,2" Width="200"/>
+                                                          SelectedValuePath="Value" DisplayMemberPath="Name" Margin="2,2,2,2" Width="200"/>
                                             <Button Content="🔊" Padding="6,2" Margin="4,2,0,2" ToolTip="Test Sound" Click="TestSound_Click" Tag="{Binding ElementName=GroupNuisanceSound, Path=SelectedValue}">
                                                 <Button.IsEnabled>
                                                     <MultiBinding Converter="{StaticResource SoundNotNoneConverter}">
@@ -2379,7 +2409,7 @@ Title="Tailgrab Player Panel"
                                         <StackPanel Grid.Row="5" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="2">
                                             <Label Content="{DynamicResource UI.Tab.Alerts.Group.Crasher}" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
                                             <ComboBox Name="GroupCrasherSound" ItemsSource="{Binding DataContext.AlertSoundOptions, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                          SelectedValuePath="Value" DisplayMemberPath="Key" Margin="2,2,2,2" Width="200"/>
+                                                          SelectedValuePath="Value" DisplayMemberPath="Name" Margin="2,2,2,2" Width="200"/>
                                             <Button Content="🔊" Padding="6,2" Margin="4,2,0,2" ToolTip="Test Sound" Click="TestSound_Click" Tag="{Binding ElementName=GroupCrasherSound, Path=SelectedValue}">
                                                 <Button.IsEnabled>
                                                     <MultiBinding Converter="{StaticResource SoundNotNoneConverter}">
@@ -2401,7 +2431,7 @@ Title="Tailgrab Player Panel"
                                         <StackPanel Grid.Row="6" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="2">
                                             <Label Content="{DynamicResource UI.Tab.Alerts.Group.Warn}" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
                                             <ComboBox Name="ProfileWarnSound" ItemsSource="{Binding DataContext.AlertSoundOptions, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                          SelectedValuePath="Value" DisplayMemberPath="Key" Margin="2,2,2,2" Width="200"/>
+                                                          SelectedValuePath="Value" DisplayMemberPath="Name" Margin="2,2,2,2" Width="200"/>
                                             <Button Content="🔊" Padding="6,2" Margin="4,2,0,2" ToolTip="Test Sound" Click="TestSound_Click" Tag="{Binding ElementName=ProfileWarnSound, Path=SelectedValue}">
                                                 <Button.IsEnabled>
                                                     <MultiBinding Converter="{StaticResource SoundNotNoneConverter}">
@@ -2420,7 +2450,7 @@ Title="Tailgrab Player Panel"
                                         <StackPanel Grid.Row="7" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="2">
                                             <Label Content="{DynamicResource UI.Tab.Alerts.Group.Nuisance}" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
                                             <ComboBox Name="ProfileNuisanceSound" ItemsSource="{Binding DataContext.AlertSoundOptions, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                          SelectedValuePath="Value" DisplayMemberPath="Key" Margin="2,2,2,2" Width="200"/>
+                                                          SelectedValuePath="Value" DisplayMemberPath="Name" Margin="2,2,2,2" Width="200"/>
                                             <Button Content="🔊" Padding="6,2" Margin="4,2,0,2" ToolTip="Test Sound" Click="TestSound_Click" Tag="{Binding ElementName=ProfileNuisanceSound, Path=SelectedValue}">
                                                 <Button.IsEnabled>
                                                     <MultiBinding Converter="{StaticResource SoundNotNoneConverter}">
@@ -2439,7 +2469,7 @@ Title="Tailgrab Player Panel"
                                         <StackPanel Grid.Row="8" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,6" Grid.ColumnSpan="2">
                                             <Label Content="{DynamicResource UI.Tab.Alerts.Group.Crasher}" VerticalAlignment="Center" HorizontalAlignment="Left" Height="26" Margin="32,0,0,0" Width="75"/>
                                             <ComboBox Name="ProfileCrasherSound" ItemsSource="{Binding DataContext.AlertSoundOptions, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                          SelectedValuePath="Value" DisplayMemberPath="Key" Margin="2,2,2,2" Width="200"/>
+                                                          SelectedValuePath="Value" DisplayMemberPath="Name" Margin="2,2,2,2" Width="200"/>
                                             <Button Content="🔊" Padding="6,2" Margin="4,2,0,2" ToolTip="Test Sound" Click="TestSound_Click" Tag="{Binding ElementName=ProfileCrasherSound, Path=SelectedValue}">
                                                 <Button.IsEnabled>
                                                     <MultiBinding Converter="{StaticResource SoundNotNoneConverter}">
@@ -3052,7 +3082,7 @@ Title="Tailgrab Player Panel"
                                         <DataTemplate>
                                             <TextBlock>
                                                     <Hyperlink NavigateUri="{Binding AvatarId, StringFormat=https://vrchat.com/home/avatar/{0}}"
-                                                               RequestNavigate="AvatarHyperlink_RequestNavigate">
+                                                               RequestNavigate="VRChatContentHyperlink_RequestNavigate">
                                                         <Run Text="{Binding AvatarId}" />
                                                     </Hyperlink>
                                             </TextBlock>
@@ -3361,7 +3391,7 @@ Title="Tailgrab Player Panel"
                                         <DataTemplate>
                                             <TextBlock>
                                                     <Hyperlink NavigateUri="{Binding GroupId, StringFormat=https://vrchat.com/home/group/{0}}"
-                                                               RequestNavigate="GroupHyperlink_RequestNavigate">
+                                                               RequestNavigate="VRChatContentHyperlink_RequestNavigate">
                                                         <Run Text="{Binding GroupId}" />
                                                     </Hyperlink>
                                             </TextBlock>

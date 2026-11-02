@@ -98,13 +98,13 @@ namespace Tailgrab.Common
             return (WpfBrush)resources[key];
         }
 
-        public static List<KeyValuePair<string, AlertTypeEnum>> AlertTypeOptions()
+        public static List<AlertTypeOption> AlertTypeOptions()
         {
-            return new List<KeyValuePair<string, AlertTypeEnum>> {
-                new KeyValuePair<string, AlertTypeEnum>("None", AlertTypeEnum.None),
-                new KeyValuePair<string, AlertTypeEnum>("Watch", AlertTypeEnum.Watch),
-                new KeyValuePair<string, AlertTypeEnum>("Nuisance", AlertTypeEnum.Nuisance),
-                new KeyValuePair<string, AlertTypeEnum>("Crasher", AlertTypeEnum.Crasher)
+            return new List<AlertTypeOption> {
+                new AlertTypeOption("None", AlertTypeEnum.None),
+                new AlertTypeOption("Watch", AlertTypeEnum.Watch),
+                new AlertTypeOption("Nuisance", AlertTypeEnum.Nuisance),
+                new AlertTypeOption("Crasher", AlertTypeEnum.Crasher)
             };
         }
     }

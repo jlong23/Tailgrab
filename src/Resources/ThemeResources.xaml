@@ -1,0 +1,35 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- ========================================
+         DARK THEME COLOR PALETTE
+         ======================================== -->
+
+    <!-- Primary background colors -->
+    <SolidColorBrush x:Key="Brush.Window.Background" Color="#1E1E1E" />
+    <SolidColorBrush x:Key="Brush.Control.Background" Color="#2D2D30" />
+    <SolidColorBrush x:Key="Brush.Control.Foreground" Color="#E6E6E6" />
+    <SolidColorBrush x:Key="Brush.Border.Regular" Color="#1D2C37" />
+
+    <!-- Highlight/Selection colors -->
+    <SolidColorBrush x:Key="Brush.Highlight.Background" Color="#464670" />
+    <SolidColorBrush x:Key="Brush.Highlight.Foreground" Color="#C8C881" />
+
+    <!-- Additional state colors -->
+    <SolidColorBrush x:Key="Brush.Control.Disabled.Background" Color="#373738" />
+    <SolidColorBrush x:Key="Brush.Control.Disabled.Foreground" Color="#828282" />
+    <SolidColorBrush x:Key="Brush.Control.MouseOver.Background" Color="#3C3C3F" />
+    <SolidColorBrush x:Key="Brush.Control.Pressed.Background" Color="#323236" />
+
+    <!-- Transparent borders -->
+    <SolidColorBrush x:Key="Brush.Border.Transparent" Color="#00000000" />
+
+    <!-- System override brushes (for WPF system colors) -->
+    <SolidColorBrush x:Key="SystemColors.WindowBrush" Color="#1E1E1E" />
+    <SolidColorBrush x:Key="SystemColors.ControlBrush" Color="#2D2D30" />
+    <SolidColorBrush x:Key="SystemColors.HighlightBrush" Color="#1D2C37" />
+    <SolidColorBrush x:Key="SystemColors.ControlTextBrush" Color="#E6E6E6" />
+    <SolidColorBrush x:Key="SystemColors.WindowTextBrush" Color="#E6E6E6" />
+    <SolidColorBrush x:Key="SystemColors.HighlightTextBrush" Color="#E6E6E6" />
+
+</ResourceDictionary>

@@ -7,11 +7,13 @@
         WindowStartupLocation="CenterScreen"
         ResizeMode="NoResize"
         ShowInTaskbar="False"
-        Background="{StaticResource {x:Static SystemColors.ControlBrushKey}}">
+        Background="{DynamicResource Brush.Window.Background}">
     <Window.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="/src/Resources/localization.en-US.xaml"/>
+                <ResourceDictionary Source="/src/Resources/ThemeResources.xaml" />
+                <ResourceDictionary Source="/src/Resources/ControlStyles.xaml" />
+                <ResourceDictionary Source="/src/Resources/localization.en-US.xaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Window.Resources>
@@ -23,10 +25,10 @@
         </Grid.RowDefinitions>
 
         <!-- Step Header -->
-        <Border Grid.Row="0" Background="#F0F0F0" Padding="20,15,20,15" BorderThickness="0,0,0,1" BorderBrush="#D0D0D0">
+        <Border Grid.Row="0" Background="{DynamicResource Brush.Control.Background}" Padding="20,15,20,15" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource Brush.Border.Regular}">
             <StackPanel>
-                <TextBlock x:Name="StepTitleText" FontSize="18" FontWeight="Bold" Foreground="#333333"/>
-                <TextBlock x:Name="StepDescriptionText" FontSize="12" Foreground="#666666" Margin="0,5,0,0" TextWrapping="Wrap"/>
+                <TextBlock x:Name="StepTitleText" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource Brush.Control.Foreground}"/>
+                <TextBlock x:Name="StepDescriptionText" FontSize="12" Foreground="{DynamicResource Brush.Control.Disabled.Foreground}" Margin="0,5,0,0" TextWrapping="Wrap"/>
             </StackPanel>
         </Border>
 
@@ -36,21 +38,21 @@
         </ScrollViewer>
 
         <!-- Footer with Navigation Buttons -->
-        <Border Grid.Row="2" Background="#F9F9F9" Padding="20" BorderThickness="0,1,0,0" BorderBrush="#D0D0D0">
+        <Border Grid.Row="2" Background="{DynamicResource Brush.Control.Background}" Padding="20" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource Brush.Border.Regular}">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                <ProgressBar x:Name="StepProgressBar" Width="150" Height="6" Margin="0,0,20,0" VerticalAlignment="Center" Foreground="#4CAF50"/>
-                <TextBlock x:Name="StepCountText" VerticalAlignment="Center" Margin="0,0,10,0" Foreground="#666666"/>
+                <ProgressBar x:Name="StepProgressBar" Width="150" Height="6" Margin="0,0,20,0" VerticalAlignment="Center" Foreground="{DynamicResource Brush.Highlight.Background}"/>
+                <TextBlock x:Name="StepCountText" VerticalAlignment="Center" Margin="0,0,10,0" Foreground="{DynamicResource Brush.Control.Disabled.Foreground}"/>
                 <Button x:Name="BackButton" Content="{DynamicResource SetupWizard.ButtonBack}" Width="80" Height="35" Margin="0,0,10,0" Click="BackButton_Click"/>
-                <Button x:Name="NextButton" Content="{DynamicResource SetupWizard.ButtonNext}" Width="80" Height="35" Background="#4CAF50" Foreground="White" Click="NextButton_Click"/>
+                <Button x:Name="NextButton" Content="{DynamicResource SetupWizard.ButtonNext}" Width="80" Height="35" Background="{DynamicResource Brush.Highlight.Background}" Foreground="{DynamicResource Brush.Highlight.Foreground}" Click="NextButton_Click"/>
                 <Button x:Name="CancelButton" Content="{DynamicResource SetupWizard.ButtonCancel}" Width="80" Height="35" Margin="10,0,0,0" Click="CancelButton_Click"/>
             </StackPanel>
         </Border>
 
         <!-- Status/Loading Overlay -->
-        <Border x:Name="LoadingOverlay" Grid.Row="0" Grid.RowSpan="3" Background="#00000080" Visibility="Collapsed" Opacity="0.8">
+        <Border x:Name="LoadingOverlay" Grid.Row="0" Grid.RowSpan="3" Background="#CC000000" Visibility="Collapsed" Opacity="0.8">
             <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                <TextBlock Text="{DynamicResource SetupWizard.LoadingMessage}" Foreground="White" FontSize="14" TextAlignment="Center" Margin="0,0,0,10"/>
-                <ProgressBar Width="300" Height="8" IsIndeterminate="True" Foreground="#4CAF50"/>
+                <TextBlock Text="{DynamicResource SetupWizard.LoadingMessage}" Foreground="{DynamicResource Brush.Control.Foreground}" FontSize="14" TextAlignment="Center" Margin="0,0,0,10"/>
+                <ProgressBar Width="300" Height="8" IsIndeterminate="True" Foreground="{DynamicResource Brush.Highlight.Background}"/>
             </StackPanel>
         </Border>
     </Grid>

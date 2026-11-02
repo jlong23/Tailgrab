@@ -121,6 +121,7 @@
     <sys:String x:Key="UI.Tab.KnownAvatars.Group.Owner">Owner:</sys:String>
     <sys:String x:Key="UI.Tab.KnownAvatars.Group.Description">Description:</sys:String>
     <sys:String x:Key="UI.Tab.KnownAvatars.Group.Action.SwitchIntoAvatar">Switch into Avatar</sys:String>
+    <sys:String x:Key="UI.Tab.KnownAvatars.Group.Action.ReportAvatar">Report Avatar</sys:String>
     <sys:String x:Key="UI.Tab.KnownAvatars.Group.Action.BanOwner">Ban Owner</sys:String>
     <sys:String x:Key="UI.Tab.KnownAvatars.Group.Action.ShowOwnerAvatars">Show Avatars</sys:String>
     <sys:String x:Key="UI.Tab.KnownAvatars.Column.Alert">Alert</sys:String>
@@ -148,6 +149,7 @@
     <sys:String x:Key="UI.Tab.KnownGroups.Group.Rules">Rules:</sys:String>
     <sys:String x:Key="UI.Tab.KnownGroups.Group.Action.BanOwner">Ban Owner</sys:String>
     <sys:String x:Key="UI.Tab.KnownGroups.Group.Action.ShowOwnerAvatars">Show Avatars</sys:String>
+    <sys:String x:Key="UI.Tab.KnownGroups.Group.Action.ReportGroup">Report Group</sys:String>
     <sys:String x:Key="UI.Tab.KnownGroups.Column.Alert">Alert</sys:String>
     <sys:String x:Key="UI.Tab.KnownGroups.Column.GroupName">Group Name</sys:String>
     <sys:String x:Key="UI.Tab.KnownGroups.Column.GroupId">Group ID</sys:String>
@@ -718,8 +720,15 @@
     <sys:String x:Key="MessageBox.UserValidation_Error2.Title">Validation Error</sys:String>
     <sys:String x:Key="MessageBox.UserValidation_Error2.Content">Invalid User ID format (must start with usr_).</sys:String>
 
+    <sys:String x:Key="MessageBox.GroupValidation_Error1.Title">Validation Error</sys:String>
+    <sys:String x:Key="MessageBox.GroupValidation_Error1.Content">Please enter a Group Id first.</sys:String>
+    <sys:String x:Key="MessageBox.GroupValidation_Error2.Title">Validation Error</sys:String>
+    <sys:String x:Key="MessageBox.GroupValidation_Error2.Content">Invalid Group ID format (must start with grp_).</sys:String>
+
     <sys:String x:Key="MessageBox.CheckUserAvatars_Error.Title">Error</sys:String>
     <sys:String x:Key="MessageBox.CheckUserAvatars_Error.Content">Failed to check user avatars: {0}</sys:String>
 
+    <sys:String x:Key="MessageBox.ReportGroup_Error.Title">Error</sys:String>
+    <sys:String x:Key="MessageBox.ReportGroup_Error.Content">Failed to report group: {0}</sys:String>
 
 </ResourceDictionary>

@@ -111,10 +111,10 @@ namespace Tailgrab.Common
         public const string Default_HighlightClass_Class03_Foreground = "Yellow";
         public const string Default_HighlightClass_Class04_Background = "Black";
         public const string Default_HighlightClass_Class04_Foreground = "Yellow";
-        public const string Default_HighlightClass_Selected_Background = "#FF1d1db3";
-        public const string Default_HighlightClass_Selected_Foreground = "#FFFFFF00";
-        public const string Default_HighlightClass_MouseOver_Background = "#FF1d1db3";
-        public const string Default_HighlightClass_MouseOver_Foreground = "#FFFFFF00";
+        public const string Default_HighlightClass_Selected_Background = "#FF464670";
+        public const string Default_HighlightClass_Selected_Foreground = "#FFC8C881";
+        public const string Default_HighlightClass_MouseOver_Background = "#FF464670";
+        public const string Default_HighlightClass_MouseOver_Foreground = "#FFC8C881";
 
         public const string Registry_Discovered_Avatar_Caching = "DISCOVERED_AVATAR_CACHING";
         public const string Registry_Moderated_Avatar_Caching = "MODERATED_AVATAR_CACHING";
