@@ -32,16 +32,16 @@ namespace Tailgrab.LineHandler
 
                 Player? player = PlayerManager.VoteToKickEventPublic(userName, "Vote kick requested against player.");
                 Dictionary<string, string> actionData = new Dictionary<string, string>
-            {
-                { "timestamp", timestamp },
-                { "userName", userName },
-                { "userId", player?.UserId.ToString() ?? string.Empty  },
-                { "trustLevel", TrustClassEnumMapper.MapEnumToDescription( player?.UserTrustClass ?? TrustClassEnum.VISITOR ) },
-                { "avatarId", player?.AvatarId.ToString() ?? string.Empty },
-                { "avatarName", player?.AvatarName ?? string.Empty },
-                { "elapsedMinutes", player?.InstanceEndTime != null ? ((DateTime.UtcNow - player.InstanceEndTime.Value).TotalMinutes.ToString()) : string.Empty },
-                { "action", "VoteKickRequested"  }
-            };
+                {
+                    { "timestamp", timestamp },
+                    { "userName", userName },
+                    { "userId", player?.UserId.ToString() ?? string.Empty  },
+                    { "trustLevel", TrustClassEnumMapper.MapEnumToDescription( player?.UserTrustClass ?? TrustClassEnum.VISITOR ) },
+                    { "avatarId", player?.AvatarId.ToString() ?? string.Empty },
+                    { "avatarName", player?.AvatarName ?? string.Empty },
+                    { "elapsedMinutes", player?.InstanceStartTime != null ? ((DateTime.UtcNow - player.InstanceStartTime).TotalMinutes.ToString()) : string.Empty },
+                    { "action", "VoteKickRequested"  }
+                };
 
                 ExecuteActions(actionData);
 
