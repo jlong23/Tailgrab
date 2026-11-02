@@ -488,9 +488,21 @@ namespace Tailgrab.Clients.OBS
             SessionChapterEvent chapterEvent = new SessionChapterEvent
             {
                 // Subtract 10 seconds to account for the replay buffer delay
-                EventTime = _stopwatch.Elapsed - TimeSpan.FromSeconds(10), 
+                EventTime = _stopwatch.Elapsed > TimeSpan.FromSeconds(10) ? _stopwatch.Elapsed - TimeSpan.FromSeconds(10) : _stopwatch.Elapsed, 
                 EventName = eventName
             };
+
+            // Cannot have overlapping Events.
+            foreach (var existingEvent in SessionEvent)
+            {
+                if (existingEvent.EventTime <= chapterEvent.EventTime)
+                {
+                    logger.Info($"A Earlier ChapterEvent already exists: {chapterEvent}; adding 10ms to current one");
+                    chapterEvent.EventTime += TimeSpan.FromMilliseconds(10); // Add 10ms to avoid duplicate timestamps
+                    break; // Exit if the event already exists
+                }
+            }
+
             SessionEvent.Add(chapterEvent);
             logger.Info($"ChapterEvent: {chapterEvent}");
         }
@@ -510,6 +522,7 @@ namespace Tailgrab.Clients.OBS
                 client.SetCurrentProgramScene(PreviousScene);
             }
         }
+
         private async Task DisplayBrowserSourceOverlay(string sceneName, string overlayName, string html, int durationMS)
         {
             try
@@ -688,6 +701,7 @@ namespace Tailgrab.Clients.OBS
                 logger.Error(ex);
             }
         }
+
         private void OnReplayBufferSaved(object? sender, ReplayBufferSavedEventArgs e)
         {
             logger.Info($"Replay buffer saved to: {e.SavedReplayPath}");
