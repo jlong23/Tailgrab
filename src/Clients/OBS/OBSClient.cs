@@ -23,6 +23,14 @@ namespace Tailgrab.Clients.OBS
 
         protected Stopwatch _stopwatch = new Stopwatch();
 
+        protected WorldInstanceInfo? _currentSessionInfo;
+
+        public WorldInstanceInfo? CurrentSessionInfo
+        { 
+            get => _currentSessionInfo; 
+            set => _currentSessionInfo = value; 
+        }
+
         public int MaxLines { get; set; } = 20;
 
         protected string _filename = string.Empty;
@@ -433,37 +441,45 @@ namespace Tailgrab.Clients.OBS
         public async Task SessionRecording(bool start, WorldInstanceInfo sessionInfo)
         {
             if( !IsConnected()) return;
-            StringBuilder sb = new StringBuilder();
-            sb.Append($"{sessionInfo.WorldName}");
-            if(!string.IsNullOrEmpty(sessionInfo.GroupName))
-            {
-                sb.Append($"-{sessionInfo.GroupName}");
-            }
-            else
-            {
-                sb.Append($"-{sessionInfo.UserName}");
-            }
-            string session = sb.ToString();
-            string chapterName = start ? $"Start - {session}" : $"Stop - {session}";
-            ChapterEvent(chapterName);
+            CurrentSessionInfo = sessionInfo;
 
             try
             {
                 if( client.GetRecordStatus().IsRecording && !start)
                 {
-                    _stopwatch.Stop();
+                    CreateSessionChapterRecord(start);
                     client.StopRecord();
                 }
                 else if (!client.GetRecordStatus().IsRecording && start)
                 {
-                    _stopwatch.Start();
                     client.StartRecord();
+                }
+                else
+                {
+                    CreateSessionChapterRecord(start);
                 }
             }
             catch (Exception ex)
             {
                 logger.Error(ex);
             }
+        }
+
+        private void CreateSessionChapterRecord(bool start)
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append($"{CurrentSessionInfo.WorldName}");
+            if (!string.IsNullOrEmpty(CurrentSessionInfo.GroupName))
+            {
+                sb.Append($"-{CurrentSessionInfo.GroupName}");
+            }
+            else
+            {
+                sb.Append($"-{CurrentSessionInfo.UserName}");
+            }
+            string session = sb.ToString(); 
+            string chapterName = start ? $"Start - {session}" : $"Stop - {session}";
+            ChapterEvent(chapterName);
         }
 
         private void ChapterEvent(string eventName)
@@ -709,16 +725,25 @@ namespace Tailgrab.Clients.OBS
         {
             if( e.OutputState.State == OutputState.OBS_WEBSOCKET_OUTPUT_STARTED)
             {
+                SessionEvent.Clear();
+                _stopwatch.Reset();
+                _stopwatch.Start();
                 logger.Info($"Recording started at: {DateTime.Now}");
+                if(CurrentSessionInfo != null)
+                {
+                    logger.Info($"Recording session: {CurrentSessionInfo.WorldName} - {CurrentSessionInfo.GroupName} - {CurrentSessionInfo.UserName}");
+                    CreateSessionChapterRecord(true);
+                }
             }
             else if (e.OutputState.State == OutputState.OBS_WEBSOCKET_OUTPUT_STOPPED)
             {
                 logger.Info($"Recording stopped at: {DateTime.Now}");
                 logger.Info($"Output path: {e.OutputState.OutputPath}");
+                ChapterEvent($"Recording stopped at: {DateTime.Now}");
                 string sourcePath = e.OutputState.OutputPath;
                 string xmlPath = Path.ChangeExtension(sourcePath, ".xml");
                 string mkvPath = Path.ChangeExtension(sourcePath, ".mkv");
-                string mp4Path = Path.ChangeExtension(sourcePath, "-converted.mp4");
+                string mp4Path = Path.Combine(Path.GetDirectoryName(sourcePath) ?? string.Empty, Path.GetFileNameWithoutExtension(sourcePath) + "-converted.mp4");
                 if(CreateMKVChapters)
                 {
                     logger.Info($"Creating MKV chapters for: {mkvPath}");
@@ -734,13 +759,12 @@ namespace Tailgrab.Clients.OBS
                     AddChaptersToMp4(sourcePath, mp4Path, BuildMetadata(SessionEvent));
                     CreateTimelapseWebP(mp4Path);
                     CreateVideoContactSheet(mp4Path);
-
                 }
 
                 SessionEvent.Clear();
-
             }
         }
+
         #endregion
 
         #region Check FFMpeg and MKVMerge Paths
@@ -827,6 +851,7 @@ namespace Tailgrab.Clients.OBS
                 sb.AppendLine($"END={endMs}");
                 sb.AppendLine($"title={chapters[i].EventName}");
                 sb.AppendLine();
+                logger.Debug(chapters[i].ToString());
             }
 
             return sb.ToString();
@@ -840,26 +865,35 @@ namespace Tailgrab.Clients.OBS
                 return;
             }
 
-            string metaPath = Path.GetTempFileName();
-            File.WriteAllText(metaPath, metadataText);
-
-            var psi = new ProcessStartInfo
+            try
             {
-                FileName = FFMpegPath,
-                Arguments = $"-y -i \"{inputMp4}\" -i \"{metaPath}\" -map_metadata 1 -map_chapters 1 -c copy \"{outputMp4}\"",
-                UseShellExecute = false,
-                RedirectStandardError = true,
-                RedirectStandardOutput = true
-            };
+                string metaPath = Path.GetTempFileName();
+                logger.Debug($"Writing metadata to temporary file: {metaPath}");
+                logger.Debug($"Metadata content:\n{metadataText}");
+                File.WriteAllText(metaPath, metadataText);
 
-            using var proc = Process.Start(psi)!;
-            string err = proc.StandardError.ReadToEnd();
-            proc.WaitForExit();
+                var psi = new ProcessStartInfo
+                {
+                    FileName = FFMpegPath,
+                    Arguments = $"-y -i \"{inputMp4}\" -i \"{metaPath}\" -map_metadata 1 -map_chapters 1 -c copy \"{outputMp4}\"",
+                    UseShellExecute = false,
+                    RedirectStandardError = true,
+                    RedirectStandardOutput = true
+                };
 
-            File.Delete(metaPath);
+                using var proc = Process.Start(psi)!;
+                string err = proc.StandardError.ReadToEnd();
+                proc.WaitForExit();
 
-            if (proc.ExitCode != 0)
-                throw new Exception($"FFmpeg failed: {err}");
+                File.Delete(metaPath);
+
+                if (proc.ExitCode != 0)
+                    throw new Exception($"FFmpeg failed: {err}");
+            }
+            catch (Exception ex)
+            {
+                logger.Error($"Error adding chapters to MP4: {ex.Message}");
+            }
         }
 
 
@@ -943,53 +977,60 @@ namespace Tailgrab.Clients.OBS
 
             String outputWebPPath = Path.ChangeExtension(videoPath, ".webp");
 
-            // Probe the file to get its duration
-            IMediaAnalysis analysis = FFProbe.Analyse(videoPath);
-            double duration = analysis.Duration.TotalSeconds;
-
-            if (duration <= 0)
-                throw new ArgumentException("Video duration is zero or invalid.");
-
-            string ffmpegExecutable = FFMpegPath;
-
-            if (string.IsNullOrEmpty(ffmpegExecutable) || !File.Exists(ffmpegExecutable))
-                throw new FileNotFoundException("FFmpeg executable not found.", ffmpegExecutable);
-
-            // FFmpeg command for animated WebP: extract frames and encode to WebP with animation
-            string ssArg, toArg;
-            const int targetDuration = 15; // seconds
-            const int earlyOffsetSeconds = 5 * 60; // 5 minutes in seconds
-
-            if (duration >= earlyOffsetSeconds + targetDuration)
+            try
             {
-                // Duration > 5:15: use fixed range 00:05:00 to 00:05:15
-                ssArg = "00:05:00";
-                toArg = "00:05:15";
+                // Probe the file to get its duration
+                IMediaAnalysis analysis = FFProbe.Analyse(videoPath);
+                double duration = analysis.Duration.TotalSeconds;
+
+                if (duration <= 0)
+                    throw new ArgumentException("Video duration is zero or invalid.");
+
+                string ffmpegExecutable = FFMpegPath;
+
+                if (string.IsNullOrEmpty(ffmpegExecutable) || !File.Exists(ffmpegExecutable))
+                    throw new FileNotFoundException("FFmpeg executable not found.", ffmpegExecutable);
+
+                // FFmpeg command for animated WebP: extract frames and encode to WebP with animation
+                string ssArg, toArg;
+                const int targetDuration = 15; // seconds
+                const int earlyOffsetSeconds = 5 * 60; // 5 minutes in seconds
+
+                if (duration >= earlyOffsetSeconds + targetDuration)
+                {
+                    // Duration > 5:15: use fixed range 00:05:00 to 00:05:15
+                    ssArg = "00:05:00";
+                    toArg = "00:05:15";
+                }
+                else
+                {
+                    // Duration < 5:15: extract from end, up to 15 seconds
+                    double startSeconds = Math.Max(0, duration - targetDuration);
+                    ssArg = FormatTimespan(startSeconds);
+                    toArg = FormatTimespan(duration);
+                }
+
+                var psi = new ProcessStartInfo
+                {
+                    FileName = ffmpegExecutable,
+                    Arguments = $@"-y -ss {ssArg} -to {toArg} -i ""{videoPath}"" -vf ""scale={maxWidth}:-2,fps=10"" -loop 0 ""{outputWebPPath}""",
+                    UseShellExecute = false,
+                    RedirectStandardError = true,
+                    RedirectStandardOutput = true,
+                    CreateNoWindow = true
+                };
+
+                using var proc = Process.Start(psi)!;
+                string err = proc.StandardError.ReadToEnd();
+                proc.WaitForExit();
+
+                if (proc.ExitCode != 0)
+                    throw new Exception($"FFmpeg failed to create WebP: {err}");
+            } 
+            catch (Exception ex)
+            {
+                logger.Error($"Error creating timelapse WebP: {ex.Message}");
             }
-            else
-            {
-                // Duration < 5:15: extract from end, up to 15 seconds
-                double startSeconds = Math.Max(0, duration - targetDuration);
-                ssArg = FormatTimespan(startSeconds);
-                toArg = FormatTimespan(duration);
-            }
-
-            var psi = new ProcessStartInfo
-            {
-                FileName = ffmpegExecutable,
-                Arguments = $@"-y -ss {ssArg} -to {toArg} -i ""{videoPath}"" -vf ""scale={maxWidth}:-2,fps=10"" -loop 0 ""{outputWebPPath}""",
-                UseShellExecute = false,
-                RedirectStandardError = true,
-                RedirectStandardOutput = true,
-                CreateNoWindow = true
-            };
-
-            using var proc = Process.Start(psi)!;
-            string err = proc.StandardError.ReadToEnd();
-            proc.WaitForExit();
-
-            if (proc.ExitCode != 0)
-                throw new Exception($"FFmpeg failed to create WebP: {err}");
 
             return outputWebPPath;
         }
@@ -1008,34 +1049,57 @@ namespace Tailgrab.Clients.OBS
             if (!File.Exists(sourceVideoPath))
                 throw new FileNotFoundException("Video file not found.", sourceVideoPath);
 
-            IMediaAnalysis analysis = FFProbe.Analyse(sourceVideoPath);
-            double duration = analysis.Duration.TotalSeconds;
-
-            if (duration <= 0)
-                throw new ArgumentException("Video duration is zero or invalid.");
-
-            double interval = duration / (columns * rows);
-            string outputImagePath = Path.ChangeExtension(sourceVideoPath, ".png");
-            double fps = analysis.VideoStreams[0].FrameRate;
-            int frameStep = (int)(fps * interval);
-            var psi = new ProcessStartInfo
+            try
             {
-                FileName = FFMpegPath,
-                Arguments = $@"-y -i ""{sourceVideoPath}"" -vf ""select='not(mod(n,{frameStep}))',scale={maxWidth}:-2,tile={columns}x{rows}"" -frames:v 1 ""{outputImagePath}""",
-                UseShellExecute = false,
-                RedirectStandardError = true,
-                RedirectStandardOutput = true,
-                CreateNoWindow = true
-            };
+                IMediaAnalysis analysis = FFProbe.Analyse(sourceVideoPath);
+                double duration = analysis.Duration.TotalSeconds;
 
-            using var proc = Process.Start(psi)!;
-            string err = proc.StandardError.ReadToEnd();
-            proc.WaitForExit();
-            if (proc.ExitCode != 0)
+                if (duration <= 0)
+                    throw new ArgumentException("Video duration is zero or invalid.");
+
+                int numFrames = columns * rows;
+                double interval = duration / numFrames;
+                string outputImagePath = Path.ChangeExtension(sourceVideoPath, ".png");
+
+                string fontArg = "";
+                if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+                {
+                    string arialPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Fonts", "arial.ttf");
+                    if (File.Exists(arialPath))
+                    {
+                        string escapedFont = arialPath.Replace("\\", "/").Replace(":", "\\:");
+                        fontArg = $":fontfile='{escapedFont}'";
+                    }
+                }
+
+                string drawtext = $"drawtext=text='%{{pts\\:hms}}':x=w-tw-6:y=6:fontsize=18:fontcolor=white:box=1:boxcolor=black@0.65{fontArg}";
+                string filterChain = $"scale=384:216:force_original_aspect_ratio=decrease,pad=384:216:(ow-iw)/2:(oh-ih)/2,{drawtext},fps={numFrames}/{duration}:start_time={interval / 2},tpad=stop_mode=clone:stop_duration=1,tile={columns}x{rows}:nb_frames={numFrames}";
+
+                var psi = new ProcessStartInfo
+                {
+                    FileName = FFMpegPath,
+                    Arguments = $@"-y -i ""{sourceVideoPath}"" -vf ""{filterChain}"" -frames:v 1 ""{outputImagePath}""",
+                    UseShellExecute = false,
+                    RedirectStandardError = true,
+                    RedirectStandardOutput = true,
+                    CreateNoWindow = true
+                };
+
+                using var proc = Process.Start(psi)!;
+                string err = proc.StandardError.ReadToEnd();
+                proc.WaitForExit();
+                if (proc.ExitCode != 0)
+                {
+                    logger.Error($"FFmpeg failed to create contact sheet: {err}");
+                    return false;
+                }
+            }
+            catch (Exception ex)
             {
-                logger.Error($"FFmpeg failed to create contact sheet: {err}");
+                logger.Error($"Error creating contact sheet: {ex.Message}");
                 return false;
             }
+
             return true;
         }
 
