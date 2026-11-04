@@ -5,6 +5,7 @@ using Microsoft.Win32;
 using NLog;
 using OllamaSharp;
 using System.IO;
+using System.Linq.Expressions;
 using System.Numerics;
 using Tailgrab.Clients.Audio;
 using Tailgrab.Clients.OBS;
@@ -28,7 +29,7 @@ namespace Tailgrab
 {
     public class ServiceRegistry
     {
-        static Logger logger = LogManager.GetCurrentClassLogger();
+        static Logger _Logger = LogManager.GetCurrentClassLogger();
 
         private ConcurrentPriorityQueue<IHavePriority<int>, int> priorityQueue = new();
 
@@ -68,9 +69,9 @@ namespace Tailgrab
         {
             try
             {
-                logger.Info("Starting all services...");
+                _Logger.Info("Starting all services...");
 
-                logger.Info("Starting dbContext...");
+                _Logger.Info("Starting dbContext...");
 
                 // Define directory: %LOCALAPPDATA%\YourAppName
                 string dbFolder = Path.Combine(CommonConst.APPLICATION_LOCAL_DATA_PATH, "data");
@@ -90,11 +91,11 @@ namespace Tailgrab
                 dbContext.UpgradeDatabase();
 
                 // Must have
-                logger.Info("Starting Configuration Manager...");
+                _Logger.Info("Starting Configuration Manager...");
                 configurationManager = new ConfigurationManager(this);
 
                 // Needs to run, but can wait
-                logger.Info("Starting VR Chat API Client...");           
+                _Logger.Info("Starting VR Chat API Client...");           
                 bool result = await vrcAPIClient.Initialize();
                 if (!result)
                 {
@@ -102,52 +103,52 @@ namespace Tailgrab
                     //throw new InvalidOperationException("Failed to initialize VRChat API Client. Please check the application logs for details.");
                 }
 
-                logger.Info("Starting OLLama API Client...");
+                _Logger.Info("Starting OLLama API Client...");
                 ollamaAPIClient = new OllamaClient(this);
 
-                logger.Info("Starting Player Manager...");
+                _Logger.Info("Starting Player Manager...");
                 playerManager = new PlayerManager(this);
 
-                logger.Info("Starting Inventory Manager...");
+                _Logger.Info("Starting Inventory Manager...");
                 inventoryManager = new InventoryManager(this);
 
-                logger.Info("Starting AI Evaluation Manager...");
+                _Logger.Info("Starting AI Evaluation Manager...");
                 aiEvaluationManager = new AIEvaluationManager(this);
 
-                logger.Info("Starting Print Manager...");
+                _Logger.Info("Starting Print Manager...");
                 printManager = new PrintManager(this);
 
-                logger.Info("Starting Avatar Manager...");
+                _Logger.Info("Starting Avatar Manager...");
                 avatarManager = new AvatarManager(this);
                 _ = Task.Run(() => avatarManager.ProcessAvatarGistList());
 
-                logger.Info("Starting Moderation Manager...");
+                _Logger.Info("Starting Moderation Manager...");
                 moderationManager = new ModerationManager(this);
 
-                logger.Info("Starting TTS Manager...");
+                _Logger.Info("Starting TTS Manager...");
                 ttsManager = new TTSManager(this);
 
-                logger.Info("Starting Group Manager...");
+                _Logger.Info("Starting Group Manager...");
                 groupManager = new GroupManager(this);
                 _ = Task.Run(() => groupManager.ProcessGroupGistList( null, false ));
 
-                logger.Info("Starting XS Overlay Manager...");
+                _Logger.Info("Starting XS Overlay Manager...");
                 xsOverlay = new OverlayManager();
                 _ = Task.Run(() => xsOverlay.Initialize());
 
-                logger.Info("Starting OBS Client...");
+                _Logger.Info("Starting OBS Client...");
                 GetOBSClient();
 
-                logger.Info("Office Client initialized via dependency injection.");
+                _Logger.Info("Office Client initialized via dependency injection.");
 
-                logger.Info("Starting VR Chat Log Watch Thread...");
+                _Logger.Info("Starting VR Chat Log Watch Thread...");
                 _fileTailer = new FileTailer(this);
 
-                logger.Info("All services started.");
+                _Logger.Info("All services started.");
             }
             catch (Exception ex)
             {
-                logger.Error(ex);
+                _Logger.Error(ex);
             }
         }
 
@@ -155,7 +156,7 @@ namespace Tailgrab
         {
             try
             {
-                logger.Info("Shutting down all services...");
+                _Logger.Info("Shutting down all services...");
 
                 if(obsClient != null)
                 {
@@ -169,7 +170,7 @@ namespace Tailgrab
             }
             catch (Exception ex)
             {
-                logger.Error(ex);
+                _Logger.Error(ex);
             }
         }
 
@@ -308,7 +309,7 @@ namespace Tailgrab
                 }
                 catch (Exception ex)
                 {
-                    logger.Error(ex, "Failed to initialize OBS Client. Please ensure OBS is running and the WebSocket server is enabled.");
+                    _Logger.Error(ex, "Failed to initialize OBS Client. Please ensure OBS is running and the WebSocket server is enabled.");
                     return null;
                 }
             }
@@ -381,48 +382,55 @@ namespace Tailgrab
         {
             if (SetupWizardHelper.IsFirstTimeSetup())
             {
-                logger.Info($"Event Queue Paused due to incomplete Setup");
+                _Logger.Info($"Event Queue Paused due to incomplete Setup");
                 return;
             }
 
-            logger.Info($"Event Queue Running");
+            _Logger.Info($"Event Queue Running");
             while (true)
             {
-                // Process items from the Event queue
-                while (true)
+                try
                 {
-                    var result = priorityQueue.Dequeue();
-                    if (result.IsSuccess)
+                    // Process items from the Event queue
+                    while (true)
                     {
-                        String eventType = result.Value.GetType().Name;
-                        switch (eventType)
+                        var result = priorityQueue.Dequeue();
+                        if (result.IsSuccess)
                         {
-                            case nameof(VoiceCloneSpeechEvent):
-                                logger.Info($"Processing VoiceCloneSpeechEvent item from Event Queue");
-                                VoiceCloneSpeechEvent voiceEvent = (VoiceCloneSpeechEvent)result.Value;
+                            String eventType = result.Value.GetType().Name;
+                            switch (eventType)
+                            {
+                                case nameof(VoiceCloneSpeechEvent):
+                                    _Logger.Debug($"Processing VoiceCloneSpeechEvent item from Event Queue");
+                                    VoiceCloneSpeechEvent voiceEvent = (VoiceCloneSpeechEvent)result.Value;
 
-                                ProcessVoiceSynthesisEvent(serviceRegistry, voiceEvent);
-                                break;
-                            case nameof(OSCSendEvent):
-                                logger.Info($"Processing OSCSendEvent item from Event Queue");
-                                OSCSendEvent oscEvent = (OSCSendEvent)result.Value;
+                                    ProcessVoiceSynthesisEvent(serviceRegistry, voiceEvent);
+                                    break;
+                                case nameof(OSCSendEvent):
+                                    _Logger.Debug($"Processing OSCSendEvent item from Event Queue");
+                                    OSCSendEvent oscEvent = (OSCSendEvent)result.Value;
 
-                                ProcessOSCSendEvent(serviceRegistry, oscEvent);
-                                break;
-                            default:
-                                logger.Warn($"Unknown event type: {eventType}");
-                                break;
+                                    ProcessOSCSendEvent(serviceRegistry, oscEvent);
+                                    break;
+                                default:
+                                    _Logger.Warn($"Unknown event type: {eventType}");
+                                    break;
+                            }
                         }
-                    }
-                    else
-                    {
-                        // No more items to process
-                        break;
-                    }
+                        else
+                        {
+                            // No more items to process
+                            break;
+                        }
 
-                    // Wait for a short period before getting next record
-                    await Task.Delay(100);
+                        // Wait for a short period before getting next record
+                        await Task.Delay(100);
+                    }
                 }
+                catch (Exception ex)
+                {
+                    _Logger.Error($"Error processing event queue: {ex.Message}");
+                }            
 
                 // Wait for a short period before checking the queue again
                 await Task.Delay(1000);
@@ -460,7 +468,7 @@ namespace Tailgrab
                             }
                             else
                             {
-                                logger.Warn($"Failed to parse '{oscEvent.Text}' as int for OSC message.");
+                                _Logger.Warn($"Failed to parse '{oscEvent.Text}' as int for OSC message.");
                             }
                             break;
                         case "float":
@@ -470,14 +478,14 @@ namespace Tailgrab
                             }
                             else
                             {
-                                logger.Warn($"Failed to parse '{oscEvent.Text}' as float for OSC message.");
+                                _Logger.Warn($"Failed to parse '{oscEvent.Text}' as float for OSC message.");
                             }
                             break;
                         case "string":
                             chatbox.SendValue(oscEvent.Address, oscEvent.DataType, oscEvent.Text);
                             break;
                         default:
-                            logger.Warn($"Unsupported DataType '{oscEvent.DataType}' for OSC message.");
+                            _Logger.Warn($"Unsupported DataType '{oscEvent.DataType}' for OSC message.");
                             break;
                     }
                     chatbox.SendValue(oscEvent.Address, oscEvent.DataType, oscEvent.Text);
@@ -487,7 +495,7 @@ namespace Tailgrab
             }
             else
             {
-                logger.Warn($"VRChatOSCChatbox is not initialized. Cannot send OSC message.");
+                _Logger.Warn($"VRChatOSCChatbox is not initialized. Cannot send OSC message.");
             }
         }
 
@@ -534,13 +542,13 @@ namespace Tailgrab
         {
             if (avatarManager == null)
             {
-                logger.Info("Avatar GIST Manager not initialized, creating new instance...");
+                _Logger.Info("Avatar GIST Manager not initialized, creating new instance...");
                 avatarManager = new AvatarManager(this);
             }
 
-            logger.Info("Processing Avatar GIST list on demand...");
+            _Logger.Info("Processing Avatar GIST list on demand...");
             await avatarManager.ProcessAvatarGistList();
-            logger.Info("Avatar GIST list processing completed.");
+            _Logger.Info("Avatar GIST list processing completed.");
         }
 
         public async Task ProcessGroupGist( string gistUrl, bool ignoreChecksum )
@@ -551,13 +559,13 @@ namespace Tailgrab
                 {
                     throw new InvalidOperationException("Database context and Player Manager must be initialized before processing Group GIST.");
                 }
-                logger.Info("Group Manager not initialized, creating new instance...");
+                _Logger.Info("Group Manager not initialized, creating new instance...");
                 groupManager = new GroupManager(this);
             }
 
-            logger.Info("Processing Group GIST list on demand...");
+            _Logger.Info("Processing Group GIST list on demand...");
             await groupManager.ProcessGroupGistList( gistUrl, ignoreChecksum );
-            logger.Info("Group GIST list processing completed.");
+            _Logger.Info("Group GIST list processing completed.");
         }
 
         public McpSubscriptionManager GetSubscriptionManager()

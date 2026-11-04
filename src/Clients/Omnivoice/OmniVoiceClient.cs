@@ -11,7 +11,7 @@ namespace Tailgrab.Clients.Omnivoice
     {
         #region Fields & Initialization
 
-        protected static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+        protected static readonly Logger _Logger = LogManager.GetCurrentClassLogger();
 
         private readonly HttpClient _http;
         private List<VoiceJsonData> _voicePersonalities = new();
@@ -129,7 +129,7 @@ namespace Tailgrab.Clients.Omnivoice
             string voicesPath = Path.Combine(CommonConst.APPLICATION_LOCAL_DATA_PATH, "voices");
             if (!Directory.Exists(voicesPath))
             {
-                Logger.Warn($"Voices directory not found: {voicesPath}");
+                _Logger.Warn($"Voices directory not found: {voicesPath}");
                 return;
             }
 
@@ -154,20 +154,20 @@ namespace Tailgrab.Clients.Omnivoice
                             voiceData.Description ??= string.Empty;
 
                             _voicePersonalities.Add(voiceData);
-                            Logger.Debug($"Loaded voice personality: {voiceData.Name}");
+                            _Logger.Debug($"Loaded voice personality: {voiceData.Name}");
                         }
                     }
                     catch (Exception ex)
                     {
-                        Logger.Error($"Error loading voice file {jsonFile}: {ex.Message}");
+                        _Logger.Error($"Error loading voice file {jsonFile}: {ex.Message}");
                     }
                 }
 
-                Logger.Info($"Loaded {_voicePersonalities.Count} voice personalities from {voicesPath}");
+                _Logger.Info($"Loaded {_voicePersonalities.Count} voice personalities from {voicesPath}");
             }
             catch (Exception ex)
             {
-                Logger.Error($"Error loading voice personalities: {ex.Message}");
+                _Logger.Error($"Error loading voice personalities: {ex.Message}");
             }
         }
 
@@ -182,7 +182,7 @@ namespace Tailgrab.Clients.Omnivoice
 
             if (vp == null)
             {
-                Logger.Warn($"Voice personality '{name}' not found.");
+                _Logger.Warn($"Voice personality '{name}' not found.");
                 return null;
             }
 
@@ -190,7 +190,7 @@ namespace Tailgrab.Clients.Omnivoice
             {
                 if (!System.IO.File.Exists(vp.AudioReferenceUrl))
                 {
-                    Logger.Error($"Audio file not found: {vp.AudioReferenceUrl}");
+                    _Logger.Error($"Audio file not found: {vp.AudioReferenceUrl}");
                     return null;
                 }
 
@@ -201,7 +201,7 @@ namespace Tailgrab.Clients.Omnivoice
             }
             catch (Exception ex)
             {
-                Logger.Error($"Error reading audio file for '{name}': {ex.Message}");
+                _Logger.Error($"Error reading audio file for '{name}': {ex.Message}");
                 return null;
             }
         }
@@ -223,7 +223,7 @@ namespace Tailgrab.Clients.Omnivoice
             }
             catch (Exception ex)
             {
-                Logger.Error($"Error testing TTS service: {ex.Message}");
+                _Logger.Error($"Error testing TTS service: {ex.Message}");
                 return false;
             }
         }
@@ -252,7 +252,7 @@ namespace Tailgrab.Clients.Omnivoice
                 Language = "en"
             };
 
-            Logger.Debug($"Sending TTS request to {ttsEndpoint} with payload: {payload}");
+            _Logger.Debug($"Sending TTS request to {ttsEndpoint} with payload: {payload}");
             HttpResponseMessage resp = await _http.PostAsJsonAsync(ttsEndpoint, payload);
 
             resp.EnsureSuccessStatusCode();
@@ -274,7 +274,7 @@ namespace Tailgrab.Clients.Omnivoice
         {
             if (!EnableTTSService)
             {
-                Logger.Warn("TTS service is disabled.");
+                _Logger.Warn("TTS service is disabled.");
                 return Array.Empty<byte>();
             }
 
@@ -284,7 +284,7 @@ namespace Tailgrab.Clients.Omnivoice
                 VoiceJsonData? vp = await GetVoicePersonalityWithAudioAsync(VoiceCloneProfile);
                 if (vp == null)
                 {
-                    Logger.Error($"Voice personality '{VoiceCloneProfile}' not found.");
+                    _Logger.Error($"Voice personality '{VoiceCloneProfile}' not found.");
                     return Array.Empty<byte>();
                 }
 
@@ -300,7 +300,7 @@ namespace Tailgrab.Clients.Omnivoice
             }
             catch (Exception ex)
             {
-                Logger.Error($"Error generating audio: {ex.Message}");
+                _Logger.Error($"Error generating audio: {ex.Message}");
                 return Array.Empty<byte>();
             }
         }

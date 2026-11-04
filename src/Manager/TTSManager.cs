@@ -10,9 +10,9 @@ namespace Tailgrab.Manager
 {
     public class TTSManager
     {
-        protected static readonly Logger logger = LogManager.GetCurrentClassLogger();
+        protected static readonly Logger _Logger = LogManager.GetCurrentClassLogger();
         private static ServiceRegistry? serviceRegistry;
-        private ConcurrentPriorityQueue<IHavePriority<int>, int> priorityQueue = new();
+        private ConcurrentPriorityQueue<IHavePriority<int>, int> ttsQueue = new();
 
         // Create an instance of the synthesizer
         SpeechSynthesizer synthesizer = new SpeechSynthesizer();
@@ -26,7 +26,7 @@ namespace Tailgrab.Manager
                 throw new ArgumentNullException(nameof(registry), "ServiceRegistry parameter cannot be null.");
             }
             serviceRegistry = registry;
-            _ = Task.Run(() => SpeechTaskProcessor(priorityQueue, serviceRegistry));
+            _ = Task.Run(() => SpeechTaskProcessor(ttsQueue, serviceRegistry));
         }
 
         public void EnqueueSpeech(string text)
@@ -37,21 +37,21 @@ namespace Tailgrab.Manager
                 Priority = 10, // Default priority
             };
 
-            priorityQueue.Enqueue(item);
-            logger.Info($"TTSManager: Queuing TTS: '{item.Text}' with Volume: {item.Volume} and Rate: {item.Speed}.");
+            ttsQueue.Enqueue(item);
+            _Logger.Debug($"TTSManager: Queuing TTS: '{item.Text}' with Volume: {item.Volume} and Rate: {item.Speed}.");
         }
 
         private async Task SpeechTaskProcessor(ConcurrentPriorityQueue<IHavePriority<int>, int> queue, ServiceRegistry registry)
         {
             try
             {
-                logger.Info($"Speech Queue Running");
+                _Logger.Info($"Speech Queue Running");
                 while (true)
                 {
                     // Process items from the priority queue
                     while (true)
                     {
-                        var result = priorityQueue.Dequeue();
+                        var result = ttsQueue.Dequeue();
                         if (result.IsSuccess)
                         {
                             if (result.Value is SpeechItem item && item.Text != null)
@@ -80,7 +80,7 @@ namespace Tailgrab.Manager
             }
             catch (Exception ex)
             {
-                logger.Error(ex, "Error in SpeechTaskProcessor");
+                _Logger.Error(ex, "Error in SpeechTaskProcessor");
             }
         }
     }
